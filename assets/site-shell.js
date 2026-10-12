@@ -9,7 +9,7 @@
   ];
   const nav=document.createElement('header');nav.className='ms-sitebar';nav.setAttribute('role','banner');
   const navItems=links.map(item=>'<li><a href="'+item.href+'"'+(page===item.id?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+item.icon+'</svg><span>'+item.label+'</span></a></li>').join('');
-  nav.innerHTML='<div class="ms-sitebar-inner"><a class="ms-brand" href="./index.html" aria-label="درگاه مدیریتی مکث‌سیلور"><span class="ms-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18V6l6 8 3-4 3 4 6-8v12"/><path d="M3 21h18"/></svg></span><span class="ms-brand-copy"><strong>مکث‌سیلور</strong><small>درگاه مدیریتی</small></span></a><nav aria-label="ناوبری اصلی"><ul class="ms-nav-links">'+navItems+'</ul></nav></div>';
+  nav.innerHTML='<div class="ms-sitebar-inner"><a class="ms-brand" href="./index.html" aria-label="درگاه مدیریتی Max Silver"><img class="ms-brand-logo" src="./assets/branding/maxsilver-logo-source.png" alt="لوگوی MAX SILVER" width="300" height="48"><span class="ms-brand-copy"><strong>درگاه مدیریتی</strong></span></a><nav aria-label="ناوبری اصلی"><ul class="ms-nav-links">'+navItems+'</ul></nav></div>';
   document.body.classList.add('ms-portal-body');document.body.insertBefore(nav,document.body.firstChild);
   const provinceName=document.getElementById('selectedName');
   const details=document.querySelector('#provinceDetailsSlide .selected-row');

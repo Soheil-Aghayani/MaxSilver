@@ -8,8 +8,10 @@ const root=path.dirname(fileURLToPath(import.meta.url));
 const require=createRequire(import.meta.url);
 const importer=require(path.join(root,'assets','workbook-import.js'));
 const data=require(path.join(root,'assets','sales-data.js'));
+const XLSX=require(path.join(root,'assets','vendor','xlsx.full.min.js'));
 const html=fs.readFileSync(path.join(root,'sales-analysis.html'),'utf8');
 const analysisJs=fs.readFileSync(path.join(root,'assets','sales-analysis.js'),'utf8');
+const shellJs=fs.readFileSync(path.join(root,'assets','site-shell.js'),'utf8');
 const portal=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const ceo=fs.readFileSync(path.join(root,'ceo-dashboard.html'),'utf8');
 
@@ -62,6 +64,30 @@ assert.equal(data.matrixByYear(twoYearCustomers,'customerGroup').rows.find(row=>
 assert.equal(data.matrixByYear(twoYearCustomers,'customerGroup').rows.find(row=>row.label==='همکاران').values[1],null,'No row is not a recorded zero');
 assert.equal(data.availableDimensions(transactions.records).province,true);
 
+const publishedReports=[
+  {file:'sales-customers-1403.xls',kind:'customers',year:1403,records:524,totalColumn:3},
+  {file:'sales-customers-1404.xls',kind:'customers',year:1404,records:588,totalColumn:3},
+  {file:'sales-customers-1405.xls',kind:'customers',year:1405,records:414,totalColumn:3},
+  {file:'sales-products-1403.xls',kind:'products',year:1403,records:664,totalColumn:6},
+  {file:'sales-products-1404.xls',kind:'products',year:1404,records:565,totalColumn:6},
+  {file:'sales-products-1405.xls',kind:'products',year:1405,records:546,totalColumn:6}
+];
+for(const report of publishedReports){
+  const reportPath=path.join(root,'data','source-reports',report.file);
+  assert.ok(fs.existsSync(reportPath),'Missing published source report '+report.file);
+  const workbook=XLSX.read(fs.readFileSync(reportPath),{type:'buffer',cellDates:true});
+  assert.equal(workbook.SheetNames.length,1,'Unexpected worksheet count in '+report.file);
+  const matrix=XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{header:1,raw:true,defval:null,blankrows:false});
+  const parsed=importer.parseMatrix(matrix,report.file);
+  assert.equal(parsed.kind,report.kind,'Wrong source type detected for '+report.file);
+  assert.equal(parsed.fileYear,report.year,'Wrong report year detected for '+report.file);
+  assert.equal(parsed.records.length,report.records,'Unexpected detail-row count in '+report.file);
+  const amountKey=report.kind==='customers'?'amount':'netSales';
+  const detailTotal=parsed.records.reduce((sum,row)=>sum+(typeof row[amountKey]==='number'?row[amountKey]:0),0);
+  const sourceTotal=[...matrix].reverse().find(row=>row&&row.some(value=>value!==null&&value!==''))[report.totalColumn];
+  assert.equal(detailTotal,sourceTotal,'Detail does not reconcile to the source total in '+report.file);
+}
+
 const regionMembers=(()=>{const match=ceo.match(/const regionMembers = (\{[\s\S]*?\n    \});/);assert.ok(match,'CEO region map is present');return Function('return ('+match[1]+')')();})();
 const provinces=Object.values(regionMembers).flat();
 assert.equal(provinces.length,31);
@@ -69,9 +95,12 @@ assert.equal(new Set(provinces).size,31,'Every province must belong to exactly o
 assert.equal(Object.keys(regionMembers).length,6);
 
 for(const required of ['customerFiles','productFiles','transactionFiles','exportCsv','exportXlsx','filterGrid','provinceChart','matrixBrandProvince','matrixModelCustomer','dateFrom','dateTo','transaction-template.csv'])assert.ok((html+analysisJs).includes(required),'Analysis page missing '+required);
-for(const required of ['ceo-dashboard.html','sales-analysis.html','ورود محلی'])assert.ok(portal.includes(required),'Portal page missing '+required);
+for(const required of ['ceo-dashboard.html','sales-analysis.html','گزارش‌های خام برای همه قابل‌دسترسی‌اند'])assert.ok(portal.includes(required),'Portal page missing '+required);
 assert.ok(ceo.includes('assets/site-shell.js'),'CEO dashboard does not have shared navigation');
-assert.ok(!html.includes('fetch('),'Raw workbooks must not be sent through network fetch');
+assert.ok(analysisJs.includes('publishedReports')&&analysisJs.includes('fetch(new URL(report.path,location.href))'),'Analysis page should load the six same-site public source reports');
+assert.ok(!/fetch\s*\(\s*['"`]https?:/i.test(analysisJs),'Raw workbook loading must not call an external host');
+assert.ok(shellJs.includes('./assets/branding/maxsilver-logo-source.png'),'Shared navigation must use the provided Max Silver logo asset');
+assert.ok(fs.existsSync(path.join(root,'assets','branding','maxsilver-logo-source.png')),'The public source logo is missing');
 assert.ok(!html.includes('localStorage'),'Uploaded sales data must not be persisted by the page');
 
-console.log(JSON.stringify({portal:'ok',customerRows:customer.records.length,productRows:products.records.length,transactionRegion:transactions.records[0].region,provinces:provinces.length,regions:Object.keys(regionMembers).length},null,2));
+console.log(JSON.stringify({portal:'ok',publicSourceReports:publishedReports.length,sourceReconciliation:'ok',customerRows:customer.records.length,productRows:products.records.length,transactionRegion:transactions.records[0].region,provinces:provinces.length,regions:Object.keys(regionMembers).length},null,2));

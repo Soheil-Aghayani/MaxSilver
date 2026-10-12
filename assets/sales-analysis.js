@@ -125,7 +125,7 @@
   function renderTable(rows){
     const thead=document.getElementById('tableHead'),tbody=document.getElementById('tableBody');thead.replaceChildren();tbody.replaceChildren();const total=rows.length,pageSize=100,pages=Math.max(1,Math.ceil(total/pageSize));state.page=Math.min(state.page,pages-1);const start=state.page*pageSize;const pageRows=rows.slice(start,start+pageSize);const cols=columnsForKind[state.active];
     const header=document.createElement('tr');for(const [key,label] of cols){const th=document.createElement('th'),button=document.createElement('button');button.type='button';button.textContent=label;button.setAttribute('aria-sort',state.sort.key===key?(state.sort.direction==='asc'?'ascending':'descending'):'none');button.addEventListener('click',()=>{const sortKey=key==='amount'?'amount':key;state.sort={key:sortKey,direction:state.sort.key===sortKey&&state.sort.direction==='desc'?'asc':'desc'};state.page=0;renderTable(visibleRows());});th.appendChild(button);header.appendChild(th);}thead.appendChild(header);
-    if(!pageRows.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=cols.length;td.className='empty-row';td.textContent=loadedRows().length?'با این فیلترها ردیفی پیدا نشد.':'برای شروع، فایل محلی بارگذاری کنید.';tr.appendChild(td);tbody.appendChild(tr);}else{
+    if(!pageRows.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=cols.length;td.className='empty-row';td.textContent=loadedRows().length?'با این فیلترها ردیفی پیدا نشد.':'گزارش در دسترس نیست؛ اتصال را بررسی و صفحه را دوباره بارگیری کنید.';tr.appendChild(td);tbody.appendChild(tr);}else{
       for(const row of pageRows){const tr=document.createElement('tr');for(const [key] of cols){const td=document.createElement('td');let value=cellValue(row,key);if(key==='source'){value=row.source?row.source.file+' · ردیف '+row.source.row:'—';}if(['amount','netSales','quantity','withdrawalQuantity'].includes(key))td.classList.add('number');if(key==='year'&&value!==null&&value!==undefined)td.textContent=fmtYear(value);else if(typeof value==='number')td.textContent=fmtDecimal(value);else td.textContent=text(value);tr.appendChild(td);}tbody.appendChild(tr);}
     }
     document.getElementById('tableCount').textContent=total?fmtInt(total)+' ردیف پس از فیلتر':'داده موجود نیست';document.getElementById('tablePageInfo').textContent=total?fmtInt(start+1)+' تا '+fmtInt(Math.min(start+pageSize,total))+' از '+fmtInt(total):'—';document.getElementById('prevPage').disabled=state.page<=0;document.getElementById('nextPage').disabled=state.page>=pages-1;document.getElementById('exportCsv').disabled=!total;document.getElementById('exportXlsx').disabled=!total;
@@ -137,6 +137,42 @@
   function downloadBlob(content,type,name){const url=URL.createObjectURL(new Blob([content],{type}));const anchor=document.createElement('a');anchor.href=url;anchor.download=name;document.body.appendChild(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   function downloadXlsx(){const rows=exportRows();if(!rows.length)return;const sheet=XLSX.utils.json_to_sheet(rows);const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,sheet,'Filtered data');XLSX.writeFile(workbook,'maxsilver-'+state.active+'-filtered.xlsx');}
   const targetKind={customerFiles:'customers',productFiles:'products',transactionFiles:'transactions'};
+  const publishedReports=[
+    {path:'./data/source-reports/sales-customers-1403.xls',name:'sales-customers-1403.xls',kind:'customers'},
+    {path:'./data/source-reports/sales-customers-1404.xls',name:'sales-customers-1404.xls',kind:'customers'},
+    {path:'./data/source-reports/sales-customers-1405.xls',name:'sales-customers-1405.xls',kind:'customers'},
+    {path:'./data/source-reports/sales-products-1403.xls',name:'sales-products-1403.xls',kind:'products'},
+    {path:'./data/source-reports/sales-products-1404.xls',name:'sales-products-1404.xls',kind:'products'},
+    {path:'./data/source-reports/sales-products-1405.xls',name:'sales-products-1405.xls',kind:'products'}
+  ];
+  async function loadPublishedReports(){
+    statusText('در حال دریافت گزارش‌های خام منتشرشده…');
+    const results=await Promise.allSettled(publishedReports.map(async report=>{
+      const response=await fetch(new URL(report.path,location.href));
+      if(!response.ok)throw new Error(report.name+' · HTTP '+response.status);
+      const file=new File([await response.arrayBuffer()],report.name,{type:'application/vnd.ms-excel'});
+      const parsed=await importer.parseFile(file,XLSX);
+      if(parsed.kind!==report.kind)throw new Error(report.name+' · نوع گزارش با انتظار مطابقت ندارد.');
+      return {report,records:parsed.records};
+    }));
+    const loaded={customers:[],products:[]},failures=[];
+    for(const result of results){
+      if(result.status==='fulfilled'){
+        const {report,records}=result.value;
+        loaded[report.kind].push(...records);
+      }else failures.push(result.reason&&result.reason.message?result.reason.message:'خطا در دریافت فایل خام');
+    }
+    for(const kind of ['customers','products'])state.rows[kind]=loaded[kind];
+    const statusFor={customers:document.getElementById('customerImportStatus'),products:document.getElementById('productImportStatus')};
+    for(const kind of ['customers','products']){
+      const count=state.rows[kind].length,files=publishedReports.filter(report=>report.kind===kind).filter(report=>state.rows[kind].some(row=>row.source.file===report.name)).length;
+      statusFor[kind].textContent=count?fmtInt(files)+' گزارش · '+fmtInt(count)+' ردیف · سال‌های ۱۴۰۳ تا ۱۴۰۵':'گزارش بارگیری نشد.';
+    }
+    document.querySelectorAll('.dataset-option').forEach(button=>{button.disabled=!state.rows[button.dataset.dataset].length;});
+    if(state.rows.customers.length)setDataset('customers');else if(state.rows.products.length)setDataset('products');else renderAll();
+    if(failures.length){statusText('برخی گزارش‌ها بارگیری نشدند: '+failures.join(' ؛ ')+' . می‌توانید فایل خام را دانلود یا دوباره بارگیری کنید.',true);}
+    else statusText('هر شش گزارش خام بارگیری شد. مجموعهٔ مشتری و کالا جداگانه تحلیل می‌شود.');
+  }
   async function handleFiles(input){const target=targetKind[input.id];const status=document.getElementById(target==='customers'?'customerImportStatus':target==='products'?'productImportStatus':'transactionImportStatus');const files=[...(input.files||[])];if(!files.length)return;status.textContent='در حال خواندن فایل‌ها در همین مرورگر…';statusText('فایل‌ها در حال پردازش‌اند؛ هیچ داده‌ای ارسال نمی‌شود.');let added=0,issues=[];
     for(const file of files){try{const parsed=await importer.parseFile(file,XLSX);if(parsed.kind!==target){issues.push(file.name+': نوع گزارش با ورودی انتخاب‌شده مطابقت ندارد.');continue;}state.rows[target]=state.rows[target].filter(row=>row.source.file!==file.name).concat(parsed.records);added+=parsed.records.length;}catch(error){issues.push(file.name+': '+error.message);}}
     const count=state.rows[target].length;status.textContent=count?fmtInt(count)+' ردیف فعال · '+files.map(file=>file.name).join('، '):'فایل قابل استفاده وارد نشد.';statusText(issues.length?issues.join(' '):(added?fmtInt(added)+' ردیف از فایل(ها) خوانده شد.': 'فایل(ها) پردازش شدند.'),Boolean(issues.length));
@@ -149,5 +185,5 @@
   document.getElementById('exportCsv').addEventListener('click',downloadCsv);document.getElementById('exportXlsx').addEventListener('click',downloadXlsx);
   document.getElementById('prevPage').addEventListener('click',()=>{state.page=Math.max(0,state.page-1);renderTable(visibleRows());});document.getElementById('nextPage').addEventListener('click',()=>{state.page++;renderTable(visibleRows());});
   document.getElementById('clearFilters').addEventListener('click',()=>{state.filters={};state.search='';state.contextYearApplied=true;state.contextProvinceApplied=true;state.page=0;document.getElementById('tableSearch').value='';renderAll();});
-  parseContext();renderAll();
+  parseContext();renderAll();loadPublishedReports();
 })();

@@ -21,3 +21,8 @@ button,input,select{font:inherit}
 @media(max-width:720px){.ms-sitebar-inner{min-height:60px;padding:8px 13px;gap:8px}.ms-brand{gap:8px}.ms-brand-mark{width:36px;height:36px;border-radius:11px}.ms-brand-copy strong{font-size:13px}.ms-brand-copy small{font-size:9px}.ms-nav-links{gap:3px}.ms-nav-links a{min-height:36px;padding:7px 8px;font-size:11px}.ms-nav-links a span{display:none}.ms-nav-links svg{width:19px;height:19px}.ms-page-context{padding-inline:14px}}
 @media(max-width:390px){.ms-sitebar-inner{padding-inline:9px}.ms-brand-copy small{display:none}.ms-nav-links a{padding-inline:6px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+.ms-brand-logo{display:block;flex:0 0 auto;width:clamp(108px,12vw,148px);height:auto;object-fit:contain}
+.ms-brand-copy{align-self:center}
+.ms-brand-copy strong{font-size:12px!important;white-space:nowrap}
+@media(max-width:720px){.ms-brand-logo{width:112px}.ms-brand-copy strong{font-size:10px!important}}
+@media(max-width:390px){.ms-brand-copy{display:none}}
