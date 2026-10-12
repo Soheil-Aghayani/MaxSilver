@@ -13,6 +13,7 @@ const html=fs.readFileSync(path.join(root,'sales-analysis.html'),'utf8');
 const analysisJs=fs.readFileSync(path.join(root,'assets','sales-analysis.js'),'utf8');
 const shellJs=fs.readFileSync(path.join(root,'assets','site-shell.js'),'utf8');
 const portal=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const crownSprite=fs.readFileSync(path.join(root,'assets','branding','maxsilver-crown-animation-sprite.png'));
 const ceo=fs.readFileSync(path.join(root,'ceo-dashboard.html'),'utf8');
 const roadmap=fs.readFileSync(path.join(root,'sales-process-v1.html'),'utf8');
 
@@ -103,6 +104,12 @@ assert.ok(shellJs.includes("href:'./sales-process-v1.html',label:'نقشه را�
 assert.ok(roadmap.includes('rel="stylesheet" href="./assets/site-shell.css"')&&roadmap.includes('<script src="./assets/site-shell.js"></script>'),'Sales roadmap does not use the shared site shell');
 assert.ok(roadmap.includes('نقشه راه فروش منطقه‌ای')&&roadmap.includes('مسیر موازی: توسعه شبکه همکاران'),'Sales roadmap content is incomplete');
 assert.ok(roadmap.includes('@media (max-width: 760px)')&&roadmap.includes('grid-template-columns: minmax(0, 1fr)'),'Sales roadmap is missing its mobile layout');
+assert.equal(crownSprite.toString('hex',0,8),'89504e470d0a1a0a','Generated crown sprite must be a PNG');
+assert.equal(crownSprite[25],6,'Generated crown sprite must preserve its alpha channel');
+assert.equal(crownSprite.readUInt32BE(16),crownSprite.readUInt32BE(20),'Crown sprite must use a square 2x2 frame sheet');
+assert.ok(portal.includes('maxsilver-crown-animation-sprite.png')&&portal.includes('@keyframes crown-state'),'Portal hero is missing its animated generated crown states');
+assert.ok(portal.includes('prefers-reduced-motion:reduce')&&portal.includes('نشان تاج مفهومی مکث‌سیلور'),'Animated mark must identify itself as a concept and respect reduced-motion preferences');
+assert.ok(portal.includes('@media(max-width:760px){.hero{gap:12px}.hero-mark{display:grid;'),'Generated crown must remain visible on mobile');
 assert.ok(analysisJs.includes('publishedReports')&&analysisJs.includes('fetch(new URL(report.path,location.href))'),'Analysis page should load the six same-site public source reports');
 assert.ok(!/fetch\s*\(\s*['"`]https?:/i.test(analysisJs),'Raw workbook loading must not call an external host');
 assert.ok(shellJs.includes('./assets/branding/maxsilver-logo-source.png'),'Shared navigation must use the provided Max Silver logo asset');
