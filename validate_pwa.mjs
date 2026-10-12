@@ -13,6 +13,7 @@ const installScript = fs.readFileSync(path.join(root, 'assets', 'pwa.js'), 'utf8
 const gestures = require(path.join(root, 'assets', 'map-gestures.js'));
 
 assert.equal(manifest.display, 'standalone');
+assert.equal(manifest.prefer_related_applications, false);
 assert.equal(manifest.start_url, './ceo-dashboard.html');
 assert.equal(manifest.scope, './');
 assert.ok(html.includes('rel="manifest" href="./manifest.webmanifest"'));

@@ -8,6 +8,7 @@
   "start_url": "./ceo-dashboard.html",
   "scope": "./",
   "display": "standalone",
+  "prefer_related_applications": false,
   "background_color": "#F5F7F9",
   "theme_color": "#051934",
   "icons": [
