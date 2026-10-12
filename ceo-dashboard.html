@@ -113,14 +113,14 @@
     .card-head { padding: 15px 18px 8px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
     .card-head h2 { margin: 0; font-size: 18px; color: var(--navy); }
     .card-head span { color: var(--muted); font-size: 15px; }
-    .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 238px; direction: ltr; gap: 14px; padding: 0 18px 18px; align-items: start; min-width: 0; }
+    .map-layout { position: relative; display: block; direction: ltr; padding: 0 18px 18px; min-width: 0; }
     .map-wrap { padding: 0; display: flex; flex-direction: column; align-items: stretch; gap: 12px; min-height: 0; min-width: 0; }
     .map-active-banner { direction: rtl; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 62px; padding: 9px 15px; border: 1px solid var(--navy); border-radius: 12px; background: var(--navy); color: #fff; }
     .map-active-copy { display: grid; gap: 1px; }
     .map-active-title { color: #D0D5DD; font-size: 16px; line-height: 1.4; }
     .map-active-name { color: #fff; font-size: 20px; font-weight: 800; line-height: 1.35; }
     .map-active-unit { color: #D0D5DD; font-size: 16px; line-height: 1.4; text-align: left; }
-    #mapViewport { position: relative; width: 100%; height: auto; aspect-ratio: 1.08 / 1; min-height: 620px; max-height: 780px; overflow: hidden; border-radius: 14px; background: #F8F9FC; border: 1px solid #EAECF0; touch-action: none; }
+    #mapViewport { position: relative; width: 100%; height: clamp(560px, 88vh, 920px); min-height: 560px; max-height: 920px; overflow: hidden; border-radius: 14px; background: #F8F9FC; border: 1px solid #EAECF0; touch-action: none; }
     #map { width: 100%; height: 100%; display: grid; place-items: center; padding: 12px; user-select: none; }
     #map svg { display: block; width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; transform-origin: center center; shape-rendering: geometricPrecision; text-rendering: geometricPrecision; }
     #map svg text { text-rendering: geometricPrecision; }
@@ -140,10 +140,20 @@
     #map .influence-layer { pointer-events: none; }
     #map .influence-link { stroke: #475467; stroke-width: 2.2px; stroke-dasharray: 5 3; opacity: .72; vector-effect: non-scaling-stroke; }
     #map .influence-target { fill: #fff; stroke: #475467; stroke-width: 2px; vector-effect: non-scaling-stroke; }
-    .map-side { direction: rtl; display: grid; align-content: start; gap: 10px; padding: 12px; background: linear-gradient(165deg, #F8FAFD, #F2F5F9); border: 1px solid var(--line); border-radius: 15px; min-height: 0; min-width: 0; width: 100%; }
+    .map-guide-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto; min-height: 40px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--white); color: var(--navy); font: 750 13px/1.3 var(--font-persian); cursor: pointer; transition: background .16s ease, border-color .16s ease; }
+    .map-guide-trigger svg { display: block; width: 19px; height: 19px; }
+    .map-guide-trigger:hover { background: var(--blue-soft); border-color: #98A2B3; }
+    .map-guide-trigger:focus-visible, .map-side-close:focus-visible { outline: 3px solid rgba(29,78,216,.28); outline-offset: 2px; }
+    .map-side { position: fixed; inset: 0 0 0 auto; display: none; grid-template-rows: auto auto auto auto; align-content: start; gap: 12px; width: min(390px, calc(100vw - 18px)); max-width: none; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; margin: 0; padding: 16px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; direction: rtl; background: linear-gradient(165deg, #F8FAFD, #F2F5F9); border: 1px solid var(--line); border-right: 0; border-radius: 18px 0 0 18px; color: var(--ink); box-shadow: -18px 0 45px rgba(5,25,52,.2); transform: translateX(100%); transition: transform .24s cubic-bezier(.2,.75,.25,1); }
+    .map-side[open] { display: grid; transform: translateX(0); }
+    .map-side::backdrop { background: rgba(5,25,52,.34); backdrop-filter: blur(2px); }
+    @starting-style { .map-side[open] { transform: translateX(100%); } }
     .map-side-head { display: flex; align-items: center; gap: 11px; padding: 2px 2px 5px; }
     .map-side-mark { flex: 0 0 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 5px var(--blue-soft); margin-inline: 4px; }
     .map-side-head-copy { display: grid; gap: 1px; min-width: 0; }
+    .map-side-close { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; margin-inline-start: auto; border: 1px solid var(--line); border-radius: 9px; background: var(--white); color: var(--muted); cursor: pointer; }
+    .map-side-close svg { width: 19px; height: 19px; }
+    .map-side-close:hover { background: var(--blue-soft); color: var(--navy); }
     .map-side-head strong { color: var(--navy); font-size: 16px; line-height: 1.35; }
     .map-side-head small { color: var(--muted); font-size: 13px; line-height: 1.45; }
     .map-side-block, .map-side-tools { min-width: 0; padding: 11px; border: 1px solid #E4E7EC; border-radius: 11px; background: rgba(255,255,255,.88); }
@@ -317,8 +327,7 @@
       .year-control { grid-column: 1 / -1; min-width: 0; }
       .dashboard-slides { grid-template-columns: 1fr; }
       .map-wrap { min-height: 0; }
-      .map-layout { grid-template-columns: minmax(0, 1fr); }
-      .map-side { min-height: 0; }
+      .map-layout { display: block; }
     }
     @media (max-width: 760px) {
       .region-average-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -392,23 +401,20 @@
       .map-active-banner { min-height: 48px; padding: 6px 10px; border-radius: 10px; }
       .map-active-title, .map-active-unit { font-size: 13px; }
       .map-active-name { font-size: 17px; }
-      #mapViewport { height: min(90vw, 360px); min-height: 280px; max-height: 360px; aspect-ratio: auto; }
+      #mapViewport { height: min(102vw, 520px); min-height: 300px; max-height: 520px; }
       #map { padding: 3px; }
-      .map-side {
-        display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px;
-        min-height: 0; padding: 8px; border-radius: 11px;
-      }
-      .map-side-head, .map-side-block { grid-column: 1 / -1; }
+      .map-guide-trigger { min-height: 36px; gap: 5px; padding: 6px 8px; font-size: 12px; }
+      .map-guide-trigger svg { width: 17px; height: 17px; }
+      .map-side { width: min(390px, calc(100vw - 14px)); gap: 9px; padding: 12px; border-radius: 15px 0 0 15px; }
       .map-side-head { padding: 1px 2px 2px; }
       .map-side-head strong { font-size: 14px; }
       .map-side-head small { font-size: 12px; }
       .map-side-block, .map-side-tools { padding: 8px; }
       .map-side-kicker { margin-bottom: 6px; font-size: 12px; }
       .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 8px; font-size: 12px; }
-      .map-side-tools { grid-column: 1; }
       .map-tools { gap: 4px; }
       .map-tools button { min-height: 40px; font-size: 14px; }
-      .map-export { grid-column: 2; padding: 0; border-top: 0; }
+      .map-export { padding-top: 8px; }
       .export-icon-button { width: 40px; height: 40px; }
       .export-icon-button svg { width: 21px; height: 21px; }
 
@@ -534,7 +540,7 @@
       </nav>
       <div class="dashboard-slides" id="dashboardSlides">
       <section class="card map-card mobile-dashboard-slide" id="mapSlide">
-        <div class="card-head"><h2>نقشه اصلی تصمیم</h2></div>
+        <div class="card-head"><h2>نقشه اصلی تصمیم</h2><button type="button" class="map-guide-trigger" id="openMapGuide" aria-haspopup="dialog" aria-controls="mapGuidePanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/><circle cx="7" cy="6" r="1" fill="currentColor"/><circle cx="17" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="18" r="1" fill="currentColor"/></svg><span>راهنما و کنترل‌ها</span></button></div>
         <div class="map-layout">
           <div class="map-wrap">
             <div class="map-active-banner" aria-live="polite" aria-label="لایه فعال نقشه">
@@ -553,8 +559,8 @@
               </div>
             </div>
           </div>
-          <aside class="map-side" aria-label="راهنما و ابزار نقشه">
-            <div class="map-side-head"><span class="map-side-mark" aria-hidden="true"></span><div class="map-side-head-copy"><strong>راهنمای نقشه</strong><small id="mapSideMode">فروش ۱۴۰۵</small></div></div>
+          <dialog class="map-side" id="mapGuidePanel" aria-labelledby="mapGuideHeading">
+            <div class="map-side-head"><span class="map-side-mark" aria-hidden="true"></span><div class="map-side-head-copy"><strong id="mapGuideHeading">راهنما و ابزار نقشه</strong><small id="mapSideMode">فروش ۱۴۰۵</small></div><button type="button" class="map-side-close" id="closeMapGuide" aria-label="بستن پنل راهنمای نقشه"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" d="m6 6 12 12M18 6 6 18"/></svg></button></div>
             <section class="map-side-block" aria-labelledby="mapLegendHeading"><h3 class="map-side-kicker" id="mapLegendHeading">نشانه‌های این نما</h3><div class="legend" id="mapLegend"></div></section>
             <section class="map-side-tools" aria-labelledby="mapToolsHeading"><h3 class="map-side-kicker" id="mapToolsHeading">کنترل نقشه</h3><div class="map-tools"><button id="zoomIn" type="button" aria-label="بزرگ‌نمایی"><svg xmlns="http://www.w3.org/2000/svg" width="32px" height="32px" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path d="M4 12L20 12"/><path d="M12.0204 4L12.0205 20.0003"/></g></svg></button><button id="zoomOut" type="button" aria-label="کوچک‌نمایی"><svg xmlns="http://www.w3.org/2000/svg" width="32px" height="32px" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" d="M20 12L4 12"/></svg></button><button id="resetMap" type="button" title="بازنشانی نقشه" aria-label="بازنشانی نقشه"><svg xmlns="http://www.w3.org/2000/svg" width="32px" height="32px" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 8.04928L17.6569 7.34217C14.5327 4.21798 9.46734 4.21798 6.34315 7.34217C3.21895 10.4664 3.21895 15.5317 6.34315 18.6559C9.46734 21.7801 14.5327 21.7801 17.6569 18.6559C19.4737 16.8391 20.234 14.3658 19.9377 11.9995M18.364 3.80664V8.04928H14.1213"/></svg></button></div></section>
             <div class="map-export" aria-label="خروجی لایه فعال">
@@ -563,7 +569,7 @@
               </button>
               <span id="exportStatus" class="visually-hidden" aria-live="polite"></span>
             </div>
-          </aside>
+          </dialog>
         </div>
       </section>
 
@@ -798,6 +804,9 @@
     const mapYearReadoutEl = document.getElementById('mapYearReadout');
     const mapUnitReadoutEl = document.getElementById('mapUnitReadout');
     const mapLegendEl = document.getElementById('mapLegend');
+    const mapGuidePanel = document.getElementById('mapGuidePanel');
+    const openMapGuideButton = document.getElementById('openMapGuide');
+    const closeMapGuideButton = document.getElementById('closeMapGuide');
     const popup = document.getElementById('provincePopup');
     const popupProvinceEl = document.getElementById('popupProvince');
     const popupTotalEl = document.getElementById('popupTotal');
@@ -1704,6 +1713,19 @@
     comparisonProvinceEl.addEventListener('change', render);
     for (const button of mapYearButtons) button.addEventListener('click', () => { mapYear = Number(button.dataset.year); render(); });
     exportActiveLayerButton.addEventListener('click', handleActiveLayerExport);
+    const syncMapGuideExpanded = () => openMapGuideButton.setAttribute('aria-expanded', String(mapGuidePanel.open));
+    openMapGuideButton.addEventListener('click', () => {
+      if (mapGuidePanel.open) return;
+      mapGuidePanel.showModal();
+      syncMapGuideExpanded();
+      closeMapGuideButton.focus();
+    });
+    closeMapGuideButton.addEventListener('click', () => mapGuidePanel.close());
+    mapGuidePanel.addEventListener('click', (event) => { if (event.target === mapGuidePanel) mapGuidePanel.close(); });
+    mapGuidePanel.addEventListener('close', () => {
+      syncMapGuideExpanded();
+      openMapGuideButton.focus();
+    });
     closePopupEl.addEventListener('click', () => { popup.hidden = true; });
     zoomInEl.addEventListener('click', () => setZoom(zoom + .2));
     zoomOutEl.addEventListener('click', () => setZoom(zoom - .2));

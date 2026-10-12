@@ -31,7 +31,7 @@ const requiredTokens = [
   'topRankList', 'میلیارد تومان', 'let mapYear = years.includes(requestedYear) ? requestedYear : 1405', 'overallTotal', 'regionAverageGrid',
   'میانگین فروش دورهٔ سه‌سالهٔ هر منطقه', 'منطقه‌بندی شش‌گانه',
   'map-active-banner', 'map-active-title', 'map-active-name', 'map-active-unit',
-  'map-side-head', 'map-side-tools', 'select-trigger', 'select-popover', 'select-options',
+  'map-side-head', 'map-side-tools', 'mapGuidePanel', 'openMapGuide', 'closeMapGuide', 'showModal()', 'select-trigger', 'select-popover', 'select-options',
   'MaxSilverEstedadFontBase64', 'embeddedFontStyle',
   'exportActiveLayer', 'handleActiveLayerExport', 'accordion-card',
   'mobile-dashboard-nav', 'dashboard-slides', 'mobileDashboardPanels', 'scroll-snap-type',
@@ -71,6 +71,11 @@ for (const removedDashboardCopy of [
   assert.ok(!html.includes(removedDashboardCopy), 'Requested dashboard content remains: ' + removedDashboardCopy);
 }
 assert.match(html, /id="exportActiveLayer"[^>]*aria-label="دانلود لایه فعال"/);
+assert.match(html, /id="openMapGuide"[^>]*aria-haspopup="dialog"[^>]*aria-controls="mapGuidePanel"[^>]*aria-expanded="false"/);
+assert.match(html, /<dialog class="map-side" id="mapGuidePanel"[^>]*aria-labelledby="mapGuideHeading"/);
+assert.ok(html.includes("mapGuidePanel.addEventListener('close'"), 'The map edge panel should restore its accessible expanded state when dismissed');
+assert.ok(html.includes('height: clamp(560px, 88vh, 920px)'), 'The desktop map should use the space freed by the edge panel');
+assert.ok(!html.includes('grid-template-columns: minmax(0, 1fr) 238px'), 'A permanent map sidebar should not constrain the map width');
 const resetButton = html.match(/<button id="resetMap"[^>]*>([\s\S]*?)<\/button>/);
 assert.ok(resetButton, 'Map reset control is missing');
 assert.match(resetButton[0], /aria-label="بازنشانی نقشه"/);
@@ -271,6 +276,7 @@ console.log(JSON.stringify({
   brandColors: ['#051934', '#1D4ED8', '#B54708', '#FFCC2A', '#15803D', '#B42318'].map((color) => ({ color, present: html.includes(color) })),
   interactiveFeatures: {
     mapLabels: html.includes('labelsLayer') && html.includes('nameTspan'),
+    accessibleMapEdgePanel: html.includes('mapGuidePanel.showModal()') && html.includes('mapGuidePanel.close()') && html.includes('aria-expanded'),
     popup: html.includes('renderPopup') && html.includes('popupChart'),
     boundedPan: html.includes('clampPan') && html.includes('pointermove'),
     exports: html.includes('exportMapPng') && html.includes('handleActiveLayerExport') && html.includes('const metric = mapMetric;') && html.includes('const year = mapYear;'),
