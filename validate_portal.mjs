@@ -10,8 +10,8 @@ const importer=require(path.join(root,'assets','workbook-import.js'));
 const data=require(path.join(root,'assets','sales-data.js'));
 const XLSX=require(path.join(root,'assets','vendor','xlsx.full.min.js'));
 const html=fs.readFileSync(path.join(root,'sales-analysis.html'),'utf8');
-const analysisJs=fs.readFileSync(path.join(root,'assets','sales-analysis.js'),'utf8');
-const shellCss=fs.readFileSync(path.join(root,'assets','site-shell.css'),'utf8');
+const analysisJs=fs.readFileSync(path.join(root,'assets','sales-analysis.2.js'),'utf8');
+const shellCss=fs.readFileSync(path.join(root,'assets','site-shell.2.css'),'utf8');
 const portal=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const readme=fs.readFileSync(path.join(root,'README.md'),'utf8');
 const ceo=fs.readFileSync(path.join(root,'ceo-dashboard.html'),'utf8');
@@ -108,8 +108,8 @@ for(const [name,page] of Object.entries(pages)){
   assert.ok(page.includes('class="ms-sitebar"')&&page.includes('class="ms-site-footer"'),name+' must carry the shared header and footer in static HTML');
   for(const href of nav)assert.ok(page.includes('href="'+href+'"'),name+' is missing nav link '+href);
   assert.ok(page.includes('aria-current="page"'),name+' does not mark the current page');
-  assert.ok(page.includes('id="msShare"')&&page.includes('assets/share.js'),name+' must offer the shared QR share button');
-  assert.ok(page.includes('assets/site-shell.css?v='),name+' must use the cache-busted shared stylesheet');
+  assert.ok(page.includes('id="msShare"')&&page.includes('assets/share.2.js'),name+' must offer the shared QR share button');
+  assert.ok(page.includes('assets/site-shell.2.css?v='),name+' must use the cache-busted shared stylesheet');
   assert.ok(page.includes('name="robots" content="noindex'),name+' must not be indexable');
   assert.ok(page.includes('name="description"'),name+' needs a description');
   assert.ok(page.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),name+' is missing the producer credit');
@@ -117,7 +117,7 @@ for(const [name,page] of Object.entries(pages)){
 }
 for(const required of ['ceo-dashboard.html','sales-analysis.html','sales-process.html'])assert.ok(portal.includes(required),'Portal page missing '+required);
 assert.equal((shellCss.match(/@font-face/g)||[]).length,1,'Exactly one Estedad @font-face is allowed');
-assert.ok(!/@font-face/.test(fs.readFileSync(path.join(root,'assets','ceo-dashboard.css'),'utf8')),'CEO css must not redeclare the font');
+assert.ok(!/@font-face/.test(fs.readFileSync(path.join(root,'assets','ceo-dashboard.2.css'),'utf8')),'CEO css must not redeclare the font');
 assert.ok(shellCss.includes('.ms-site-footer{'),'Shared producer footer styles are missing');
 assert.ok(roadmap.includes('نقشهٔ فروش حضوری منطقه‌ای')&&roadmap.includes('نماینده')&&roadmap.includes('مرکز'),'Sales process page content is incomplete');
 assert.ok(!/class="pill|show-changes|id="chg"|legend-changes/.test(roadmap),'Review markers must not appear on the sales process page');
@@ -128,7 +128,7 @@ assert.ok(!html.includes('localStorage'),'Sales data must not be persisted in lo
 assert.ok(readme.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),'README is missing the requested producer credit');
 for(const [,link] of readme.matchAll(/\]\(([^)]+)\)/g))if(!/^https?:|^#/.test(link))assert.ok(fs.existsSync(path.join(root,link)),'README has a broken local link: '+link);
 const referenced=new Set();
-for(const file of ['index.html','ceo-dashboard.html','sales-analysis.html','sales-process.html','service-worker.js','assets/ceo-dashboard.js','assets/sales-analysis.js','assets/share.js','assets/sales-process.js','assets/site-shell.css','assets/home.css','assets/ceo-dashboard.css','assets/sales-analysis.css','assets/sales-process.css','manifest.webmanifest'])for(const [,ref] of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:\.\/)?((?:assets|data)\/[A-Za-z0-9_./-]+\.[a-z0-9]+)/g))referenced.add(ref);
+for(const file of ['index.html','ceo-dashboard.html','sales-analysis.html','sales-process.html','service-worker.js','assets/ceo-dashboard.js','assets/sales-analysis.2.js','assets/share.2.js','assets/sales-process.js','assets/site-shell.2.css','assets/home.2.css','assets/ceo-dashboard.2.css','assets/sales-analysis.2.css','assets/sales-process.2.css','manifest.webmanifest'])for(const [,ref] of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:\.\/)?((?:assets|data)\/[A-Za-z0-9_./-]+\.[a-z0-9]+)/g))referenced.add(ref);
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]);}
 const orphans=walk(path.join(root,'assets')).map(f=>path.relative(root,f).replaceAll('\\','/')).filter(f=>!referenced.has(f));
 assert.deepEqual(orphans,[],'Unreferenced files in assets/: '+orphans.join(', '));

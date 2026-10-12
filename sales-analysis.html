@@ -9,8 +9,8 @@
   <title>تحلیل جزئیات فروش | مکث‌سیلور</title>
   <link rel="icon" type="image/svg+xml" href="./assets/maxsilver-dashboard-icon.svg" />
   <link rel="preload" href="./assets/fonts/Estedad-VF.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./assets/site-shell.css?v=20261015" />
-  <link rel="stylesheet" href="./assets/sales-analysis.css?v=20261014" />
+  <link rel="stylesheet" href="./assets/site-shell.2.css?v=20261016" />
+  <link rel="stylesheet" href="./assets/sales-analysis.2.css?v=20261016" />
   <script type="speculationrules">{"prefetch":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>
 </head>
 <body class="ms-portal-body">
@@ -27,18 +27,18 @@
       <div class="forget-row"><span class="upload-meta" id="storedInfo">هیچ داده‌ای روی این دستگاه ذخیره نشده است.</span><button id="forgetData" class="action-button" type="button" disabled aria-label="حذف داده‌های ذخیره‌شده از این دستگاه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>حذف</button></div>
       <div class="data-notice" role="note">مشتری و کالا جدا تحلیل می‌شوند و Join ندارند. واحد مبلغ در منبع مشخص نیست؛ برچسب واحد تبدیلی انجام نمی‌دهد.</div>
     </section>
-    <section class="panel dataset-switch" aria-label="انتخاب مبنای تحلیل"><div class="dataset-options" role="group" aria-label="مجموعه داده"><button class="dataset-option" type="button" data-dataset="customers" aria-pressed="true">مشتریان</button><button class="dataset-option" type="button" data-dataset="products" aria-pressed="false">کالاها</button><button class="dataset-option" type="button" data-dataset="transactions" aria-pressed="false">تراکنش‌ها</button></div></section>
+    <section class="panel dataset-switch" aria-label="انتخاب مبنای تحلیل"><div class="dataset-options" role="group" aria-label="مجموعه داده"><button class="dataset-option" type="button" data-dataset="customers" aria-pressed="true">مشتریان</button><button class="dataset-option" type="button" data-dataset="products" aria-pressed="false">کالاها</button><button class="dataset-option" type="button" data-dataset="transactions" aria-pressed="false">تراکنش‌ها</button></div><button class="compare-toggle" id="compareToggle" type="button" aria-pressed="false" aria-controls="comparePanel" aria-label="مقایسهٔ سال‌ها" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 4 3 8m4-4 4 4M17 20V4m0 16 4-4m-4 4-4-4"/></svg><span>مقایسه</span></button></section>
     <section class="panel filter-panel" aria-labelledby="filtersTitle"><div class="panel-head"><div><h2 id="filtersTitle">فیلترهای تحلیل</h2></div><button id="clearFilters" class="action-button" type="button">پاک‌کردن فیلترها</button></div><div class="filter-grid" id="filterGrid"></div><div class="currency-line"><div class="currency-select"><label for="amountUnit">برچسب واحد مبلغ</label><select id="amountUnit"><option value="unknown">نامشخص (خام)</option><option value="rial">ریال (انتخاب شما)</option><option value="toman">تومان (انتخاب شما)</option></select></div></div></section>
-    <section class="kpi-grid" id="kpiGrid" aria-label="شاخص‌های مجموعهٔ انتخاب‌شده" aria-live="polite"></section>
+    <section class="panel compare-panel" id="comparePanel" aria-labelledby="compareTitle" hidden><div class="panel-head"><h2 id="compareTitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 4 3 8m4-4 4 4M17 20V4m0 16 4-4m-4 4-4-4"/></svg>مقایسهٔ سال‌ها</h2><div class="compare-controls"><select id="cmpFrom" aria-label="سال مبدا"></select><span class="compare-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg></span><select id="cmpTo" aria-label="سال مقصد"></select><select id="cmpBy" aria-label="مبنای مقایسه"></select></div></div><div class="compare-kpis" id="cmpKpis"></div><div class="table-scroller"><table class="data-table"><thead><tr><th>مورد</th><th id="cmpHeadA">—</th><th id="cmpHeadB">—</th><th>تغییر</th><th>٪</th></tr></thead><tbody id="cmpBody"></tbody></table></div></section><section class="kpi-grid" id="kpiGrid" aria-label="شاخص‌های مجموعهٔ انتخاب‌شده" aria-live="polite"></section>
     <section class="viz-grid" aria-label="نمودارها و ماتریس‌ها"><article class="panel viz-card"><h2 id="trendTitle">روند سالانه</h2><p class="viz-subtitle" id="trendSubtitle">مبلغ خام ثبت‌شده در فایل</p><div id="yearTrend" class="year-bars"></div></article><article class="panel viz-card"><h2 id="breakdownTitle">بیشترین مبلغ ثبت‌شده</h2><p class="viz-subtitle" id="breakdownSubtitle">بر اساس ابعاد واقعی مجموعهٔ فعال</p><div id="breakdownChart" class="bar-list"></div></article><article class="panel viz-card"><h2 id="matrixBrandTitle">ماتریس برند × استان</h2><div class="matrix-wrap" id="matrixBrandProvince"></div></article><article class="panel viz-card"><h2 id="matrixModelTitle">ماتریس مدل × نوع مشتری</h2><div class="matrix-wrap" id="matrixModelCustomer"></div></article><article class="panel viz-card"><h2 id="provinceChartTitle">فروش به تفکیک استان</h2><div id="provinceChart" class="empty-chart"></div></article></section>
     <section class="panel table-panel" aria-labelledby="tableTitle"><div class="table-toolbar"><div><h2 id="tableTitle">ردیف‌های منبع</h2><span id="tableCount" class="switch-label">گزارشی انتخاب نشده است</span></div><div class="table-actions"><input id="tableSearch" type="search" placeholder="جست‌وجو در ردیف‌های فیلترشده" aria-label="جست‌وجو در جدول" /><button id="exportCsv" class="action-button" type="button" disabled>خروجی CSV</button><button id="exportXlsx" class="action-button" type="button" disabled>خروجی Excel</button></div></div><div class="table-scroller"><table class="data-table"><thead id="tableHead"></thead><tbody id="tableBody"><tr><td class="empty-row">گزارشی انتخاب نشده است.</td></tr></tbody></table></div><div class="table-foot"><span id="tablePageInfo">—</span><div class="pager"><button id="prevPage" type="button" aria-label="صفحه قبل" disabled>قبلی</button><button id="nextPage" type="button" aria-label="صفحه بعد" disabled>بعدی</button></div></div></section>
     <div id="pageStatus" class="load-state" role="status" aria-live="polite"></div>
   </main>
   <footer class="ms-site-footer"><p>تهیه‌کنندگان: محمود قربانی و سهیل آقایانی</p></footer>
-  <script src="./assets/workbook-import.js?v=20261012"></script>
-  <script src="./assets/sales-data.js?v=20261012"></script>
-  <script src="./assets/sales-analysis.js?v=20261012"></script>
-  <script src="./assets/share.js?v=20261015" defer></script>
-  <script src="./assets/sw-register.js?v=20261012" defer></script>
+  <script src="./assets/workbook-import.js?v=20261016"></script>
+  <script src="./assets/sales-data.js?v=20261016"></script>
+  <script src="./assets/sales-analysis.2.js?v=20261016"></script>
+  <script src="./assets/share.2.js?v=20261016" defer></script>
+  <script src="./assets/sw-register.js?v=20261016" defer></script>
 </body>
 </html>

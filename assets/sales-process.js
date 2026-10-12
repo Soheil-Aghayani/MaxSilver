@@ -55,5 +55,16 @@
   window.addEventListener('load', schedule);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
   if ('ResizeObserver' in window) new ResizeObserver(schedule).observe(card);
+  // Print / PDF: freeze the current layout width (so the drawn line stays aligned) and fit it to the page.
+  var printBtn = document.getElementById('printMap');
+  if (printBtn) printBtn.addEventListener('click', function () { window.print(); });
+  window.addEventListener('beforeprint', function () {
+    if (window.matchMedia('(max-width: 980px)').matches) return;
+    var width = card.getBoundingClientRect().width;
+    card.style.width = width + 'px';
+    card.style.zoom = String(Math.min(1, 1400 / width));
+    draw();
+  });
+  window.addEventListener('afterprint', function () { card.style.width = ''; card.style.zoom = ''; schedule(); });
   schedule();
 })();

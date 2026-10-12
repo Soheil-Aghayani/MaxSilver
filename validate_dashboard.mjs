@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 const htmlPath = new URL('./ceo-dashboard.html', import.meta.url);
 // The page is split into html + css + js files; the checks below read them as one document.
 const readAsset = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
-const shareJs = readAsset('./assets/share.js');
-const html = readAsset('./ceo-dashboard.html') + '\n<style>' + readAsset('./assets/ceo-dashboard.css') + '</style>\n<script>' + readAsset('./assets/ceo-dashboard.js') + '</script>';
+const shareJs = readAsset('./assets/share.2.js');
+const html = readAsset('./ceo-dashboard.html') + '\n<style>' + readAsset('./assets/ceo-dashboard.2.css') + '</style>\n<script>' + readAsset('./assets/ceo-dashboard.js') + '</script>';
 const rowsMatch = html.match(/const sourceRows = (\[.*?\]);/s);
 assert.ok(rowsMatch, 'sourceRows block not found');
 

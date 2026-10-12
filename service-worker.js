@@ -1,28 +1,39 @@
 'use strict';
 
-// Bump VERSION whenever a page or asset changes; old caches are removed on activate.
-const VERSION = 'v2-20261015';
+// Every release changes VERSION and the ?v= stamp on the pages. Assets that carry ?v= are matched exactly,
+// so a page can never be combined with CSS/JS from another release.
+const VERSION = 'v3-20261016';
 const CACHE_NAME = 'maxsilver-portal-' + VERSION;
 const SCOPE = self.registration.scope;
 const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'sales-process.html'];
-const ASSETS = [
+const STATIC_ASSETS = [
   'manifest.webmanifest',
-  'assets/site-shell.css', 'assets/home.css', 'assets/ceo-dashboard.css', 'assets/sales-analysis.css', 'assets/sales-process.css', 'assets/sales-process.js', 'assets/share.js',
-  'assets/ceo-dashboard.js', 'assets/map-gestures.js', 'assets/pwa.js', 'assets/sw-register.js',
-  'assets/sales-analysis.js', 'assets/sales-data.js', 'assets/workbook-import.js',
   'assets/vendor/qrcode-generator-1.4.4.js',
   'assets/fonts/Estedad-VF.ttf',
   'assets/maxsilver-dashboard-icon.svg',
-  'assets/branding/maxsilver-logo-source.png', 'assets/branding/maxsilver-pwa-192.png', 'assets/branding/maxsilver-pwa-512.png'
+  'assets/branding/maxsilver-logo-source.png',
+  'assets/branding/maxsilver-pwa-192.png',
+  'assets/branding/maxsilver-pwa-512.png'
 ];
-const PRECACHE = PAGES.concat(ASSETS).map((p) => new URL(p, SCOPE).href);
+const abs = (p) => new URL(p, SCOPE).href;
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => Promise.all(PRECACHE.map((url) => cache.add(new Request(url, { cache: 'reload' })).catch(() => null))))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const wanted = new Set(STATIC_ASSETS.map(abs));
+    // pages first, then exactly the asset URLs those pages reference (with their ?v=)
+    for (const page of PAGES) {
+      try {
+        const response = await fetch(new Request(abs(page), { cache: 'reload' }));
+        if (!response.ok) continue;
+        await cache.put(abs(page), response.clone());
+        const html = await response.text();
+        for (const match of html.matchAll(/(?:href|src)="(\.\/[^"#]+)"/g)) wanted.add(new URL(match[1], abs(page)).href);
+      } catch (error) { /* offline install: pages are cached on first visit instead */ }
+    }
+    await Promise.all([...wanted].map((url) => cache.add(new Request(url, { cache: 'reload' })).catch(() => null)));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {
@@ -41,7 +52,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.includes('/data/')) return; // user data never goes through the cache
 
   if (request.mode === 'navigate') {
-    // Pages: always revalidate (GitHub Pages sends max-age=600, which would otherwise delay a release by 10 minutes); cache only when offline.
+    // Pages: always ask the server (GitHub Pages sends max-age=600); the cache is only for offline.
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       try {
@@ -50,18 +61,25 @@ self.addEventListener('fetch', (event) => {
         return response;
       } catch (error) {
         return (await cache.match(request, { ignoreSearch: true })) ||
-               (await cache.match(new URL('index.html', SCOPE).href)) ||
+               (await cache.match(abs('index.html'))) ||
                new Response('برای استفادهٔ آفلاین، یک‌بار صفحه را آنلاین باز کنید.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
       }
     })());
     return;
   }
 
-  // Static assets: stale-while-revalidate, ignoring the ?v= cache-buster.
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request, { ignoreSearch: true });
-    const refresh = fetch(request, { cache: 'no-cache' }).then((response) => { if (response && response.ok) cache.put(request, response.clone()); return response; }).catch(() => cached);
+    const cached = await cache.match(request); // exact URL, query included
+    if (url.searchParams.has('v')) {
+      // versioned asset: immutable for this release
+      if (cached) return cached;
+      const response = await fetch(request);
+      if (response.ok) cache.put(request, response.clone());
+      return response;
+    }
+    // unversioned (fonts, images, libraries): serve fast, refresh in the background
+    const refresh = fetch(request).then((response) => { if (response && response.ok) cache.put(request, response.clone()); return response; }).catch(() => cached);
     return cached || refresh;
   })());
 });

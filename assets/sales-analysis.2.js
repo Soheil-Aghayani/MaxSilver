@@ -140,7 +140,7 @@
     }
     document.getElementById('tableCount').textContent=total?fmtInt(total)+' ردیف پس از فیلتر':'داده موجود نیست';document.getElementById('tablePageInfo').textContent=total?fmtInt(start+1)+' تا '+fmtInt(Math.min(start+pageSize,total))+' از '+fmtInt(total):'—';document.getElementById('prevPage').disabled=state.page<=0;document.getElementById('nextPage').disabled=state.page>=pages-1;document.getElementById('exportCsv').disabled=!total;document.getElementById('exportXlsx').disabled=!total;
   }
-  function renderViews(){const filtered=visibleRows();renderKpis(filtered);renderYearTrend(filtered);renderBreakdown(filtered);renderMatrices(filtered);renderProvince(filtered);renderTable(filtered);}
+  function renderViews(){const filtered=visibleRows();renderCompare();renderKpis(filtered);renderYearTrend(filtered);renderBreakdown(filtered);renderMatrices(filtered);renderProvince(filtered);renderTable(filtered);}
   function renderAll(){renderFilters();renderViews();}
   function exportRows(){return visibleRows().map(row=>{const out={};for(const [key,label] of columnsForKind[state.active]){let value=cellValue(row,key);if(key==='source'&&row.source)value=row.source.file+' · '+row.source.row;out[label]=value==null?'':value;}return out;});}
   function downloadCsv(){const rows=exportRows();if(!rows.length)return;const keys=Object.keys(rows[0]);const csv='\ufeff'+[keys.map(data.csvValue).join(','),...rows.map(row=>keys.map(key=>data.csvValue(row[key])).join(','))].join('\r\n');downloadBlob(csv,'text/csv;charset=utf-8','maxsilver-'+state.active+'-filtered.csv');}
@@ -175,6 +175,65 @@
   document.getElementById('exportCsv').addEventListener('click',downloadCsv);document.getElementById('exportXlsx').addEventListener('click',downloadXlsx);
   document.getElementById('prevPage').addEventListener('click',()=>{state.page=Math.max(0,state.page-1);renderTable(visibleRows());});document.getElementById('nextPage').addEventListener('click',()=>{state.page++;renderTable(visibleRows());});
   document.getElementById('clearFilters').addEventListener('click',()=>{state.filters={};state.search='';state.contextYearApplied=true;state.contextProvinceApplied=true;state.page=0;document.getElementById('tableSearch').value='';renderAll();});
-  forgetButton.addEventListener('click',async()=>{await store.clear();state.rows={customers:[],products:[],transactions:[]};state.filters={};refreshStatusLines();refreshDatasetButtons();document.getElementById('transactionImportStatus').textContent='فایلی بارگذاری نشده است.';renderAll();statusText('داده‌های ذخیره‌شده از این دستگاه حذف شد.');});
+  // ---- year-to-year comparison (uses every filter except the year range)
+  const compareToggle=document.getElementById('compareToggle'),comparePanel=document.getElementById('comparePanel'),cmpFrom=document.getElementById('cmpFrom'),cmpTo=document.getElementById('cmpTo'),cmpBy=document.getElementById('cmpBy');
+  const svgi=(path,cls)=>'<svg class="'+(cls||'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+path+'</svg>';
+  const ICON={up:svgi('<path d="M12 19V5m0 0-6 6m6-6 6 6"/>'),down:svgi('<path d="M12 5v14m0 0 6-6m-6 6-6-6"/>'),new:svgi('<path d="M12 3v4m0 10v4M3 12h4m10 0h4m-2.5-6.5-3 3m-5 5-3 3m0-11 3 3m5 5 3 3"/>'),lost:svgi('<path d="M5 12h14"/>'),same:svgi('<path d="M5 9h14M5 15h14"/>')};
+  const KIND_TEXT={up:'افزایش',down:'کاهش',new:'جدید',lost:'ازدست‌رفته',same:'بدون تغییر'};
+  const yearsOf=rows=>data.uniqueValues(rows,'year').filter(v=>v!==null).map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
+  function compareKey(row,mode){
+    if(state.active==='customers')return mode==='group'?(row.customerGroup||'بدون گروه'):((row.customerCode||'')+' · '+(row.customerName||''));
+    return (row.productCode||'')+' · '+(row.productName||'');
+  }
+  function fillCompareControls(years){
+    const sig=state.active+':'+years.join(',');
+    if(cmpFrom.dataset.sig===sig)return;
+    cmpFrom.dataset.sig=sig;
+    const options=years.map(y=>'<option value="'+y+'">'+fmtYear(y)+'</option>').join('');
+    cmpFrom.innerHTML=options;cmpTo.innerHTML=options;
+    cmpFrom.value=String(years[years.length-2]);cmpTo.value=String(years[years.length-1]);
+    cmpBy.innerHTML=state.active==='customers'?'<option value="group">گروه مشتری</option><option value="item">مشتری</option>':'<option value="item">کالا</option>';
+  }
+  function renderCompare(){
+    if(!compareToggle)return;
+    const years=yearsOf(loadedRows());
+    compareToggle.disabled=years.length<2;
+    if(years.length<2||compareToggle.getAttribute('aria-pressed')!=='true'){comparePanel.hidden=true;return;}
+    comparePanel.hidden=false;fillCompareControls(years);
+    const a=Number(cmpFrom.value),b=Number(cmpTo.value),mode=cmpBy.value;
+    document.getElementById('cmpHeadA').textContent=fmtYear(a);document.getElementById('cmpHeadB').textContent=fmtYear(b);
+    const kpis=document.getElementById('cmpKpis'),body=document.getElementById('cmpBody');kpis.replaceChildren();body.replaceChildren();
+    if(a===b){body.innerHTML='<tr><td class="empty-row" colspan="5">دو سال متفاوت انتخاب کنید.</td></tr>';return;}
+    const filters={...state.filters,fromYear:'',toYear:'',search:[state.filters.search,state.search].filter(Boolean).join(' ')};
+    const map=new Map();
+    for(const row of data.filterRows(loadedRows(),filters)){
+      const year=Number(row.year);if(year!==a&&year!==b)continue;
+      const value=amountRaw(row);if(value===null||!Number.isFinite(value))continue;
+      const key=compareKey(row,mode),entry=map.get(key)||{label:key,a:0,b:0,hasA:false,hasB:false};
+      if(year===a){entry.a+=value;entry.hasA=true;}else{entry.b+=value;entry.hasB=true;}
+      map.set(key,entry);
+    }
+    const list=[...map.values()].map(e=>({...e,delta:e.b-e.a,pct:e.hasA&&e.a>0?(e.b-e.a)/e.a*100:null,kind:!e.hasA?'new':!e.hasB?'lost':e.b>e.a?'up':e.b<e.a?'down':'same'}));
+    const sum=(k)=>list.reduce((s,e)=>s+e[k],0),totalA=sum('a'),totalB=sum('b'),count=k=>list.filter(e=>e.kind===k).length;
+    const pct=totalA>0?(totalB-totalA)/totalA*100:null,kind=totalB>totalA?'up':totalB<totalA?'down':'same';
+    const card=(label,value,extra)=>'<article class="kpi"><span>'+escHtml(label)+'</span><strong>'+value+'</strong>'+(extra||'')+'</article>';
+    kpis.innerHTML=
+      card(fmtYear(a),escHtml(compactAmount(totalA)))+card(fmtYear(b),escHtml(compactAmount(totalB)))+
+      card('تغییر','<span class="delta '+kind+'">'+ICON[kind]+escHtml(compactAmount(Math.abs(totalB-totalA)))+'</span>',pct===null?'':'<em>'+escHtml(fmtDecimal(pct))+'٪</em>')+
+      card('موارد','<span>'+['up','down','new','lost'].map(k=>'<span class="compare-count delta '+k+'" title="'+KIND_TEXT[k]+'">'+ICON[k]+fmtInt(count(k))+'</span>').join('')+'</span>');
+    const rows=list.sort((x,y)=>Math.abs(y.delta)-Math.abs(x.delta)).slice(0,60);
+    if(!rows.length){body.innerHTML='<tr><td class="empty-row" colspan="5">برای این دو سال داده‌ای نیست.</td></tr>';return;}
+    for(const e of rows){
+      const tr=document.createElement('tr');
+      tr.innerHTML='<td>'+escHtml(e.label)+'</td><td class="number">'+(e.hasA?escHtml(fmtInt(e.a)):'—')+'</td><td class="number">'+(e.hasB?escHtml(fmtInt(e.b)):'—')+'</td>'+
+        '<td class="number"><span class="delta '+e.kind+'" title="'+KIND_TEXT[e.kind]+'">'+ICON[e.kind]+escHtml(fmtInt(Math.abs(e.delta)))+'</span></td>'+
+        '<td class="number">'+(e.pct===null?'—':escHtml(fmtDecimal(e.pct))+'٪')+'</td>';
+      body.appendChild(tr);
+    }
+  }
+  if(compareToggle){
+    compareToggle.addEventListener('click',()=>{compareToggle.setAttribute('aria-pressed',String(compareToggle.getAttribute('aria-pressed')!=='true'));renderCompare();});
+    for(const control of [cmpFrom,cmpTo,cmpBy])control.addEventListener('change',renderCompare);
+  }  forgetButton.addEventListener('click',async()=>{await store.clear();state.rows={customers:[],products:[],transactions:[]};state.filters={};refreshStatusLines();refreshDatasetButtons();document.getElementById('transactionImportStatus').textContent='فایلی بارگذاری نشده است.';renderAll();statusText('داده‌های ذخیره‌شده از این دستگاه حذف شد.');});
   parseContext();renderAll();loadStoredReports();
 })();

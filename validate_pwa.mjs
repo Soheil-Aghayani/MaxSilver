@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'));
-const html = fs.readFileSync(path.join(root, 'ceo-dashboard.html'), 'utf8') + '\n' + fs.readFileSync(path.join(root, 'assets', 'ceo-dashboard.css'), 'utf8') + '\n' + fs.readFileSync(path.join(root, 'assets', 'ceo-dashboard.js'), 'utf8');
+const html = fs.readFileSync(path.join(root, 'ceo-dashboard.html'), 'utf8') + '\n' + fs.readFileSync(path.join(root, 'assets', 'ceo-dashboard.2.css'), 'utf8') + '\n' + fs.readFileSync(path.join(root, 'assets', 'ceo-dashboard.js'), 'utf8');
 const register = fs.readFileSync(path.join(root, 'assets', 'sw-register.js'), 'utf8');
 const worker = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
 const installScript = fs.readFileSync(path.join(root, 'assets', 'pwa.js'), 'utf8');
