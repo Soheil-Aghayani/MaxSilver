@@ -29,7 +29,7 @@
 .bt:focus-visible{outline:3px solid #90adff;outline-offset:2px}
 @media(max-width:720px){.brand-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.bt{min-height:60px;padding:10px 11px 14px;gap:4px 8px}.bt-ico{width:32px;height:32px;border-radius:10px}.bt-n{font-size:17px}.bt-name{font-size:12.5px;white-space:normal;overflow:visible;text-overflow:clip}}
 .cat-select{position:relative;display:inline-flex;align-items:center}
-.cat-select svg{position:absolute;right:11px;width:18px;height:18px;color:var(--ms-blue);pointer-events:none}
+.cat-select>svg{position:absolute;right:11px;width:18px;height:18px;color:var(--ms-blue);pointer-events:none}
 .cat-select select{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .cs-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;min-width:150px;max-width:230px;padding:6px 38px 6px 12px;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);font:inherit;font-size:13px;font-weight:650;cursor:pointer;text-align:start}
 .cs-btn:hover,.cs-btn[aria-expanded=true]{border-color:#90adff}

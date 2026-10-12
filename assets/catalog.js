@@ -227,7 +227,7 @@
   $('cmpOpen').addEventListener('click', compareView);
   $('cmpClear').addEventListener('click', function () { compare.slice().forEach(toggleCompare); });
 
-  fetch('./assets/catalog.json?v=20261023', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261024', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     ['catGroup', 'catSector', 'catSort'].forEach(function (id) { enhance($(id)); });
     apply();
