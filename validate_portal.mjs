@@ -14,6 +14,7 @@ const analysisJs=fs.readFileSync(path.join(root,'assets','sales-analysis.js'),'u
 const shellJs=fs.readFileSync(path.join(root,'assets','site-shell.js'),'utf8');
 const portal=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const ceo=fs.readFileSync(path.join(root,'ceo-dashboard.html'),'utf8');
+const roadmap=fs.readFileSync(path.join(root,'sales-process-v1.html'),'utf8');
 
 const customer=importer.parseMatrix([
   ['كد','عنوان','گروه مشتري','فروش'],
@@ -95,8 +96,13 @@ assert.equal(new Set(provinces).size,31,'Every province must belong to exactly o
 assert.equal(Object.keys(regionMembers).length,6);
 
 for(const required of ['customerFiles','productFiles','transactionFiles','exportCsv','exportXlsx','filterGrid','provinceChart','matrixBrandProvince','matrixModelCustomer','dateFrom','dateTo','transaction-template.csv'])assert.ok((html+analysisJs).includes(required),'Analysis page missing '+required);
-for(const required of ['ceo-dashboard.html','sales-analysis.html','گزارش‌های خام برای همه قابل‌دسترسی‌اند'])assert.ok(portal.includes(required),'Portal page missing '+required);
+for(const required of ['ceo-dashboard.html','sales-analysis.html','sales-process-v1.html','نقشه راه فروش منطقه‌ای','گزارش‌های خام برای همه قابل‌دسترسی‌اند'])assert.ok(portal.includes(required),'Portal page missing '+required);
 assert.ok(ceo.includes('assets/site-shell.js'),'CEO dashboard does not have shared navigation');
+assert.ok(shellJs.includes("currentFile==='sales-process-v1.html'?'roadmap'"),'Sales roadmap route is not recognized by shared navigation');
+assert.ok(shellJs.includes("href:'./sales-process-v1.html',label:'نقشه راه فروش'"),'Shared navigation is missing the sales roadmap');
+assert.ok(roadmap.includes('rel="stylesheet" href="./assets/site-shell.css"')&&roadmap.includes('<script src="./assets/site-shell.js"></script>'),'Sales roadmap does not use the shared site shell');
+assert.ok(roadmap.includes('نقشه راه فروش منطقه‌ای')&&roadmap.includes('مسیر موازی: توسعه شبکه همکاران'),'Sales roadmap content is incomplete');
+assert.ok(roadmap.includes('@media (max-width: 760px)')&&roadmap.includes('grid-template-columns: minmax(0, 1fr)'),'Sales roadmap is missing its mobile layout');
 assert.ok(analysisJs.includes('publishedReports')&&analysisJs.includes('fetch(new URL(report.path,location.href))'),'Analysis page should load the six same-site public source reports');
 assert.ok(!/fetch\s*\(\s*['"`]https?:/i.test(analysisJs),'Raw workbook loading must not call an external host');
 assert.ok(shellJs.includes('./assets/branding/maxsilver-logo-source.png'),'Shared navigation must use the provided Max Silver logo asset');

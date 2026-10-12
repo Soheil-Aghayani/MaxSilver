@@ -1,11 +1,12 @@
 (function(){
   'use strict';
   const currentFile=(location.pathname.split('/').pop()||'index.html').toLowerCase();
-  const page=currentFile==='ceo-dashboard.html'?'ceo':currentFile==='sales-analysis.html'?'analysis':'home';
+  const page=currentFile==='ceo-dashboard.html'?'ceo':currentFile==='sales-analysis.html'?'analysis':currentFile==='sales-process-v1.html'?'roadmap':'home';
   const links=[
     {id:'home',href:'./index.html',label:'درگاه مدیریت',icon:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'},
     {id:'ceo',href:'./ceo-dashboard.html',label:'داشبورد CEO',icon:'<path d="M3 3v18h18M7 14l4-4 4 3 6-7"/><path d="M17 6h4v4"/>'},
-    {id:'analysis',href:'./sales-analysis.html',label:'تحلیل جزئیات فروش',icon:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 14v3m5-7v7m5-10v10"/>'}
+    {id:'analysis',href:'./sales-analysis.html',label:'تحلیل جزئیات فروش',icon:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 14v3m5-7v7m5-10v10"/>'},
+    {id:'roadmap',href:'./sales-process-v1.html',label:'نقشه راه فروش',icon:'<path d="M4 5h7v6H4zM13 13h7v6h-7zM13 5h7v4h-7zM4 15h7v4H4z"/><path d="M11 8h2m-6 3v4m6-6v4h2"/>'}
   ];
   const nav=document.createElement('header');nav.className='ms-sitebar';nav.setAttribute('role','banner');
   const navItems=links.map(item=>'<li><a href="'+item.href+'"'+(page===item.id?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+item.icon+'</svg><span>'+item.label+'</span></a></li>').join('');

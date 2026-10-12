@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#071b36" />
-  <meta name="description" content="درگاه مدیریتی مکث‌سیلور؛ دسترسی یکپارچه به داشبورد قلمرو و تحلیل فروش." />
+  <meta name="description" content="درگاه مدیریتی مکث‌سیلور؛ دسترسی به داشبورد قلمرو، تحلیل فروش و نقشه راه فرایند فروش." />
   <link rel="icon" type="image/svg+xml" href="./assets/maxsilver-dashboard-icon.svg" />
   <link rel="stylesheet" href="./assets/site-shell.css" />
   <title>درگاه مدیریتی | مکث‌سیلور</title>
@@ -18,17 +18,23 @@
     .hero-logo{display:block;width:100%;height:auto}
     @media(max-width:760px){.hero-mark{display:grid;justify-self:start;width:min(220px,80%);margin-top:17px;padding:13px}}
   </style>
+  <style>
+    .portal-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    @media(max-width:980px){.portal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:760px){.portal-grid{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
   <main class="portal">
     <section class="hero" aria-labelledby="portalTitle">
-      <div class="hero-copy"><p class="eyebrow">MAX SILVER · MANAGEMENT</p><h1 id="portalTitle">درگاه یکپارچهٔ مدیریت مکث‌سیلور</h1><p>دسترسی روشن و سریع به نمای جغرافیایی فروش و تحلیل جزئیات گزارش‌ها؛ با تفکیک دادهٔ واقعی از اطلاعاتی که هنوز در دسترس نیست.</p></div>
+      <div class="hero-copy"><p class="eyebrow">MAX SILVER · MANAGEMENT</p><h1 id="portalTitle">درگاه یکپارچهٔ مدیریت مکث‌سیلور</h1><p>دسترسی روشن به داشبورد CEO، تحلیل جزئیات گزارش‌ها و نقشه راه فروش؛ با تفکیک دادهٔ واقعی از اطلاعاتی که هنوز در دسترس نیست.</p></div>
       <div class="hero-mark"><img class="hero-logo" src="./assets/branding/maxsilver-logo-source.png" alt="لوگوی MAX SILVER" width="300" height="48" /></div>
     </section>
     <div class="section-head"><h2>بخش‌های مدیریتی</h2><p>هر بخش مستقل است، اما مسیرهای مرتبط درون صفحات به هم متصل‌اند.</p></div>
-    <section class="portal-grid" aria-label="داشبوردهای مدیریتی">
+    <section class="portal-grid" aria-label="بخش‌های مدیریتی">
       <article class="portal-card"><div class="card-top"><span class="card-icon gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l4-4 4 3 6-8"/><path d="M17 5h4v4"/></svg></span><span class="card-tag">داشبورد موجود</span></div><h3>داشبورد CEO · فروش و قلمرو</h3><p>نقشهٔ تعاملی ۳۱ استان، فروش استانی ثبت‌شده، شش منطقه، مقایسهٔ سال‌ها و راهنمای شاخص‌ها.</p><ul class="card-points"><li>نقشه و انتخاب استان</li><li>۱۴۰۳ تا ۱۴۰۵</li><li>اشتراک‌گذاری QR</li></ul><a class="card-link" href="./ceo-dashboard.html">ورود به داشبورد CEO <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a></article>
       <article class="portal-card"><div class="card-top"><span class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 15v2m5-7v7m5-11v11"/></svg></span><span class="card-tag">گزارش‌های خام ۱۴۰۳–۱۴۰۵</span></div><h3>تحلیل جزئیات فروش</h3><p>شش گزارش خام مشتری و کالا به‌طور خودکار بارگیری می‌شوند. فروش سالانه، گروه مشتری و اطلاعات کالا را با فیلتر، جست‌وجو و خروجی بررسی کنید.</p><ul class="card-points"><li>مشتریان و کالاها</li><li>سه سال داده</li><li>خروجی Excel و CSV</li></ul><a class="card-link" href="./sales-analysis.html">باز کردن تحلیل فروش <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a></article>
+      <article class="portal-card"><div class="card-top"><span class="card-icon gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7v6H4zM13 13h7v6h-7zM13 5h7v4h-7zM4 15h7v4H4z"/><path d="M11 8h2m-6 3v4m6-6v4h2"/></svg></span><span class="card-tag">نقشهٔ فرایند</span></div><h3>نقشه راه فروش منطقه‌ای</h3><p>مسیر فروش از شناسایی بازار و ثبت درخواست تا تأیید سفارش، تحویل، خدمات و توسعهٔ رابطه با مشتری؛ به‌همراه مسیر توسعهٔ شبکهٔ همکاران.</p><ul class="card-points"><li>۱۲ مرحلهٔ فروش</li><li>مسیر همکاران</li><li>قابل‌چاپ</li></ul><a class="card-link" href="./sales-process-v1.html">باز کردن نقشه راه فروش <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a></article>
     </section>
     <aside class="data-note" aria-label="وضعیت دسترسی به گزارش‌های خام"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3.8 7v5.5c0 4.6 3.1 7.5 8.2 9.5 5.1-2 8.2-4.9 8.2-9.5V7z"/><path d="M12 8v5m0 3h.01"/></svg><div><strong>گزارش‌های خام برای همه قابل‌دسترسی‌اند</strong><p>شش فایل خام مشتری و کالا در این سایت عمومی‌اند و هر بازدیدکننده می‌تواند آن‌ها را مشاهده یا دانلود کند. تحلیل در مرورگر انجام می‌شود؛ گزارش مشتری و کالا دو مجموعهٔ جدا هستند و با هم Join نمی‌شوند.</p></div></aside>
     <div class="section-head"><h2>چه چیزهایی در دادهٔ فعلی هست؟</h2><p>فیلترهای ناموجود تا دریافت دادهٔ مناسب غیرفعال می‌مانند.</p></div>
