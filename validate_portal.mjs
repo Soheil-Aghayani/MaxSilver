@@ -15,6 +15,7 @@ const shellCss=fs.readFileSync(path.join(root,'assets','site-shell.2.css'),'utf8
 const portal=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const readme=fs.readFileSync(path.join(root,'README.md'),'utf8');
 const ceo=fs.readFileSync(path.join(root,'ceo-dashboard.html'),'utf8');
+const catalogHtml=fs.readFileSync(path.join(root,'product-catalog.html'),'utf8');
 const ceoJs=fs.readFileSync(path.join(root,'assets','ceo-dashboard.js'),'utf8');
 const roadmap=fs.readFileSync(path.join(root,'sales-process.html'),'utf8');
 
@@ -102,8 +103,8 @@ for(const required of ['customerFiles','productFiles','transactionFiles','export
 assert.ok(!html.includes('xlsx.full.min.js')&&analysisJs.includes('ensureXlsx'),'SheetJS must be loaded on demand, not with the page');
 assert.ok(analysisJs.includes('indexedDB')&&!analysisJs.includes('source-reports'),'Analysis page must use device storage, not published workbooks');
 assert.ok(!/fetch\s*\(\s*['"`]https?:/i.test(analysisJs),'Workbook loading must not call an external host');
-const pages={ 'index.html':portal, 'ceo-dashboard.html':ceo, 'sales-analysis.html':html, 'sales-process.html':roadmap };
-const nav=['./index.html','./ceo-dashboard.html','./sales-analysis.html','./sales-process.html'];
+const pages={ 'index.html':portal, 'ceo-dashboard.html':ceo, 'sales-analysis.html':html, 'product-catalog.html':catalogHtml, 'sales-process.html':roadmap };
+const nav=['./index.html','./ceo-dashboard.html','./sales-analysis.html','./product-catalog.html','./sales-process.html'];
 for(const [name,page] of Object.entries(pages)){
   assert.ok(page.includes('class="ms-sitebar"')&&page.includes('class="ms-site-footer"'),name+' must carry the shared header and footer in static HTML');
   for(const href of nav)assert.ok(page.includes('href="'+href+'"'),name+' is missing nav link '+href);
@@ -115,7 +116,7 @@ for(const [name,page] of Object.entries(pages)){
   assert.ok(page.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),name+' is missing the producer credit');
   assert.ok(!/<style[ >]/.test(page),name+' should not carry inline <style> blocks');
 }
-for(const required of ['ceo-dashboard.html','sales-analysis.html','sales-process.html'])assert.ok(portal.includes(required),'Portal page missing '+required);
+for(const required of ['ceo-dashboard.html','sales-analysis.html','product-catalog.html','sales-process.html'])assert.ok(portal.includes(required),'Portal page missing '+required);
 assert.equal((shellCss.match(/@font-face/g)||[]).length,1,'Exactly one Estedad @font-face is allowed');
 assert.ok(!/@font-face/.test(fs.readFileSync(path.join(root,'assets','ceo-dashboard.2.css'),'utf8')),'CEO css must not redeclare the font');
 assert.ok(shellCss.includes('.ms-site-footer{'),'Shared producer footer styles are missing');
@@ -127,8 +128,13 @@ assert.ok(fs.existsSync(path.join(root,'assets','branding','maxsilver-logo.svg')
 assert.ok(!html.includes('localStorage'),'Sales data must not be persisted in localStorage');
 assert.ok(readme.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),'README is missing the requested producer credit');
 for(const [,link] of readme.matchAll(/\]\(([^)]+)\)/g))if(!/^https?:|^#/.test(link))assert.ok(fs.existsSync(path.join(root,link)),'README has a broken local link: '+link);
+const catalog=JSON.parse(fs.readFileSync(path.join(root,'assets','catalog.json'),'utf8'));
+assert.ok(catalog.items.length>300,'Catalog data is incomplete');
+assert.ok(!/price|قیمت/i.test(JSON.stringify(Object.keys(catalog.items[0]))),'Catalog must not carry prices');
+assert.ok(catalog.items.every(i=>i.id&&i.name&&i.src),'Every catalog item needs id, name and source');
+assert.equal(new Set(catalog.items.map(i=>i.id)).size,catalog.items.length,'Catalog ids must be unique');
 const referenced=new Set();
-for(const file of ['index.html','ceo-dashboard.html','sales-analysis.html','sales-process.html','service-worker.js','assets/ceo-dashboard.js','assets/sales-analysis.2.js','assets/share.2.js','assets/sales-process.2.js','assets/site-shell.2.css','assets/home.2.css','assets/ceo-dashboard.2.css','assets/sales-analysis.2.css','assets/sales-process.2.css','manifest.webmanifest'])for(const [,ref] of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:\.\/)?((?:assets|data)\/[A-Za-z0-9_./-]+\.[a-z0-9]+)/g))referenced.add(ref);
+for(const file of ['index.html','ceo-dashboard.html','sales-analysis.html','product-catalog.html','assets/catalog.css','assets/catalog.js','sales-process.html','service-worker.js','assets/ceo-dashboard.js','assets/sales-analysis.2.js','assets/share.2.js','assets/sales-process.2.js','assets/site-shell.2.css','assets/home.2.css','assets/ceo-dashboard.2.css','assets/sales-analysis.2.css','assets/sales-process.2.css','manifest.webmanifest'])for(const [,ref] of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:\.\/)?((?:assets|data)\/[A-Za-z0-9_./-]+\.[a-z0-9]+)/g))referenced.add(ref);
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]);}
 const orphans=walk(path.join(root,'assets')).map(f=>path.relative(root,f).replaceAll('\\','/')).filter(f=>!referenced.has(f));
 assert.deepEqual(orphans,[],'Unreferenced files in assets/: '+orphans.join(', '));

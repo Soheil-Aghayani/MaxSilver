@@ -6,3 +6,4 @@ exclude:
   - validate_pwa.mjs
   - data/transaction-schema.json
   - data/local
+  - tools

@@ -22,7 +22,7 @@ assert.ok(html.includes('id="installAppButton"') && html.includes('id="installIn
 assert.ok(installScript.includes("addEventListener('beforeinstallprompt'"));
 assert.ok(register.includes("register(new URL('service-worker.js', base)"));
 assert.ok(worker.includes("request.mode === 'navigate'"));
-for (const page of ['index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'sales-process.html']) assert.ok(worker.includes("'" + page + "'"), 'Service worker does not pre-cache ' + page);
+for (const page of ['index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'product-catalog.html', 'sales-process.html']) assert.ok(worker.includes("'" + page + "'"), 'Service worker does not pre-cache ' + page);
 assert.ok(/VERSION = 'v\d+-/.test(worker), 'Service worker cache must be versioned');
 assert.ok(worker.includes("pathname.includes('/data/')"), 'User data must bypass the cache');
 assert.doesNotMatch(worker, /source-reports|\.xls/i, 'Raw source workbooks must never enter the offline cache');

@@ -2,10 +2,10 @@
 
 // Every release changes VERSION and the ?v= stamp on the pages. Assets that carry ?v= are matched exactly,
 // so a page can never be combined with CSS/JS from another release.
-const VERSION = 'v3-20261018';
+const VERSION = 'v3-20261019';
 const CACHE_NAME = 'maxsilver-portal-' + VERSION;
 const SCOPE = self.registration.scope;
-const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'sales-process.html'];
+const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'product-catalog.html', 'sales-process.html'];
 const STATIC_ASSETS = [
   'manifest.webmanifest',
   'assets/vendor/qrcode-generator-1.4.4.js',

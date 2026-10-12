@@ -12,6 +12,7 @@
 | درگاه مدیریت | [`index.html`](index.html) | ورودی و معرفی بخش‌ها |
 | داشبورد CEO | [`ceo-dashboard.html`](ceo-dashboard.html) | نقشهٔ تعاملی ۳۱ استان، شش منطقه، مقایسهٔ سال‌ها، اشتراک QR و نصب PWA |
 | تحلیل جزئیات فروش | [`sales-analysis.html`](sales-analysis.html) | فیلتر، نمودار، جدول و خروجی گزارش‌های مشتری و کالا |
+| کاتالوگ محصولات | [`product-catalog.html`](product-catalog.html) | ۳۴۳ ردیف از سه برند؛ جست‌وجو، فیلتر و مقایسهٔ چهار محصول (داده: `assets/catalog.json` ساخته‌شده با `tools/build_catalog.py`، بدون قیمت) |
 | نقشهٔ فروش | [`sales-process.html`](sales-process.html) | دوازده مرحلهٔ فروش با مسئول هر مرحله و نقاط کنترل |
 
 هر صفحه سربرگ و پانویس مشترک را مستقیماً در HTML دارد؛ ظاهر مشترک از `assets/site-shell.2.css` می‌آید و هر صفحه فقط یک فایل CSS و یک فایل JS اختصاصی دارد.
