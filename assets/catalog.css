@@ -9,10 +9,25 @@
 .cat-search svg{position:absolute;top:50%;right:13px;width:19px;height:19px;color:var(--ms-muted);transform:translateY(-50%);pointer-events:none}
 .cat-search input{width:100%;min-height:44px;padding:8px 42px 8px 12px;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);font-size:14px}
 .cat-search input:focus{outline:3px solid #90adff;outline-offset:1px;border-color:#90adff}
-.cat-seg{display:inline-flex;gap:3px;padding:3px;border-radius:13px;background:#edf1f7}
-.cat-seg button{min-height:40px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:#51627a;font-size:13px;font-weight:750;cursor:pointer;white-space:nowrap}
-.cat-seg button[aria-pressed=true]{background:var(--ms-navy);color:#fff}
-.cat-seg button small{margin-inline-start:6px;opacity:.7;font-size:11px}
+.brand-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.bt{--c:var(--ms-navy);position:relative;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 10px;min-height:68px;padding:12px 14px 16px;border:1px solid var(--ms-line);border-radius:16px;background:#fff;color:var(--ms-navy);text-align:start;cursor:pointer;overflow:hidden;box-shadow:var(--ms-shadow);transition:transform .15s,border-color .15s,box-shadow .15s,background .15s}
+.bt[data-brand=max-silver]{--c:#e0a800}.bt[data-brand=wintora]{--c:#2456d8}.bt[data-brand=torbo-max]{--c:#14804a}
+.bt:hover{transform:translateY(-2px);border-color:var(--c)}
+.bt-ico{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c)}
+.bt-ico svg{width:20px;height:20px}
+.bt-ico i{width:14px;height:14px;border-radius:50%;background:var(--c)}
+.bt-name{font-size:14px;font-weight:800;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start}
+.bt-n{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;line-height:1}
+.bt-bar{position:absolute;inset:auto 0 0 0;height:4px;background:#eef1f6}
+.bt-bar span{display:block;height:100%;background:var(--c);border-radius:0 4px 4px 0}
+.bt[aria-pressed=true]{background:var(--ms-navy);border-color:var(--ms-navy);color:#fff;box-shadow:0 14px 32px rgba(7,27,54,.25)}
+.bt[aria-pressed=true] .bt-n{color:var(--ms-gold)}
+.bt[aria-pressed=true] .bt-ico{background:rgba(255,255,255,.14);color:#fff}
+.bt[aria-pressed=true] .bt-ico i{background:var(--ms-gold)}
+.bt[aria-pressed=true] .bt-bar{background:rgba(255,255,255,.18)}
+.bt[aria-pressed=true] .bt-bar span{background:var(--ms-gold)}
+.bt:focus-visible{outline:3px solid #90adff;outline-offset:2px}
+@media(max-width:720px){.brand-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.bt{min-height:60px;padding:10px 11px 14px;gap:4px 8px}.bt-ico{width:32px;height:32px;border-radius:10px}.bt-n{font-size:17px}.bt-name{font-size:13px}}
 .cat-select{position:relative;display:inline-flex;align-items:center}
 .cat-select svg{position:absolute;right:11px;width:18px;height:18px;color:var(--ms-blue);pointer-events:none}
 .cat-select select{min-height:44px;max-width:210px;padding:6px 36px 6px 12px;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);font-size:13px}
@@ -82,6 +97,6 @@
 .cmp-table thead th{vertical-align:bottom;color:var(--ms-navy)}
 .cmp-table img{width:84px;height:64px;object-fit:contain;mix-blend-mode:multiply}
 .cmp-table .diff{background:#fff8dc}
-@media(max-width:720px){.cat-tools{top:70px}.cat-seg{order:3;width:100%;overflow:auto}.cat-select{flex:1 1 140px}.cat-select select{width:100%;max-width:none}.dlg-body{grid-template-columns:1fr}.dlg-img{aspect-ratio:16/10}.cat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pc-body{padding:10px}.pc-name{font-size:13px}}
+@media(max-width:720px){.cat-tools{top:70px}.cat-select{flex:1 1 140px}.cat-select select{width:100%;max-width:none}.dlg-body{grid-template-columns:1fr}.dlg-img{aspect-ratio:16/10}.cat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pc-body{padding:10px}.pc-name{font-size:13px}}
 @media(max-width:420px){.cat-grid{grid-template-columns:1fr}}
 @media print{.ms-sitebar,.ms-site-footer,.cat-tools,.cmp-tray,.cat-more{display:none!important}.pc{break-inside:avoid;box-shadow:none}}

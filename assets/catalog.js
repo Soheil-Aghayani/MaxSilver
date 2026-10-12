@@ -37,7 +37,15 @@
     var src = $('catSources'), counts = {};
     items.forEach(function (it) { counts[it.src] = (counts[it.src] || 0) + 1; });
     var order = [['', 'همه', items.length]].concat(data.sources.map(function (s) { return [s.key, s.label, counts[s.key] || 0]; }));
-    src.innerHTML = order.map(function (o) { return '<button type="button" data-src="' + o[0] + '" aria-pressed="' + (o[0] === state.src) + '">' + esc(o[1]) + '<small>' + faInt.format(o[2]) + '</small></button>'; }).join('');
+    var gridIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
+    src.innerHTML = order.map(function (o) {
+      var share = items.length ? Math.round(o[2] / items.length * 100) : 0;
+      return '<button type="button" class="bt" data-src="' + o[0] + '" data-brand="' + (o[0] || 'all') + '" aria-pressed="' + (o[0] === state.src) + '" aria-label="' + esc(o[1]) + ' ' + faInt.format(o[2]) + '">' +
+        '<span class="bt-ico">' + (o[0] ? '<i></i>' : gridIcon) + '</span>' +
+        '<span class="bt-name"' + (o[0] ? ' dir="ltr"' : '') + '>' + esc(o[1]) + '</span>' +
+        '<b class="bt-n">' + faInt.format(o[2]) + '</b>' +
+        '<span class="bt-bar"><span style="width:' + share + '%"></span></span></button>';
+    }).join('');
     $('catGroup').innerHTML = '<option value="">همه گروه‌ها</option>' + data.groups.map(function (g) { return '<option>' + esc(g) + '</option>'; }).join('');
     $('catSector').innerHTML = '<option value="">همه صنف‌ها</option>' + data.sectors.map(function (g) { return '<option>' + esc(g) + '</option>'; }).join('');
   }
