@@ -121,14 +121,14 @@ assert.ok(!/@font-face/.test(fs.readFileSync(path.join(root,'assets','ceo-dashbo
 assert.ok(shellCss.includes('.ms-site-footer{'),'Shared producer footer styles are missing');
 assert.ok(roadmap.includes('نقشهٔ فروش حضوری منطقه‌ای')&&roadmap.includes('نماینده')&&roadmap.includes('مرکز'),'Sales process page content is incomplete');
 assert.ok(!/class="pill|show-changes|id="chg"|legend-changes/.test(roadmap),'Review markers must not appear on the sales process page');
-assert.ok(portal.includes('class="hero-brand"')&&portal.includes('./assets/branding/maxsilver-logo-source.png'),'Portal hero must use the supplied Max Silver wordmark');
+assert.ok(portal.includes('class="hero-brand"')&&portal.includes('./assets/branding/maxsilver-logo.svg'),'Portal hero must use the supplied Max Silver wordmark');
 assert.ok(portal.includes('alt="لوگوی مکث‌سیلور"'),'Hero logo must be accessible');
-assert.ok(fs.existsSync(path.join(root,'assets','branding','maxsilver-logo-source.png')),'The logo asset is missing');
+assert.ok(fs.existsSync(path.join(root,'assets','branding','maxsilver-logo.svg')),'The logo asset is missing');
 assert.ok(!html.includes('localStorage'),'Sales data must not be persisted in localStorage');
 assert.ok(readme.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),'README is missing the requested producer credit');
 for(const [,link] of readme.matchAll(/\]\(([^)]+)\)/g))if(!/^https?:|^#/.test(link))assert.ok(fs.existsSync(path.join(root,link)),'README has a broken local link: '+link);
 const referenced=new Set();
-for(const file of ['index.html','ceo-dashboard.html','sales-analysis.html','sales-process.html','service-worker.js','assets/ceo-dashboard.js','assets/sales-analysis.2.js','assets/share.2.js','assets/sales-process.js','assets/site-shell.2.css','assets/home.2.css','assets/ceo-dashboard.2.css','assets/sales-analysis.2.css','assets/sales-process.2.css','manifest.webmanifest'])for(const [,ref] of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:\.\/)?((?:assets|data)\/[A-Za-z0-9_./-]+\.[a-z0-9]+)/g))referenced.add(ref);
+for(const file of ['index.html','ceo-dashboard.html','sales-analysis.html','sales-process.html','service-worker.js','assets/ceo-dashboard.js','assets/sales-analysis.2.js','assets/share.2.js','assets/sales-process.2.js','assets/site-shell.2.css','assets/home.2.css','assets/ceo-dashboard.2.css','assets/sales-analysis.2.css','assets/sales-process.2.css','manifest.webmanifest'])for(const [,ref] of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:\.\/)?((?:assets|data)\/[A-Za-z0-9_./-]+\.[a-z0-9]+)/g))referenced.add(ref);
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]);}
 const orphans=walk(path.join(root,'assets')).map(f=>path.relative(root,f).replaceAll('\\','/')).filter(f=>!referenced.has(f));
 assert.deepEqual(orphans,[],'Unreferenced files in assets/: '+orphans.join(', '));

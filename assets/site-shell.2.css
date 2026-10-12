@@ -10,7 +10,7 @@ button,input,select{font:inherit}
 .ms-sitebar{position:sticky;top:10px;z-index:1500;width:min(1380px,calc(100% - 24px));margin:10px auto 0;view-transition-name:ms-sitebar}
 .ms-sitebar-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:8px 14px;border:1px solid rgba(215,223,235,.95);border-radius:20px;background:rgba(255,255,255,.84);backdrop-filter:saturate(1.5) blur(18px);-webkit-backdrop-filter:saturate(1.5) blur(18px);box-shadow:0 12px 36px rgba(7,27,54,.09),inset 0 1px 0 #fff}
 .ms-brand{display:inline-flex;align-items:center;min-height:44px;color:var(--ms-navy);text-decoration:none}
-.ms-brand-logo{display:block;width:clamp(104px,11vw,138px);height:auto;object-fit:contain}
+.ms-brand-logo{display:block;width:clamp(116px,12vw,156px);height:auto;object-fit:contain}
 .ms-nav-links{display:flex;align-items:center;gap:4px;margin:0;padding:4px;list-style:none;border-radius:16px;background:#edf1f7}
 .ms-nav-links a,.ms-share-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;height:44px;padding:0 12px;border:0;border-radius:12px;color:#51627a;font-size:13px;font-weight:750;text-decoration:none;cursor:pointer;transition:background .18s,color .18s,box-shadow .18s,transform .12s}
 .ms-nav-links a svg,.ms-share-btn svg{width:20px;height:20px;flex:0 0 auto}
@@ -31,7 +31,7 @@ button,input,select{font:inherit}
 .ms-analysis-cta svg{width:17px;height:17px}
 .ms-site-footer{width:min(1440px,100%);margin:18px auto 0;padding:10px 18px 20px;color:var(--ms-muted);font-size:12px;text-align:center}
 .ms-site-footer p{margin:0}
-@media(max-width:560px){.ms-sitebar{top:6px;width:calc(100% - 16px);margin-top:6px}.ms-sitebar-inner{min-height:58px;padding:7px 8px;gap:6px;border-radius:18px}.ms-brand-logo{width:92px}.ms-nav-links{gap:2px;padding:3px}.ms-nav-links a,.ms-share-btn{min-width:42px;height:42px;padding:0 9px}.ms-nav-links a[aria-current=page] span{max-width:0;opacity:0}.ms-nav-links a:not([aria-current])::after,.ms-share-btn::after{display:none}}
+@media(max-width:560px){.ms-sitebar{top:6px;width:calc(100% - 16px);margin-top:6px}.ms-sitebar-inner{min-height:58px;padding:7px 8px;gap:6px;border-radius:18px}.ms-brand-logo{width:104px}.ms-nav-links{gap:2px;padding:3px}.ms-nav-links a,.ms-share-btn{min-width:42px;height:42px;padding:0 9px}.ms-nav-links a[aria-current=page] span{max-width:0;opacity:0}.ms-nav-links a:not([aria-current])::after,.ms-share-btn::after{display:none}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
 @media(prefers-reduced-motion:no-preference){::view-transition-old(root),::view-transition-new(root){animation-duration:.16s}}
 
