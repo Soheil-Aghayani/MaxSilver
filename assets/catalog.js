@@ -186,7 +186,7 @@
   $('cmpOpen').addEventListener('click', compareView);
   $('cmpClear').addEventListener('click', function () { compare.slice().forEach(toggleCompare); });
 
-  fetch('./assets/catalog.json?v=20261019', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261020', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build(); apply();
   }).catch(function () { $('catEmpty').hidden = false; });
 })();
