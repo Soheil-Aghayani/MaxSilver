@@ -13,6 +13,7 @@ const html=fs.readFileSync(path.join(root,'sales-analysis.html'),'utf8');
 const analysisJs=fs.readFileSync(path.join(root,'assets','sales-analysis.js'),'utf8');
 const shellJs=fs.readFileSync(path.join(root,'assets','site-shell.js'),'utf8');
 const portal=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const readme=fs.readFileSync(path.join(root,'README.md'),'utf8');
 const crownSprite=fs.readFileSync(path.join(root,'assets','branding','maxsilver-crown-animation-sprite.png'));
 const ceo=fs.readFileSync(path.join(root,'ceo-dashboard.html'),'utf8');
 const roadmap=fs.readFileSync(path.join(root,'sales-process-v1.html'),'utf8');
@@ -101,6 +102,8 @@ for(const required of ['ceo-dashboard.html','sales-analysis.html','sales-process
 assert.ok(ceo.includes('assets/site-shell.js'),'CEO dashboard does not have shared navigation');
 assert.ok(shellJs.includes("currentFile==='sales-process-v1.html'?'roadmap'"),'Sales roadmap route is not recognized by shared navigation');
 assert.ok(shellJs.includes("href:'./sales-process-v1.html',label:'نقشه راه فروش'"),'Shared navigation is missing the sales roadmap');
+assert.ok(shellJs.includes("footer.className='ms-site-footer'")&&shellJs.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),'Shared footer is missing the requested producer credit');
+assert.ok(fs.readFileSync(path.join(root,'assets','site-shell.css'),'utf8').includes('.ms-site-footer{'),'Shared producer footer styles are missing');
 assert.ok(roadmap.includes('rel="stylesheet" href="./assets/site-shell.css"')&&roadmap.includes('<script src="./assets/site-shell.js"></script>'),'Sales roadmap does not use the shared site shell');
 assert.ok(roadmap.includes('نقشه راه فروش منطقه‌ای')&&roadmap.includes('مسیر موازی: توسعه شبکه همکاران'),'Sales roadmap content is incomplete');
 assert.ok(roadmap.includes('@media (max-width: 760px)')&&roadmap.includes('grid-template-columns: minmax(0, 1fr)'),'Sales roadmap is missing its mobile layout');
@@ -115,5 +118,7 @@ assert.ok(!/fetch\s*\(\s*['"`]https?:/i.test(analysisJs),'Raw workbook loading m
 assert.ok(shellJs.includes('./assets/branding/maxsilver-logo-source.png'),'Shared navigation must use the provided Max Silver logo asset');
 assert.ok(fs.existsSync(path.join(root,'assets','branding','maxsilver-logo-source.png')),'The public source logo is missing');
 assert.ok(!html.includes('localStorage'),'Uploaded sales data must not be persisted by the page');
+assert.ok(readme.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),'README is missing the requested producer credit');
+for(const [,link] of readme.matchAll(/\]\(([^)]+)\)/g))if(!/^https?:|^#/.test(link))assert.ok(fs.existsSync(path.join(root,link)),'README has a broken local link: '+link);
 
 console.log(JSON.stringify({portal:'ok',publicSourceReports:publishedReports.length,sourceReconciliation:'ok',customerRows:customer.records.length,productRows:products.records.length,transactionRegion:transactions.records[0].region,provinces:provinces.length,regions:Object.keys(regionMembers).length},null,2));
