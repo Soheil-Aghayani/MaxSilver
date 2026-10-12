@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { Script, runInNewContext } from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
-const htmlPath = new URL('./index.html', import.meta.url);
+const htmlPath = new URL('./ceo-dashboard.html', import.meta.url);
 const html = fs.readFileSync(htmlPath, 'utf8');
 const rowsMatch = html.match(/const sourceRows = (\[.*?\]);/s);
 assert.ok(rowsMatch, 'sourceRows block not found');
@@ -28,14 +28,16 @@ const requiredTokens = [
   'year-button', 'map-label', 'map-name', 'no-activity', 'activityStatusFor',
   'getBBox', 'viewBox', 'preserveAspectRatio', 'Estedad', 'Segoe UI', 'selectProvinceFromMap',
   'بدون مقایسه', 'provinceTrend', 'provincePopup', 'mapViewport', 'zoomIn',
-  'topRankList', 'میلیارد تومان', 'let mapYear = 1405', 'overallTotal', 'regionAverageGrid',
+  'topRankList', 'میلیارد تومان', 'let mapYear = years.includes(requestedYear) ? requestedYear : 1405', 'overallTotal', 'regionAverageGrid',
   'میانگین فروش دورهٔ سه‌سالهٔ هر منطقه', 'منطقه‌بندی شش‌گانه',
   'map-active-banner', 'map-active-title', 'map-active-name', 'map-active-unit',
   'map-side-head', 'map-side-tools', 'select-trigger', 'select-popover', 'select-options',
   'MaxSilverEstedadFontBase64', 'embeddedFontStyle',
   'exportActiveLayer', 'handleActiveLayerExport', 'accordion-card',
   'mobile-dashboard-nav', 'dashboard-slides', 'mobileDashboardPanels', 'scroll-snap-type',
-  '--font-persian:', '--font-latin:', '--muted: #475467'
+  '--font-persian:', '--font-latin:', '--muted: #475467',
+  'shareDashboardButton', 'shareDashboardDialog', 'shareQrCanvas',
+  'dashboardShareUrl', 'qrcode-generator-1.4.4.js'
 ];
 const missing = requiredTokens.filter((token) => !html.includes(token));
 assert.deepEqual(missing, [], 'Missing dashboard tokens: ' + missing.join(', '));
@@ -74,6 +76,13 @@ assert.ok(resetButton, 'Map reset control is missing');
 assert.match(resetButton[0], /aria-label="بازنشانی نقشه"/);
 assert.match(resetButton[1], /^\s*<svg\b/, 'Map reset control should be icon-only');
 assert.doesNotMatch(resetButton[1], /بازنشانی/, 'Visible reset text should be removed');
+assert.match(html, /id="shareDashboardButton"[^>]*aria-haspopup="dialog"/, 'The share action should open an accessible dialog');
+assert.match(html, /id="shareDashboardDialog" class="share-dialog"/, 'The dashboard share dialog is missing');
+assert.ok(html.includes("url.protocol !== 'https:'"), 'QR generation must require HTTPS');
+assert.ok(html.includes("url.search = ''") && html.includes("url.hash = ''"), 'Share URLs must not carry query strings or fragments');
+assert.ok(html.includes("qrcode(0, 'M')") && html.includes("code.addData(url, 'Byte')"), 'The QR generator must encode the live dashboard URL');
+assert.ok(html.includes("context.fillStyle = '#051934'") && html.includes('--brand-accent'), 'The QR must use the company palette without adding a logo over its modules');
+assert.ok(html.includes('share-qr-frame') && html.includes('share-security-note'), 'The branded QR frame and access-control disclaimer are missing');
 assert.ok(html.includes("mapLegendEl.innerHTML = mapMetric === 'sales'"), 'Map legend should be rebuilt from the active layer');
 assert.ok(html.includes('yearColors[mapYear]') && html.includes('faYear(mapYear)'), 'Sales legend should match the selected year');
 assert.ok(html.includes("Object.keys(regionMeta).map((region)"), 'Region legend should derive from active region metadata');
@@ -202,6 +211,17 @@ assert.ok(fs.existsSync(fontPath), 'Missing bundled Estedad font');
 assert.equal(fs.readFileSync(fontPath).subarray(0, 4).toString('hex'), '00010000', 'Invalid TrueType font asset');
 const fontLicense = fs.readFileSync(path.join(fontDir, 'OFL.txt'), 'utf8');
 assert.ok(fontLicense.includes('SIL OPEN FONT LICENSE'), 'Estedad font license should be bundled locally');
+const vendorDir = path.join(path.dirname(fileURLToPath(htmlPath)), 'assets', 'vendor');
+const qrLibrary = fs.readFileSync(path.join(vendorDir, 'qrcode-generator-1.4.4.js'), 'utf8');
+const qrLicense = fs.readFileSync(path.join(vendorDir, 'LICENSE-qrcode-generator.txt'), 'utf8');
+assert.ok(qrLibrary.includes('Kazuhiko Arase') && qrLibrary.includes('Licensed under the MIT license'), 'QR library attribution is missing');
+assert.ok(qrLicense.includes('MIT License') && qrLicense.includes('Copyright (c) 2009 Kazuhiko Arase'), 'QR library license text is missing');
+const qrContext = {};
+runInNewContext(qrLibrary, qrContext);
+const qrSmokeTest = qrContext.qrcode(0, 'M');
+qrSmokeTest.addData('https://example.com/maxsilver/dashboard', 'Byte');
+qrSmokeTest.make();
+assert.ok(qrSmokeTest.getModuleCount() >= 21 && qrSmokeTest.isDark(0, 0), 'Bundled QR library failed to generate a QR matrix');
 const exportFontData = fs.readFileSync(path.join(fontDir, 'Estedad-export-font.js'), 'ascii');
 const exportFontMatch = exportFontData.match(/window\.MaxSilverEstedadFontBase64="([A-Za-z0-9+/=]+)";/);
 assert.ok(exportFontMatch, 'Base64 Estedad export font asset is missing or malformed');
@@ -261,6 +281,7 @@ console.log(JSON.stringify({
     accordions: html.includes('id="strategyCard"') && html.includes('نفوذ شبکه') && html.includes('accordion-card'),
     centerHatchingRemoved: !html.includes('region-center-hatch') && !html.includes('centerHatchPattern'),
     customEstedadMenus: html.includes('select-popover') && html.includes('font-family: var(--font-persian) !important'),
-    embeddedExportFont: html.includes('embeddedFontStyle') && Boolean(exportFontMatch)
+    embeddedExportFont: html.includes('embeddedFontStyle') && Boolean(exportFontMatch),
+    brandedQrSharing: html.includes('shareDashboardButton') && html.includes("context.fillStyle = '#051934'") && qrSmokeTest.getModuleCount() >= 21
   }
 }, null, 2));

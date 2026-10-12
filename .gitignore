@@ -1,0 +1,2 @@
+# Place private workbooks only in this explicit local-only folder, never in the release bundle.
+/data/local/

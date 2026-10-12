@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0",
+  "grain": "one row per sold product line on one sales document",
+  "required": ["year", "product_code", "net_sales", "amount_unit"],
+  "fields": [
+    {"name":"date","type":"string","description":"تاریخ ثبت/فروش با قالب YYYY-MM-DD یا مقدار قابل‌خواندن"},
+    {"name":"year","type":"integer","description":"سال شمسی؛ نمونه 1405"},
+    {"name":"order_id","type":"string","description":"شناسه سفارش یا فاکتور؛ در صورت مجازبودن ارائه شود"},
+    {"name":"province","type":"string","description":"استان محل فروش؛ فقط اگر در منبع ثبت شده باشد"},
+    {"name":"region","type":"string","description":"کد/نام منطقهٔ مصوب فروش"},
+    {"name":"customer_id","type":"string","description":"شناسهٔ پایدار مشتری؛ نام شخص حقیقی در فایل عمومی قرار نگیرد"},
+    {"name":"customer_type","type":"string","description":"نوع مشتری طبق طبقه‌بندی مصوب"},
+    {"name":"customer_group","type":"string","description":"گروه مشتری همان‌طور که در منبع ثبت شده است"},
+    {"name":"channel","type":"string","description":"کانال فروش ثبت‌شده"},
+    {"name":"brand","type":"string","description":"برند تأییدشده در منبع"},
+    {"name":"product_code","type":"string","description":"کد کالای پایدار؛ به‌صورت متن نگهداری شود"},
+    {"name":"product_name","type":"string","description":"عنوان کالا در منبع"},
+    {"name":"model","type":"string","description":"مدل تأییدشده؛ از عنوان کالا حدس زده نشود"},
+    {"name":"category","type":"string","description":"دسته‌بندی تأییدشده"},
+    {"name":"quantity","type":"number","description":"مقدار فروخته‌شده"},
+    {"name":"unit","type":"string","description":"واحد مقدار؛ مقادیر با واحدهای متفاوت بی‌قید جمع نشوند"},
+    {"name":"net_sales","type":"number","description":"مبلغ خالص ثبت‌شده"},
+    {"name":"amount_unit","type":"string","description":"ریال، تومان یا واحد پولی دقیق منبع؛ اجباری برای مقایسه"}
+  ],
+  "privacy": "Use pseudonymous customer identifiers for any published demo; never include names, contact details, credentials, or unapproved internal reports."
+}
