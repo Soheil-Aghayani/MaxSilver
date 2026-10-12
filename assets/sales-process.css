@@ -1,0 +1,74 @@
+:root{--LY:70px;--amber-bg:#fff6d9;--amber-line:#eadca9;--amber-ink:#584817}
+/* sales process map */
+  .portal { width: min(1280px,100%); margin: auto; padding: 30px 26px 52px; }
+
+  .hero { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 30px 38px; border-radius: 26px; background: linear-gradient(120deg,#071b36 0%,#0d2b56 72%,#123b72 100%); color: #fff; box-shadow: 0 24px 64px rgba(7,27,54,.17); }
+  .hero::after { content: ""; position: absolute; width: 360px; height: 360px; left: -85px; bottom: -235px; border: 1px solid rgba(255,204,42,.35); border-radius: 50%; box-shadow: 0 0 0 35px rgba(255,204,42,.06), 0 0 0 70px rgba(255,204,42,.035); }
+  .hero > * { position: relative; z-index: 1; }
+  .eyebrow { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; color: #ffdc71; font-size: 12px; font-weight: 700; }
+  .eyebrow::before { content: ""; width: 21px; height: 2px; background: var(--ms-gold); }
+  .hero h1 { margin: 0; font-size: clamp(24px,3vw,34px); line-height: 1.4; letter-spacing: -.02em; font-weight: 800; }
+  .hero p { margin: 8px 0 0; color: #d7e3f2; font-size: 13px; }
+  .hero .meta { text-align: left; color: #b9c9de; font-size:12px; white-space: nowrap; }
+  .hero .meta b { display: block; color: #fff; font-size: 13px; margin-bottom: 2px; letter-spacing: .04em; }
+
+  .prereq { display: flex; align-items: center; gap: 8px; margin: 14px 4px 0; color: var(--ms-muted); font-size: 12px; }
+  .prereq::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ms-gold); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; margin: 14px 4px 0; color: var(--ms-muted); font-size:12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--ms-navy); }
+  .legend i.g { background: var(--ms-gold); }
+  .legend i.q { border-radius: 4px; background: var(--amber-bg); border: 1px solid var(--amber-line); }
+  .legend i.n { border-radius: 4px; background: #f2f4f8; border: 1px solid var(--ms-line); }
+
+  /* ── مسیر ── */
+  .flow-card { margin-top: 14px; padding: 26px 30px 12px; border: 1px solid var(--ms-line); border-radius: 22px; background: #fff; box-shadow: var(--ms-shadow); }
+  .row { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); padding-bottom: 26px; min-height: 270px; }
+  .row.ltr { direction: ltr; }
+  .row.last { min-height: 0; padding-bottom: 14px; }
+  .row::before { content: ""; position: absolute; top: calc(var(--LY) - 3px); height: 6px; border-radius: 3px; background: var(--ms-navy); left: 8px; right: 8px; }
+  .row.r1::before { right: 22px; }
+  .row.r3::before { left: 22px; }
+  .turn { position: absolute; width: 70px; top: calc(var(--LY) - 3px); bottom: calc(-1 * (var(--LY) - 3px)); border: 0 solid var(--ms-navy); border-top-width: 6px; border-bottom-width: 6px; }
+  .r1 .turn { left: 8px; border-left-width: 6px; border-radius: 70px 0 0 70px; }
+  .r2 .turn { right: 8px; border-right-width: 6px; border-radius: 0 70px 70px 0; }
+
+  .step { position: relative; direction: rtl; text-align: center; padding: 0 14px; }
+  .step h3 { margin: 0; height: 34px; line-height: 34px; font-size: 15px; font-weight: 800; color: var(--ms-navy); }
+  .node { position: relative; z-index: 1; width: 46px; height: 46px; margin: 7px auto 0; border-radius: 50%; display: grid; place-items: center; background: var(--ms-navy); color: #fff; font-size: 19px; font-weight: 800; box-shadow: 0 0 0 5px #fff; }
+  .node.g { background: var(--ms-gold); color: var(--ms-navy); }
+  /* پیکان جهت حرکت روی خط */
+  .step:not(:last-child)::after { content: ""; position: absolute; top: calc(var(--LY) - 6px); width: 0; height: 0; border: 6px solid transparent; z-index: 1; }
+  .r1 .step:not(:last-child)::after, .r3 .step:not(:last-child)::after { left: -4px; border-right: 9px solid var(--ms-navy); border-left: 0; }
+  .r2 .step:not(:last-child)::after { right: -4px; border-left: 9px solid var(--ms-navy); border-right: 0; }
+
+  .role { margin-top: 12px; color: var(--ms-muted); font-size:12px; font-weight: 600; }
+  .desc { margin-top: 5px; min-height: 62px; font-size: 12.5px; line-height: 1.85; }
+  .desc span { display: block; }
+  .box { margin-top: 10px; padding: 9px 11px; border-radius: 13px; border: 1px solid var(--ms-line); background: #f2f4f8; color: #4a5a72; font-size:12px; line-height: 1.85; }
+  .box.q { background: var(--amber-bg); border-color: var(--amber-line); color: var(--amber-ink); }
+  .box span { display: block; }
+
+  /* ── پایین صفحه ── */
+  .strip { display: flex; align-items: flex-start; gap: 12px; margin-top: 14px; padding: 14px 18px; border: 1px solid #cad9fb; border-radius: 15px; background: #f5f8ff; color: #1746b5; font-size: 12.5px; font-weight: 700; }
+  .strip svg { flex: 0 0 20px; width: 20px; height: 20px; margin-top: 3px; }
+  .note { margin-top: 12px; padding: 14px 18px; border: 1px solid var(--amber-line); border-radius: 15px; background: #fffaf0; color: var(--amber-ink); font-size: 12px; }
+  .foot { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--ms-line); color: var(--ms-muted); font-size:12px; text-align: center; }
+
+  /* ── واکنش‌گرا: در موبایل فهرست عمودی ── */
+  @media (max-width: 980px) {
+    .portal { padding: 18px 13px 36px; }
+    .hero { flex-direction: column; align-items: flex-start; padding: 24px 22px; border-radius: 20px; }
+    .hero .meta { text-align: right; }
+    .flow-card { padding: 16px; }
+    .row, .row.ltr { grid-template-columns: 1fr; direction: rtl; min-height: 0; padding-bottom: 0; }
+    .row::before, .turn, .step::after { display: none !important; }
+    .step { text-align: right; padding: 16px 0; border-bottom: 1px solid var(--ms-line); display: grid; grid-template-columns: 46px 1fr; column-gap: 14px; }
+    .step h3 { grid-column: 2; height: auto; line-height: 1.5; text-align: right; }
+    .node { grid-column: 1; grid-row: 1 / span 2; margin: 0; box-shadow: none; }
+    .role, .desc, .box { grid-column: 2; }
+    .role { margin-top: 0; }
+    .desc { min-height: 0; }
+    .ms-nav-links a span { display: none; }
+  }

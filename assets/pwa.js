@@ -57,10 +57,4 @@
   });
 
   window.addEventListener('appinstalled', () => { installButton.hidden = true; });
-
-  if ('serviceWorker' in navigator) {
-    const appBase = new URL('./', location.href);
-    navigator.serviceWorker.register(new URL('service-worker.js', appBase), { scope: appBase.pathname })
-      .catch((error) => console.warn('Offline dashboard support could not be enabled.', error));
-  }
 })();

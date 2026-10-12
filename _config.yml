@@ -1,0 +1,8 @@
+# Files that stay in the repository but are not published on the site.
+exclude:
+  - README.md
+  - validate_dashboard.mjs
+  - validate_portal.mjs
+  - validate_pwa.mjs
+  - data/transaction-schema.json
+  - data/local

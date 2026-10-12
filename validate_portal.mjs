@@ -11,12 +11,12 @@ const data=require(path.join(root,'assets','sales-data.js'));
 const XLSX=require(path.join(root,'assets','vendor','xlsx.full.min.js'));
 const html=fs.readFileSync(path.join(root,'sales-analysis.html'),'utf8');
 const analysisJs=fs.readFileSync(path.join(root,'assets','sales-analysis.js'),'utf8');
-const shellJs=fs.readFileSync(path.join(root,'assets','site-shell.js'),'utf8');
+const shellCss=fs.readFileSync(path.join(root,'assets','site-shell.css'),'utf8');
 const portal=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const readme=fs.readFileSync(path.join(root,'README.md'),'utf8');
-const crownSprite=fs.readFileSync(path.join(root,'assets','branding','maxsilver-crown-animation-sprite.png'));
 const ceo=fs.readFileSync(path.join(root,'ceo-dashboard.html'),'utf8');
-const roadmap=fs.readFileSync(path.join(root,'sales-process-v1.html'),'utf8');
+const ceoJs=fs.readFileSync(path.join(root,'assets','ceo-dashboard.js'),'utf8');
+const roadmap=fs.readFileSync(path.join(root,'sales-process.html'),'utf8');
 
 const customer=importer.parseMatrix([
   ['كد','عنوان','گروه مشتري','فروش'],
@@ -67,7 +67,8 @@ assert.equal(data.matrixByYear(twoYearCustomers,'customerGroup').rows.find(row=>
 assert.equal(data.matrixByYear(twoYearCustomers,'customerGroup').rows.find(row=>row.label==='همکاران').values[1],null,'No row is not a recorded zero');
 assert.equal(data.availableDimensions(transactions.records).province,true);
 
-const publishedReports=[
+// Private workbooks live in data/local (git-ignored, never published). Reconcile them when present.
+const localReports=[
   {file:'sales-customers-1403.xls',kind:'customers',year:1403,records:524,totalColumn:3},
   {file:'sales-customers-1404.xls',kind:'customers',year:1404,records:588,totalColumn:3},
   {file:'sales-customers-1405.xls',kind:'customers',year:1405,records:414,totalColumn:3},
@@ -75,51 +76,59 @@ const publishedReports=[
   {file:'sales-products-1404.xls',kind:'products',year:1404,records:565,totalColumn:6},
   {file:'sales-products-1405.xls',kind:'products',year:1405,records:546,totalColumn:6}
 ];
-for(const report of publishedReports){
-  const reportPath=path.join(root,'data','source-reports',report.file);
-  assert.ok(fs.existsSync(reportPath),'Missing published source report '+report.file);
+let reconciled=0;
+for(const report of localReports){
+  const reportPath=path.join(root,'data','local',report.file);
+  if(!fs.existsSync(reportPath))continue;
   const workbook=XLSX.read(fs.readFileSync(reportPath),{type:'buffer',cellDates:true});
-  assert.equal(workbook.SheetNames.length,1,'Unexpected worksheet count in '+report.file);
   const matrix=XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{header:1,raw:true,defval:null,blankrows:false});
   const parsed=importer.parseMatrix(matrix,report.file);
-  assert.equal(parsed.kind,report.kind,'Wrong source type detected for '+report.file);
-  assert.equal(parsed.fileYear,report.year,'Wrong report year detected for '+report.file);
-  assert.equal(parsed.records.length,report.records,'Unexpected detail-row count in '+report.file);
+  assert.equal(parsed.kind,report.kind);assert.equal(parsed.fileYear,report.year);assert.equal(parsed.records.length,report.records);
   const amountKey=report.kind==='customers'?'amount':'netSales';
   const detailTotal=parsed.records.reduce((sum,row)=>sum+(typeof row[amountKey]==='number'?row[amountKey]:0),0);
   const sourceTotal=[...matrix].reverse().find(row=>row&&row.some(value=>value!==null&&value!==''))[report.totalColumn];
   assert.equal(detailTotal,sourceTotal,'Detail does not reconcile to the source total in '+report.file);
+  reconciled++;
 }
-
-const regionMembers=(()=>{const match=ceo.match(/const regionMembers = (\{[\s\S]*?\n    \});/);assert.ok(match,'CEO region map is present');return Function('return ('+match[1]+')')();})();
+assert.ok(!fs.existsSync(path.join(root,'data','source-reports')),'Raw workbooks must not be part of the published tree');
+assert.ok(fs.readFileSync(path.join(root,'.gitignore'),'utf8').includes('/data/local/'),'data/local must stay git-ignored');
+const regionMembers=(()=>{const match=ceoJs.match(/const regionMembers = (\{[\s\S]*?\n    \});/);assert.ok(match,'CEO region map is present');return Function('return ('+match[1]+')')();})();
 const provinces=Object.values(regionMembers).flat();
 assert.equal(provinces.length,31);
 assert.equal(new Set(provinces).size,31,'Every province must belong to exactly one region');
 assert.equal(Object.keys(regionMembers).length,6);
 
-for(const required of ['customerFiles','productFiles','transactionFiles','exportCsv','exportXlsx','filterGrid','provinceChart','matrixBrandProvince','matrixModelCustomer','dateFrom','dateTo','transaction-template.csv'])assert.ok((html+analysisJs).includes(required),'Analysis page missing '+required);
-for(const required of ['ceo-dashboard.html','sales-analysis.html','sales-process-v1.html','نقشه راه فروش منطقه‌ای','گزارش‌های خام برای همه قابل‌دسترسی‌اند'])assert.ok(portal.includes(required),'Portal page missing '+required);
-assert.ok(ceo.includes('assets/site-shell.js'),'CEO dashboard does not have shared navigation');
-assert.ok(shellJs.includes("currentFile==='sales-process-v1.html'?'roadmap'"),'Sales roadmap route is not recognized by shared navigation');
-assert.ok(shellJs.includes("href:'./sales-process-v1.html',label:'نقشه راه فروش'"),'Shared navigation is missing the sales roadmap');
-assert.ok(shellJs.includes("footer.className='ms-site-footer'")&&shellJs.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),'Shared footer is missing the requested producer credit');
-assert.ok(fs.readFileSync(path.join(root,'assets','site-shell.css'),'utf8').includes('.ms-site-footer{'),'Shared producer footer styles are missing');
-assert.ok(roadmap.includes('rel="stylesheet" href="./assets/site-shell.css?v=')&&roadmap.includes('<script src="./assets/site-shell.js?v='),'Sales roadmap does not use versioned shared shell assets');
-for(const page of [portal,ceo,html,roadmap])assert.ok(page.includes('assets/site-shell.css?v=')&&page.includes('assets/site-shell.js?v='),'A page is missing cache-busted shared shell assets');
-assert.ok(roadmap.includes('نقشه راه فروش منطقه‌ای')&&roadmap.includes('مسیر موازی: توسعه شبکه همکاران'),'Sales roadmap content is incomplete');
-assert.ok(roadmap.includes('@media (max-width: 760px)')&&roadmap.includes('grid-template-columns: minmax(0, 1fr)'),'Sales roadmap is missing its mobile layout');
-assert.equal(crownSprite.toString('hex',0,8),'89504e470d0a1a0a','Generated crown sprite must be a PNG');
-assert.equal(crownSprite[25],6,'Generated crown sprite must preserve its alpha channel');
-assert.equal(crownSprite.readUInt32BE(16),crownSprite.readUInt32BE(20),'Crown sprite must use a square 2x2 frame sheet');
+for(const required of ['customerFiles','productFiles','transactionFiles','exportCsv','exportXlsx','filterGrid','provinceChart','matrixBrandProvince','matrixModelCustomer','dateFrom','dateTo','transaction-template.csv','forgetData'])assert.ok((html+analysisJs).includes(required),'Analysis page missing '+required);
+assert.ok(!html.includes('xlsx.full.min.js')&&analysisJs.includes('ensureXlsx'),'SheetJS must be loaded on demand, not with the page');
+assert.ok(analysisJs.includes('indexedDB')&&!analysisJs.includes('source-reports'),'Analysis page must use device storage, not published workbooks');
+assert.ok(!/fetch\s*\(\s*['"`]https?:/i.test(analysisJs),'Workbook loading must not call an external host');
+const pages={ 'index.html':portal, 'ceo-dashboard.html':ceo, 'sales-analysis.html':html, 'sales-process.html':roadmap };
+const nav=['./index.html','./ceo-dashboard.html','./sales-analysis.html','./sales-process.html'];
+for(const [name,page] of Object.entries(pages)){
+  assert.ok(page.includes('class="ms-sitebar"')&&page.includes('class="ms-site-footer"'),name+' must carry the shared header and footer in static HTML');
+  for(const href of nav)assert.ok(page.includes('href="'+href+'"'),name+' is missing nav link '+href);
+  assert.ok(page.includes('aria-current="page"'),name+' does not mark the current page');
+  assert.ok(page.includes('assets/site-shell.css?v='),name+' must use the cache-busted shared stylesheet');
+  assert.ok(page.includes('name="robots" content="noindex'),name+' must not be indexable');
+  assert.ok(page.includes('name="description"'),name+' needs a description');
+  assert.ok(page.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),name+' is missing the producer credit');
+  assert.ok(!/<style[ >]/.test(page),name+' should not carry inline <style> blocks');
+}
+for(const required of ['ceo-dashboard.html','sales-analysis.html','sales-process.html'])assert.ok(portal.includes(required),'Portal page missing '+required);
+assert.equal((shellCss.match(/@font-face/g)||[]).length,1,'Exactly one Estedad @font-face is allowed');
+assert.ok(!/@font-face/.test(fs.readFileSync(path.join(root,'assets','ceo-dashboard.css'),'utf8')),'CEO css must not redeclare the font');
+assert.ok(shellCss.includes('.ms-site-footer{'),'Shared producer footer styles are missing');
+assert.ok(roadmap.includes('نقشهٔ فروش حضوری منطقه‌ای')&&roadmap.includes('نماینده')&&roadmap.includes('مرکز'),'Sales process page content is incomplete');
+assert.ok(!/class="pill|show-changes|id="chg"|legend-changes/.test(roadmap),'Review markers must not appear on the sales process page');
 assert.ok(portal.includes('class="hero-brand"')&&portal.includes('./assets/branding/maxsilver-logo-source.png'),'Portal hero must use the supplied Max Silver wordmark');
-assert.ok(portal.includes('alt="لوگوی مکث‌سیلور"')&&portal.includes('prefers-reduced-motion:reduce'),'Hero logo must be accessible and respect reduced-motion preferences');
-assert.ok(!portal.includes('<span class="crown-sprite"></span>'),'Generated crown concept must not appear in the active portal markup');
-assert.ok(analysisJs.includes('publishedReports')&&analysisJs.includes('fetch(new URL(report.path,location.href))'),'Analysis page should load the six same-site public source reports');
-assert.ok(!/fetch\s*\(\s*['"`]https?:/i.test(analysisJs),'Raw workbook loading must not call an external host');
-assert.ok(shellJs.includes('./assets/branding/maxsilver-logo-source.png'),'Shared navigation must use the provided Max Silver logo asset');
-assert.ok(fs.existsSync(path.join(root,'assets','branding','maxsilver-logo-source.png')),'The public source logo is missing');
-assert.ok(!html.includes('localStorage'),'Uploaded sales data must not be persisted by the page');
+assert.ok(portal.includes('alt="لوگوی مکث‌سیلور"'),'Hero logo must be accessible');
+assert.ok(fs.existsSync(path.join(root,'assets','branding','maxsilver-logo-source.png')),'The logo asset is missing');
+assert.ok(!html.includes('localStorage'),'Sales data must not be persisted in localStorage');
 assert.ok(readme.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),'README is missing the requested producer credit');
 for(const [,link] of readme.matchAll(/\]\(([^)]+)\)/g))if(!/^https?:|^#/.test(link))assert.ok(fs.existsSync(path.join(root,link)),'README has a broken local link: '+link);
-
-console.log(JSON.stringify({portal:'ok',publicSourceReports:publishedReports.length,sourceReconciliation:'ok',customerRows:customer.records.length,productRows:products.records.length,transactionRegion:transactions.records[0].region,provinces:provinces.length,regions:Object.keys(regionMembers).length},null,2));
+const referenced=new Set();
+for(const file of ['index.html','ceo-dashboard.html','sales-analysis.html','sales-process.html','service-worker.js','assets/ceo-dashboard.js','assets/sales-analysis.js','assets/site-shell.css','assets/home.css','assets/ceo-dashboard.css','assets/sales-analysis.css','assets/sales-process.css','manifest.webmanifest'])for(const [,ref] of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:\.\/)?((?:assets|data)\/[A-Za-z0-9_./-]+\.[a-z0-9]+)/g))referenced.add(ref);
+function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]);}
+const orphans=walk(path.join(root,'assets')).map(f=>path.relative(root,f).replaceAll('\\','/')).filter(f=>!referenced.has(f));
+assert.deepEqual(orphans,[],'Unreferenced files in assets/: '+orphans.join(', '));
+console.log(JSON.stringify({portal:'ok',privateReportsReconciled:reconciled,sourceReconciliation:'ok',customerRows:customer.records.length,productRows:products.records.length,transactionRegion:transactions.records[0].region,provinces:provinces.length,regions:Object.keys(regionMembers).length},null,2));

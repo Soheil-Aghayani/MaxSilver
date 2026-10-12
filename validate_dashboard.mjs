@@ -5,7 +5,9 @@ import { Script, runInNewContext } from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const htmlPath = new URL('./ceo-dashboard.html', import.meta.url);
-const html = fs.readFileSync(htmlPath, 'utf8');
+// The page is split into html + css + js files; the checks below read them as one document.
+const readAsset = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
+const html = readAsset('./ceo-dashboard.html') + '\n<style>' + readAsset('./assets/ceo-dashboard.css') + '</style>\n<script>' + readAsset('./assets/ceo-dashboard.js') + '</script>';
 const rowsMatch = html.match(/const sourceRows = (\[.*?\]);/s);
 assert.ok(rowsMatch, 'sourceRows block not found');
 
@@ -214,11 +216,11 @@ const fontDir = path.join(path.dirname(fileURLToPath(htmlPath)), 'assets', 'font
 const fontPath = path.join(fontDir, 'Estedad-VF.ttf');
 assert.ok(fs.existsSync(fontPath), 'Missing bundled Estedad font');
 assert.equal(fs.readFileSync(fontPath).subarray(0, 4).toString('hex'), '00010000', 'Invalid TrueType font asset');
-const fontLicense = fs.readFileSync(path.join(fontDir, 'OFL.txt'), 'utf8');
+const fontLicense = fs.readFileSync(new URL('./LICENSES.md', import.meta.url), 'utf8');
 assert.ok(fontLicense.includes('SIL OPEN FONT LICENSE'), 'Estedad font license should be bundled locally');
 const vendorDir = path.join(path.dirname(fileURLToPath(htmlPath)), 'assets', 'vendor');
 const qrLibrary = fs.readFileSync(path.join(vendorDir, 'qrcode-generator-1.4.4.js'), 'utf8');
-const qrLicense = fs.readFileSync(path.join(vendorDir, 'LICENSE-qrcode-generator.txt'), 'utf8');
+const qrLicense = fs.readFileSync(new URL('./LICENSES.md', import.meta.url), 'utf8');
 assert.ok(qrLibrary.includes('Kazuhiko Arase') && qrLibrary.includes('Licensed under the MIT license'), 'QR library attribution is missing');
 assert.ok(qrLicense.includes('MIT License') && qrLicense.includes('Copyright (c) 2009 Kazuhiko Arase'), 'QR library license text is missing');
 const qrContext = {};
@@ -227,11 +229,8 @@ const qrSmokeTest = qrContext.qrcode(0, 'M');
 qrSmokeTest.addData('https://example.com/maxsilver/dashboard', 'Byte');
 qrSmokeTest.make();
 assert.ok(qrSmokeTest.getModuleCount() >= 21 && qrSmokeTest.isDark(0, 0), 'Bundled QR library failed to generate a QR matrix');
-const exportFontData = fs.readFileSync(path.join(fontDir, 'Estedad-export-font.js'), 'ascii');
-const exportFontMatch = exportFontData.match(/window\.MaxSilverEstedadFontBase64="([A-Za-z0-9+/=]+)";/);
-assert.ok(exportFontMatch, 'Base64 Estedad export font asset is missing or malformed');
-assert.equal(Buffer.from(exportFontMatch[1], 'base64').toString('hex').slice(0, 8), '00010000', 'Embedded export font must be a valid TrueType font');
-assert.equal(Buffer.from(exportFontMatch[1], 'base64').length, fs.statSync(fontPath).size, 'Embedded and bundled Estedad font files must match');
+assert.ok(!fs.existsSync(path.join(fontDir, 'Estedad-export-font.js')), 'The duplicate base64 export font must not be shipped; the export reads the cached TTF');
+assert.ok(html.includes('async function ensureExportFont()') && html.includes('await ensureExportFont();'), 'Map export must load the font on demand');
 const faYearMatch = html.match(/const faYear = \(year\) => ([^;]+);/);
 assert.ok(faYearMatch, 'Year formatter is missing');
 const faYear = runInNewContext('(year) => ' + faYearMatch[1]);
@@ -287,7 +286,7 @@ console.log(JSON.stringify({
     accordions: html.includes('id="strategyCard"') && html.includes('نفوذ شبکه') && html.includes('accordion-card'),
     centerHatchingRemoved: !html.includes('region-center-hatch') && !html.includes('centerHatchPattern'),
     customEstedadMenus: html.includes('select-popover') && html.includes('font-family: var(--font-persian) !important'),
-    embeddedExportFont: html.includes('embeddedFontStyle') && Boolean(exportFontMatch),
+    embeddedExportFont: html.includes('embeddedFontStyle') && html.includes('ensureExportFont'),
     brandedQrSharing: html.includes('shareDashboardButton') && html.includes("context.fillStyle = '#051934'") && qrSmokeTest.getModuleCount() >= 21
   }
 }, null, 2));

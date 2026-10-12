@@ -1,30 +1,28 @@
 @font-face{font-family:Estedad;src:url('./fonts/Estedad-VF.ttf') format('truetype');font-style:normal;font-weight:100 900;font-display:swap}
-:root{--ms-navy:#071b36;--ms-blue:#2456d8;--ms-blue-soft:#edf3ff;--ms-gold:#ffcc2a;--ms-ink:#17263d;--ms-muted:#66758b;--ms-line:#d7dfeb;--ms-paper:#f4f6f9;--ms-white:#fff;--ms-green:#14804a;--ms-red:#b42318;--ms-radius:18px;--ms-shadow:0 14px 42px rgba(7,27,54,.07);font-family:Estedad,Tahoma,sans-serif;color:var(--ms-ink)}
+:root{--ms-navy:#071b36;--ms-blue:#2456d8;--ms-blue-soft:#edf3ff;--ms-gold:#ffcc2a;--ms-ink:#17263d;--ms-muted:#5b6a80;--ms-line:#d7dfeb;--ms-paper:#f4f6f9;--ms-white:#fff;--ms-green:#14804a;--ms-red:#b42318;--ms-radius:18px;--ms-shadow:0 14px 42px rgba(7,27,54,.07);font-family:Estedad,Tahoma,sans-serif;color:var(--ms-ink)}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
+@view-transition{navigation:auto}
 body.ms-portal-body{margin:0;background:var(--ms-paper);color:var(--ms-ink);font:400 15px/1.7 Estedad,Tahoma,sans-serif}
 button,input,select{font:inherit}
-.ms-sitebar{position:sticky;top:0;z-index:1500;border-bottom:1px solid rgba(215,223,235,.88);background:rgba(255,255,255,.96);backdrop-filter:blur(16px)}
+.ms-sitebar{position:sticky;top:0;z-index:1500;view-transition-name:ms-sitebar;border-bottom:1px solid rgba(215,223,235,.88);background:rgba(255,255,255,.96);backdrop-filter:blur(16px)}
 .ms-sitebar-inner{width:min(1440px,100%);min-height:70px;margin:auto;padding:10px 26px;display:flex;align-items:center;justify-content:space-between;gap:24px}
 .ms-brand{display:inline-flex;align-items:center;gap:11px;min-width:0;color:var(--ms-navy);text-decoration:none;font-weight:850;white-space:nowrap}
-.ms-brand-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:var(--ms-navy);color:var(--ms-gold);box-shadow:inset 0 -3px rgba(255,255,255,.08)}
-.ms-brand-mark svg{width:23px;height:23px}
-.ms-brand-copy{display:grid;line-height:1.2}.ms-brand-copy strong{font-size:15px}.ms-brand-copy small{margin-top:4px;color:var(--ms-muted);font-size:10px;font-weight:600}
-.ms-nav-links{display:flex;align-items:center;gap:7px;margin:0;padding:0;list-style:none}
-.ms-nav-links a{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:8px 13px;border:1px solid transparent;border-radius:11px;color:#40516a;text-decoration:none;font-size:13px;font-weight:700;transition:background .15s,border-color .15s,color .15s}
-.ms-nav-links a:hover{background:#f5f7fb;color:var(--ms-navy)}.ms-nav-links a[aria-current=page]{border-color:#dae4fb;background:var(--ms-blue-soft);color:var(--ms-blue)}
-.ms-nav-links svg{width:17px;height:17px;flex:0 0 auto}
-.ms-page-context{display:none;width:min(1440px,100%);margin:auto;padding:8px 28px 0;color:var(--ms-muted);font-size:11px}
-.ms-analysis-cta{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 12px;padding:9px 12px;border:1px solid #cad9fb;border-radius:10px;background:#f5f8ff;color:#1746b5;text-decoration:none;font-size:12px;font-weight:750}
-.ms-analysis-cta:hover{background:#eaf1ff}.ms-analysis-cta svg{width:17px;height:17px}
-.ms-focus-visible:focus-visible,.ms-sitebar a:focus-visible,.ms-analysis-cta:focus-visible{outline:3px solid #90adff;outline-offset:2px}
-@media(max-width:720px){.ms-sitebar-inner{min-height:60px;padding:8px 13px;gap:8px}.ms-brand{gap:8px}.ms-brand-mark{width:36px;height:36px;border-radius:11px}.ms-brand-copy strong{font-size:13px}.ms-brand-copy small{font-size:9px}.ms-nav-links{gap:3px}.ms-nav-links a{min-height:36px;padding:7px 8px;font-size:11px}.ms-nav-links a span{display:none}.ms-nav-links svg{width:19px;height:19px}.ms-page-context{padding-inline:14px}}
-@media(max-width:390px){.ms-sitebar-inner{padding-inline:9px}.ms-brand-copy small{display:none}.ms-nav-links a{padding-inline:6px}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
 .ms-brand-logo{display:block;flex:0 0 auto;width:clamp(108px,12vw,148px);height:auto;object-fit:contain}
-.ms-brand-copy{align-self:center}
-.ms-brand-copy strong{font-size:12px!important;white-space:nowrap}
-@media(max-width:720px){.ms-brand-logo{width:112px}.ms-brand-copy strong{font-size:10px!important}}
-@media(max-width:390px){.ms-brand-copy{display:none}}
-.ms-site-footer{width:min(1440px,100%);margin:18px auto 0;padding:10px 18px 20px;color:var(--ms-muted);font-size:11px;text-align:center}
+.ms-brand-copy{display:grid;align-self:center;line-height:1.2}
+.ms-brand-copy strong{font-size:12px;white-space:nowrap}
+.ms-nav-links{display:flex;align-items:center;gap:7px;margin:0;padding:0;list-style:none}
+.ms-nav-links a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 13px;border:1px solid transparent;border-radius:11px;color:#40516a;text-decoration:none;font-size:13px;font-weight:700;transition:background .15s,border-color .15s,color .15s}
+.ms-nav-links a:hover{background:#f5f7fb;color:var(--ms-navy)}
+.ms-nav-links a[aria-current=page]{border-color:#dae4fb;background:var(--ms-blue-soft);color:var(--ms-blue)}
+.ms-nav-links svg{width:17px;height:17px;flex:0 0 auto}
+.ms-analysis-cta{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 12px;padding:9px 12px;border:1px solid #cad9fb;border-radius:10px;background:#f5f8ff;color:#1746b5;text-decoration:none;font-size:12px;font-weight:750}
+.ms-analysis-cta:hover{background:#eaf1ff}
+.ms-analysis-cta svg{width:17px;height:17px}
+.ms-sitebar a:focus-visible,.ms-analysis-cta:focus-visible{outline:3px solid #90adff;outline-offset:2px}
+.ms-site-footer{width:min(1440px,100%);margin:18px auto 0;padding:10px 18px 20px;color:var(--ms-muted);font-size:12px;text-align:center}
 .ms-site-footer p{margin:0}
+@media(max-width:720px){.ms-sitebar-inner{min-height:60px;padding:8px 13px;gap:8px}.ms-brand{gap:8px}.ms-brand-logo{width:112px}.ms-brand-copy strong{font-size:11px}.ms-nav-links{gap:3px}.ms-nav-links a{padding:7px 10px;font-size:11px}.ms-nav-links a span{display:none}.ms-nav-links svg{width:19px;height:19px}}
+@media(max-width:390px){.ms-sitebar-inner{padding-inline:9px}.ms-brand-copy{display:none}.ms-nav-links a{padding-inline:8px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+@media(prefers-reduced-motion:no-preference){::view-transition-old(root),::view-transition-new(root){animation-duration:.16s}}

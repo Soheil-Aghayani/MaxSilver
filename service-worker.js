@@ -1,31 +1,26 @@
 'use strict';
 
-const CACHE_NAME = 'maxsilver-ceo-shell-v1';
-const APP_SCOPE = self.registration.scope;
-const CEO_URL = new URL('ceo-dashboard.html', APP_SCOPE);
-const SHELL_PATHS = [
-  'ceo-dashboard.html',
+// Bump VERSION whenever a page or asset changes; old caches are removed on activate.
+const VERSION = 'v2-20261012';
+const CACHE_NAME = 'maxsilver-portal-' + VERSION;
+const SCOPE = self.registration.scope;
+const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'sales-process.html'];
+const ASSETS = [
   'manifest.webmanifest',
-  'assets/map-gestures.js',
-  'assets/pwa.js',
-  'assets/site-shell.css',
-  'assets/site-shell.js',
+  'assets/site-shell.css', 'assets/home.css', 'assets/ceo-dashboard.css', 'assets/sales-analysis.css', 'assets/sales-process.css',
+  'assets/ceo-dashboard.js', 'assets/map-gestures.js', 'assets/pwa.js', 'assets/sw-register.js',
+  'assets/sales-analysis.js', 'assets/sales-data.js', 'assets/workbook-import.js',
   'assets/vendor/qrcode-generator-1.4.4.js',
   'assets/fonts/Estedad-VF.ttf',
-  'assets/fonts/Estedad-export-font.js',
   'assets/maxsilver-dashboard-icon.svg',
-  'assets/branding/maxsilver-mark.png',
-  'assets/branding/maxsilver-logo-source.png',
-  'assets/branding/maxsilver-pwa-192.png',
-  'assets/branding/maxsilver-pwa-512.png'
+  'assets/branding/maxsilver-logo-source.png', 'assets/branding/maxsilver-pwa-192.png', 'assets/branding/maxsilver-pwa-512.png'
 ];
-const SHELL_URLS = SHELL_PATHS.map((path) => new URL(path, APP_SCOPE).href);
-const SHELL_URL_BY_PATH = new Map(SHELL_URLS.map((url) => [new URL(url).pathname, url]));
+const PRECACHE = PAGES.concat(ASSETS).map((p) => new URL(p, SCOPE).href);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(SHELL_URLS))
+      .then((cache) => Promise.all(PRECACHE.map((url) => cache.add(url).catch(() => null))))
       .then(() => self.skipWaiting())
   );
 });
@@ -33,7 +28,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((names) => Promise.all(names.filter((name) => name.startsWith('maxsilver-ceo-shell-') && name !== CACHE_NAME).map((name) => caches.delete(name))))
+      .then((names) => Promise.all(names.filter((n) => n.startsWith('maxsilver-') && n !== CACHE_NAME).map((n) => caches.delete(n))))
       .then(() => self.clients.claim())
   );
 });
@@ -41,29 +36,32 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
-  const requestUrl = new URL(request.url);
-  if (requestUrl.origin !== self.location.origin) return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || !url.href.startsWith(SCOPE)) return;
+  if (url.pathname.includes('/data/')) return; // user data never goes through the cache
 
-  const isDashboardNavigation = request.mode === 'navigate' && requestUrl.pathname === CEO_URL.pathname;
-  const shellAssetUrl = SHELL_URL_BY_PATH.get(requestUrl.pathname);
-  if (!isDashboardNavigation && !shellAssetUrl) return;
+  if (request.mode === 'navigate') {
+    // Pages: network first so a new release shows immediately, cache when offline.
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const response = await fetch(request);
+        if (response.ok) cache.put(request, response.clone());
+        return response;
+      } catch (error) {
+        return (await cache.match(request, { ignoreSearch: true })) ||
+               (await cache.match(new URL('index.html', SCOPE).href)) ||
+               new Response('برای استفادهٔ آفلاین، یک‌بار صفحه را آنلاین باز کنید.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+      }
+    })());
+    return;
+  }
 
+  // Static assets: stale-while-revalidate, ignoring the ?v= cache-buster.
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
-    try {
-      const response = await fetch(request);
-      if (response.ok) {
-        try { await cache.put(shellAssetUrl || CEO_URL.href, response.clone()); }
-        catch (error) { console.warn('The app shell could not update its offline copy.', error); }
-      }
-      return response;
-    } catch {
-      const cached = await cache.match(request, { ignoreSearch: true }) || await cache.match(shellAssetUrl || CEO_URL.href);
-      if (cached) return cached;
-      return new Response('برای بازکردن داشبورد، یک‌بار در حالت آنلاین آن را بارگذاری کنید.', {
-        status: 503,
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-      });
-    }
+    const cached = await cache.match(request, { ignoreSearch: true });
+    const refresh = fetch(request).then((response) => { if (response && response.ok) cache.put(request, response.clone()); return response; }).catch(() => cached);
+    return cached || refresh;
   })());
 });
