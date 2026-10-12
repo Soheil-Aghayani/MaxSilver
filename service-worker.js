@@ -1,7 +1,7 @@
 'use strict';
 
 // Bump VERSION whenever a page or asset changes; old caches are removed on activate.
-const VERSION = 'v2-20261013b';
+const VERSION = 'v2-20261014';
 const CACHE_NAME = 'maxsilver-portal-' + VERSION;
 const SCOPE = self.registration.scope;
 const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'sales-process.html'];
@@ -20,7 +20,7 @@ const PRECACHE = PAGES.concat(ASSETS).map((p) => new URL(p, SCOPE).href);
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => Promise.all(PRECACHE.map((url) => cache.add(url).catch(() => null))))
+      .then((cache) => Promise.all(PRECACHE.map((url) => cache.add(new Request(url, { cache: 'reload' })).catch(() => null))))
       .then(() => self.skipWaiting())
   );
 });
@@ -41,11 +41,11 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.includes('/data/')) return; // user data never goes through the cache
 
   if (request.mode === 'navigate') {
-    // Pages: network first so a new release shows immediately, cache when offline.
+    // Pages: always revalidate (GitHub Pages sends max-age=600, which would otherwise delay a release by 10 minutes); cache only when offline.
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       try {
-        const response = await fetch(request);
+        const response = await fetch(request, { cache: 'no-cache' });
         if (response.ok) cache.put(request, response.clone());
         return response;
       } catch (error) {
@@ -61,7 +61,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request, { ignoreSearch: true });
-    const refresh = fetch(request).then((response) => { if (response && response.ok) cache.put(request, response.clone()); return response; }).catch(() => cached);
+    const refresh = fetch(request, { cache: 'no-cache' }).then((response) => { if (response && response.ok) cache.put(request, response.clone()); return response; }).catch(() => cached);
     return cached || refresh;
   })());
 });

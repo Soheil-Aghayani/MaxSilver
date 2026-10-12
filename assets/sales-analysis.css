@@ -7,3 +7,4 @@
     
   
 .forget-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:11px;flex-wrap:wrap}.empty-start{display:grid;gap:6px;padding:22px 18px;border:1px dashed #bac7da;border-radius:13px;background:#fbfcfe;color:#40536e;font-size:13px;text-align:center}.empty-start strong{color:var(--ms-navy);font-size:14px}
+.upload-box input[type=file]{min-height:44px;cursor:pointer}.upload-box input[type=file]::file-selector-button{min-height:36px;margin-inline-end:10px;padding:6px 12px;border:1px solid var(--ms-line);border-radius:8px;background:#fff;color:var(--ms-navy);font:inherit;font-weight:700;cursor:pointer}.upload-box p a{display:inline-block;padding:11px 0;color:#1746b5}.data-table th button{min-height:36px;padding:8px 4px}

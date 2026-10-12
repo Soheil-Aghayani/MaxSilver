@@ -7,7 +7,7 @@ body.ms-portal-body{margin:0;background:var(--ms-paper);color:var(--ms-ink);font
 button,input,select{font:inherit}
 .ms-sitebar{position:sticky;top:0;z-index:1500;view-transition-name:ms-sitebar;border-bottom:1px solid rgba(215,223,235,.88);background:rgba(255,255,255,.96);backdrop-filter:blur(16px)}
 .ms-sitebar-inner{width:min(1440px,100%);min-height:70px;margin:auto;padding:10px 26px;display:flex;align-items:center;justify-content:space-between;gap:24px}
-.ms-brand{display:inline-flex;align-items:center;gap:11px;min-width:0;color:var(--ms-navy);text-decoration:none;font-weight:850;white-space:nowrap}
+.ms-brand{display:inline-flex;align-items:center;gap:11px;min-width:0;min-height:44px;color:var(--ms-navy);text-decoration:none;font-weight:850;white-space:nowrap}
 .ms-brand-logo{display:block;flex:0 0 auto;width:clamp(108px,12vw,148px);height:auto;object-fit:contain}
 .ms-brand-copy{display:grid;align-self:center;line-height:1.2}
 .ms-brand-copy strong{font-size:12px;white-space:nowrap}

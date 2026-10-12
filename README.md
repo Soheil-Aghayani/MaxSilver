@@ -2,8 +2,8 @@
 
 وب‌سایت استاتیک مدیریتی مکث‌سیلور: داشبورد CEO، تحلیل جزئیات فروش و نقشهٔ فروش منطقه‌ای.
 
-- **سایت:** [soheil-aghayani.github.io/maxsilver-executive-dashboard](https://soheil-aghayani.github.io/maxsilver-executive-dashboard/)
-- **مخزن:** [Soheil-Aghayani/maxsilver-executive-dashboard](https://github.com/Soheil-Aghayani/maxsilver-executive-dashboard)
+- **سایت:** [soheil-aghayani.github.io/MaxSilver](https://soheil-aghayani.github.io/MaxSilver/)
+- **مخزن:** [Soheil-Aghayani/MaxSilver](https://github.com/Soheil-Aghayani/MaxSilver)
 
 ## صفحه‌ها
 
