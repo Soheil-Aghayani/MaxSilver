@@ -111,9 +111,9 @@ assert.ok(roadmap.includes('@media (max-width: 760px)')&&roadmap.includes('grid-
 assert.equal(crownSprite.toString('hex',0,8),'89504e470d0a1a0a','Generated crown sprite must be a PNG');
 assert.equal(crownSprite[25],6,'Generated crown sprite must preserve its alpha channel');
 assert.equal(crownSprite.readUInt32BE(16),crownSprite.readUInt32BE(20),'Crown sprite must use a square 2x2 frame sheet');
-assert.ok(portal.includes('maxsilver-crown-animation-sprite.png')&&portal.includes('@keyframes crown-state'),'Portal hero is missing its animated generated crown states');
-assert.ok(portal.includes('prefers-reduced-motion:reduce')&&portal.includes('نشان تاج مفهومی مکث‌سیلور'),'Animated mark must identify itself as a concept and respect reduced-motion preferences');
-assert.ok(portal.includes('@media(max-width:760px){.hero{gap:12px}.hero-mark{display:grid;'),'Generated crown must remain visible on mobile');
+assert.ok(portal.includes('class="hero-brand"')&&portal.includes('./assets/branding/maxsilver-logo-source.png'),'Portal hero must use the supplied Max Silver wordmark');
+assert.ok(portal.includes('alt="لوگوی مکث‌سیلور"')&&portal.includes('prefers-reduced-motion:reduce'),'Hero logo must be accessible and respect reduced-motion preferences');
+assert.ok(!portal.includes('<span class="crown-sprite"></span>'),'Generated crown concept must not appear in the active portal markup');
 assert.ok(analysisJs.includes('publishedReports')&&analysisJs.includes('fetch(new URL(report.path,location.href))'),'Analysis page should load the six same-site public source reports');
 assert.ok(!/fetch\s*\(\s*['"`]https?:/i.test(analysisJs),'Raw workbook loading must not call an external host');
 assert.ok(shellJs.includes('./assets/branding/maxsilver-logo-source.png'),'Shared navigation must use the provided Max Silver logo asset');
