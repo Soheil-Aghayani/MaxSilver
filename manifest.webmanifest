@@ -1,0 +1,27 @@
+{
+  "id": "./ceo-dashboard.html",
+  "name": "Max Silver | داشبورد CEO",
+  "short_name": "Max Silver CEO",
+  "description": "داشبورد مدیریتی فروش و قلمرو مکث‌سیلور",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "./ceo-dashboard.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5F7F9",
+  "theme_color": "#051934",
+  "icons": [
+    {
+      "src": "./assets/branding/maxsilver-pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/branding/maxsilver-pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

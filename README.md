@@ -21,7 +21,12 @@ python -m http.server 8769
 ```powershell
 node validate_dashboard.mjs
 node validate_portal.mjs
+node validate_pwa.mjs
 ```
+
+## نصب روی گوشی مدیرعامل
+
+صفحهٔ CEO به‌صورت PWA با نام «Max Silver CEO» نصب می‌شود. در Android/Chrome دکمهٔ «نصب اپ» را بزنید؛ در iPhone/iPad صفحه را در Safari باز کنید و از Share گزینهٔ «Add to Home Screen» را انتخاب کنید. نسخهٔ نصب‌شده مستقیماً داشبورد CEO را باز می‌کند و پوسته، نقشه و فونت را برای استفادهٔ آفلاین نگه می‌دارد. گزارش‌های خام Excel عمداً در حافظهٔ آفلاین ذخیره نمی‌شوند.
 
 ## منبع و معنای داده
 

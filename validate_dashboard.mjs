@@ -104,7 +104,7 @@ assert.ok(html.includes("'منطقه ۴': { short: 'تهران، البرز و �
 assert.ok(html.includes("@font-face{font-family:'Estedad';src:url(data:font/ttf;base64,"), 'Exported map SVG must embed Estedad so PNG output keeps the page font');
 assert.ok(html.includes("select.setAttribute('aria-hidden', 'true')") && html.includes("trigger.setAttribute('role', 'combobox')"), 'Visible dropdowns should use the Estedad-styled accessible custom controls');
 assert.ok(
-  html.indexOf('<div class="map-active-banner"') < html.indexOf('<div id="mapViewport">'),
+  html.indexOf('<div class="map-active-banner"') < html.indexOf('<div id="mapViewport"'),
   'Active layer title must appear above the map viewport'
 );
 
