@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const htmlPath = new URL('./ceo-dashboard.html', import.meta.url);
 // The page is split into html + css + js files; the checks below read them as one document.
 const readAsset = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
+const shareJs = readAsset('./assets/share.js');
 const html = readAsset('./ceo-dashboard.html') + '\n<style>' + readAsset('./assets/ceo-dashboard.css') + '</style>\n<script>' + readAsset('./assets/ceo-dashboard.js') + '</script>';
 const rowsMatch = html.match(/const sourceRows = (\[.*?\]);/s);
 assert.ok(rowsMatch, 'sourceRows block not found');
@@ -38,8 +39,6 @@ const requiredTokens = [
   'exportActiveLayer', 'handleActiveLayerExport', 'accordion-card',
   'mobile-dashboard-nav', 'dashboard-slides', 'mobileDashboardPanels', 'scroll-snap-type',
   '--font-persian:', '--font-latin:', '--muted: #475467',
-  'shareDashboardButton', 'shareDashboardDialog', 'shareQrCanvas',
-  'dashboardShareUrl', 'qrcode-generator-1.4.4.js'
 ];
 const missing = requiredTokens.filter((token) => !html.includes(token));
 assert.deepEqual(missing, [], 'Missing dashboard tokens: ' + missing.join(', '));
@@ -83,13 +82,11 @@ assert.ok(resetButton, 'Map reset control is missing');
 assert.match(resetButton[0], /aria-label="بازنشانی نقشه"/);
 assert.match(resetButton[1], /^\s*<svg\b/, 'Map reset control should be icon-only');
 assert.doesNotMatch(resetButton[1], /بازنشانی/, 'Visible reset text should be removed');
-assert.match(html, /id="shareDashboardButton"[^>]*aria-haspopup="dialog"/, 'The share action should open an accessible dialog');
-assert.match(html, /id="shareDashboardDialog" class="share-dialog"/, 'The dashboard share dialog is missing');
-assert.ok(html.includes("url.protocol !== 'https:'"), 'QR generation must require HTTPS');
-assert.ok(html.includes("url.search = ''") && html.includes("url.hash = ''"), 'Share URLs must not carry query strings or fragments');
-assert.ok(html.includes("qrcode(0, 'M')") && html.includes("code.addData(url, 'Byte')"), 'The QR generator must encode the live dashboard URL');
-assert.ok(html.includes("context.fillStyle = '#051934'") && html.includes('--brand-accent'), 'The QR must use the company palette without adding a logo over its modules');
-assert.ok(html.includes('share-qr-frame') && html.includes('share-security-note'), 'The branded QR frame and access-control disclaimer are missing');
+assert.ok(html.includes('id="msShare"') && html.includes('aria-haspopup="dialog"'), 'The shared share button must open an accessible dialog');
+assert.ok(shareJs.includes("url.protocol !== 'https:'"), 'QR generation must require HTTPS');
+assert.ok(shareJs.includes("url.search = ''") && shareJs.includes("url.hash = ''"), 'Share URLs must not carry query strings or fragments');
+assert.ok(shareJs.includes("qrcode(0, 'M')") && shareJs.includes("code.addData(url, 'Byte')"), 'The QR generator must encode the live page URL');
+assert.ok(shareJs.includes("ctx.fillStyle = '#051934'") && shareJs.includes('ms-share-frame') && shareJs.includes('ms-share-note'), 'The branded QR frame and access-control note are missing');
 assert.ok(html.includes("mapLegendEl.innerHTML = mapMetric === 'sales'"), 'Map legend should be rebuilt from the active layer');
 assert.ok(html.includes('yearColors[mapYear]') && html.includes('faYear(mapYear)'), 'Sales legend should match the selected year');
 assert.ok(html.includes("Object.keys(regionMeta).map((region)"), 'Region legend should derive from active region metadata');
@@ -287,6 +284,6 @@ console.log(JSON.stringify({
     centerHatchingRemoved: !html.includes('region-center-hatch') && !html.includes('centerHatchPattern'),
     customEstedadMenus: html.includes('select-popover') && html.includes('font-family: var(--font-persian) !important'),
     embeddedExportFont: html.includes('embeddedFontStyle') && html.includes('ensureExportFont'),
-    brandedQrSharing: html.includes('shareDashboardButton') && html.includes("context.fillStyle = '#051934'") && qrSmokeTest.getModuleCount() >= 21
+    brandedQrSharing: shareJs.includes("url.protocol !== 'https:'") && shareJs.includes("ctx.fillStyle = '#051934'") && qrSmokeTest.getModuleCount() >= 21
   }
 }, null, 2));

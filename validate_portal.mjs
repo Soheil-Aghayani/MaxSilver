@@ -108,6 +108,7 @@ for(const [name,page] of Object.entries(pages)){
   assert.ok(page.includes('class="ms-sitebar"')&&page.includes('class="ms-site-footer"'),name+' must carry the shared header and footer in static HTML');
   for(const href of nav)assert.ok(page.includes('href="'+href+'"'),name+' is missing nav link '+href);
   assert.ok(page.includes('aria-current="page"'),name+' does not mark the current page');
+  assert.ok(page.includes('id="msShare"')&&page.includes('assets/share.js'),name+' must offer the shared QR share button');
   assert.ok(page.includes('assets/site-shell.css?v='),name+' must use the cache-busted shared stylesheet');
   assert.ok(page.includes('name="robots" content="noindex'),name+' must not be indexable');
   assert.ok(page.includes('name="description"'),name+' needs a description');
@@ -127,7 +128,7 @@ assert.ok(!html.includes('localStorage'),'Sales data must not be persisted in lo
 assert.ok(readme.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),'README is missing the requested producer credit');
 for(const [,link] of readme.matchAll(/\]\(([^)]+)\)/g))if(!/^https?:|^#/.test(link))assert.ok(fs.existsSync(path.join(root,link)),'README has a broken local link: '+link);
 const referenced=new Set();
-for(const file of ['index.html','ceo-dashboard.html','sales-analysis.html','sales-process.html','service-worker.js','assets/ceo-dashboard.js','assets/sales-analysis.js','assets/site-shell.css','assets/home.css','assets/ceo-dashboard.css','assets/sales-analysis.css','assets/sales-process.css','manifest.webmanifest'])for(const [,ref] of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:\.\/)?((?:assets|data)\/[A-Za-z0-9_./-]+\.[a-z0-9]+)/g))referenced.add(ref);
+for(const file of ['index.html','ceo-dashboard.html','sales-analysis.html','sales-process.html','service-worker.js','assets/ceo-dashboard.js','assets/sales-analysis.js','assets/share.js','assets/sales-process.js','assets/site-shell.css','assets/home.css','assets/ceo-dashboard.css','assets/sales-analysis.css','assets/sales-process.css','manifest.webmanifest'])for(const [,ref] of fs.readFileSync(path.join(root,file),'utf8').matchAll(/(?:\.\/)?((?:assets|data)\/[A-Za-z0-9_./-]+\.[a-z0-9]+)/g))referenced.add(ref);
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]);}
 const orphans=walk(path.join(root,'assets')).map(f=>path.relative(root,f).replaceAll('\\','/')).filter(f=>!referenced.has(f));
 assert.deepEqual(orphans,[],'Unreferenced files in assets/: '+orphans.join(', '));

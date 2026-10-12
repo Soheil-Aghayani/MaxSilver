@@ -1,13 +1,13 @@
 'use strict';
 
 // Bump VERSION whenever a page or asset changes; old caches are removed on activate.
-const VERSION = 'v2-20261012';
+const VERSION = 'v2-20261013b';
 const CACHE_NAME = 'maxsilver-portal-' + VERSION;
 const SCOPE = self.registration.scope;
 const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'sales-process.html'];
 const ASSETS = [
   'manifest.webmanifest',
-  'assets/site-shell.css', 'assets/home.css', 'assets/ceo-dashboard.css', 'assets/sales-analysis.css', 'assets/sales-process.css',
+  'assets/site-shell.css', 'assets/home.css', 'assets/ceo-dashboard.css', 'assets/sales-analysis.css', 'assets/sales-process.css', 'assets/sales-process.js', 'assets/share.js',
   'assets/ceo-dashboard.js', 'assets/map-gestures.js', 'assets/pwa.js', 'assets/sw-register.js',
   'assets/sales-analysis.js', 'assets/sales-data.js', 'assets/workbook-import.js',
   'assets/vendor/qrcode-generator-1.4.4.js',

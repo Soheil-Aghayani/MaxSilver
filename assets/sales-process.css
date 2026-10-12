@@ -23,25 +23,16 @@
   .legend i.n { border-radius: 4px; background: #f2f4f8; border: 1px solid var(--ms-line); }
 
   /* ── مسیر ── */
-  .flow-card { margin-top: 14px; padding: 26px 30px 12px; border: 1px solid var(--ms-line); border-radius: 22px; background: #fff; box-shadow: var(--ms-shadow); }
+  .flow-card { position: relative; margin-top: 14px; padding: 26px 30px 12px; border: 1px solid var(--ms-line); border-radius: 22px; background: #fff; box-shadow: var(--ms-shadow); }
   .row { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); padding-bottom: 26px; min-height: 270px; }
   .row.ltr { direction: ltr; }
   .row.last { min-height: 0; padding-bottom: 14px; }
-  .row::before { content: ""; position: absolute; top: calc(var(--LY) - 3px); height: 6px; border-radius: 3px; background: var(--ms-navy); left: 8px; right: 8px; }
-  .row.r1::before { right: 22px; }
-  .row.r3::before { left: 22px; }
-  .turn { position: absolute; width: 70px; top: calc(var(--LY) - 3px); bottom: calc(-1 * (var(--LY) - 3px)); border: 0 solid var(--ms-navy); border-top-width: 6px; border-bottom-width: 6px; }
-  .r1 .turn { left: 8px; border-left-width: 6px; border-radius: 70px 0 0 70px; }
-  .r2 .turn { right: 8px; border-right-width: 6px; border-radius: 0 70px 70px 0; }
 
+  .flow-line { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
   .step { position: relative; direction: rtl; text-align: center; padding: 0 14px; }
   .step h3 { margin: 0; height: 34px; line-height: 34px; font-size: 15px; font-weight: 800; color: var(--ms-navy); }
-  .node { position: relative; z-index: 1; width: 46px; height: 46px; margin: 7px auto 0; border-radius: 50%; display: grid; place-items: center; background: var(--ms-navy); color: #fff; font-size: 19px; font-weight: 800; box-shadow: 0 0 0 5px #fff; }
+  .node { position: relative; z-index: 1; width: 46px; height: 46px; margin: 7px auto 0; border-radius: 50%; display: grid; place-items: center; background: var(--ms-navy); color: #fff; font-size: 19px; font-weight: 800; }
   .node.g { background: var(--ms-gold); color: var(--ms-navy); }
-  /* پیکان جهت حرکت روی خط */
-  .step:not(:last-child)::after { content: ""; position: absolute; top: calc(var(--LY) - 6px); width: 0; height: 0; border: 6px solid transparent; z-index: 1; }
-  .r1 .step:not(:last-child)::after, .r3 .step:not(:last-child)::after { left: -4px; border-right: 9px solid var(--ms-navy); border-left: 0; }
-  .r2 .step:not(:last-child)::after { right: -4px; border-left: 9px solid var(--ms-navy); border-right: 0; }
 
   .role { margin-top: 12px; color: var(--ms-muted); font-size:12px; font-weight: 600; }
   .desc { margin-top: 5px; min-height: 62px; font-size: 12.5px; line-height: 1.85; }
@@ -63,7 +54,7 @@
     .hero .meta { text-align: right; }
     .flow-card { padding: 16px; }
     .row, .row.ltr { grid-template-columns: 1fr; direction: rtl; min-height: 0; padding-bottom: 0; }
-    .row::before, .turn, .step::after { display: none !important; }
+    .flow-line { display: none; }
     .step { text-align: right; padding: 16px 0; border-bottom: 1px solid var(--ms-line); display: grid; grid-template-columns: 46px 1fr; column-gap: 14px; }
     .step h3 { grid-column: 2; height: auto; line-height: 1.5; text-align: right; }
     .node { grid-column: 1; grid-row: 1 / span 2; margin: 0; box-shadow: none; }

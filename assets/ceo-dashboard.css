@@ -160,22 +160,6 @@
     .install-instructions { display: grid; gap: 8px; margin: 0; padding: 0 22px 0 0; color: var(--ink); font-size: 14px; line-height: 1.7; }
     .install-instructions li::marker { color: var(--blue); font-weight: 800; }
     .share-close { flex: 0 0 auto; min-height: 34px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--muted); font: 600 12px/1.4 var(--font-persian); cursor: pointer; }
-    .share-qr-frame { display: grid; justify-items: center; gap: 8px; width: max-content; max-width: 100%; margin: 0 auto; padding: 11px; border: 2px solid var(--brand-accent); border-radius: 15px; background: linear-gradient(145deg, #FFFDF3, #FFFFFF 44%); }
-    .share-brand-line { display: flex; align-items: center; gap: 7px; color: var(--navy); font-family: var(--font-latin); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
-    .share-brand-line > span:last-child { padding-inline-start: 7px; border-inline-start: 1px solid #D0D5DD; color: var(--muted); font-family: var(--font-persian); font-size: 11px; font-weight: 600; letter-spacing: 0; }
-    .share-brand-mark { width: 8px; height: 8px; border-radius: 2px; background: var(--brand-accent); box-shadow: 0 0 0 2px rgba(255,204,42,.24); }
-    .share-qr-canvas { display: block; width: min(68vw, 272px); max-width: 100%; height: auto; aspect-ratio: 1; border: 1px solid #EAECF0; border-radius: 7px; background: #fff; image-rendering: pixelated; }
-    .share-qr-canvas[hidden] { display: none; }
-    .share-status { min-height: 24px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; text-align: center; }
-    .share-status[data-state="error"] { color: var(--danger); }
-    .share-link-preview { display: block; max-height: 54px; overflow: auto; padding: 8px 10px; border: 1px solid #E4E7EC; border-radius: 9px; background: #F8FAFC; color: var(--navy); font: 11px/1.55 var(--font-latin); overflow-wrap: anywhere; text-align: left; }
-    .share-link-preview[hidden] { display: none; }
-    .share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .share-action { min-height: 40px; padding: 8px 10px; border: 1px solid var(--navy); border-radius: 9px; background: var(--navy); color: #fff; font: 700 13px/1.4 var(--font-persian); cursor: pointer; }
-    .share-action.secondary { border-color: var(--line); background: #fff; color: var(--navy); }
-    .share-action:hover:not(:disabled) { filter: brightness(.96); }
-    .share-action:disabled { border-color: #D0D5DD; background: #EAECF0; color: #667085; cursor: not-allowed; }
-    .share-security-note { margin: -3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; text-align: center; }
     .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     /* The detail card is informational only; clicks should pass through to the map. */
     .map-popup { position: absolute; z-index: 4; top: 14px; left: 14px; width: 250px; max-width: calc(100% - 28px); padding: 13px 14px; background: rgba(255,255,255,.97); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 30px rgba(31, 72, 93, .18); direction: rtl; pointer-events: none; }
@@ -336,7 +320,6 @@
       .share-trigger svg { width: 18px; height: 18px; }
       .share-dialog-inner { gap: 11px; padding: 15px; }
       .share-dialog-head h2 { font-size: 16px; }
-      .share-qr-canvas { width: min(72vw, 248px); }
 
       .executive-strip {
         order: 1; display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; overflow-y: hidden;
