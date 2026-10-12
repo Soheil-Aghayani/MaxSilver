@@ -59,7 +59,7 @@ for (const removedCopy of [
 ]) {
   assert.ok(!html.includes(removedCopy), 'Requested redundant UI remains: ' + removedCopy);
 }
-const totalMetricCard = html.match(/<div class="metric-card"><small>جمع فروش سه‌ساله کشور<\/small>[\s\S]*?<\/div>/);
+const totalMetricCard = html.match(/<div class="metric-card"><small>جمع فروش سه‌ساله<\/small>[\s\S]*?<\/div>/);
 assert.ok(totalMetricCard, 'National three-year sales metric is missing');
 assert.doesNotMatch(totalMetricCard[0], /مجموع سال‌های ۱۴۰۳ تا ۱۴۰۵/, 'Removed national total period label returned');
 assert.doesNotMatch(totalMetricCard[0], /<em>/, 'Removed national total subtitle returned');
@@ -85,8 +85,8 @@ assert.doesNotMatch(resetButton[1], /بازنشانی/, 'Visible reset text shou
 assert.ok(html.includes('id="msShare"') && html.includes('aria-haspopup="dialog"'), 'The shared share button must open an accessible dialog');
 assert.ok(shareJs.includes("url.protocol !== 'https:'"), 'QR generation must require HTTPS');
 assert.ok(shareJs.includes("url.search = ''") && shareJs.includes("url.hash = ''"), 'Share URLs must not carry query strings or fragments');
-assert.ok(shareJs.includes("qrcode(0, 'M')") && shareJs.includes("code.addData(url, 'Byte')"), 'The QR generator must encode the live page URL');
-assert.ok(shareJs.includes("ctx.fillStyle = '#051934'") && shareJs.includes('ms-share-frame') && shareJs.includes('ms-share-note'), 'The branded QR frame and access-control note are missing');
+assert.ok(shareJs.includes("qrcode(0, 'Q')") && shareJs.includes("code.addData(url, 'Byte')"), 'The QR generator must encode the live page URL');
+assert.ok(shareJs.includes("fill=\"#051934\"") && shareJs.includes('ms-share-frame') && shareJs.includes('shape-rendering=\"crispEdges\"'), 'The branded vector QR frame is missing');
 assert.ok(html.includes("mapLegendEl.innerHTML = mapMetric === 'sales'"), 'Map legend should be rebuilt from the active layer');
 assert.ok(html.includes('yearColors[mapYear]') && html.includes('faYear(mapYear)'), 'Sales legend should match the selected year');
 assert.ok(html.includes("Object.keys(regionMeta).map((region)"), 'Region legend should derive from active region metadata');
@@ -284,6 +284,6 @@ console.log(JSON.stringify({
     centerHatchingRemoved: !html.includes('region-center-hatch') && !html.includes('centerHatchPattern'),
     customEstedadMenus: html.includes('select-popover') && html.includes('font-family: var(--font-persian) !important'),
     embeddedExportFont: html.includes('embeddedFontStyle') && html.includes('ensureExportFont'),
-    brandedQrSharing: shareJs.includes("url.protocol !== 'https:'") && shareJs.includes("ctx.fillStyle = '#051934'") && qrSmokeTest.getModuleCount() >= 21
+    brandedQrSharing: shareJs.includes("url.protocol !== 'https:'") && shareJs.includes("fill=\"#051934\"") && qrSmokeTest.getModuleCount() >= 21
   }
 }, null, 2));

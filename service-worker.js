@@ -1,7 +1,7 @@
 'use strict';
 
 // Bump VERSION whenever a page or asset changes; old caches are removed on activate.
-const VERSION = 'v2-20261014';
+const VERSION = 'v2-20261015';
 const CACHE_NAME = 'maxsilver-portal-' + VERSION;
 const SCOPE = self.registration.scope;
 const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'sales-process.html'];

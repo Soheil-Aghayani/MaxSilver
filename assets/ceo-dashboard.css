@@ -454,3 +454,6 @@
     @media (prefers-reduced-motion: reduce) {
       .executive-strip, .region-average-grid, .dashboard-slides { scroll-behavior: auto; }
     }
+    .map-active-title svg { width: 18px; height: 18px; vertical-align: middle; }
+    #openMapGuide { min-width: 44px; min-height: 44px; justify-content: center; }
+    .select-trigger { min-height: 44px; }

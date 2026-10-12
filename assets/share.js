@@ -2,9 +2,15 @@
   'use strict';
   var button = document.getElementById('msShare');
   if (!button) return;
-  var dialog = null, canvas, status, preview, action, download, qrReady = null, currentUrl = null;
+  var dialog = null, qrBox, status, preview, copyBtn, downloadBtn, qrReady = null, currentUrl = null, currentCode = null;
+  var ICON = {
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg>',
+    send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0-4 4m4-4 4 4M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>'
+  };
 
-  // Only a public HTTPS address is worth encoding; localhost / file copies cannot be opened by another phone.
+  // Only a public HTTPS address is worth encoding; a local copy cannot be opened from another phone.
   function shareUrl() {
     try {
       var url = new URL(window.location.href);
@@ -29,19 +35,36 @@
     });
     return qrReady;
   }
-  function drawQr(target, url) {
-    var code = window.qrcode(0, 'M');
+
+  // Quality 'Q' keeps the code readable when printed or shown on a dim screen; quiet zone = 4 modules.
+  var QUIET = 4;
+  function makeCode(url) {
+    var code = window.qrcode(0, 'Q');
     code.addData(url, 'Byte');
     code.make();
-    var modules = code.getModuleCount(), quiet = 4, size12 = 12, size = (modules + quiet * 2) * size12;
-    var ctx = target.getContext('2d');
-    target.width = size; target.height = size;
-    ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#051934';
-    for (var r = 0; r < modules; r++) for (var c = 0; c < modules; c++) {
-      if (code.isDark(r, c)) ctx.fillRect((c + quiet) * size12, (r + quiet) * size12, size12, size12);
+    return code;
+  }
+  // Vector output: every dark run is a rectangle on the integer grid, so it stays crisp at any size.
+  function svgMarkup(code) {
+    var n = code.getModuleCount(), size = n + QUIET * 2, d = '';
+    for (var r = 0; r < n; r++) {
+      var c = 0;
+      while (c < n) {
+        if (!code.isDark(r, c)) { c++; continue; }
+        var start = c;
+        while (c < n && code.isDark(r, c)) c++;
+        d += 'M' + (start + QUIET) + ' ' + (r + QUIET) + 'h' + (c - start) + 'v1h-' + (c - start) + 'z';
+      }
     }
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" shape-rendering="crispEdges" class="ms-share-qr" role="img" aria-label="کد QR این صفحه">' +
+      '<rect width="' + size + '" height="' + size + '" fill="#fff"/><path d="' + d + '" fill="#051934"/></svg>';
+  }
+  function drawCanvas(target, code, px) {
+    var n = code.getModuleCount(), size = (n + QUIET * 2) * px, ctx = target.getContext('2d');
+    target.width = size; target.height = size;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#051934';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (code.isDark(r, c)) ctx.fillRect((c + QUIET) * px, (r + QUIET) * px, px, px);
   }
   function setStatus(text, state) { status.textContent = text; status.dataset.state = state || 'ready'; }
 
@@ -51,26 +74,23 @@
     dialog.setAttribute('aria-labelledby', 'msShareTitle');
     dialog.innerHTML =
       '<div class="ms-share-inner">' +
-        '<div class="ms-share-head"><div><h2 id="msShareTitle">اشتراک‌گذاری این صفحه</h2><p id="msShareName"></p></div>' +
-        '<button type="button" class="ms-share-close" data-close>بستن</button></div>' +
-        '<div class="ms-share-frame"><div class="ms-share-brand" dir="ltr"><span class="ms-share-mark" aria-hidden="true"></span><strong>MAX SILVER</strong></div>' +
-        '<canvas class="ms-share-canvas" width="600" height="600" hidden role="img" aria-label="کد QR پیوند این صفحه"></canvas></div>' +
-        '<p class="ms-share-status" role="status" aria-live="polite">در حال آماده‌سازی پیوند…</p>' +
+        '<div class="ms-share-head"><h2 id="msShareTitle"></h2><button type="button" class="ms-share-close" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
+        '<div class="ms-share-frame"><div class="ms-share-holder"></div></div>' +
+        '<p class="ms-share-status" role="status" aria-live="polite"></p>' +
         '<a class="ms-share-link" dir="ltr" target="_blank" rel="noopener" aria-label="نشانی این صفحه" hidden></a>' +
-        '<div class="ms-share-actions"><button type="button" class="ms-share-action" data-copy disabled>کپی پیوند</button>' +
-        '<button type="button" class="ms-share-action secondary" data-download disabled>دانلود QR</button></div>' +
-        '<p class="ms-share-note">QR فقط نشانی صفحه را منتقل می‌کند؛ دسترسی را تنظیمات میزبانی تعیین می‌کند.</p>' +
+        '<div class="ms-share-actions"><button type="button" class="ms-share-action" data-copy disabled></button>' +
+        '<button type="button" class="ms-share-action secondary" data-download disabled>' + ICON.down + '<span>PNG</span></button></div>' +
       '</div>';
     document.body.appendChild(dialog);
-    canvas = dialog.querySelector('canvas');
+    qrBox = dialog.querySelector('.ms-share-holder');
     status = dialog.querySelector('.ms-share-status');
     preview = dialog.querySelector('.ms-share-link');
-    action = dialog.querySelector('[data-copy]');
-    download = dialog.querySelector('[data-download]');
+    copyBtn = dialog.querySelector('[data-copy]');
+    downloadBtn = dialog.querySelector('[data-download]');
     dialog.addEventListener('click', function (event) {
-      if (event.target === dialog || event.target.hasAttribute('data-close')) dialog.close();
+      if (event.target === dialog || event.target.closest('[data-close]')) dialog.close();
     });
-    action.addEventListener('click', async function () {
+    copyBtn.addEventListener('click', async function () {
       if (!currentUrl) return;
       if (navigator.share) {
         try { await navigator.share({ title: document.title, url: currentUrl }); return; }
@@ -85,13 +105,15 @@
           var ok = document.execCommand('copy'); field.remove();
           if (!ok) throw new Error('copy');
         }
-        setStatus('پیوند کپی شد؛ آن را برای مخاطب بفرستید.', 'ready');
-      } catch (error) { setStatus('کپی خودکار ممکن نشد؛ نشانی نمایش‌داده‌شده را دستی بردارید.', 'error'); }
+        setStatus('پیوند کپی شد.', 'ready');
+      } catch (error) { setStatus('کپی خودکار ممکن نشد؛ نشانی را دستی بردارید.', 'error'); }
     });
-    download.addEventListener('click', function () {
-      if (canvas.hidden) return;
+    downloadBtn.addEventListener('click', function () {
+      if (!currentCode) return;
+      var canvas = document.createElement('canvas');
+      drawCanvas(canvas, currentCode, 16);
       canvas.toBlob(function (blob) {
-        if (!blob) return setStatus('ساخت فایل PNG ناموفق بود.', 'error');
+        if (!blob) return setStatus('ساخت PNG ناموفق بود.', 'error');
         var a = document.createElement('a'), href = URL.createObjectURL(blob);
         a.href = href; a.download = 'MaxSilver-' + ((location.pathname.split('/').pop() || 'index').replace(/\.html$/, '')) + '-QR.png';
         document.body.appendChild(a); a.click(); a.remove();
@@ -102,26 +124,24 @@
 
   async function open() {
     if (!dialog) build();
-    dialog.querySelector('#msShareName').textContent = pageName();
-    currentUrl = shareUrl();
-    canvas.hidden = true; preview.hidden = true; download.disabled = true;
-    action.disabled = !currentUrl;
-    action.textContent = navigator.share ? 'ارسال پیوند' : 'کپی پیوند';
+    dialog.querySelector('#msShareTitle').textContent = pageName();
+    currentUrl = shareUrl(); currentCode = null;
+    qrBox.innerHTML = ''; preview.hidden = true; downloadBtn.disabled = true; copyBtn.disabled = !currentUrl;
+    copyBtn.innerHTML = (navigator.share ? ICON.send : ICON.copy) + '<span>' + (navigator.share ? 'ارسال' : 'کپی') + '</span>';
     if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
-    if (!currentUrl) return setStatus('QR فقط روی نشانی HTTPS عمومی ساخته می‌شود؛ این نسخهٔ محلی قابل اشتراک نیست.', 'error');
-    setStatus('در حال ساخت کد QR…', 'ready');
+    if (!currentUrl) return setStatus('QR فقط روی نشانی HTTPS عمومی ساخته می‌شود.', 'error');
+    setStatus('', 'ready');
     try {
       await loadQrLibrary();
-      drawQr(canvas, currentUrl);
-      canvas.hidden = false;
+      currentCode = makeCode(currentUrl);
+      qrBox.innerHTML = svgMarkup(currentCode);
       preview.href = currentUrl; preview.textContent = currentUrl; preview.hidden = false;
-      download.disabled = false;
-      setStatus('کد QR آمادهٔ اسکن است.', 'ready');
+      downloadBtn.disabled = false;
     } catch (error) {
-      setStatus('ساخت کد QR ناموفق بود.', 'error');
-      action.disabled = true;
+      setStatus('ساخت QR ناموفق بود.', 'error');
+      copyBtn.disabled = true;
     }
   }
   button.addEventListener('click', open);
-  window.MaxSilverShare = { shareUrl: shareUrl, drawQr: drawQr };
+  window.MaxSilverShare = { shareUrl: shareUrl, make: function (url) { var c = makeCode(url); return { svg: svgMarkup(c), draw: function (canvas, px) { drawCanvas(canvas, c, px || 12); }, modules: c.getModuleCount() }; } };
 })();
