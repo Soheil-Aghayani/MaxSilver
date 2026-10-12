@@ -104,7 +104,8 @@ assert.ok(shellJs.includes("currentFile==='sales-process-v1.html'?'roadmap'"),'S
 assert.ok(shellJs.includes("href:'./sales-process-v1.html',label:'نقشه راه فروش'"),'Shared navigation is missing the sales roadmap');
 assert.ok(shellJs.includes("footer.className='ms-site-footer'")&&shellJs.includes('تهیه‌کنندگان: محمود قربانی و سهیل آقایانی'),'Shared footer is missing the requested producer credit');
 assert.ok(fs.readFileSync(path.join(root,'assets','site-shell.css'),'utf8').includes('.ms-site-footer{'),'Shared producer footer styles are missing');
-assert.ok(roadmap.includes('rel="stylesheet" href="./assets/site-shell.css"')&&roadmap.includes('<script src="./assets/site-shell.js"></script>'),'Sales roadmap does not use the shared site shell');
+assert.ok(roadmap.includes('rel="stylesheet" href="./assets/site-shell.css?v=')&&roadmap.includes('<script src="./assets/site-shell.js?v='),'Sales roadmap does not use versioned shared shell assets');
+for(const page of [portal,ceo,html,roadmap])assert.ok(page.includes('assets/site-shell.css?v=')&&page.includes('assets/site-shell.js?v='),'A page is missing cache-busted shared shell assets');
 assert.ok(roadmap.includes('نقشه راه فروش منطقه‌ای')&&roadmap.includes('مسیر موازی: توسعه شبکه همکاران'),'Sales roadmap content is incomplete');
 assert.ok(roadmap.includes('@media (max-width: 760px)')&&roadmap.includes('grid-template-columns: minmax(0, 1fr)'),'Sales roadmap is missing its mobile layout');
 assert.equal(crownSprite.toString('hex',0,8),'89504e470d0a1a0a','Generated crown sprite must be a PNG');
