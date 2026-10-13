@@ -22,7 +22,7 @@
   var state = { q: '', src: '', grp: '', sec: '', sort: 'name' };
   var compare = [];
   var STORE = 'ms-proforma-v1';
-  var inv = { lines: [], customer: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان' };
+  var inv = { lines: [], issuer: '', customer: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان' };
   var invDate = '';
   try { var saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved && Array.isArray(saved.lines)) inv = Object.assign(inv, saved); } catch (e) { /* storage unavailable: the draft lives for this visit only */ }
   function invSave() { try { localStorage.setItem(STORE, JSON.stringify(inv)); } catch (e) { /* ignore */ } }
@@ -142,8 +142,10 @@
   }
 
   var dialog = $('catDialog');
-  function openDialog(html) {
+  function openDialog(html, cls) {
+    dialog.className = 'cat-dialog' + (cls ? ' ' + cls : '');
     dialog.innerHTML = html;
+    if (dialog.open) return;
     if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
   }
   function detail(id) {
@@ -196,9 +198,8 @@
   function money(n) { return faInt.format(Math.round(n)) + ' ' + inv.unit; }
   function today() { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch (e) { return ''; } }
   function invTotalsRender() {
-    var t = totals(), box = dialog.querySelector('.inv-totals');
-    if (!box) return;
-    Object.keys(t).forEach(function (k) { var el = box.querySelector('[data-t=' + k + ']'); if (el) el.textContent = money(t[k]); });
+    var t = totals();
+    Object.keys(t).forEach(function (k) { var el = dialog.querySelector('[data-t=' + k + ']'); if (el) el.textContent = money(t[k]); });
     Array.prototype.forEach.call(dialog.querySelectorAll('.inv-row'), function (row) {
       var l = inv.lines[Number(row.getAttribute('data-i'))];
       if (l) row.querySelector('[data-sum]').textContent = money((l.qty || 0) * (l.price || 0));
@@ -214,19 +215,23 @@
         '<label>قیمت واحد<input type="text" inputmode="numeric" data-f="price" placeholder="۰" value="' + (l.price ? esc(faInt.format(l.price)) : '') + '"></label>' +
         '<output class="inv-sum" data-sum></output></li>';
     }).join('');
-    var body = inv.lines.length ? '<ul class="inv-list">' + rows + '</ul>' +
+    var has = inv.lines.length > 0;
+    var body = has ? '<ul class="inv-list">' + rows + '</ul>' +
       '<div class="inv-adj"><label>تخفیف<span class="inv-pair"><input type="text" inputmode="decimal" data-f="discount" placeholder="۰" value="' + (inv.discount ? esc(fa.format(inv.discount)) : '') + '">' +
         '<select data-f="discMode" aria-label="نوع تخفیف"><option value="pct"' + (inv.discMode === 'pct' ? ' selected' : '') + '>٪</option><option value="amt"' + (inv.discMode === 'amt' ? ' selected' : '') + '>مبلغ</option></select></span></label>' +
         '<label>مالیات بر ارزش افزوده (٪)<input type="text" inputmode="decimal" data-f="tax" value="' + esc(fa.format(inv.tax || 0)) + '"></label></div>' +
       '<dl class="inv-totals"><div><dt>جمع کل</dt><dd data-t="sub"></dd></div><div><dt>تخفیف</dt><dd data-t="disc"></dd></div><div><dt>پس از تخفیف</dt><dd data-t="net"></dd></div>' +
-        '<div><dt>مالیات</dt><dd data-t="tax"></dd></div><div class="grand"><dt>مبلغ قابل پرداخت</dt><dd data-t="total"></dd></div></dl>' +
-      '<div class="dlg-actions"><button type="button" data-inv-print>' + ICON.print + '<span>چاپ / PDF</span></button>' +
-        '<button type="button" class="alt" data-inv-clear>' + ICON.trash + '<span>پاک‌کردن پیش‌فاکتور</span></button></div>'
+        '<div><dt>مالیات</dt><dd data-t="tax"></dd></div></dl>'
       : '<p class="inv-empty">پیش‌فاکتور خالی است. با دکمهٔ + روی هر محصول، آن را اضافه کنید.</p>';
+    var foot = has ? '<div class="inv-foot"><div class="inv-pay"><span>مبلغ قابل پرداخت</span><b data-t="total"></b></div>' +
+      '<div class="inv-actions"><button type="button" class="inv-clear" data-inv-clear aria-label="پاک‌کردن پیش‌فاکتور" title="پاک‌کردن پیش‌فاکتور">' + ICON.trash + '</button>' +
+      '<button type="button" class="inv-pdf" data-inv-print>' + ICON.print + '<span>دریافت PDF</span></button></div></div>' : '';
     openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتور</h2><button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
-      '<div class="inv-body"><div class="inv-meta"><label>مشتری<input type="text" data-f="customer" value="' + esc(inv.customer) + '" autocomplete="off"></label>' +
+      '<div class="inv-body"><div class="inv-meta">' +
+        '<label class="wide">صادرکننده (ویزیتور)<input type="text" data-f="issuer" value="' + esc(inv.issuer) + '" autocomplete="name" placeholder="نام و نام خانوادگی"></label>' +
+        '<label class="wide">مشتری<input type="text" data-f="customer" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
         '<label>تاریخ<input type="text" data-f="date" value="' + esc(invDate) + '"></label>' +
-        '<label>واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label></div>' + body + '</div>');
+        '<label>واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label></div>' + body + '</div>' + foot, 'inv-sheet');
     invTotalsRender();
   }
   function invPrint() {
@@ -236,7 +241,7 @@
       return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(it.code) + '</td><td>' + esc(it.name) + '</td><td>' + faInt.format(l.qty || 0) + '</td><td>' + faInt.format(l.price || 0) + '</td><td>' + faInt.format(Math.round((l.qty || 0) * (l.price || 0))) + '</td></tr>';
     }).join('');
     $('invPrint').innerHTML = '<div class="ip-head"><img src="./assets/branding/maxsilver-logo.svg" alt="مکث‌سیلور" width="175" height="30"><h1>پیش‌فاکتور</h1>' +
-      '<div class="ip-meta"><span>تاریخ: ' + esc(invDate || today()) + '</span><span>مشتری: ' + esc(inv.customer || '—') + '</span></div></div>' +
+      '<div class="ip-meta"><span>تاریخ: ' + esc(invDate || today()) + '</span><span>مشتری: ' + esc(inv.customer || '—') + '</span><span>صادرکننده: ' + esc(inv.issuer || '—') + '</span></div></div>' +
       '<table><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>تعداد</th><th>قیمت واحد (' + esc(inv.unit) + ')</th><th>قیمت کل (' + esc(inv.unit) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
       '<dl class="ip-totals"><div><dt>جمع کل</dt><dd>' + money(t.sub) + '</dd></div><div><dt>تخفیف</dt><dd>' + money(t.disc) + '</dd></div><div><dt>پس از تخفیف</dt><dd>' + money(t.net) + '</dd></div>' +
       '<div><dt>مالیات (' + esc(fa.format(inv.tax || 0)) + '٪)</dt><dd>' + money(t.tax) + '</dd></div><div class="grand"><dt>مبلغ قابل پرداخت</dt><dd>' + money(t.total) + '</dd></div></dl>';
@@ -248,7 +253,7 @@
     var f = e.target.getAttribute('data-f'); if (!f) return;
     var row = e.target.closest('.inv-row'), l = row && inv.lines[Number(row.getAttribute('data-i'))];
     if (l && (f === 'qty' || f === 'price')) l[f] = parseNum(e.target.value);
-    else if (f === 'customer' || f === 'unit' || f === 'discMode') inv[f] = e.target.value;
+    else if (f === 'issuer' || f === 'customer' || f === 'unit' || f === 'discMode') inv[f] = e.target.value;
     else if (f === 'date') invDate = e.target.value;
     else if (f === 'discount' || f === 'tax') inv[f] = parseNum(e.target.value);
     invSave(); invTotalsRender();
@@ -335,7 +340,7 @@
   $('invOpen').addEventListener('click', invoiceView);
   $('cmpClear').addEventListener('click', function () { compare.slice().forEach(toggleCompare); });
 
-  fetch('./assets/catalog.json?v=20261030', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261031', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();
