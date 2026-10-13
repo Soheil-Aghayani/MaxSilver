@@ -61,7 +61,6 @@
     .role, .desc, .box { grid-column: 2; }
     .role { margin-top: 0; }
     .desc { min-height: 0; }
-    .ms-nav-links a span { display: none; }
   }
   .hero{align-items:center}.hero h1{margin:0}.ver{display:inline-flex;align-items:center;gap:7px;color:#b9c9de;font-size:12px;white-space:nowrap}.ver svg,.prereq svg{width:16px;height:16px}.prereq{display:flex;align-items:center;gap:8px}.role{display:flex;align-items:center;justify-content:center;gap:7px}.role svg{width:18px;height:18px;color:var(--ms-navy);flex:0 0 auto}
   .print-btn{display:grid;place-items:center;width:44px;height:44px;border:1px solid rgba(255,255,255,.28);border-radius:12px;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;transition:background .15s}
