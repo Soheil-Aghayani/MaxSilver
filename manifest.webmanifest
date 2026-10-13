@@ -24,5 +24,56 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "orientation": "any",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "shortcuts": [
+    {
+      "name": "داشبورد CEO",
+      "url": "./ceo-dashboard.html",
+      "icons": [
+        {
+          "src": "./assets/branding/maxsilver-pwa-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "تحلیل فروش",
+      "url": "./sales-analysis.html",
+      "icons": [
+        {
+          "src": "./assets/branding/maxsilver-pwa-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "کاتالوگ محصولات",
+      "url": "./product-catalog.html",
+      "icons": [
+        {
+          "src": "./assets/branding/maxsilver-pwa-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "نقشهٔ فروش",
+      "url": "./sales-process.html",
+      "icons": [
+        {
+          "src": "./assets/branding/maxsilver-pwa-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }
