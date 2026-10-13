@@ -17,7 +17,7 @@
   function errText(e) {
     var c = e && e.code || '';
     if (/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c)) return 'ایمیل یا رمز عبور درست نیست.';
-    if (/network|unavailable|deadline/.test(c)) return 'اتصال برقرار نشد. اینترنت یا VPN را بررسی کنید.';
+    if (/network|unavailable|deadline|timeout/.test(c)) return 'اتصال به سرویس برقرار نشد (اینترنت یا VPN). اطلاعات ذخیره‌شدهٔ این دستگاه نمایش داده می‌شود.';
     if (/permission-denied/.test(c)) return 'اجازهٔ انجام این کار را ندارید.';
     if (/too-many-requests/.test(c)) return 'تلاش‌های زیاد؛ چند دقیقه بعد دوباره امتحان کنید.';
     return 'خطا: ' + (c || (e && e.message) || 'نامشخص');
@@ -46,19 +46,26 @@
   function load() {
     S.loading = true; S.error = ''; render();
     var uid = S.user.uid;
-    db.collection('users').doc(uid).get().then(function (snap) {
+    var timeout = new Promise(function (_, rej) { setTimeout(function () { rej({ code: 'timeout' }); }, 15000); });
+    Promise.race([db.collection('users').doc(uid).get(), timeout]).then(function (snap) {
       S.profile = snap.exists ? snap.data() : null;
       try { localStorage.setItem('ms-role', active() ? (S.profile.role || '') : ''); } catch (x) { /* ignore */ }
       if (!active()) return null;
       var q = isManager() ? db.collection('invoices') : db.collection('invoices').where('ownerUid', '==', uid);
-      return Promise.all([q.get(), isManager() ? db.collection('users').get() : null]).then(function (res) {
+      return Promise.race([Promise.all([q.get(), isManager() ? db.collection('users').get() : null]), timeout]).then(function (res) {
         S.docs = [];
         res[0].forEach(function (s) { S.docs.push(s.data()); });
         S.docs.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
         S.team = [];
         if (res[1]) res[1].forEach(function (s) { var d = s.data(); d.id = s.id; S.team.push(d); });
       });
-    }).then(null, function (e) { S.error = errText(e); }).then(function () { S.loading = false; render(); });
+    }).then(null, function (e) {
+      S.error = errText(e);
+      // offline or no VPN: fall back to the identity cached by the catalog so name, role and regions still show
+      if (!S.profile) {
+        try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
+      }
+    }).then(function () { S.loading = false; render(); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;

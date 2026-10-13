@@ -192,6 +192,8 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .acc-primary{border:0;background:var(--ms-navy);color:#fff}.acc-primary:disabled{opacity:.55;cursor:wait}
 .acc-secondary{border:1px solid var(--ms-line);background:#fff;color:var(--ms-navy)}
 .acc-link{display:grid;place-items:center;text-decoration:none}
+.acc-warn{margin:0;padding:10px 12px;border-radius:12px;background:#fffaeb;border:1px solid #fedf89;color:#93370d;font-size:13px;line-height:1.8}
+.cat-acc[data-pending]::before{content:attr(data-pending);position:absolute;top:-6px;inset-inline-start:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#f79009;color:#fff;font:800 11px/20px Estedad,Tahoma,sans-serif;text-align:center}
 @media print{
   @page{size:A4;margin:12mm 12mm 12mm}
   body.inv-print>*:not(.ip-sheet){display:none!important}
