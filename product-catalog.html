@@ -16,8 +16,8 @@
   <meta name="apple-mobile-web-app-title" content="Max Silver" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./assets/branding/maxsilver-pwa-192.png" />
-  <link rel="stylesheet" href="./assets/site-shell.2.css?v=20261029" />
-  <link rel="stylesheet" href="./assets/catalog.css?v=20261029" />
+  <link rel="stylesheet" href="./assets/site-shell.2.css?v=20261030" />
+  <link rel="stylesheet" href="./assets/catalog.css?v=20261030" />
   <script type="speculationrules">{"prefetch":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>
 </head>
 <body class="ms-portal-body">
@@ -41,16 +41,20 @@
     <div class="cat-empty" id="catEmpty" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6"/></svg></div>
   </main>
 
-  <aside class="cmp-tray" id="cmpTray" hidden aria-label="مقایسه">
+  <aside class="cmp-tray" id="cmpTray" hidden aria-label="انتخاب‌ها">
+    <div class="tray-group" id="cmpGroup" hidden>
     <div class="cmp-thumbs" id="cmpThumbs"></div>
     <button type="button" class="cmp-open" id="cmpOpen" aria-label="باز کردن مقایسه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 2v20"/></svg><b id="cmpCount"></b></button>
     <button type="button" class="cmp-clear" id="cmpClear" aria-label="خالی کردن مقایسه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    </div>
+    <button type="button" class="cmp-open inv-open" id="invOpen" hidden aria-label="باز کردن پیش‌فاکتور"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h3"/></svg><span>پیش‌فاکتور</span><b id="invCount"></b></button>
   </aside>
 
+  <section class="inv-print" id="invPrint" aria-hidden="true"></section>
   <dialog class="cat-dialog" id="catDialog" aria-labelledby="dlgName"></dialog>
   <footer class="ms-site-footer"><p>تهیه‌کنندگان: محمود قربانی و سهیل آقایانی</p></footer>
-  <script src="./assets/catalog.js?v=20261029" defer></script>
-  <script src="./assets/share.2.js?v=20261029" defer></script>
-  <script src="./assets/sw-register.js?v=20261029" defer></script>
+  <script src="./assets/catalog.js?v=20261030" defer></script>
+  <script src="./assets/share.2.js?v=20261030" defer></script>
+  <script src="./assets/sw-register.js?v=20261030" defer></script>
 </body>
 </html>

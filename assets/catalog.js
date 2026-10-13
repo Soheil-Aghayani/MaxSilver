@@ -10,6 +10,9 @@
     open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M10 14 21 3M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>',
     info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
+    compare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 2v20"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+    print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></svg>',
     cube: '<svg class="ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7.5 4.3 9 5.2M21 8v8a2 2 0 0 1-1 1.7l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.7l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8ZM3.3 7 12 12l8.7-5M12 22V12"/></svg>'
   };
   var MAX_COMPARE = 4, PAGE = 48;
@@ -18,6 +21,16 @@
   var data = null, items = [], byId = {}, filtered = [], shown = PAGE;
   var state = { q: '', src: '', grp: '', sec: '', sort: 'name' };
   var compare = [];
+  var STORE = 'ms-proforma-v1';
+  var inv = { lines: [], customer: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان' };
+  var invDate = '';
+  try { var saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved && Array.isArray(saved.lines)) inv = Object.assign(inv, saved); } catch (e) { /* storage unavailable: the draft lives for this visit only */ }
+  function invSave() { try { localStorage.setItem(STORE, JSON.stringify(inv)); } catch (e) { /* ignore */ } }
+  function invLine(id) { return inv.lines.filter(function (l) { return l.id === id; })[0]; }
+  function parseNum(v) {
+    return Number(String(v == null ? '' : v).replace(/[۰-۹]/g, function (d) { return d.charCodeAt(0) - 1776; }).replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; })
+      .replace(/٫/g, '.').replace(/[^0-9.]/g, '')) || 0;
+  }
 
   function norm(s) {
     return String(s || '').toLowerCase()
@@ -69,7 +82,7 @@
   }
 
   function card(it) {
-    var d = dimsText(it), p = power(it), inCmp = compare.indexOf(it.id) >= 0;
+    var d = dimsText(it), p = power(it), inCmp = compare.indexOf(it.id) >= 0, inInv = !!invLine(it.id);
     var specs = (d ? '<span>' + ICON.ruler + esc(d) + '</span>' : '') + (it.wt ? '<span>' + ICON.weight + esc(fa.format(it.wt)) + ' kg</span>' : '') + (p ? '<span>' + ICON.bolt + esc(p) + '</span>' : '');
     return '<article class="pc" data-id="' + esc(it.id) + '">' +
       '<button type="button" class="pc-img' + (it.img ? '' : ' noimg') + '" data-open="' + esc(it.id) + '" aria-label="جزئیات ' + esc(it.name) + '">' +
@@ -78,7 +91,8 @@
       '<div class="pc-body"><h2 class="pc-name">' + esc(it.name) + '</h2>' +
         '<div class="pc-meta">' + (it.code ? '<span class="pc-code">' + esc(it.code) + '</span>' : '') + (it.cat ? '<span class="pc-chip">' + esc(it.cat) + '</span>' : '') + '</div>' +
         (specs ? '<div class="pc-spec">' + specs + '</div>' : '') + '</div>' +
-      '<div class="pc-foot"><button type="button" class="pc-btn" data-cmp="' + esc(it.id) + '" aria-pressed="' + inCmp + '" aria-label="مقایسه">' + (inCmp ? ICON.check : ICON.plus) + '</button>' +
+      '<div class="pc-foot"><button type="button" class="pc-btn" data-inv="' + esc(it.id) + '" aria-pressed="' + inInv + '" aria-label="افزودن به پیش‌فاکتور" title="افزودن به پیش‌فاکتور">' + (inInv ? ICON.check : ICON.plus) + '</button>' +
+        '<button type="button" class="pc-btn" data-cmp="' + esc(it.id) + '" aria-pressed="' + inCmp + '" aria-label="مقایسه" title="مقایسه">' + ICON.compare + '</button>' +
         '<button type="button" class="pc-btn" data-open="' + esc(it.id) + '" aria-label="جزئیات">' + ICON.open + '</button></div></article>';
   }
 
@@ -98,7 +112,10 @@
 
   function trayRender() {
     var tray = $('cmpTray');
-    tray.hidden = compare.length === 0;
+    tray.hidden = compare.length === 0 && inv.lines.length === 0;
+    $('cmpGroup').hidden = compare.length === 0;
+    $('invOpen').hidden = inv.lines.length === 0;
+    $('invCount').textContent = faInt.format(inv.lines.length);
     $('cmpThumbs').innerHTML = compare.map(function (id) { var it = byId[id]; return '<span style="background-image:url(\'' + esc(it.img) + '\')" title="' + esc(it.name) + '"></span>'; }).join('');
     $('cmpCount').textContent = faInt.format(compare.length);
     $('cmpOpen').disabled = compare.length < 2;
@@ -109,7 +126,17 @@
     else { if (compare.length >= MAX_COMPARE) compare.shift(); compare.push(id); }
     trayRender();
     document.querySelectorAll('[data-cmp]').forEach(function (b) {
-      var on = compare.indexOf(b.getAttribute('data-cmp')) >= 0;
+      b.setAttribute('aria-pressed', String(compare.indexOf(b.getAttribute('data-cmp')) >= 0));
+    });
+  }
+  function toggleInvoice(id) {
+    var l = invLine(id);
+    if (l) inv.lines.splice(inv.lines.indexOf(l), 1); else inv.lines.push({ id: id, qty: 1, price: 0 });
+    invSave(); trayRender(); invButtons();
+  }
+  function invButtons() {
+    document.querySelectorAll('[data-inv]').forEach(function (b) {
+      var on = !!invLine(b.getAttribute('data-inv'));
       b.setAttribute('aria-pressed', String(on)); b.innerHTML = on ? ICON.check : ICON.plus;
     });
   }
@@ -135,7 +162,8 @@
       '<div><div class="dlg-tags"><span class="pc-brand" data-brand="' + esc(it.src) + '" style="position:static"><i></i>' + esc(srcLabel(it.src)) + '</span>' + it.sec.map(function (s) { return '<span class="pc-chip">' + esc(s) + '</span>'; }).join('') + '</div>' +
       '<table class="dlg-specs"><tbody>' + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; }).join('') + '</tbody></table>' +
       (it.desc ? '<p class="dlg-desc">' + esc(it.desc) + '</p>' : '') +
-      '<div class="dlg-actions"><button type="button" data-cmp-dlg="' + esc(it.id) + '" class="alt" aria-label="مقایسه">' + (on ? ICON.check : ICON.plus) + '</button>' +
+      '<div class="dlg-actions"><button type="button" data-inv-dlg="' + esc(it.id) + '" aria-pressed="' + !!invLine(it.id) + '">' + (invLine(it.id) ? ICON.check : ICON.plus) + '<span>' + (invLine(it.id) ? 'در پیش‌فاکتور' : 'افزودن به پیش‌فاکتور') + '</span></button>' +
+      '<button type="button" data-cmp-dlg="' + esc(it.id) + '" class="alt" aria-label="مقایسه" aria-pressed="' + on + '">' + ICON.compare + '</button>' +
       (it.url ? '<a href="' + esc(it.url) + '" target="_blank" rel="noopener" aria-label="صفحه محصول در سایت">' + ICON.open + '</a>' : '') + '</div></div></div>');
   }
   function compareView() {
@@ -157,13 +185,92 @@
       '<div class="cmp-wrap"><table class="cmp-table"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>');
   }
 
+  var UNITS = ['تومان', 'ریال'];
+  function totals() {
+    var sub = 0;
+    inv.lines.forEach(function (l) { sub += (l.qty || 0) * (l.price || 0); });
+    var disc = inv.discMode === 'pct' ? sub * Math.min(inv.discount || 0, 100) / 100 : Math.min(inv.discount || 0, sub);
+    var net = sub - disc, tax = net * (inv.tax || 0) / 100;
+    return { sub: sub, disc: disc, net: net, tax: tax, total: net + tax };
+  }
+  function money(n) { return faInt.format(Math.round(n)) + ' ' + inv.unit; }
+  function today() { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch (e) { return ''; } }
+  function invTotalsRender() {
+    var t = totals(), box = dialog.querySelector('.inv-totals');
+    if (!box) return;
+    Object.keys(t).forEach(function (k) { var el = box.querySelector('[data-t=' + k + ']'); if (el) el.textContent = money(t[k]); });
+    Array.prototype.forEach.call(dialog.querySelectorAll('.inv-row'), function (row) {
+      var l = inv.lines[Number(row.getAttribute('data-i'))];
+      if (l) row.querySelector('[data-sum]').textContent = money((l.qty || 0) * (l.price || 0));
+    });
+  }
+  function invoiceView() {
+    if (!invDate) invDate = today();
+    var rows = inv.lines.map(function (l, i) {
+      var it = byId[l.id];
+      return '<li class="inv-row" data-i="' + i + '"><div class="inv-item"><b>' + esc(it.name) + '</b>' + (it.code ? '<small dir="ltr">' + esc(it.code) + '</small>' : '') + '</div>' +
+        '<button type="button" class="dlg-x" data-inv-rm="' + i + '" aria-label="حذف از پیش‌فاکتور">' + ICON.trash + '</button>' +
+        '<label>تعداد<input type="text" inputmode="numeric" data-f="qty" value="' + esc(faInt.format(l.qty || 0)) + '"></label>' +
+        '<label>قیمت واحد<input type="text" inputmode="numeric" data-f="price" placeholder="۰" value="' + (l.price ? esc(faInt.format(l.price)) : '') + '"></label>' +
+        '<output class="inv-sum" data-sum></output></li>';
+    }).join('');
+    var body = inv.lines.length ? '<ul class="inv-list">' + rows + '</ul>' +
+      '<div class="inv-adj"><label>تخفیف<span class="inv-pair"><input type="text" inputmode="decimal" data-f="discount" placeholder="۰" value="' + (inv.discount ? esc(fa.format(inv.discount)) : '') + '">' +
+        '<select data-f="discMode" aria-label="نوع تخفیف"><option value="pct"' + (inv.discMode === 'pct' ? ' selected' : '') + '>٪</option><option value="amt"' + (inv.discMode === 'amt' ? ' selected' : '') + '>مبلغ</option></select></span></label>' +
+        '<label>مالیات بر ارزش افزوده (٪)<input type="text" inputmode="decimal" data-f="tax" value="' + esc(fa.format(inv.tax || 0)) + '"></label></div>' +
+      '<dl class="inv-totals"><div><dt>جمع کل</dt><dd data-t="sub"></dd></div><div><dt>تخفیف</dt><dd data-t="disc"></dd></div><div><dt>پس از تخفیف</dt><dd data-t="net"></dd></div>' +
+        '<div><dt>مالیات</dt><dd data-t="tax"></dd></div><div class="grand"><dt>مبلغ قابل پرداخت</dt><dd data-t="total"></dd></div></dl>' +
+      '<div class="dlg-actions"><button type="button" data-inv-print>' + ICON.print + '<span>چاپ / PDF</span></button>' +
+        '<button type="button" class="alt" data-inv-clear>' + ICON.trash + '<span>پاک‌کردن پیش‌فاکتور</span></button></div>'
+      : '<p class="inv-empty">پیش‌فاکتور خالی است. با دکمهٔ + روی هر محصول، آن را اضافه کنید.</p>';
+    openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتور</h2><button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
+      '<div class="inv-body"><div class="inv-meta"><label>مشتری<input type="text" data-f="customer" value="' + esc(inv.customer) + '" autocomplete="off"></label>' +
+        '<label>تاریخ<input type="text" data-f="date" value="' + esc(invDate) + '"></label>' +
+        '<label>واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label></div>' + body + '</div>');
+    invTotalsRender();
+  }
+  function invPrint() {
+    var t = totals();
+    var rows = inv.lines.map(function (l, i) {
+      var it = byId[l.id];
+      return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(it.code) + '</td><td>' + esc(it.name) + '</td><td>' + faInt.format(l.qty || 0) + '</td><td>' + faInt.format(l.price || 0) + '</td><td>' + faInt.format(Math.round((l.qty || 0) * (l.price || 0))) + '</td></tr>';
+    }).join('');
+    $('invPrint').innerHTML = '<div class="ip-head"><img src="./assets/branding/maxsilver-logo.svg" alt="مکث‌سیلور" width="175" height="30"><h1>پیش‌فاکتور</h1>' +
+      '<div class="ip-meta"><span>تاریخ: ' + esc(invDate || today()) + '</span><span>مشتری: ' + esc(inv.customer || '—') + '</span></div></div>' +
+      '<table><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>تعداد</th><th>قیمت واحد (' + esc(inv.unit) + ')</th><th>قیمت کل (' + esc(inv.unit) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<dl class="ip-totals"><div><dt>جمع کل</dt><dd>' + money(t.sub) + '</dd></div><div><dt>تخفیف</dt><dd>' + money(t.disc) + '</dd></div><div><dt>پس از تخفیف</dt><dd>' + money(t.net) + '</dd></div>' +
+      '<div><dt>مالیات (' + esc(fa.format(inv.tax || 0)) + '٪)</dt><dd>' + money(t.tax) + '</dd></div><div class="grand"><dt>مبلغ قابل پرداخت</dt><dd>' + money(t.total) + '</dd></div></dl>';
+    document.body.classList.add('inv-print');
+    window.print();
+  }
+  window.addEventListener('afterprint', function () { document.body.classList.remove('inv-print'); });
+  dialog.addEventListener('input', function (e) {
+    var f = e.target.getAttribute('data-f'); if (!f) return;
+    var row = e.target.closest('.inv-row'), l = row && inv.lines[Number(row.getAttribute('data-i'))];
+    if (l && (f === 'qty' || f === 'price')) l[f] = parseNum(e.target.value);
+    else if (f === 'customer' || f === 'unit' || f === 'discMode') inv[f] = e.target.value;
+    else if (f === 'date') invDate = e.target.value;
+    else if (f === 'discount' || f === 'tax') inv[f] = parseNum(e.target.value);
+    invSave(); invTotalsRender();
+  });
+  dialog.addEventListener('change', function (e) {
+    var f = e.target.getAttribute('data-f');
+    if (f === 'price' || f === 'qty') { var v = parseNum(e.target.value); e.target.value = v ? faInt.format(v) : ''; }
+    if (f === 'unit' || f === 'discMode') { inv[f] = e.target.value; invSave(); invTotalsRender(); }
+  });
+
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-close],[data-src]');
+    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-close],[data-src]');
     if (e.target === dialog) { dialog.close(); return; }
     if (!t) return;
     if (t.hasAttribute('data-open')) detail(t.getAttribute('data-open'));
     else if (t.hasAttribute('data-cmp')) toggleCompare(t.getAttribute('data-cmp'));
     else if (t.hasAttribute('data-cmp-dlg')) { toggleCompare(t.getAttribute('data-cmp-dlg')); detail(t.getAttribute('data-cmp-dlg')); }
+    else if (t.hasAttribute('data-inv')) toggleInvoice(t.getAttribute('data-inv'));
+    else if (t.hasAttribute('data-inv-dlg')) { toggleInvoice(t.getAttribute('data-inv-dlg')); detail(t.getAttribute('data-inv-dlg')); }
+    else if (t.hasAttribute('data-inv-rm')) { inv.lines.splice(Number(t.getAttribute('data-inv-rm')), 1); invSave(); trayRender(); invButtons(); invoiceView(); }
+    else if (t.hasAttribute('data-inv-print')) invPrint();
+    else if (t.hasAttribute('data-inv-clear')) { if (window.confirm('همهٔ ردیف‌های پیش‌فاکتور پاک شود؟')) { inv.lines = []; invSave(); trayRender(); invButtons(); invoiceView(); } }
     else if (t.hasAttribute('data-close')) dialog.close();
     else if (t.closest('#catSources')) {
       state.src = t.getAttribute('data-src');
@@ -225,10 +332,13 @@
   });
   $('catMore').addEventListener('click', function () { shown += PAGE; render(); });
   $('cmpOpen').addEventListener('click', compareView);
+  $('invOpen').addEventListener('click', invoiceView);
   $('cmpClear').addEventListener('click', function () { compare.slice().forEach(toggleCompare); });
 
-  fetch('./assets/catalog.json?v=20261029', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261030', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
+    inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
+    trayRender();
     ['catGroup', 'catSector', 'catSort'].forEach(function (id) { enhance($(id)); });
     apply();
   }).catch(function () { $('catEmpty').hidden = false; });
