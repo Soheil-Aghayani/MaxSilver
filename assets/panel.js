@@ -48,6 +48,7 @@
     var uid = S.user.uid;
     db.collection('users').doc(uid).get().then(function (snap) {
       S.profile = snap.exists ? snap.data() : null;
+      try { localStorage.setItem('ms-role', active() ? (S.profile.role || '') : ''); } catch (x) { /* ignore */ }
       if (!active()) return null;
       var q = isManager() ? db.collection('invoices') : db.collection('invoices').where('ownerUid', '==', uid);
       return Promise.all([q.get(), isManager() ? db.collection('users').get() : null]).then(function (res) {
@@ -61,7 +62,7 @@
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
-    if (!u) { S.loading = false; render(); return; }
+    if (!u) { try { localStorage.removeItem('ms-role'); } catch (x) { /* ignore */ } S.loading = false; render(); return; }
     load();
   });
 
@@ -147,7 +148,9 @@
       '<form id="editForm" class="pn-edit" data-id="' + esc(u.id) + '">' +
       '<label>نام و نام خانوادگی<input type="text" name="name" value="' + esc(u.name || '') + '" maxlength="60" required></label>' +
       '<label>تلفن<input type="tel" name="phone" dir="ltr" value="' + esc(u.phone || '') + '" maxlength="30"></label>' +
-      '<label>نقش<select name="role"' + (self ? ' disabled' : '') + '><option value="visitor"' + (u.role !== 'manager' ? ' selected' : '') + '>ویزیتور</option><option value="manager"' + (u.role === 'manager' ? ' selected' : '') + '>مدیر</option></select></label>' +
+      '<fieldset class="pn-seg"><legend>نقش</legend>' +
+        '<label><input type="radio" name="role" value="visitor"' + (u.role !== 'manager' ? ' checked' : '') + (self ? ' disabled' : '') + '><span>ویزیتور</span></label>' +
+        '<label><input type="radio" name="role" value="manager"' + (u.role === 'manager' ? ' checked' : '') + (self ? ' disabled' : '') + '><span>مدیر</span></label></fieldset>' +
       '<label>کد برای شمارهٔ سند (حروف و عدد لاتین)<input type="text" name="code" dir="ltr" value="' + esc(u.code || '') + '" maxlength="6" pattern="[A-Za-z0-9]*"></label>' +
       '<label class="pn-check"><input type="checkbox" name="active"' + (u.active === false ? '' : ' checked') + (self ? ' disabled' : '') + '><span>حساب فعال است</span></label>' +
       '<h3>استان‌های منطقهٔ فعالیت</h3>' + regs +
@@ -188,7 +191,7 @@
         name: v('name'), phone: v('phone'), code: v('code').toUpperCase(), cities: v('cities'),
         regions: Array.prototype.map.call(f.querySelectorAll('input[name=reg]:checked'), function (c) { return c.value; })
       };
-      if (!self) { data.role = f.elements.role.value; data.active = f.elements.active.checked; }
+      if (!self) { data.role = f.querySelector('input[name=role]:checked').value; data.active = f.elements.active.checked; }
       db.collection('users').doc(id).set(data, { merge: true }).then(function () { dlg.close(); load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(Object.assign({ id: id }, data)); });
     }
   });

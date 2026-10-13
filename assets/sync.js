@@ -138,9 +138,10 @@
   // ----- session
   auth.onAuthStateChanged(function (user) {
     S.user = user; S.profile = null; S.checking = false; S.error = '';
-    if (!user) { A.setForeign([]); render(); return; }
+    if (!user) { try { localStorage.removeItem('ms-role'); } catch (x) { /* ignore */ } A.setForeign([]); render(); return; }
     db.collection('users').doc(user.uid).get().then(function (snap) {
       S.profile = snap.exists ? snap.data() : null;
+      try { localStorage.setItem('ms-role', approved() ? (S.profile.role || '') : ''); } catch (x) { /* ignore */ }
       if (S.profile) A.setIssuer(S.profile.name);
       render();
       return sync();

@@ -5,7 +5,7 @@
   "description": "داشبورد مدیریتی فروش و قلمرو مکث‌سیلور",
   "lang": "fa",
   "dir": "rtl",
-  "start_url": "./ceo-dashboard.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "prefer_related_applications": false,
