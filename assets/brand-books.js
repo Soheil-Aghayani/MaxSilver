@@ -165,7 +165,7 @@
       '<h3 class="no-print">۲. ثبت داده</h3>' +
       '<form class="ig-form no-print" id="igForm" autocomplete="off">' +
         '<label>حساب<select name="acc">' + ig.accounts.map(function (a) { return '<option value="' + esc(a) + '">@' + esc(a) + '</option>'; }).join('') + '</select></label>' +
-        '<label>تاریخ<input type="date" name="date" value="' + isoToday() + '" required></label>' +
+        '<label>تاریخ<input type="text" name="jdate" data-jdate readonly inputmode="none" value="' + (window.MSJDate ? window.MSJDate.persian(window.MSJDate.today()) : '') + '" required></label>' +
         '<label>دنبال‌کننده<input type="text" inputmode="numeric" name="followers" placeholder="۰" required></label>' +
         '<label>تعداد پست<input type="text" inputmode="numeric" name="posts" placeholder="۰"></label>' +
         '<label>میانگین لایک هر پست<input type="text" inputmode="numeric" name="likes" placeholder="۰"></label>' +
@@ -254,8 +254,9 @@
     }
     if (f.id === 'igForm') {
       var followers = num(v('followers'));
-      if (!followers || !v('date')) return;
-      ig.entries.push({ acc: v('acc'), date: v('date'), followers: followers, posts: num(v('posts')), likes: num(v('likes')), comments: num(v('comments')) });
+      var iso = window.MSJDate ? window.MSJDate.toISO(v('jdate')) : '';
+      if (!followers || !iso) return;
+      ig.entries.push({ acc: v('acc'), date: iso, followers: followers, posts: num(v('posts')), likes: num(v('likes')), comments: num(v('comments')) });
       igSave(); renderIg();
     }
   });

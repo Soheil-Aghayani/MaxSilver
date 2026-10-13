@@ -22,7 +22,7 @@
   var state = { q: '', src: '', grp: '', sec: '', sort: 'name' };
   var compare = [];
   var STORE = 'ms-proforma-v1';
-  var inv = { lines: [], docNo: '', issuer: '', customer: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان' };
+  var inv = { lines: [], docNo: '', issuer: '', customer: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان', pay: { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false } };
   var invDate = '';
   try { var saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved && Array.isArray(saved.lines)) inv = Object.assign(inv, saved); } catch (e) { /* storage unavailable: the draft lives for this visit only */ }
   function invSave() { try { localStorage.setItem(STORE, JSON.stringify(inv)); } catch (e) { /* ignore */ } }
@@ -87,6 +87,8 @@
     });
     document.body.setAttribute('data-brand', state.src);
     if (!state.src) document.body.removeAttribute('data-brand');
+    var sb = $('catSearchBtn');
+    if (sb) sb.classList.toggle('has-filter', !!(state.q || state.src || state.grp || state.sec));
     shown = PAGE; render();
   }
 
@@ -201,6 +203,87 @@
   function totals() { return totalsOf(inv); }
   function money(n, unit) { return faInt.format(Math.round(n)) + ' ' + (unit || inv.unit); }
   function today() { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch (e) { return ''; } }
+  // ----- payment terms (cash / cheque / mixed) with Jalali due dates
+  var JD = function () { return window.MSJDate; };
+  function ensurePay() {
+    if (!inv.pay || typeof inv.pay !== 'object' || !Array.isArray(inv.pay.cheques)) inv.pay = { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false };
+    return inv.pay;
+  }
+  function paySplit() { return window.MSMath.payment(inv); }
+  function payNormalize() {
+    var p = ensurePay();
+    if (p.mode === 'cash') return;
+    var n = Math.max(1, Math.min(12, Math.round(p.count || 1))), s = paySplit(), J = JD();
+    p.count = n;
+    while (p.cheques.length < n) p.cheques.push({ amount: 0, date: '', dateSet: false });
+    p.cheques.length = n;
+    var base = J && J.parse(invDate) ? J.latin(invDate) : (J ? J.today() : '');
+    p.cheques.forEach(function (c, i) { if (!c.dateSet && J) c.date = J.persian(J.addDays(base, 30 * (i + 1))); });
+    if (!p.custom) {
+      var each = Math.floor(s.cheque / n);
+      p.cheques.forEach(function (c, i) { c.amount = i === n - 1 ? s.cheque - each * (n - 1) : each; });
+    }
+  }
+  function payCopy() {
+    var p = ensurePay();
+    return { mode: p.mode, cashVal: p.cashVal || 0, cashUnit: p.cashUnit, count: p.count || 1, custom: !!p.custom,
+      cheques: p.mode === 'cash' ? [] : p.cheques.map(function (c) { return { amount: c.amount || 0, date: c.date || '', dateSet: true }; }) };
+  }
+  function chequeCheck() {
+    var p = ensurePay(), s = paySplit(), sum = 0;
+    p.cheques.forEach(function (c) { sum += c.amount || 0; });
+    var diff = s.cheque - sum;
+    return diff === 0
+      ? '<p class="pay-ok">مجموع چک‌ها با سهم چکی برابر است.</p>'
+      : '<p class="pay-warn">مجموع چک‌ها ' + money(sum) + ' است و ' + money(Math.abs(diff)) + (diff > 0 ? ' کمتر' : ' بیشتر') + ' از سهم چکی (' + money(s.cheque) + ') است.' +
+        ' <button type="button" class="pay-link" data-pay-equal>تقسیم مساوی</button></p>';
+  }
+  function payHtml() {
+    var p = ensurePay(), s = paySplit(), isMixed = p.mode === 'mixed', hasCheque = p.mode !== 'cash';
+    var seg = [['cash', 'نقدی'], ['cheque', 'چکی'], ['mixed', 'نقد و چک']].map(function (m) {
+      return '<label><input type="radio" name="payMode" value="' + m[0] + '" data-pay-mode' + (p.mode === m[0] ? ' checked' : '') + '><span>' + m[1] + '</span></label>';
+    }).join('');
+    var h = '<h3>شرایط پرداخت</h3><div class="pay-seg" role="radiogroup" aria-label="نوع پرداخت">' + seg + '</div>';
+    if (!hasCheque) return h + '<p class="pay-note">کل مبلغ <b>' + money(s.total) + '</b> نقداً پرداخت می‌شود.</p>';
+    if (isMixed) {
+      h += '<div class="pay-cash"><label>سهم نقد<input type="text" inputmode="decimal" data-f="cashVal" value="' + (p.cashVal ? esc((p.cashUnit === 'amt' ? faInt : fa).format(p.cashVal)) : '') + '" placeholder="۰"></label>' +
+        '<div class="pay-seg small" role="radiogroup" aria-label="واحد سهم نقد">' +
+        '<label><input type="radio" name="payUnit" value="pct" data-pay-unit' + (p.cashUnit !== 'amt' ? ' checked' : '') + '><span>درصد</span></label>' +
+        '<label><input type="radio" name="payUnit" value="amt" data-pay-unit' + (p.cashUnit === 'amt' ? ' checked' : '') + '><span>' + esc(inv.unit) + '</span></label></div></div>';
+    }
+    h += '<p class="pay-sum" data-pay-sum>' + (isMixed ? 'نقد <b>' + money(s.cash) + '</b> · ' : '') + 'چک <b>' + money(s.cheque) + '</b></p>';
+    h += '<div class="pay-count"><span>تعداد فقره چک</span><div class="pay-step"><button type="button" data-pay-count="-1" aria-label="کمتر">−</button><b>' + faInt.format(p.count) + '</b><button type="button" data-pay-count="1" aria-label="بیشتر">+</button></div></div>';
+    h += '<ul class="pay-cheques">' + p.cheques.map(function (c, i) {
+      return '<li><span class="pay-n">چک ' + faInt.format(i + 1) + '</span>' +
+        '<label>مبلغ<input type="text" inputmode="numeric" data-f="chAmount" data-i="' + i + '" value="' + (c.amount ? esc(faInt.format(c.amount)) : '') + '" placeholder="۰"></label>' +
+        '<label>تاریخ سررسید<input type="text" data-f="chDate" data-i="' + i + '" data-jdate readonly inputmode="none" value="' + esc(c.date || '') + '" placeholder="انتخاب تاریخ"></label></li>';
+    }).join('') + '</ul><div data-pay-check>' + chequeCheck() + '</div>';
+    return h;
+  }
+  function payRender() {
+    var box = dialog.querySelector('#payBox');
+    if (box) box.innerHTML = payHtml();
+  }
+  // keep amounts, dates and the summary in step without rebuilding the fields (the user may be typing in one of them)
+  function payRefresh() {
+    var box = dialog.querySelector('#payBox');
+    if (!box) return;
+    var p = ensurePay();
+    payNormalize();
+    if (p.mode === 'cash') { box.innerHTML = payHtml(); return; }
+    var s = paySplit(), sum = box.querySelector('[data-pay-sum]');
+    if (sum) sum.innerHTML = (p.mode === 'mixed' ? 'نقد <b>' + money(s.cash) + '</b> · ' : '') + 'چک <b>' + money(s.cheque) + '</b>';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-f=chAmount]'), function (el) {
+      var c = p.cheques[Number(el.getAttribute('data-i'))];
+      if (c && document.activeElement !== el) el.value = c.amount ? faInt.format(c.amount) : '';
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-f=chDate]'), function (el) {
+      var c = p.cheques[Number(el.getAttribute('data-i'))];
+      if (c) el.value = c.date || '';
+    });
+    var chk = box.querySelector('[data-pay-check]');
+    if (chk) chk.innerHTML = chequeCheck();
+  }
   function invTotalsRender() {
     var t = totals();
     Object.keys(t).forEach(function (k) { var el = dialog.querySelector('[data-t=' + k + ']'); if (el) el.textContent = money(t[k]); });
@@ -208,6 +291,7 @@
       var l = inv.lines[Number(row.getAttribute('data-i'))];
       if (l) row.querySelector('[data-sum]').textContent = money((l.qty || 0) * (l.price || 0));
     });
+    payRefresh();
   }
   function invoiceView() {
     if (!invDate) invDate = today();
@@ -225,7 +309,8 @@
         '<select data-f="discMode" aria-label="نوع تخفیف"><option value="pct"' + (inv.discMode === 'pct' ? ' selected' : '') + '>٪</option><option value="amt"' + (inv.discMode === 'amt' ? ' selected' : '') + '>مبلغ</option></select></span></label>' +
         '<label>مالیات بر ارزش افزوده (٪)<input type="text" inputmode="decimal" data-f="tax" value="' + esc(fa.format(inv.tax || 0)) + '"></label></div>' +
       '<dl class="inv-totals"><div><dt>جمع کل</dt><dd data-t="sub"></dd></div><div><dt>تخفیف</dt><dd data-t="disc"></dd></div><div><dt>پس از تخفیف</dt><dd data-t="net"></dd></div>' +
-        '<div><dt>مالیات</dt><dd data-t="tax"></dd></div></dl>'
+        '<div><dt>مالیات</dt><dd data-t="tax"></dd></div></dl>' +
+      '<section class="pay" id="payBox">' + (payNormalize(), payHtml()) + '</section>'
       : '<p class="inv-empty">پیش‌فاکتور خالی است. با دکمهٔ + روی هر محصول، آن را اضافه کنید.</p>';
     var foot = has ? '<div class="inv-foot"><div class="inv-pay"><span>مبلغ قابل پرداخت</span><b data-t="total"></b></div>' +
       '<div class="inv-actions"><button type="button" class="inv-clear" data-inv-clear aria-label="پاک‌کردن پیش‌فاکتور" title="پاک‌کردن پیش‌فاکتور">' + ICON.trash + '</button>' +
@@ -236,7 +321,7 @@
         '<label class="wide">مشتری<input type="text" data-f="customer" list="custList" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
         '<datalist id="custList">' + customerNames().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>' +
         '<label>شماره سند<input type="text" inputmode="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="خودکار" autocomplete="off"></label>' +
-        '<label>تاریخ<input type="text" data-f="date" value="' + esc(invDate) + '"></label>' +
+        '<label>تاریخ<input type="text" data-f="date" data-jdate readonly inputmode="none" value="' + esc(invDate) + '"></label>' +
         '<label>واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label></div>' + body + '</div>' + foot, 'inv-sheet');
     invTotalsRender();
   }
@@ -273,12 +358,22 @@
   function snapshot() {
     return {
       docNo: inv.docNo, date: invDate || today(), createdAt: Date.now(), customer: inv.customer, issuer: inv.issuer, unit: inv.unit,
-      tax: inv.tax, discount: inv.discount, discMode: inv.discMode,
+      tax: inv.tax, discount: inv.discount, discMode: inv.discMode, pay: payCopy(),
       lines: inv.lines.filter(function (l) { return byId[l.id]; }).map(function (l) {
         var it = byId[l.id];
         return { id: l.id, name: it.name, code: it.code, brand: srcLabel(it.src), qty: l.qty || 0, price: l.price || 0 };
       })
     };
+  }
+  function payPrint(doc) {
+    var p = doc.pay || { mode: 'cash' }, s = window.MSMath.payment(doc), u = doc.unit, rows = '';
+    var pct = s.total ? Math.round(s.cash / s.total * 1000) / 10 : 0;
+    var title = p.mode === 'cheque' ? 'چکی (' + faInt.format((p.cheques || []).length) + ' فقره)'
+      : p.mode === 'mixed' ? faInt.format(pct) + '٪ نقد و ' + faInt.format(Math.round((100 - pct) * 10) / 10) + '٪ چک (' + faInt.format((p.cheques || []).length) + ' فقره)' : 'نقدی';
+    if (p.mode !== 'cheque') rows += '<tr><td>نقد</td><td>' + faInt.format(s.cash) + '</td><td>—</td></tr>';
+    if (p.mode !== 'cash') (p.cheques || []).forEach(function (c, i) { rows += '<tr><td>چک ' + faInt.format(i + 1) + '</td><td>' + faInt.format(c.amount || 0) + '</td><td>' + esc(c.date || '—') + '</td></tr>'; });
+    return '<p class="ip-line ip-payline"><strong>نحوهٔ پرداخت:</strong> ' + title + '</p>' +
+      '<table class="ip-pay"><thead><tr><th>پرداخت</th><th>مبلغ (' + esc(u) + ')</th><th>تاریخ سررسید</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
   function printDoc(doc) {
     var t = totalsOf(doc), u = doc.unit;
@@ -295,7 +390,7 @@
         '<table class="ip-items"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th><th>قیمت واحد (' + esc(u) + ')</th><th>قیمت کل (' + esc(u) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<table class="ip-totals"><tbody><tr><td>جمع کل</td><td>' + money(t.sub, u) + '</td></tr><tr><td>تخفیف</td><td>' + money(t.disc, u) + '</td></tr><tr><td>مبلغ پس از تخفیف</td><td>' + money(t.net, u) + '</td></tr>' +
         '<tr><td>مالیات بر ارزش افزوده (' + esc(fa.format(doc.tax || 0)) + '٪)</td><td>' + money(t.tax, u) + '</td></tr><tr class="grand"><td>مبلغ قابل پرداخت</td><td>' + money(t.total, u) + '</td></tr></tbody></table>' +
-        '<p class="ip-words"><strong>مبلغ به حروف:</strong> ' + esc(numWords(t.total)) + ' ' + esc(u) + '</p>' +
+        '<p class="ip-words"><strong>مبلغ به حروف:</strong> ' + esc(numWords(t.total)) + ' ' + esc(u) + '</p>' + payPrint(doc) +
         '<div class="ip-sign"><div><b>امضا و تاریخ صادرکننده</b></div><div><b>امضا و تاریخ مشتری</b></div></div>' +
       '</td></tr></tbody><tfoot><tr><td><div class="ip-foot">پیش‌فاکتور | مکث سیلور' + (doc.docNo ? ' | ' + esc(doc.docNo) : '') + '</div></td></tr></tfoot></table>';
     document.body.classList.add('inv-print');
@@ -349,7 +444,7 @@
         : '<p class="inv-empty">هنوز پیش‌فاکتوری ذخیره نشده است. هر بار «دریافت PDF» بزنید، یک نسخه اینجا نگه‌داری می‌شود.</p>') +
         (foreign.length ? '<h3 class="arc-h">پیش‌فاکتورهای سایر ویزیتورها</h3><ul class="arc-list">' + fcards + '</ul>' : '') +
         '<p class="arc-note">پیش‌فاکتورها روی همین دستگاه ذخیره می‌شوند و با ورود به حساب (دکمهٔ کاربر بالای صفحه) بین دستگاه‌ها همگام می‌شوند. پشتیبان‌گیری هم همیشه ممکن است.</p></div>' +
-      '<div class="inv-foot"><div class="inv-actions"><button type="button" class="inv-pdf" data-arc-backup>' + ICON.print.replace(/<path d="[^"]*"\/>/, '<path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/>') + '<span>پشتیبان‌گیری</span></button>' +
+      '<div class="inv-foot"><div class="inv-actions"><button type="button" class="arc-close" data-close aria-label="بستن">' + ICON.close + '</button><button type="button" class="inv-pdf" data-arc-backup>' + ICON.print.replace(/<path d="[^"]*"\/>/, '<path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/>') + '<span>پشتیبان‌گیری</span></button>' +
       '<label class="arc-restore">بازیابی<input type="file" accept=".json,application/json" data-arc-restore hidden></label></div></div>', 'inv-sheet');
   }
   function loadDraft(d, keepNo) {
@@ -357,6 +452,7 @@
     inv.lines = kept.map(function (l) { return { id: l.id, qty: l.qty, price: l.price }; });
     inv.docNo = keepNo ? d.docNo : '';
     inv.customer = d.customer; inv.issuer = d.issuer || inv.issuer; inv.unit = d.unit; inv.tax = d.tax; inv.discount = d.discount; inv.discMode = d.discMode;
+    inv.pay = d.pay ? JSON.parse(JSON.stringify(d.pay)) : { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false };
     invDate = keepNo ? d.date : today();
     invSave(); trayRender(); invButtons(); invoiceView();
     if (kept.length < d.lines.length) window.alert(faInt.format(d.lines.length - kept.length) + ' ردیف دیگر در کاتالوگ نیست و اضافه نشد.');
@@ -417,7 +513,7 @@
   }
   dialog.addEventListener('input', function (e) {
     var f = e.target.getAttribute('data-f'); if (!f) return;
-    if (e.target.tagName === 'INPUT' && /^(qty|price|discount|tax)$/.test(f)) liveFormat(e.target);
+    if (e.target.tagName === 'INPUT' && /^(qty|price|discount|tax|cashVal|chAmount)$/.test(f)) liveFormat(e.target);
     var row = e.target.closest('.inv-row'), l = row && inv.lines[Number(row.getAttribute('data-i'))];
     if (l && (f === 'qty' || f === 'price')) {
       l[f] = parseNum(e.target.value);
@@ -426,7 +522,11 @@
     else if (f === 'docNo' || f === 'issuer' || f === 'customer' || f === 'unit' || f === 'discMode') inv[f] = e.target.value;
     else if (f === 'date') invDate = e.target.value;
     else if (f === 'discount' || f === 'tax') inv[f] = parseNum(e.target.value);
-    invSave(); invTotalsRender();
+    else if (f === 'cashVal') ensurePay().cashVal = parseNum(e.target.value);
+    else if (f === 'chAmount') { var pc = ensurePay().cheques[Number(e.target.getAttribute('data-i'))]; if (pc) { pc.amount = parseNum(e.target.value); inv.pay.custom = true; } }
+    else if (f === 'chDate') { var pd = ensurePay().cheques[Number(e.target.getAttribute('data-i'))]; if (pd) { pd.date = e.target.value; pd.dateSet = true; } }
+    invSave();
+    if (f === 'chAmount' || f === 'chDate') { var chk = dialog.querySelector('[data-pay-check]'); if (chk) chk.innerHTML = chequeCheck(); } else invTotalsRender();
   });
   dialog.addEventListener('input', function (e) {
     if (!e.target.hasAttribute('data-arc-q')) return;
@@ -438,10 +538,21 @@
     var f = e.target.getAttribute('data-f');
     if (f === 'price' || f === 'qty') { var v = parseNum(e.target.value); e.target.value = v ? faInt.format(v) : ''; }
     if (f === 'unit' || f === 'discMode') { inv[f] = e.target.value; invSave(); invTotalsRender(); }
+    var pp = ensurePay();
+    if (e.target.hasAttribute('data-pay-mode')) {
+      pp.mode = e.target.value;
+      if (pp.mode === 'mixed' && !pp.cashVal) { pp.cashVal = 50; pp.cashUnit = 'pct'; }
+      pp.custom = false; payNormalize(); invSave(); payRender();
+    } else if (e.target.hasAttribute('data-pay-unit')) {
+      var sp = paySplit(), toAmt = e.target.value === 'amt';
+      pp.cashUnit = e.target.value;
+      pp.cashVal = toAmt ? sp.cash : (sp.total ? Math.round(sp.cash / sp.total * 1000) / 10 : 50);
+      pp.custom = false; payNormalize(); invSave(); payRender();
+    }
   });
 
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-backup],[data-close],[data-src]');
+    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-backup],[data-pay-count],[data-pay-equal],[data-close],[data-src]');
     if (e.target === dialog) { dialog.close(); return; }
     if (!t) return;
     if (t.hasAttribute('data-open')) detail(t.getAttribute('data-open'));
@@ -450,6 +561,8 @@
     else if (t.hasAttribute('data-inv')) toggleInvoice(t.getAttribute('data-inv'));
     else if (t.hasAttribute('data-inv-dlg')) { toggleInvoice(t.getAttribute('data-inv-dlg')); detail(t.getAttribute('data-inv-dlg')); }
     else if (t.hasAttribute('data-inv-rm')) { inv.lines.splice(Number(t.getAttribute('data-inv-rm')), 1); invSave(); trayRender(); invButtons(); invoiceView(); }
+    else if (t.hasAttribute('data-pay-count')) { var pq = ensurePay(); pq.count = Math.max(1, Math.min(12, (pq.count || 1) + Number(t.getAttribute('data-pay-count')))); pq.custom = false; payNormalize(); invSave(); payRender(); }
+    else if (t.hasAttribute('data-pay-equal')) { ensurePay().custom = false; payNormalize(); invSave(); payRender(); }
     else if (t.hasAttribute('data-inv-print')) invPrint();
     else if (t.hasAttribute('data-arc-open')) archiveView();
     else if (t.hasAttribute('data-inv-open')) invoiceView();
@@ -526,7 +639,65 @@
   $('invArchive').addEventListener('click', archiveView);
   $('cmpClear').addEventListener('click', function () { compare.slice().forEach(toggleCompare); });
 
-  fetch('./assets/catalog.json?v=20261122', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  // ----- search console: on phones/tablets it folds into a button next to the QR icon once you scroll past it
+  (function () {
+    var slot = $('catSlot'), tools = slot && slot.querySelector('.cat-tools'), shareBtn = $('msShare'), mq = window.matchMedia('(max-width:1100px)');
+    if (!slot || !tools || !shareBtn) return;
+    var box = document.createElement('div'), btn = document.createElement('button');
+    box.className = 'ms-actions';
+    shareBtn.parentNode.insertBefore(box, shareBtn);
+    box.appendChild(btn); box.appendChild(shareBtn);
+    btn.type = 'button'; btn.id = 'catSearchBtn'; btn.className = 'ms-search-btn'; btn.hidden = true;
+    btn.setAttribute('aria-label', 'جست‌وجو و فیلتر'); btn.setAttribute('aria-expanded', 'false'); btn.title = 'جست‌وجو و فیلتر';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>';
+    var away = false, open = false, openedAt = 0, lastY = 0;
+    function close() {
+      if (!open) return;
+      open = false; tools.classList.remove('float'); slot.style.height = ''; btn.setAttribute('aria-expanded', 'false'); openMenu(null, false);
+    }
+    function show() {
+      if (!mq.matches || !away || open) return;
+      slot.style.height = tools.offsetHeight + 'px';
+      tools.classList.add('float'); open = true; openedAt = Date.now(); lastY = window.scrollY;
+      btn.setAttribute('aria-expanded', 'true');
+      try { $('catSearch').focus({ preventScroll: true }); } catch (e) { $('catSearch').focus(); }
+    }
+    function setAway(v) {
+      away = v && mq.matches;
+      btn.hidden = !away;
+      if (!away) close();
+    }
+    var barH = function () { var h = document.querySelector('.ms-sitebar'); return h ? h.getBoundingClientRect().height : 60; };
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        var r = entries[0];
+        setAway(!r.isIntersecting && r.boundingClientRect.bottom <= barH() + 12);
+      }, { rootMargin: '-' + Math.round(barH()) + 'px 0px 0px 0px' });
+      io.observe(slot);
+    }
+    btn.addEventListener('click', function () { if (open) close(); else show(); });
+    // any real scrolling folds the console back into the bar; touches inside the console itself do not
+    var fold = function (e) { if (open && !(e.target instanceof Node && tools.contains(e.target))) close(); };
+    window.addEventListener('wheel', fold, { passive: true });
+    window.addEventListener('touchmove', fold, { passive: true });
+    window.addEventListener('scroll', function () {
+      if (open && Date.now() - openedAt > 900 && Math.abs(window.scrollY - lastY) > 60) close();
+    }, { passive: true });
+    document.addEventListener('click', function (e) { if (open && !tools.contains(e.target) && !btn.contains(e.target)) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    mq.addEventListener && mq.addEventListener('change', function () { setAway(false); });
+  })();
+
+  // ----- the (i) note: tap to read (hover tooltips do not exist on touch screens)
+  (function () {
+    var b = $('catNote'), p = $('catNoteText');
+    if (!b || !p) return;
+    b.addEventListener('click', function (e) { e.stopPropagation(); var on = p.hidden; p.hidden = !on; b.setAttribute('aria-expanded', String(on)); });
+    document.addEventListener('click', function (e) { if (!p.hidden && !p.contains(e.target)) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); } });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
+  })();
+
+  fetch('./assets/catalog.json?v=20261126', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();
