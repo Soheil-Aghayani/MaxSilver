@@ -22,7 +22,7 @@
   var state = { q: '', src: '', grp: '', sec: '', sort: 'name' };
   var compare = [];
   var STORE = 'ms-proforma-v1';
-  var inv = { lines: [], issuer: '', customer: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان' };
+  var inv = { lines: [], docNo: '', issuer: '', customer: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان' };
   var invDate = '';
   try { var saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved && Array.isArray(saved.lines)) inv = Object.assign(inv, saved); } catch (e) { /* storage unavailable: the draft lives for this visit only */ }
   function invSave() { try { localStorage.setItem(STORE, JSON.stringify(inv)); } catch (e) { /* ignore */ } }
@@ -78,6 +78,8 @@
       if (by === 'size') return volume(b) - volume(a);
       return a.name.localeCompare(b.name, 'fa');
     });
+    document.body.setAttribute('data-brand', state.src);
+    if (!state.src) document.body.removeAttribute('data-brand');
     shown = PAGE; render();
   }
 
@@ -230,6 +232,7 @@
       '<div class="inv-body"><div class="inv-meta">' +
         '<label class="wide">صادرکننده (ویزیتور)<input type="text" data-f="issuer" value="' + esc(inv.issuer) + '" autocomplete="name" placeholder="نام و نام خانوادگی"></label>' +
         '<label class="wide">مشتری<input type="text" data-f="customer" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
+        '<label>شماره سند<input type="text" inputmode="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="PF-001" autocomplete="off"></label>' +
         '<label>تاریخ<input type="text" data-f="date" value="' + esc(invDate) + '"></label>' +
         '<label>واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label></div>' + body + '</div>' + foot, 'inv-sheet');
     invTotalsRender();
@@ -238,22 +241,49 @@
     var t = totals();
     var rows = inv.lines.map(function (l, i) {
       var it = byId[l.id];
-      return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(it.code) + '</td><td>' + esc(it.name) + '</td><td>' + faInt.format(l.qty || 0) + '</td><td>' + faInt.format(l.price || 0) + '</td><td>' + faInt.format(Math.round((l.qty || 0) * (l.price || 0))) + '</td></tr>';
+      return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(it.code) + '</td><td class="ip-name">' + esc(it.name) + '</td><td>' + esc(srcLabel(it.src)) + '</td><td>' + faInt.format(l.qty || 0) + '</td><td>' + faInt.format(l.price || 0) + '</td><td>' + faInt.format(Math.round((l.qty || 0) * (l.price || 0))) + '</td></tr>';
     }).join('');
-    $('invPrint').innerHTML = '<div class="ip-head"><img src="./assets/branding/maxsilver-logo.svg" alt="مکث‌سیلور" width="175" height="30"><h1>پیش‌فاکتور</h1>' +
-      '<div class="ip-meta"><span>تاریخ: ' + esc(invDate || today()) + '</span><span>مشتری: ' + esc(inv.customer || '—') + '</span><span>صادرکننده: ' + esc(inv.issuer || '—') + '</span></div></div>' +
-      '<table><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>تعداد</th><th>قیمت واحد (' + esc(inv.unit) + ')</th><th>قیمت کل (' + esc(inv.unit) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      '<dl class="ip-totals"><div><dt>جمع کل</dt><dd>' + money(t.sub) + '</dd></div><div><dt>تخفیف</dt><dd>' + money(t.disc) + '</dd></div><div><dt>پس از تخفیف</dt><dd>' + money(t.net) + '</dd></div>' +
-      '<div><dt>مالیات (' + esc(fa.format(inv.tax || 0)) + '٪)</dt><dd>' + money(t.tax) + '</dd></div><div class="grand"><dt>مبلغ قابل پرداخت</dt><dd>' + money(t.total) + '</dd></div></dl>';
+    var date = esc(invDate || today());
+    $('invPrint').innerHTML = '<table class="ip-frame"><thead><tr><td>' +
+        '<div class="ip-top"><div class="ip-brand"><img src="./assets/branding/maxsilver-logo.svg" alt="مکث سیلور · MAX SILVER" width="175" height="30"></div>' +
+        '<dl class="ip-ref"><div><dt>شماره سند:</dt><dd dir="ltr">' + esc(inv.docNo) + '</dd></div><div><dt>تاریخ:</dt><dd>' + date + '</dd></div></dl></div>' +
+      '</td></tr></thead><tbody><tr><td>' +
+        '<h1>پیش‌فاکتور</h1>' +
+        '<p class="ip-line"><strong>مشتری:</strong> ' + esc(inv.customer || '—') + '</p>' +
+        '<p class="ip-line"><strong>صادرکننده (ویزیتور):</strong> ' + esc(inv.issuer || '—') + '</p>' +
+        '<table class="ip-items"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th><th>قیمت واحد (' + esc(inv.unit) + ')</th><th>قیمت کل (' + esc(inv.unit) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<table class="ip-totals"><tbody><tr><td>جمع کل</td><td>' + money(t.sub) + '</td></tr><tr><td>تخفیف</td><td>' + money(t.disc) + '</td></tr><tr><td>مبلغ پس از تخفیف</td><td>' + money(t.net) + '</td></tr>' +
+        '<tr><td>مالیات بر ارزش افزوده (' + esc(fa.format(inv.tax || 0)) + '٪)</td><td>' + money(t.tax) + '</td></tr><tr class="grand"><td>مبلغ قابل پرداخت</td><td>' + money(t.total) + '</td></tr></tbody></table>' +
+        '<div class="ip-sign"><div><b>امضا و تاریخ صادرکننده</b></div><div><b>امضا و تاریخ مشتری</b></div></div>' +
+      '</td></tr></tbody><tfoot><tr><td><div class="ip-foot">پیش‌فاکتور | مکث سیلور' + (inv.docNo ? ' | ' + esc(inv.docNo) : '') + '</div></td></tr></tfoot></table>';
     document.body.classList.add('inv-print');
     window.print();
   }
   window.addEventListener('afterprint', function () { document.body.classList.remove('inv-print'); });
+  // live Persian digits + thousands separators while typing; the caret stays after the same digit
+  function liveFormat(input) {
+    var raw = input.value, pos = input.selectionStart == null ? raw.length : input.selectionStart;
+    var ascii = function (t) {
+      return t.replace(/[۰-۹]/g, function (d) { return d.charCodeAt(0) - 1776; }).replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; }).replace(/[٫,]/g, '.');
+    };
+    var keep = function (t) { return ascii(t).replace(/[^0-9.]/g, ''); };
+    var before = keep(raw.slice(0, pos)).length;
+    var clean = keep(raw), dot = clean.indexOf('.');
+    var intPart = (dot < 0 ? clean : clean.slice(0, dot)).replace(/\./g, ''), frac = dot < 0 ? null : clean.slice(dot + 1).replace(/\./g, '');
+    var grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '٬');
+    var out = (grouped + (frac === null ? '' : '٫' + frac)).replace(/[0-9]/g, function (d) { return String.fromCharCode(1776 + Number(d)); });
+    if (out === raw) return;
+    var idx = 0, seen = 0;
+    while (idx < out.length && seen < before) { if (/[۰-۹٫]/.test(out[idx])) seen++; idx++; }
+    input.value = out;
+    try { input.setSelectionRange(idx, idx); } catch (err) { /* not supported for this input */ }
+  }
   dialog.addEventListener('input', function (e) {
     var f = e.target.getAttribute('data-f'); if (!f) return;
+    if (e.target.tagName === 'INPUT' && /^(qty|price|discount|tax)$/.test(f)) liveFormat(e.target);
     var row = e.target.closest('.inv-row'), l = row && inv.lines[Number(row.getAttribute('data-i'))];
     if (l && (f === 'qty' || f === 'price')) l[f] = parseNum(e.target.value);
-    else if (f === 'issuer' || f === 'customer' || f === 'unit' || f === 'discMode') inv[f] = e.target.value;
+    else if (f === 'docNo' || f === 'issuer' || f === 'customer' || f === 'unit' || f === 'discMode') inv[f] = e.target.value;
     else if (f === 'date') invDate = e.target.value;
     else if (f === 'discount' || f === 'tax') inv[f] = parseNum(e.target.value);
     invSave(); invTotalsRender();
@@ -340,7 +370,7 @@
   $('invOpen').addEventListener('click', invoiceView);
   $('cmpClear').addEventListener('click', function () { compare.slice().forEach(toggleCompare); });
 
-  fetch('./assets/catalog.json?v=20261031', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261104', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();
