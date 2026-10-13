@@ -76,7 +76,7 @@ for r in rows:
         "dims": dims or None, "wt": weight, "specs": [[k, specs[k]] for k in KEEP if k in specs]
     })
 out_obj = {"generated": "2026-10-13", "note": "دسته‌بندی صنفی و مشخصات نرمال‌شده ماشینی و تأییدنشده‌اند.", "sources": [{"key": k, "label": v} for k, v in labels.items()],
-           "groups": sorted({i["grp"] for i in items if i["grp"]}), "sectors": sorted(sectors.values()), "items": items}
+           "groups": sorted({i["grp"] for i in items if i["grp"]}), "sectors": sorted({x for i in items for x in i["sec"]}), "items": items}
 with open(out, "w", encoding="utf-8") as f: json.dump(out_obj, f, ensure_ascii=False, separators=(",", ":"))
 with open(report, "w", encoding="utf-8") as f:
     f.write(f"rule_version={latest}\nitems={len(items)}\n")
