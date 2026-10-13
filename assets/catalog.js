@@ -26,6 +26,13 @@
   var invDate = '';
   try { var saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved && Array.isArray(saved.lines)) inv = Object.assign(inv, saved); } catch (e) { /* storage unavailable: the draft lives for this visit only */ }
   function invSave() { try { localStorage.setItem(STORE, JSON.stringify(inv)); } catch (e) { /* ignore */ } }
+  var ARCH_KEY = 'ms-proforma-archive-v1', PRICE_KEY = 'ms-proforma-prices-v1';
+  function loadJson(key, fallback) { try { var v = JSON.parse(localStorage.getItem(key) || 'null'); return v == null ? fallback : v; } catch (e) { return fallback; } }
+  function saveJson(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) { /* ignore */ } }
+  var archive = loadJson(ARCH_KEY, []);
+  if (!Array.isArray(archive)) archive = [];
+  var prices = loadJson(PRICE_KEY, {});
+  var foreign = []; // other visitors' proformas, visible to managers once signed in; never persisted locally
   function invLine(id) { return inv.lines.filter(function (l) { return l.id === id; })[0]; }
   function parseNum(v) {
     return Number(String(v == null ? '' : v).replace(/[۰-۹]/g, function (d) { return d.charCodeAt(0) - 1776; }).replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; })
@@ -133,7 +140,7 @@
   }
   function toggleInvoice(id) {
     var l = invLine(id);
-    if (l) inv.lines.splice(inv.lines.indexOf(l), 1); else inv.lines.push({ id: id, qty: 1, price: 0 });
+    if (l) inv.lines.splice(inv.lines.indexOf(l), 1); else inv.lines.push({ id: id, qty: 1, price: prices[id] || 0 });
     invSave(); trayRender(); invButtons();
   }
   function invButtons() {
@@ -190,14 +197,15 @@
   }
 
   var UNITS = ['تومان', 'ریال'];
-  function totals() {
+  function totalsOf(d) {
     var sub = 0;
-    inv.lines.forEach(function (l) { sub += (l.qty || 0) * (l.price || 0); });
-    var disc = inv.discMode === 'pct' ? sub * Math.min(inv.discount || 0, 100) / 100 : Math.min(inv.discount || 0, sub);
-    var net = sub - disc, tax = net * (inv.tax || 0) / 100;
+    d.lines.forEach(function (l) { sub += (l.qty || 0) * (l.price || 0); });
+    var disc = d.discMode === 'pct' ? sub * Math.min(d.discount || 0, 100) / 100 : Math.min(d.discount || 0, sub);
+    var net = sub - disc, tax = net * (d.tax || 0) / 100;
     return { sub: sub, disc: disc, net: net, tax: tax, total: net + tax };
   }
-  function money(n) { return faInt.format(Math.round(n)) + ' ' + inv.unit; }
+  function totals() { return totalsOf(inv); }
+  function money(n, unit) { return faInt.format(Math.round(n)) + ' ' + (unit || inv.unit); }
   function today() { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch (e) { return ''; } }
   function invTotalsRender() {
     var t = totals();
@@ -228,10 +236,11 @@
     var foot = has ? '<div class="inv-foot"><div class="inv-pay"><span>مبلغ قابل پرداخت</span><b data-t="total"></b></div>' +
       '<div class="inv-actions"><button type="button" class="inv-clear" data-inv-clear aria-label="پاک‌کردن پیش‌فاکتور" title="پاک‌کردن پیش‌فاکتور">' + ICON.trash + '</button>' +
       '<button type="button" class="inv-pdf" data-inv-print>' + ICON.print + '<span>دریافت PDF</span></button></div></div>' : '';
-    openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتور</h2><button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
+    openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتور</h2><button type="button" class="dlg-link" data-arc-open>سوابق</button><button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
       '<div class="inv-body"><div class="inv-meta">' +
         '<label class="wide">صادرکننده (ویزیتور)<input type="text" data-f="issuer" value="' + esc(inv.issuer) + '" autocomplete="name" placeholder="نام و نام خانوادگی"></label>' +
-        '<label class="wide">مشتری<input type="text" data-f="customer" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
+        '<label class="wide">مشتری<input type="text" data-f="customer" list="custList" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
+        '<datalist id="custList">' + customerNames().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>' +
         '<label>شماره سند<input type="text" inputmode="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="خودکار" autocomplete="off"></label>' +
         '<label>تاریخ<input type="text" data-f="date" value="' + esc(invDate) + '"></label>' +
         '<label>واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label></div>' + body + '</div>' + foot, 'inv-sheet');
@@ -264,32 +273,131 @@
     var part = function (type) { var x = parts.filter(function (p) { return p.type === type; })[0]; return x ? x.value.replace(/\D/g, '') : ''; };
     var ymd = (part('year').slice(-2) + part('month') + part('day')) || String(Date.now()).slice(-6);
     try { seq = (Number(localStorage.getItem('ms-proforma-seq')) || 0) + 1; localStorage.setItem('ms-proforma-seq', String(seq)); } catch (e) { /* ignore */ }
-    return 'PF-' + ymd + '-' + ('00' + seq).slice(-3);
+    var owner = window.MSSync ? window.MSSync.code() : '';
+    return 'PF-' + ymd + (owner ? '-' + owner : '') + '-' + ('00' + seq).slice(-3);
   }
-  function invPrint() {
-    if (!inv.docNo) { inv.docNo = nextDocNo(); invSave(); var field = dialog.querySelector('[data-f=docNo]'); if (field) field.value = inv.docNo; }
-    var t = totals();
-    var rows = inv.lines.map(function (l, i) {
-      var it = byId[l.id];
-      return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(it.code) + '</td><td class="ip-name">' + esc(it.name) + '</td><td>' + esc(srcLabel(it.src)) + '</td><td>' + faInt.format(l.qty || 0) + '</td><td>' + faInt.format(l.price || 0) + '</td><td>' + faInt.format(Math.round((l.qty || 0) * (l.price || 0))) + '</td></tr>';
+  function snapshot() {
+    return {
+      docNo: inv.docNo, date: invDate || today(), createdAt: Date.now(), customer: inv.customer, issuer: inv.issuer, unit: inv.unit,
+      tax: inv.tax, discount: inv.discount, discMode: inv.discMode,
+      lines: inv.lines.filter(function (l) { return byId[l.id]; }).map(function (l) {
+        var it = byId[l.id];
+        return { id: l.id, name: it.name, code: it.code, brand: srcLabel(it.src), qty: l.qty || 0, price: l.price || 0 };
+      })
+    };
+  }
+  function printDoc(doc) {
+    var t = totalsOf(doc), u = doc.unit;
+    var rows = doc.lines.map(function (l, i) {
+      return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(l.code) + '</td><td class="ip-name">' + esc(l.name) + '</td><td>' + esc(l.brand) + '</td><td>' + faInt.format(l.qty || 0) + '</td><td>' + faInt.format(l.price || 0) + '</td><td>' + faInt.format(Math.round((l.qty || 0) * (l.price || 0))) + '</td></tr>';
     }).join('');
-    var date = esc(invDate || today());
     $('invPrint').innerHTML = '<table class="ip-frame"><thead><tr><td>' +
         '<div class="ip-top"><div class="ip-brand"><img src="./assets/branding/maxsilver-logo.svg" alt="مکث سیلور · MAX SILVER" width="175" height="30"></div>' +
-        '<dl class="ip-ref"><div><dt>شماره سند:</dt><dd dir="ltr">' + esc(inv.docNo) + '</dd></div><div><dt>تاریخ:</dt><dd>' + date + '</dd></div></dl></div>' +
+        '<dl class="ip-ref"><div><dt>شماره سند:</dt><dd dir="ltr">' + esc(doc.docNo) + '</dd></div><div><dt>تاریخ:</dt><dd>' + esc(doc.date) + '</dd></div></dl></div>' +
       '</td></tr></thead><tbody><tr><td>' +
         '<h1>پیش‌فاکتور</h1>' +
-        '<p class="ip-line"><strong>مشتری:</strong> ' + esc(inv.customer || '—') + '</p>' +
-        '<p class="ip-line"><strong>صادرکننده (ویزیتور):</strong> ' + esc(inv.issuer || '—') + '</p>' +
-        '<table class="ip-items"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th><th>قیمت واحد (' + esc(inv.unit) + ')</th><th>قیمت کل (' + esc(inv.unit) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-        '<table class="ip-totals"><tbody><tr><td>جمع کل</td><td>' + money(t.sub) + '</td></tr><tr><td>تخفیف</td><td>' + money(t.disc) + '</td></tr><tr><td>مبلغ پس از تخفیف</td><td>' + money(t.net) + '</td></tr>' +
-        '<tr><td>مالیات بر ارزش افزوده (' + esc(fa.format(inv.tax || 0)) + '٪)</td><td>' + money(t.tax) + '</td></tr><tr class="grand"><td>مبلغ قابل پرداخت</td><td>' + money(t.total) + '</td></tr></tbody></table>' +
-        '<p class="ip-words"><strong>مبلغ به حروف:</strong> ' + esc(numWords(t.total)) + ' ' + esc(inv.unit) + '</p>' +
+        '<p class="ip-line"><strong>مشتری:</strong> ' + esc(doc.customer || '—') + '</p>' +
+        '<p class="ip-line"><strong>صادرکننده (ویزیتور):</strong> ' + esc(doc.issuer || '—') + '</p>' +
+        '<table class="ip-items"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th><th>قیمت واحد (' + esc(u) + ')</th><th>قیمت کل (' + esc(u) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<table class="ip-totals"><tbody><tr><td>جمع کل</td><td>' + money(t.sub, u) + '</td></tr><tr><td>تخفیف</td><td>' + money(t.disc, u) + '</td></tr><tr><td>مبلغ پس از تخفیف</td><td>' + money(t.net, u) + '</td></tr>' +
+        '<tr><td>مالیات بر ارزش افزوده (' + esc(fa.format(doc.tax || 0)) + '٪)</td><td>' + money(t.tax, u) + '</td></tr><tr class="grand"><td>مبلغ قابل پرداخت</td><td>' + money(t.total, u) + '</td></tr></tbody></table>' +
+        '<p class="ip-words"><strong>مبلغ به حروف:</strong> ' + esc(numWords(t.total)) + ' ' + esc(u) + '</p>' +
         '<div class="ip-sign"><div><b>امضا و تاریخ صادرکننده</b></div><div><b>امضا و تاریخ مشتری</b></div></div>' +
-      '</td></tr></tbody><tfoot><tr><td><div class="ip-foot">پیش‌فاکتور | مکث سیلور' + (inv.docNo ? ' | ' + esc(inv.docNo) : '') + '</div></td></tr></tfoot></table>';
+      '</td></tr></tbody><tfoot><tr><td><div class="ip-foot">پیش‌فاکتور | مکث سیلور' + (doc.docNo ? ' | ' + esc(doc.docNo) : '') + '</div></td></tr></tfoot></table>';
     document.body.classList.add('inv-print');
     window.print();
   }
+  function invPrint() {
+    if (!inv.docNo) { inv.docNo = nextDocNo(); invSave(); var field = dialog.querySelector('[data-f=docNo]'); if (field) field.value = inv.docNo; }
+    var doc = snapshot();
+    doc.updatedAt = Date.now();
+    doc.synced = false;
+    archive = archive.filter(function (d) { return d.docNo !== doc.docNo; });
+    archive.unshift(doc);
+    archive = archive.slice(0, 500);
+    saveJson(ARCH_KEY, archive);
+    if (window.MSSync) window.MSSync.push();
+    printDoc(doc);
+  }
+
+  // ----- archive: saved proformas, customers and a portable backup of everything kept on this device
+  var BACKUP_KEYS = [STORE, ARCH_KEY, PRICE_KEY, 'ms-proforma-seq', 'ms-ig-v1'];
+  function customerNames() {
+    var seen = {}, out = [];
+    var me = window.MSSync ? window.MSSync.uid() : '';
+    archive.forEach(function (d) { var n = (d.customer || '').trim(); if (n && !seen[n] && !(me && d.ownerUid && d.ownerUid !== me)) { seen[n] = 1; out.push(n); } });
+    return out;
+  }
+  function archiveView() {
+    var me = window.MSSync ? window.MSSync.uid() : '';
+    var cards = archive.map(function (d, i) {
+      if (me && d.ownerUid && d.ownerUid !== me) return ''; // another account's local copy on this shared device
+      var t = totalsOf(d);
+      return '<li class="arc-card" data-q="' + esc(norm([d.docNo, d.customer, d.issuer, d.date].join(' '))) + '">' +
+        '<div class="arc-head"><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.date) + '</span></div>' +
+        '<div class="arc-cust">' + esc(d.customer || 'بدون نام مشتری') + (d.issuer ? ' <small>· ' + esc(d.issuer) + '</small>' : '') + '</div>' +
+        '<div class="arc-meta"><span>' + faInt.format(d.lines.length) + ' ردیف</span><b>' + money(t.total, d.unit) + '</b></div>' +
+        '<div class="arc-actions"><button type="button" data-arc-edit="' + i + '">ویرایش</button><button type="button" data-arc-copy="' + i + '">کپی</button>' +
+        '<button type="button" data-arc-pdf="' + i + '">PDF</button><button type="button" class="danger" data-arc-del="' + i + '" aria-label="حذف">' + ICON.trash + '</button></div></li>';
+    }).join('');
+    var fcards = foreign.map(function (d, i) {
+      var t = totalsOf(d);
+      return '<li class="arc-card" data-q="' + esc(norm([d.docNo, d.customer, d.issuer, d.ownerName, d.date].join(' '))) + '">' +
+        '<div class="arc-head"><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.date) + '</span></div>' +
+        '<div class="arc-cust">' + esc(d.customer || 'بدون نام مشتری') + ' <small>· ' + esc(d.ownerName || d.issuer || '') + '</small></div>' +
+        '<div class="arc-meta"><span>' + faInt.format(d.lines.length) + ' ردیف</span><b>' + money(t.total, d.unit) + '</b></div>' +
+        '<div class="arc-actions two"><button type="button" data-arc-fcopy="' + i + '">کپی</button><button type="button" data-arc-fpdf="' + i + '">PDF</button></div></li>';
+    }).join('');
+    openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتورهای ذخیره‌شده</h2><button type="button" class="dlg-link" data-inv-open>پیش‌نویس</button>' +
+      '<button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
+      '<div class="inv-body">' + (archive.length
+        ? '<label class="arc-search">جست‌وجو<input type="search" data-arc-q placeholder="شماره سند یا نام مشتری"></label><ul class="arc-list">' + cards + '</ul>'
+        : '<p class="inv-empty">هنوز پیش‌فاکتوری ذخیره نشده است. هر بار «دریافت PDF» بزنید، یک نسخه اینجا نگه‌داری می‌شود.</p>') +
+        (foreign.length ? '<h3 class="arc-h">پیش‌فاکتورهای سایر ویزیتورها</h3><ul class="arc-list">' + fcards + '</ul>' : '') +
+        '<p class="arc-note">پیش‌فاکتورها روی همین دستگاه ذخیره می‌شوند و با ورود به حساب (دکمهٔ کاربر بالای صفحه) بین دستگاه‌ها همگام می‌شوند. پشتیبان‌گیری هم همیشه ممکن است.</p></div>' +
+      '<div class="inv-foot"><div class="inv-actions"><button type="button" class="inv-pdf" data-arc-backup>' + ICON.print.replace(/<path d="[^"]*"\/>/, '<path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/>') + '<span>پشتیبان‌گیری</span></button>' +
+      '<label class="arc-restore">بازیابی<input type="file" accept=".json,application/json" data-arc-restore hidden></label></div></div>', 'inv-sheet');
+  }
+  function loadDraft(d, keepNo) {
+    var kept = d.lines.filter(function (l) { return byId[l.id]; });
+    inv.lines = kept.map(function (l) { return { id: l.id, qty: l.qty, price: l.price }; });
+    inv.docNo = keepNo ? d.docNo : '';
+    inv.customer = d.customer; inv.issuer = d.issuer || inv.issuer; inv.unit = d.unit; inv.tax = d.tax; inv.discount = d.discount; inv.discMode = d.discMode;
+    invDate = keepNo ? d.date : today();
+    invSave(); trayRender(); invButtons(); invoiceView();
+    if (kept.length < d.lines.length) window.alert(faInt.format(d.lines.length - kept.length) + ' ردیف دیگر در کاتالوگ نیست و اضافه نشد.');
+  }
+  function downloadBackup() {
+    var out = { app: 'maxsilver-portal', version: 1, exported: new Date().toISOString(), data: {} };
+    BACKUP_KEYS.forEach(function (k) { try { var v = localStorage.getItem(k); if (v != null) out.data[k] = v; } catch (e) { /* ignore */ } });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(out)], { type: 'application/json' }));
+    a.download = 'maxsilver-backup-' + out.exported.slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+  function restoreBackup(file) {
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var o = JSON.parse(r.result);
+        if (!o || o.app !== 'maxsilver-portal' || typeof o.data !== 'object') throw new Error('format');
+        BACKUP_KEYS.forEach(function (k) { if (typeof o.data[k] === 'string') JSON.parse(o.data[k]); });
+        if (!window.confirm('داده‌های فعلی این دستگاه با فایل پشتیبان جایگزین شود؟')) return;
+        BACKUP_KEYS.forEach(function (k) { if (typeof o.data[k] === 'string') localStorage.setItem(k, o.data[k]); });
+        location.reload();
+      } catch (e) { window.alert('فایل پشتیبان معتبر نیست.'); }
+    };
+    r.readAsText(file);
+  }
+  window.MSArchive = {
+    list: function () { return archive; },
+    prices: function () { return prices; },
+    replace: function (docs, priceMap) { archive = docs.slice(0, 500); prices = priceMap || prices; saveJson(ARCH_KEY, archive); saveJson(PRICE_KEY, prices); },
+    save: function () { saveJson(ARCH_KEY, archive); saveJson(PRICE_KEY, prices); },
+    setForeign: function (list) { foreign = list || []; },
+    setIssuer: function (name) { if (name && !inv.issuer) { inv.issuer = name; invSave(); } }
+  };
   window.addEventListener('afterprint', function () { document.body.classList.remove('inv-print'); });
   // live Persian digits + thousands separators while typing; the caret stays after the same digit
   function liveFormat(input) {
@@ -313,20 +421,29 @@
     var f = e.target.getAttribute('data-f'); if (!f) return;
     if (e.target.tagName === 'INPUT' && /^(qty|price|discount|tax)$/.test(f)) liveFormat(e.target);
     var row = e.target.closest('.inv-row'), l = row && inv.lines[Number(row.getAttribute('data-i'))];
-    if (l && (f === 'qty' || f === 'price')) l[f] = parseNum(e.target.value);
+    if (l && (f === 'qty' || f === 'price')) {
+      l[f] = parseNum(e.target.value);
+      if (f === 'price' && l.price > 0) { prices[l.id] = l.price; saveJson(PRICE_KEY, prices); }
+    }
     else if (f === 'docNo' || f === 'issuer' || f === 'customer' || f === 'unit' || f === 'discMode') inv[f] = e.target.value;
     else if (f === 'date') invDate = e.target.value;
     else if (f === 'discount' || f === 'tax') inv[f] = parseNum(e.target.value);
     invSave(); invTotalsRender();
   });
+  dialog.addEventListener('input', function (e) {
+    if (!e.target.hasAttribute('data-arc-q')) return;
+    var q = norm(e.target.value);
+    Array.prototype.forEach.call(dialog.querySelectorAll('.arc-card'), function (c) { c.hidden = q && c.getAttribute('data-q').indexOf(q) < 0; });
+  });
   dialog.addEventListener('change', function (e) {
+    if (e.target.hasAttribute('data-arc-restore') && e.target.files[0]) { restoreBackup(e.target.files[0]); return; }
     var f = e.target.getAttribute('data-f');
     if (f === 'price' || f === 'qty') { var v = parseNum(e.target.value); e.target.value = v ? faInt.format(v) : ''; }
     if (f === 'unit' || f === 'discMode') { inv[f] = e.target.value; invSave(); invTotalsRender(); }
   });
 
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-close],[data-src]');
+    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-backup],[data-close],[data-src]');
     if (e.target === dialog) { dialog.close(); return; }
     if (!t) return;
     if (t.hasAttribute('data-open')) detail(t.getAttribute('data-open'));
@@ -336,6 +453,15 @@
     else if (t.hasAttribute('data-inv-dlg')) { toggleInvoice(t.getAttribute('data-inv-dlg')); detail(t.getAttribute('data-inv-dlg')); }
     else if (t.hasAttribute('data-inv-rm')) { inv.lines.splice(Number(t.getAttribute('data-inv-rm')), 1); invSave(); trayRender(); invButtons(); invoiceView(); }
     else if (t.hasAttribute('data-inv-print')) invPrint();
+    else if (t.hasAttribute('data-arc-open')) archiveView();
+    else if (t.hasAttribute('data-inv-open')) invoiceView();
+    else if (t.hasAttribute('data-arc-edit')) loadDraft(archive[Number(t.getAttribute('data-arc-edit'))], true);
+    else if (t.hasAttribute('data-arc-copy')) loadDraft(archive[Number(t.getAttribute('data-arc-copy'))], false);
+    else if (t.hasAttribute('data-arc-pdf')) printDoc(archive[Number(t.getAttribute('data-arc-pdf'))]);
+    else if (t.hasAttribute('data-arc-del')) { if (window.confirm('این پیش‌فاکتور از سوابق حذف شود؟')) { var gone = archive.splice(Number(t.getAttribute('data-arc-del')), 1)[0]; saveJson(ARCH_KEY, archive); if (window.MSSync && gone) window.MSSync.remove(gone.docNo); archiveView(); } }
+    else if (t.hasAttribute('data-arc-fcopy')) loadDraft(foreign[Number(t.getAttribute('data-arc-fcopy'))], false);
+    else if (t.hasAttribute('data-arc-fpdf')) printDoc(foreign[Number(t.getAttribute('data-arc-fpdf'))]);
+    else if (t.hasAttribute('data-arc-backup')) downloadBackup();
     else if (t.hasAttribute('data-inv-clear')) { if (window.confirm('همهٔ ردیف‌های پیش‌فاکتور پاک شود؟')) { inv.lines = []; inv.docNo = ''; invSave(); trayRender(); invButtons(); invoiceView(); } }
     else if (t.hasAttribute('data-close')) dialog.close();
     else if (t.closest('#catSources')) {
@@ -399,9 +525,10 @@
   $('catMore').addEventListener('click', function () { shown += PAGE; render(); });
   $('cmpOpen').addEventListener('click', compareView);
   $('invOpen').addEventListener('click', invoiceView);
+  $('invArchive').addEventListener('click', archiveView);
   $('cmpClear').addEventListener('click', function () { compare.slice().forEach(toggleCompare); });
 
-  fetch('./assets/catalog.json?v=20261106', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261110', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();

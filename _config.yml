@@ -7,3 +7,4 @@ exclude:
   - data/transaction-schema.json
   - data/local
   - tools
+  - firestore.rules

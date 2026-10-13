@@ -1,0 +1,42 @@
+rules_version = '2';
+
+// Max Silver portal.
+//   users/{uid}      role: 'manager' | 'visitor', name, optional code — written only by a manager (or from the Firebase console)
+//   invoices/{uid}_{docNo}   one saved proforma per document, owned by the visitor who issued it
+//   prices/{uid}     remembered unit prices of one visitor
+// Nobody is let in until a users/{uid} document exists for their account.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function profile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function approved() { return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function isManager() { return approved() && profile().role == 'manager'; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isManager());
+      allow write: if isManager();
+    }
+
+    match /invoices/{id} {
+      allow read: if approved() && (resource.data.ownerUid == request.auth.uid || isManager());
+      allow create: if approved()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.docNo is string
+        && id == request.auth.uid + '_' + request.resource.data.docNo
+        && request.resource.data.lines is list
+        && request.resource.data.lines.size() <= 200;
+      allow update: if approved()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.docNo == resource.data.docNo
+        && request.resource.data.lines is list
+        && request.resource.data.lines.size() <= 200;
+      allow delete: if approved() && (resource.data.ownerUid == request.auth.uid || isManager());
+    }
+
+    match /prices/{uid} {
+      allow read, write: if approved() && request.auth.uid == uid;
+    }
+  }
+}

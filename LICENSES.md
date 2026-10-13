@@ -323,3 +323,10 @@ Apache License
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+## Firebase JavaScript SDK 10.12.5 (Apache-2.0)
+
+`assets/vendor/firebase-app-compat-10.12.5.js`, `firebase-auth-compat-10.12.5.js` and `firebase-firestore-compat-10.12.5.js` are unmodified
+compat builds published by Google at `https://www.gstatic.com/firebasejs/10.12.5/`. They are used for optional account sign-in and
+proforma synchronisation. Licensed under the Apache License, Version 2.0 (full text above, under SheetJS);
+copyright Google LLC.
