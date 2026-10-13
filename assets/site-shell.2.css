@@ -71,20 +71,19 @@ button,input,select{font:inherit}
   .ms-brand-logo{width:128px}
   .ms-share-btn{width:44px;padding:0}
   .ms-share-btn::after{display:none}
-  /* the nav becomes a floating dark pill; the active tab expands to show its label */
+  /* the nav becomes a floating dark pill; the active tab is a gold circle */
   .ms-sitebar nav{position:fixed;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:1;width:min(520px,calc(100% - 24px));margin-inline:auto;-webkit-user-select:none;user-select:none}
   .ms-nav-links{display:flex;gap:2px;height:var(--ms-tabbar-h);padding:6px;border-radius:999px;background:var(--ms-navy);box-shadow:0 14px 34px rgba(7,27,54,.38),0 0 0 1px rgba(255,255,255,.06)}
-  .ms-nav-links li{display:flex;flex:0 0 auto;min-width:0}
-  .ms-nav-links li:has(a[aria-current=page]){flex:1 1 auto}
-  .ms-nav-links a{width:48px;min-width:48px;height:48px;padding:0;gap:0;border-radius:999px;color:rgba(255,255,255,.72);box-shadow:none;transition:background .2s,color .2s}
+  .ms-nav-links{justify-content:space-around}
+  .ms-nav-links li{display:flex}
+  .ms-nav-links a{width:48px;min-width:48px;height:48px;padding:0;gap:0;border-radius:50%;color:rgba(255,255,255,.72);box-shadow:none;transition:background .2s,color .2s}
   .ms-nav-links a svg{width:24px;height:24px}
-  .ms-nav-links a span{display:none}
+  .ms-nav-links a span,.ms-nav-links a[aria-current=page] span{display:none}
   .ms-nav-links a:hover{background:transparent;color:#fff;box-shadow:none}
   .ms-nav-links a:active{background:rgba(255,255,255,.12)}
   .ms-nav-links a:not([aria-current])::after{display:none}
-  .ms-nav-links a[aria-current=page]{flex:1 1 auto;width:100%;gap:8px;padding:0 14px;background:var(--ms-gold);color:var(--ms-navy);box-shadow:none}
+  .ms-nav-links a[aria-current=page]{background:var(--ms-gold);color:var(--ms-navy);box-shadow:none}
   .ms-nav-links a[aria-current=page] svg{color:var(--ms-navy)}
-  .ms-nav-links a[aria-current=page] span{display:block;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:800;opacity:1}
   .ms-site-footer{margin-top:8px}
 }
 @media(max-width:1100px) and (orientation:landscape) and (max-height:480px){
