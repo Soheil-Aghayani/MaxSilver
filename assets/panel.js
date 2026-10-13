@@ -72,6 +72,59 @@
     var cities = p.cities ? '<p class="pn-note">' + esc(p.cities) + '</p>' : '';
     return (regs || cities) ? '<div class="pn-chips">' + regs + '</div>' + cities : '<p class="pn-note">منطقه‌ای برای شما ثبت نشده است. مدیر آن را تعیین می‌کند.</p>';
   }
+  var faOne = new Intl.NumberFormat('fa-IR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  function areaView(p) {
+    var regs = p.regions || [], A = window.MS_AREA;
+    if (!regs.length) return '<p class="pn-note">وقتی مدیر استان‌های شما را تعیین کند، نقشه و فروش منطقه اینجا نمایش داده می‌شود.</p>';
+    if (!A) return '<p class="pn-note">داده‌های فروش بارگذاری نشد.</p>';
+    var sales = {};
+    A.rows.forEach(function (r) { (sales[r.province] = sales[r.province] || {})[r.year] = r.sales; });
+    var tot = {};
+    var body = regs.map(function (name) {
+      return '<tr><td>' + esc(name) + '</td>' + A.years.map(function (y) {
+        var v = sales[name] && sales[name][y];
+        tot[y] = (tot[y] || 0) + (v || 0);
+        return '<td>' + (v == null ? '—' : faOne.format(v)) + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    return '<div class="pn-map" id="pnMap" role="img" aria-label="نقشهٔ استان‌های منطقهٔ فعالیت من"></div>' +
+      '<div class="pn-scroll"><table class="pn-table"><thead><tr><th>استان</th>' + A.years.map(function (y) { return '<th>' + faInt.format(y) + '</th>'; }).join('') + '</tr></thead>' +
+      '<tbody>' + body + '</tbody><tfoot><tr><td>جمع منطقهٔ من</td>' + A.years.map(function (y) { return '<td>' + faOne.format(tot[y] || 0) + '</td>'; }).join('') + '</tr></tfoot></table></div>' +
+      '<p class="pn-note">فروش شرکت در هر استان، به میلیارد تومان.</p>';
+  }
+  var mapSvg = null;
+  function paintMap() {
+    var host = document.getElementById('pnMap');
+    if (!host || !S.profile) return;
+    var allowed = {};
+    (S.profile.regions || []).forEach(function (n) { allowed[n] = true; });
+    var draw = function (text) {
+      host.innerHTML = text;
+      var svg = host.querySelector('svg');
+      if (!svg) return;
+      svg.removeAttribute('width'); svg.removeAttribute('height');
+      var paths = [].slice.call(svg.querySelectorAll('path[id^="IR-"]')), box = null;
+      paths.forEach(function (path) {
+        var name = window.MS_AREA.isoToProvince[path.id], on = !!allowed[name];
+        path.setAttribute('fill', on ? '#FFCC2A' : '#E6EAF0');
+        path.setAttribute('stroke', on ? '#071b36' : '#ffffff');
+        path.setAttribute('stroke-width', on ? '1.4' : '.8');
+        path.removeAttribute('title');
+        var t = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        t.textContent = name || '';
+        path.appendChild(t);
+      });
+      try {
+        paths.forEach(function (path) {
+          var b = path.getBBox();
+          box = box ? { x1: Math.min(box.x1, b.x), y1: Math.min(box.y1, b.y), x2: Math.max(box.x2, b.x + b.width), y2: Math.max(box.y2, b.y + b.height) } : { x1: b.x, y1: b.y, x2: b.x + b.width, y2: b.y + b.height };
+        });
+        if (box) svg.setAttribute('viewBox', (box.x1 - 8) + ' ' + (box.y1 - 8) + ' ' + (box.x2 - box.x1 + 16) + ' ' + (box.y2 - box.y1 + 16));
+      } catch (e) { svg.setAttribute('viewBox', '0 0 654.5 593.7'); }
+    };
+    if (mapSvg) { draw(mapSvg); return; }
+    fetch('./assets/iran-map.svg').then(function (r) { return r.text(); }).then(function (t) { mapSvg = t; draw(t); }, function () { host.textContent = 'نقشه بارگذاری نشد.'; });
+  }
   function money(n, u) { return faInt.format(Math.round(n)) + ' ' + (u || 'تومان'); }
   function monthTotals(docs) {
     var now = monthKey(Date.now()), by = {};
@@ -107,7 +160,7 @@
       (S.msg ? '<p class="pn-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ذخیرهٔ اطلاعات</button>' +
       '<p class="pn-note">نقش، کد و منطقهٔ فعالیت را مدیر تعیین می‌کند.</p></form></section>';
-    out += '<section class="pn-card"><h2>منطقهٔ فعالیت من</h2>' + chips(p) + '</section>';
+    out += '<section class="pn-card"><h2>منطقهٔ فعالیت و فروش من</h2>' + chips(p) + areaView(p) + '</section>';
     out += '<section class="pn-card"><h2>پیش‌فاکتورهای من</h2><div class="pn-stats"><div><span>تعداد کل</span><b>' + faInt.format(mine.length) + '</b></div>' +
       '<div><span>مجموع این ماه (شمسی)</span><b>' + monthTotals(mine) + '</b></div></div>' +
       (mine.length ? '<ul class="pn-list">' + mine.slice(0, 6).map(function (d) {
@@ -158,7 +211,7 @@
       (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<button type="submit" class="pn-primary">ذخیره</button></form>';
   }
-  function render() { root.innerHTML = view(); }
+  function render() { root.innerHTML = view(); paintMap(); }
 
   // ----- actions
   document.addEventListener('click', function (e) {
