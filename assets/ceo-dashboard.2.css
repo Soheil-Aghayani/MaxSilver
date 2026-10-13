@@ -457,3 +457,7 @@
     .map-active-title svg { width: 18px; height: 18px; vertical-align: middle; }
     #openMapGuide { min-width: 44px; min-height: 44px; justify-content: center; }
     .select-trigger { min-height: 44px; }
+    /* touch screens: 44 px minimum targets for the controls people actually tap */
+    @media (pointer: coarse) {
+      .year-button, .share-trigger, .map-guide-trigger { min-height: 44px; }
+    }

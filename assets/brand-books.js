@@ -102,7 +102,14 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function rgb(hex) { var n = parseInt(hex.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255].join(', '); }
   function today() { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch (e) { return ''; } }
-  function dark(hex) { var n = parseInt(hex.slice(1), 16); return ((n >> 16 & 255) * 299 + (n >> 8 & 255) * 587 + (n & 255) * 114) / 1000 < 140; }
+  // label colour for a swatch: white, navy or black, whichever has the best WCAG contrast on that colour
+  function textOn(hex) {
+    var lum = function (h) { var n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255].map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }).reduce(function (acc, v, i) { return acc + v * [0.2126, 0.7152, 0.0722][i]; }, 0); };
+    var ratio = function (x, y) { return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    var l = lum(hex), best = null;
+    ['#FFFFFF', '#051934', '#000000'].forEach(function (c) { var r = ratio(l, lum(c)); if (!best || r > best.r + 0.0001) best = { c: c, r: r }; });
+    return best.c;
+  }
 
   function num(v) {
     return Number(String(v == null ? '' : v).replace(/[۰-۹]/g, function (d) { return d.charCodeAt(0) - 1776; }).replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; }).replace(/[^0-9.]/g, '')) || 0;
@@ -199,7 +206,7 @@
       '<h3>۲. رنگ‌ها</h3>' +
       '<table class="doc-table"><thead><tr><th>نمونه</th><th>نام</th><th>HEX / RGB</th><th>کاربرد</th></tr></thead><tbody>' +
         b.colors.map(function (c) {
-          return '<tr><td><button type="button" class="sw" data-hex="' + c[1] + '" style="background:' + c[1] + ';color:' + (dark(c[1]) ? '#fff' : '#051934') + '" aria-label="کپی ' + c[1] + '">' + faInt.format(0).replace('۰', '') + 'کپی</button></td>' +
+          return '<tr><td><button type="button" class="sw" data-hex="' + c[1] + '" style="background:' + c[1] + ';color:' + textOn(c[1]) + '" aria-label="کپی ' + c[1] + '">' + faInt.format(0).replace('۰', '') + 'کپی</button></td>' +
             '<td>' + esc(c[0]) + '</td><td dir="ltr" class="mono">' + c[1] + '<br><small>' + rgb(c[1]) + '</small></td><td>' + esc(c[2]) + '</td></tr>';
         }).join('') + '</tbody></table>' +
       '<h3>۳. فونت‌ها</h3>' +
