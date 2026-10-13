@@ -29,7 +29,7 @@
     if (/user-disabled/.test(c)) return 'این حساب غیرفعال شده است.';
     return 'خطا: ' + (c || (e && e.message) || 'نامشخص');
   }
-  function approved() { return !!(S.user && S.profile); }
+  function approved() { return !!(S.user && S.profile && S.profile.active !== false); }
 
   // ----- sync
   function clean(d) {
@@ -103,15 +103,16 @@
         '<label>رمز عبور<input type="password" name="password" dir="ltr" autocomplete="current-password" required></label>' + err +
         '<button type="submit" class="acc-primary"' + (S.signing ? ' disabled' : '') + '>' + (S.signing ? 'در حال ورود…' : 'ورود') + '</button></form>';
     }
-    if (!S.profile) {
-      return head + '<div class="acc-body"><p class="acc-note">ورود انجام شد، اما حساب شما هنوز توسط مدیر فعال نشده است. این شناسه را به مدیر بدهید:</p>' +
+    if (!S.profile || S.profile.active === false) {
+      return head + '<div class="acc-body"><p class="acc-note">' + (S.profile ? 'این حساب توسط مدیر غیرفعال شده است.' : 'ورود انجام شد، اما حساب شما هنوز توسط مدیر فعال نشده است. این شناسه را به مدیر بدهید:') + '</p>' +
         '<p class="acc-uid" dir="ltr">' + esc(S.user.uid) + '</p>' + err + '<button type="button" class="acc-secondary" data-acc-out>خروج</button></div>';
     }
     var role = S.profile.role === 'manager' ? 'مدیر' : 'ویزیتور';
     return head + '<div class="acc-body"><div class="acc-id"><b>' + esc(S.profile.name || S.user.email) + '</b><span class="acc-role">' + role + '</span></div>' +
       '<p class="acc-note" dir="ltr">' + esc(S.user.email) + '</p>' +
       '<p class="acc-note">' + (S.busy ? 'در حال همگام‌سازی…' : S.last ? 'آخرین همگام‌سازی: ' + esc(faTime.format(new Date(S.last))) : 'هنوز همگام‌سازی نشده است.') + '</p>' + err +
-      '<button type="button" class="acc-primary" data-acc-sync' + (S.busy ? ' disabled' : '') + '>همگام‌سازی اکنون</button>' +
+      '<a class="acc-primary acc-link" href="./panel.html">پنل کاربری</a>' +
+      '<button type="button" class="acc-secondary" data-acc-sync' + (S.busy ? ' disabled' : '') + '>همگام‌سازی اکنون</button>' +
       '<button type="button" class="acc-secondary" data-acc-out>خروج از حساب</button>' +
       '<p class="acc-note">با خروج، پیش‌فاکتورهای ذخیره‌شده روی این دستگاه باقی می‌مانند.</p></div>';
   }

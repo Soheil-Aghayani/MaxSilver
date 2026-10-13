@@ -197,13 +197,7 @@
   }
 
   var UNITS = ['تومان', 'ریال'];
-  function totalsOf(d) {
-    var sub = 0;
-    d.lines.forEach(function (l) { sub += (l.qty || 0) * (l.price || 0); });
-    var disc = d.discMode === 'pct' ? sub * Math.min(d.discount || 0, 100) / 100 : Math.min(d.discount || 0, sub);
-    var net = sub - disc, tax = net * (d.tax || 0) / 100;
-    return { sub: sub, disc: disc, net: net, tax: tax, total: net + tax };
-  }
+  function totalsOf(d) { return window.MSMath.totals(d); }
   function totals() { return totalsOf(inv); }
   function money(n, unit) { return faInt.format(Math.round(n)) + ' ' + (unit || inv.unit); }
   function today() { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch (e) { return ''; } }
@@ -396,7 +390,11 @@
     replace: function (docs, priceMap) { archive = docs.slice(0, 500); prices = priceMap || prices; saveJson(ARCH_KEY, archive); saveJson(PRICE_KEY, prices); },
     save: function () { saveJson(ARCH_KEY, archive); saveJson(PRICE_KEY, prices); },
     setForeign: function (list) { foreign = list || []; },
-    setIssuer: function (name) { if (name && !inv.issuer) { inv.issuer = name; invSave(); } }
+    setIssuer: function (name) {
+      var last = '';
+      try { last = localStorage.getItem('ms-profile-name') || ''; localStorage.setItem('ms-profile-name', name || ''); } catch (e) { /* ignore */ }
+      if (name && (!inv.issuer || inv.issuer === last) && inv.issuer !== name) { inv.issuer = name; invSave(); }
+    }
   };
   window.addEventListener('afterprint', function () { document.body.classList.remove('inv-print'); });
   // live Persian digits + thousands separators while typing; the caret stays after the same digit
@@ -528,7 +526,7 @@
   $('invArchive').addEventListener('click', archiveView);
   $('cmpClear').addEventListener('click', function () { compare.slice().forEach(toggleCompare); });
 
-  fetch('./assets/catalog.json?v=20261110', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261113', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();

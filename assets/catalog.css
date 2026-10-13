@@ -191,6 +191,7 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .acc-primary,.acc-secondary{min-height:50px;border-radius:14px;font:800 15px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
 .acc-primary{border:0;background:var(--ms-navy);color:#fff}.acc-primary:disabled{opacity:.55;cursor:wait}
 .acc-secondary{border:1px solid var(--ms-line);background:#fff;color:var(--ms-navy)}
+.acc-link{display:grid;place-items:center;text-decoration:none}
 @media print{
   @page{size:A4;margin:12mm 12mm 12mm}
   body.inv-print>*:not(.ip-sheet){display:none!important}

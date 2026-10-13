@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // Max Silver portal.
-//   users/{uid}      role: 'manager' | 'visitor', name, optional code — written only by a manager (or from the Firebase console)
+//   users/{uid}      role: 'manager' | 'visitor', name, phone, code, regions[], cities, active — a visitor edits only name and phone
 //   invoices/{uid}_{docNo}   one saved proforma per document, owned by the visitor who issued it
 //   prices/{uid}     remembered unit prices of one visitor
 // Nobody is let in until a users/{uid} document exists for their account.
@@ -10,12 +10,20 @@ service cloud.firestore {
 
     function signedIn() { return request.auth != null; }
     function profile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
-    function approved() { return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function approved() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && profile().get('active', true) != false;
+    }
     function isManager() { return approved() && profile().role == 'manager'; }
 
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isManager());
-      allow write: if isManager();
+      allow create, delete: if isManager();
+      // a visitor may edit only their own display name and phone; role, code, regions and active are the manager's
+      allow update: if isManager()
+        || (approved() && request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone'])
+            && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
+            && (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.size() <= 30)));
     }
 
     match /invoices/{id} {
