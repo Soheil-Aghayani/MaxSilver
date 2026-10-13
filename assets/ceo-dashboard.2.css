@@ -61,7 +61,7 @@
     .select-control { position: relative; width: 100%; min-width: 0; }
     .select-trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 40px; padding: 3px 0; border: 0; background: transparent; color: var(--navy); text-align: right; font-family: var(--font-persian) !important; font-size: 16px; font-weight: 750; cursor: pointer; }
     .select-trigger:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 5px; }
-    .select-trigger > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .select-trigger > span:first-child { min-width: 0; overflow-wrap: anywhere; line-height: 1.45; text-align: right; }
     .select-chevron { display: grid; place-items: center; flex: 0 0 18px; width: 18px; height: 18px; color: var(--muted); }
     .select-chevron svg { display: none; width: 18px; height: 18px; }
     .select-chevron .arrow-down, .select-control.is-open .select-chevron .arrow-up { display: block; }
@@ -282,7 +282,8 @@
     }
     @media (max-width: 980px) {
       .shell { padding: 20px 15px 28px; }
-      .topbar { display: block; }
+      .topbar { gap: 10px; margin-bottom: 12px; }
+      .topbar > div:first-child { min-width: 0; flex: 1 1 auto; }
       .executive-strip { grid-template-columns: 1fr 1fr; }
       .region-average-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .control-strip { grid-template-columns: 1fr 1fr; }
