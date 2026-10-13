@@ -88,7 +88,14 @@
     ['پس‌زمینه', 'لوگو روی زمینهٔ روشن و آرام قرار گیرد؛ روی تصویر شلوغ از نوار سفید استفاده شود.']
   ];
 
+  var IG_TAB = { key: 'instagram', no: 'BB-IG', name: 'اینستاگرام', latin: 'INSTAGRAM', colors: [['', '#E1306C']] };
+  var IG_KEY = 'ms-ig-v1';
+  var ig = { accounts: ['maxsilver.ir', 'maxsilver.kish', 'maxsteelarya'], entries: [] };
+  try { var savedIg = JSON.parse(localStorage.getItem(IG_KEY) || 'null'); if (savedIg && Array.isArray(savedIg.entries)) ig = Object.assign(ig, savedIg); } catch (e) { /* storage unavailable */ }
+  function igSave() { try { localStorage.setItem(IG_KEY, JSON.stringify(ig)); } catch (e) { /* ignore */ } }
+
   var faInt = new Intl.NumberFormat('fa-IR');
+  var fa2 = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 });
   var $ = function (id) { return document.getElementById(id); };
   var current = BRANDS[0];
 
@@ -97,11 +104,83 @@
   function today() { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch (e) { return ''; } }
   function dark(hex) { var n = parseInt(hex.slice(1), 16); return ((n >> 16 & 255) * 299 + (n >> 8 & 255) * 587 + (n & 255) * 114) / 1000 < 140; }
 
+  function num(v) {
+    return Number(String(v == null ? '' : v).replace(/[۰-۹]/g, function (d) { return d.charCodeAt(0) - 1776; }).replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; }).replace(/[^0-9.]/g, '')) || 0;
+  }
+  function liveDigits(input) {
+    var raw = input.value, pos = input.selectionStart == null ? raw.length : input.selectionStart;
+    var before = num(raw.slice(0, pos)) === 0 && !/[0-9۰-۹٠-٩]/.test(raw.slice(0, pos)) ? 0 : raw.slice(0, pos).replace(/[^0-9۰-۹٠-٩]/g, '').length;
+    var digits = raw.replace(/[۰-۹]/g, function (d) { return d.charCodeAt(0) - 1776; }).replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; }).replace(/\D/g, '');
+    var out = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '٬').replace(/[0-9]/g, function (d) { return String.fromCharCode(1776 + Number(d)); });
+    if (out === raw) return;
+    var idx = 0, seen = 0;
+    while (idx < out.length && seen < before) { if (/[۰-۹]/.test(out[idx])) seen++; idx++; }
+    input.value = out;
+    try { input.setSelectionRange(idx, idx); } catch (e) { /* ignore */ }
+  }
+  function faDate(iso) { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso + 'T00:00:00')); } catch (e) { return iso; } }
+  function isoToday() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function er(e) { return e.followers ? (e.likes + e.comments) / e.followers * 100 : 0; }
+  function spark(vals) {
+    if (vals.length < 2) return '<span class="ig-na">—</span>';
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals), span = max - min || 1, w = 110, h = 30;
+    var pts = vals.map(function (v, i) { return (i / (vals.length - 1) * (w - 6) + 3).toFixed(1) + ',' + (h - 4 - (v - min) / span * (h - 8)).toFixed(1); }).join(' ');
+    var up = vals[vals.length - 1] >= vals[0];
+    return '<svg class="spark" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="' + (up ? '#14804a' : '#b42318') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  function renderIg() {
+    var byAcc = {};
+    ig.entries.forEach(function (e) { (byAcc[e.acc] = byAcc[e.acc] || []).push(e); });
+    Object.keys(byAcc).forEach(function (k) { byAcc[k].sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }); });
+    var rows = ig.accounts.map(function (acc) {
+      var l = byAcc[acc] || [], last = l[l.length - 1], prev = l[l.length - 2];
+      if (!last) return '<tr><td dir="ltr">@' + esc(acc) + '</td><td colspan="8" class="ig-na">هنوز داده‌ای ثبت نشده است</td></tr>';
+      var d = prev ? last.followers - prev.followers : null, pct = prev && prev.followers ? d / prev.followers * 100 : null;
+      var cls = d == null ? '' : d >= 0 ? 'up' : 'down';
+      return '<tr><td dir="ltr">@' + esc(acc) + '</td><td>' + faInt.format(last.followers) + '</td>' +
+        '<td class="' + cls + '" dir="ltr">' + (d == null ? '—' : (d >= 0 ? '+' : '') + faInt.format(d)) + '</td>' +
+        '<td class="' + cls + '" dir="ltr">' + (pct == null ? '—' : (pct >= 0 ? '+' : '') + fa2.format(pct) + '٪') + '</td>' +
+        '<td>' + faInt.format(last.posts) + '</td><td>' + faInt.format(last.likes) + '</td><td>' + faInt.format(last.comments) + '</td>' +
+        '<td><b>' + fa2.format(er(last)) + '٪</b></td><td>' + spark(l.map(function (x) { return x.followers; })) + '</td></tr>';
+    }).join('');
+    var list = ig.entries.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }).map(function (e) {
+      var i = ig.entries.indexOf(e);
+      return '<tr><td>' + esc(faDate(e.date)) + '</td><td dir="ltr">@' + esc(e.acc) + '</td><td>' + faInt.format(e.followers) + '</td><td>' + faInt.format(e.posts) + '</td><td>' + faInt.format(e.likes) + '</td><td>' + faInt.format(e.comments) + '</td><td>' + fa2.format(er(e)) + '٪</td>' +
+        '<td class="no-print"><button type="button" class="ig-del" data-ig-del="' + i + '" aria-label="حذف ثبت">×</button></td></tr>';
+    }).join('');
+    $('bbDoc').innerHTML =
+      '<div class="doc-head"><div class="doc-brand"><img src="./assets/branding/maxsilver-logo.svg" alt="مکث سیلور · MAX SILVER" width="150" height="26"></div>' +
+        '<dl class="doc-ref"><div><dt>شماره سند:</dt><dd dir="ltr">' + IG_TAB.no + '</dd></div><div><dt>تاریخ:</dt><dd>' + esc(today()) + '</dd></div></dl></div>' +
+      '<h2 class="doc-title">تحلیل صفحه‌های اینستاگرام <small dir="ltr">INSTAGRAM</small></h2>' +
+      '<p class="doc-line">داده‌ها را هر هفته یا هر ماه از صفحهٔ هر حساب (پروفایل یا بخش Insights) وارد کنید. نرخ تعامل = (میانگین لایک + میانگین کامنت) ÷ دنبال‌کننده × ۱۰۰. داده فقط در همین دستگاه ذخیره می‌شود.</p>' +
+      '<h3>۱. مقایسهٔ حساب‌ها</h3>' +
+      '<div class="ig-scroll"><table class="doc-table"><thead><tr><th>حساب</th><th>دنبال‌کننده</th><th>تغییر</th><th>رشد</th><th>پست</th><th>میانگین لایک</th><th>میانگین کامنت</th><th>نرخ تعامل</th><th>روند</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<h3 class="no-print">۲. ثبت داده</h3>' +
+      '<form class="ig-form no-print" id="igForm" autocomplete="off">' +
+        '<label>حساب<select name="acc">' + ig.accounts.map(function (a) { return '<option value="' + esc(a) + '">@' + esc(a) + '</option>'; }).join('') + '</select></label>' +
+        '<label>تاریخ<input type="date" name="date" value="' + isoToday() + '" required></label>' +
+        '<label>دنبال‌کننده<input type="text" inputmode="numeric" name="followers" placeholder="۰" required></label>' +
+        '<label>تعداد پست<input type="text" inputmode="numeric" name="posts" placeholder="۰"></label>' +
+        '<label>میانگین لایک هر پست<input type="text" inputmode="numeric" name="likes" placeholder="۰"></label>' +
+        '<label>میانگین کامنت هر پست<input type="text" inputmode="numeric" name="comments" placeholder="۰"></label>' +
+        '<button type="submit" class="ig-save">ثبت</button>' +
+      '</form>' +
+      '<form class="ig-add no-print" id="igAdd"><label>افزودن حساب جدید<input type="text" name="handle" dir="ltr" placeholder="username"></label><button type="submit">افزودن</button></form>' +
+      '<h3>۳. سوابق ثبت‌شده</h3>' +
+      (list ? '<div class="ig-scroll"><table class="doc-table"><thead><tr><th>تاریخ</th><th>حساب</th><th>دنبال‌کننده</th><th>پست</th><th>لایک</th><th>کامنت</th><th>نرخ تعامل</th><th class="no-print"></th></tr></thead><tbody>' + list + '</tbody></table></div>' : '<p class="doc-line ig-na">هنوز ثبتی وجود ندارد.</p>') +
+      '<div class="doc-foot">تحلیل اینستاگرام | گروه مکث‌سیلور</div>';
+  }
+
+  function renderTabs() {
+    $('bbTabs').innerHTML = BRANDS.concat([IG_TAB]).map(function (x) {
+      return '<button type="button" role="tab" data-brand="' + x.key + '" aria-selected="' + (x === current) + '" style="--c:' + x.colors[0][1] + '"><i></i><span>' + esc(x.name) + '</span></button>';
+    }).join('');
+  }
+
   function render() {
     var b = current;
-    $('bbTabs').innerHTML = BRANDS.map(function (x) {
-      return '<button type="button" role="tab" data-brand="' + x.key + '" aria-selected="' + (x === b) + '" style="--c:' + x.colors[0][1] + '"><i></i><span>' + esc(x.name) + '</span></button>';
-    }).join('');
+    renderTabs();
+    if (b === IG_TAB) { $('bbDoc').style.setProperty('--b', IG_TAB.colors[0][1]); renderIg(); return; }
     var chs = b.channels.map(function (c) {
       return '<tr><td>' + esc(c[0]) + '</td><td dir="ltr">' + (c[2] ? '<a href="' + esc(c[2]) + '" target="_blank" rel="noopener">' + esc(c[1]) + '</a>' : esc(c[1])) + '</td></tr>';
     }).join('');
@@ -139,7 +218,7 @@
   }
 
   function select(key, push) {
-    current = BRANDS.filter(function (b) { return b.key === key; })[0] || BRANDS[0];
+    current = BRANDS.concat([IG_TAB]).filter(function (b) { return b.key === key; })[0] || BRANDS[0];
     render();
     if (push) { try { history.replaceState(null, '', '#' + current.key); } catch (e) { /* ignore */ } }
   }
@@ -155,6 +234,28 @@
     }
   });
   $('bbPrint').addEventListener('click', function () { window.print(); });
+  $('bbDoc').addEventListener('input', function (e) {
+    if (e.target.form && e.target.form.id === 'igForm' && e.target.type === 'text') liveDigits(e.target);
+  });
+  $('bbDoc').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target, v = function (n) { return f.elements[n].value; };
+    if (f.id === 'igAdd') {
+      var h = v('handle').trim().replace(/^@/, '').replace(/[^A-Za-z0-9._]/g, '');
+      if (h && ig.accounts.indexOf(h) < 0) { ig.accounts.push(h); igSave(); renderIg(); }
+      return;
+    }
+    if (f.id === 'igForm') {
+      var followers = num(v('followers'));
+      if (!followers || !v('date')) return;
+      ig.entries.push({ acc: v('acc'), date: v('date'), followers: followers, posts: num(v('posts')), likes: num(v('likes')), comments: num(v('comments')) });
+      igSave(); renderIg();
+    }
+  });
+  $('bbDoc').addEventListener('click', function (e) {
+    var del = e.target.closest('[data-ig-del]');
+    if (del) { ig.entries.splice(Number(del.getAttribute('data-ig-del')), 1); igSave(); renderIg(); }
+  });
 
   select(location.hash.replace('#', ''), false);
 })();

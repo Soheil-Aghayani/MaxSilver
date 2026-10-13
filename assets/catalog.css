@@ -176,8 +176,9 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
   .ip-items tbody tr:nth-child(even) td{background:#f3f5f7}
   .ip-items tr{break-inside:avoid}
   .ip-items .ip-name{text-align:right}
-  .ip-totals{width:min(300px,100%);margin-inline-start:0}
-  .ip-totals td{padding:6px 10px;border-top:1px solid #e3e6ea}.ip-totals td:last-child{font-weight:700;text-align:left}
+  .ip-totals{width:min(390px,100%);margin-inline-start:0}
+  .ip-totals td{padding:6px 10px;border-top:1px solid #e3e6ea}.ip-totals td:last-child{font-weight:700;text-align:left;white-space:nowrap}
+  .ip-words{margin:10px 0 0;padding:8px 12px;border:1px solid #d9d9d9;background:#f3f5f7;font-size:12px}
   .ip-totals tr:first-child td{border-top:0}
   .ip-totals .grand td{background:#ffcc2a;font-weight:900}
   .ip-sign{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px;break-inside:avoid}

@@ -232,12 +232,42 @@
       '<div class="inv-body"><div class="inv-meta">' +
         '<label class="wide">صادرکننده (ویزیتور)<input type="text" data-f="issuer" value="' + esc(inv.issuer) + '" autocomplete="name" placeholder="نام و نام خانوادگی"></label>' +
         '<label class="wide">مشتری<input type="text" data-f="customer" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
-        '<label>شماره سند<input type="text" inputmode="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="PF-001" autocomplete="off"></label>' +
+        '<label>شماره سند<input type="text" inputmode="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="خودکار" autocomplete="off"></label>' +
         '<label>تاریخ<input type="text" data-f="date" value="' + esc(invDate) + '"></label>' +
         '<label>واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label></div>' + body + '</div>' + foot, 'inv-sheet');
     invTotalsRender();
   }
+  var ONES = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه', 'ده', 'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده'];
+  var TENS = ['', '', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود'];
+  var HUNDREDS = ['', 'صد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد'];
+  var SCALES = ['', 'هزار', 'میلیون', 'میلیارد', 'هزار میلیارد'];
+  function words3(n) {
+    var p = [], h = Math.floor(n / 100), r = n % 100;
+    if (h) p.push(HUNDREDS[h]);
+    if (r < 20) { if (r) p.push(ONES[r]); } else { p.push(TENS[Math.floor(r / 10)]); if (r % 10) p.push(ONES[r % 10]); }
+    return p.join(' و ');
+  }
+  function numWords(n) {
+    n = Math.round(n);
+    if (!n) return 'صفر';
+    var groups = [];
+    for (var i = 0; n > 0 && i < SCALES.length; i++, n = Math.floor(n / 1000)) {
+      var g = n % 1000;
+      if (g) groups.unshift(i === 0 ? words3(g) : (g === 1 && i === 1 ? '' : words3(g) + ' ') + SCALES[i]);
+    }
+    return groups.join(' و ');
+  }
+  // PF-<yymmdd Jalali>-<running number>; assigned once per invoice and kept until the draft is cleared
+  function nextDocNo() {
+    var parts = [], seq = 1;
+    try { parts = new Intl.DateTimeFormat('en-u-ca-persian-nu-latn', { year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()); } catch (e) { /* fall back to a timestamp */ }
+    var part = function (type) { var x = parts.filter(function (p) { return p.type === type; })[0]; return x ? x.value.replace(/\D/g, '') : ''; };
+    var ymd = (part('year').slice(-2) + part('month') + part('day')) || String(Date.now()).slice(-6);
+    try { seq = (Number(localStorage.getItem('ms-proforma-seq')) || 0) + 1; localStorage.setItem('ms-proforma-seq', String(seq)); } catch (e) { /* ignore */ }
+    return 'PF-' + ymd + '-' + ('00' + seq).slice(-3);
+  }
   function invPrint() {
+    if (!inv.docNo) { inv.docNo = nextDocNo(); invSave(); var field = dialog.querySelector('[data-f=docNo]'); if (field) field.value = inv.docNo; }
     var t = totals();
     var rows = inv.lines.map(function (l, i) {
       var it = byId[l.id];
@@ -254,6 +284,7 @@
         '<table class="ip-items"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th><th>قیمت واحد (' + esc(inv.unit) + ')</th><th>قیمت کل (' + esc(inv.unit) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<table class="ip-totals"><tbody><tr><td>جمع کل</td><td>' + money(t.sub) + '</td></tr><tr><td>تخفیف</td><td>' + money(t.disc) + '</td></tr><tr><td>مبلغ پس از تخفیف</td><td>' + money(t.net) + '</td></tr>' +
         '<tr><td>مالیات بر ارزش افزوده (' + esc(fa.format(inv.tax || 0)) + '٪)</td><td>' + money(t.tax) + '</td></tr><tr class="grand"><td>مبلغ قابل پرداخت</td><td>' + money(t.total) + '</td></tr></tbody></table>' +
+        '<p class="ip-words"><strong>مبلغ به حروف:</strong> ' + esc(numWords(t.total)) + ' ' + esc(inv.unit) + '</p>' +
         '<div class="ip-sign"><div><b>امضا و تاریخ صادرکننده</b></div><div><b>امضا و تاریخ مشتری</b></div></div>' +
       '</td></tr></tbody><tfoot><tr><td><div class="ip-foot">پیش‌فاکتور | مکث سیلور' + (inv.docNo ? ' | ' + esc(inv.docNo) : '') + '</div></td></tr></tfoot></table>';
     document.body.classList.add('inv-print');
@@ -305,7 +336,7 @@
     else if (t.hasAttribute('data-inv-dlg')) { toggleInvoice(t.getAttribute('data-inv-dlg')); detail(t.getAttribute('data-inv-dlg')); }
     else if (t.hasAttribute('data-inv-rm')) { inv.lines.splice(Number(t.getAttribute('data-inv-rm')), 1); invSave(); trayRender(); invButtons(); invoiceView(); }
     else if (t.hasAttribute('data-inv-print')) invPrint();
-    else if (t.hasAttribute('data-inv-clear')) { if (window.confirm('همهٔ ردیف‌های پیش‌فاکتور پاک شود؟')) { inv.lines = []; invSave(); trayRender(); invButtons(); invoiceView(); } }
+    else if (t.hasAttribute('data-inv-clear')) { if (window.confirm('همهٔ ردیف‌های پیش‌فاکتور پاک شود؟')) { inv.lines = []; inv.docNo = ''; invSave(); trayRender(); invButtons(); invoiceView(); } }
     else if (t.hasAttribute('data-close')) dialog.close();
     else if (t.closest('#catSources')) {
       state.src = t.getAttribute('data-src');
@@ -370,7 +401,7 @@
   $('invOpen').addEventListener('click', invoiceView);
   $('cmpClear').addEventListener('click', function () { compare.slice().forEach(toggleCompare); });
 
-  fetch('./assets/catalog.json?v=20261104', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261106', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();

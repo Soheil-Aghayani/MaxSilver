@@ -56,3 +56,18 @@
   .bb-doc h3{break-after:avoid}
   .doc-foot{margin:18px 0 0}
 }
+/* instagram analysis */
+.bb-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
+.ig-scroll{overflow-x:auto}
+.ig-scroll .doc-table{min-width:560px}
+.doc-table td.up{color:var(--ms-green);font-weight:700}.doc-table td.down{color:var(--ms-red);font-weight:700}
+.ig-na{color:var(--ms-muted)}
+.spark{display:block}
+.ig-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin:6px 0 4px}
+.ig-form label,.ig-add label{display:grid;gap:5px;color:var(--ms-muted);font-size:12px;font-weight:700}
+.ig-form input,.ig-form select,.ig-add input{width:100%;min-height:46px;padding:8px 12px;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);font:700 14px/1.4 Estedad,Tahoma,sans-serif}
+.ig-save,.ig-add button{min-height:46px;padding:0 20px;border:0;border-radius:12px;background:var(--ms-navy);color:#fff;font:800 14px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+.ig-add{display:flex;gap:10px;align-items:end;margin-top:12px}.ig-add label{flex:1}
+.ig-del{width:34px;height:34px;border:1px solid #f1c7c2;border-radius:10px;background:#fff1f0;color:var(--ms-red);font-size:18px;line-height:1;cursor:pointer}
+@media(max-width:720px){.bb-tabs{grid-template-columns:1fr 1fr}.bb-tabs button:last-child{grid-column:1/-1}.ig-form{grid-template-columns:1fr 1fr}.ig-save{grid-column:1/-1}}
+@media print{.no-print{display:none!important}}

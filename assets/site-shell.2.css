@@ -12,12 +12,12 @@ button,input,select{font:inherit}
 .ms-brand{display:inline-flex;align-items:center;min-height:44px;color:var(--ms-navy);text-decoration:none}
 .ms-brand-logo{display:block;width:clamp(116px,12vw,156px);height:auto;object-fit:contain}
 .ms-nav-links{display:flex;align-items:center;gap:4px;margin:0;padding:4px;list-style:none;border-radius:16px;background:#edf1f7}
-.ms-nav-links a,.ms-share-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;height:44px;padding:0 12px;border:0;border-radius:12px;color:#51627a;font-size:13px;font-weight:750;text-decoration:none;cursor:pointer;transition:background .18s,color .18s,box-shadow .18s,transform .12s}
+.ms-nav-links a,.ms-share-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:0;min-width:44px;height:44px;padding:0 12px;border:0;border-radius:12px;color:#51627a;font-size:13px;font-weight:750;text-decoration:none;cursor:pointer;transition:background .18s,color .18s,box-shadow .18s,transform .12s}
 .ms-nav-links a svg,.ms-share-btn svg{width:20px;height:20px;flex:0 0 auto}
 .ms-nav-links a span{max-width:0;overflow:hidden;white-space:nowrap;opacity:0;transition:max-width .24s ease,opacity .18s ease}
 .ms-nav-links a:hover{background:#fff;color:var(--ms-navy);box-shadow:0 4px 12px rgba(7,27,54,.08)}
 .ms-nav-links a:active,.ms-share-btn:active{transform:translateY(1px)}
-.ms-nav-links a[aria-current=page]{background:var(--ms-navy);color:#fff;box-shadow:0 8px 18px rgba(7,27,54,.28)}
+.ms-nav-links a[aria-current=page]{gap:8px;background:var(--ms-navy);color:#fff;box-shadow:0 8px 18px rgba(7,27,54,.28)}
 .ms-nav-links a[aria-current=page] svg{color:var(--ms-gold)}
 .ms-nav-links a[aria-current=page] span{max-width:150px;opacity:1}
 .ms-share-btn{background:var(--ms-gold);color:var(--ms-navy);box-shadow:0 6px 16px rgba(255,204,42,.32)}
