@@ -324,6 +324,12 @@ Apache License
    See the License for the specific language governing permissions and
    limitations under the License.
 
+## html2canvas 1.4.1 (MIT)
+
+`assets/vendor/html2canvas-1.4.1.min.js` is the unmodified build published at
+`https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js`.
+Copyright (c) 2022 Niklas von Hertzen. Released under the MIT License. It is loaded only when a proforma is shared as a PDF file.
+
 ## Firebase JavaScript SDK 10.12.5 (Apache-2.0)
 
 `assets/vendor/firebase-app-compat-10.12.5.js`, `firebase-auth-compat-10.12.5.js` and `firebase-firestore-compat-10.12.5.js` are unmodified

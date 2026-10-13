@@ -11,6 +11,7 @@
     info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
     compare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 2v20"/></svg>',
+    share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m0 0L8 7m4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
     print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></svg>',
     cube: '<svg class="ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7.5 4.3 9 5.2M21 8v8a2 2 0 0 1-1 1.7l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.7l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8ZM3.3 7 12 12l8.7-5M12 22V12"/></svg>'
@@ -312,9 +313,10 @@
         '<div><dt>مالیات</dt><dd data-t="tax"></dd></div></dl>' +
       '<section class="pay" id="payBox">' + (payNormalize(), payHtml()) + '</section>'
       : '<p class="inv-empty">پیش‌فاکتور خالی است. با دکمهٔ + روی هر محصول، آن را اضافه کنید.</p>';
-    var foot = has ? '<div class="inv-foot"><div class="inv-pay"><span>مبلغ قابل پرداخت</span><b data-t="total"></b></div>' +
+    var foot = has ? '<div class="inv-foot"><p class="inv-msg" id="invMsg" role="status" hidden></p><div class="inv-pay"><span>مبلغ قابل پرداخت</span><b data-t="total"></b></div>' +
       '<div class="inv-actions"><button type="button" class="inv-clear" data-inv-clear aria-label="پاک‌کردن پیش‌فاکتور" title="پاک‌کردن پیش‌فاکتور">' + ICON.trash + '</button>' +
-      '<button type="button" class="inv-pdf" data-inv-print>' + ICON.print + '<span>دریافت PDF</span></button></div></div>' : '';
+      '<button type="button" class="inv-pdf alt" data-inv-print>' + ICON.print + '<span>دریافت PDF</span></button>' +
+      '<button type="button" class="inv-pdf" data-inv-share>' + ICON.share + '<span>ارسال</span></button></div></div>' : '';
     openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتور</h2><button type="button" class="dlg-link" data-arc-open>سوابق</button><button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
       '<div class="inv-body"><div class="inv-meta">' +
         '<label class="wide">صادرکننده (ویزیتور)<input type="text" data-f="issuer" value="' + esc(inv.issuer) + '" autocomplete="name" placeholder="نام و نام خانوادگی"></label>' +
@@ -324,6 +326,7 @@
         '<label>تاریخ<input type="text" data-f="date" data-jdate readonly inputmode="none" value="' + esc(invDate) + '"></label>' +
         '<label>واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label></div>' + body + '</div>' + foot, 'inv-sheet');
     invTotalsRender();
+    if (has) loadH2C().then(null, function () { /* offline: share falls back to print */ });
   }
   var ONES = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه', 'ده', 'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده'];
   var TENS = ['', '', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود'];
@@ -375,12 +378,12 @@
     return '<p class="ip-line ip-payline"><strong>نحوهٔ پرداخت:</strong> ' + title + '</p>' +
       '<table class="ip-pay"><thead><tr><th>پرداخت</th><th>مبلغ (' + esc(u) + ')</th><th>تاریخ سررسید</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
-  function printDoc(doc) {
+  function docHtml(doc) {
     var t = totalsOf(doc), u = doc.unit;
     var rows = doc.lines.map(function (l, i) {
       return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(l.code) + '</td><td class="ip-name">' + esc(l.name) + '</td><td>' + esc(l.brand) + '</td><td>' + faInt.format(l.qty || 0) + '</td><td>' + faInt.format(l.price || 0) + '</td><td>' + faInt.format(Math.round((l.qty || 0) * (l.price || 0))) + '</td></tr>';
     }).join('');
-    $('invPrint').innerHTML = '<table class="ip-frame"><thead><tr><td>' +
+    return '<table class="ip-frame"><thead><tr><td>' +
         '<div class="ip-top"><div class="ip-brand"><img src="./assets/branding/maxsilver-logo.svg" alt="مکث سیلور · MAX SILVER" width="175" height="30"></div>' +
         '<dl class="ip-ref"><div><dt>شماره سند:</dt><dd dir="ltr">' + esc(doc.docNo) + '</dd></div><div><dt>تاریخ:</dt><dd>' + esc(doc.date) + '</dd></div></dl></div>' +
       '</td></tr></thead><tbody><tr><td>' +
@@ -393,10 +396,13 @@
         '<p class="ip-words"><strong>مبلغ به حروف:</strong> ' + esc(numWords(t.total)) + ' ' + esc(u) + '</p>' + payPrint(doc) +
         '<div class="ip-sign"><div><b>امضا و تاریخ صادرکننده</b></div><div><b>امضا و تاریخ مشتری</b></div></div>' +
       '</td></tr></tbody><tfoot><tr><td><div class="ip-foot">پیش‌فاکتور | مکث سیلور' + (doc.docNo ? ' | ' + esc(doc.docNo) : '') + '</div></td></tr></tfoot></table>';
+  }
+  function printDoc(doc) {
+    $('invPrint').innerHTML = docHtml(doc);
     document.body.classList.add('inv-print');
     window.print();
   }
-  function invPrint() {
+  function commitDoc() {
     if (!inv.docNo) { inv.docNo = nextDocNo(); invSave(); var field = dialog.querySelector('[data-f=docNo]'); if (field) field.value = inv.docNo; }
     var doc = snapshot();
     doc.updatedAt = Date.now();
@@ -406,7 +412,126 @@
     archive = archive.slice(0, 500);
     saveJson(ARCH_KEY, archive);
     if (window.MSSync) window.MSSync.push();
-    printDoc(doc);
+    return doc;
+  }
+  function invPrint() { printDoc(commitDoc()); }
+
+  // ----- share / save the proforma as a real PDF file (one JPEG per A4 page inside a minimal PDF container)
+  var H2C = './assets/vendor/html2canvas-1.4.1.min.js', PAGE_W = 794, PAGE_H = 1123, MARGIN = 45, SCALE = 2;
+  var shareCache = { key: '', file: null }, sharing = false;
+  function loadH2C() {
+    if (window.html2canvas) return Promise.resolve(window.html2canvas);
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = H2C; s.onload = function () { resolve(window.html2canvas); }; s.onerror = function () { reject(new Error('html2canvas')); };
+      document.head.appendChild(s);
+    });
+  }
+  function toJpeg(canvas) {
+    return new Promise(function (resolve, reject) {
+      canvas.toBlob(function (b) { if (!b) { reject(new Error('jpeg')); return; } b.arrayBuffer().then(function (ab) { resolve({ data: new Uint8Array(ab), w: canvas.width, h: canvas.height }); }); }, 'image/jpeg', 0.92);
+    });
+  }
+  function buildPdf(pages) {
+    var enc = new TextEncoder(), chunks = [], offs = [], pos = 0, total = 2 + pages.length * 3;
+    var put = function (x) { var b = typeof x === 'string' ? enc.encode(x) : x; chunks.push(b); pos += b.length; };
+    var obj = function (n, parts) { offs[n] = pos; put(n + ' 0 obj\n'); parts.forEach(put); put('\nendobj\n'); };
+    var kids = pages.map(function (_, i) { return (3 + i * 3) + ' 0 R'; }).join(' ');
+    put('%PDF-1.4\n');
+    obj(1, ['<< /Type /Catalog /Pages 2 0 R >>']);
+    obj(2, ['<< /Type /Pages /Count ' + pages.length + ' /Kids [' + kids + '] >>']);
+    pages.forEach(function (p, i) {
+      var page = 3 + i * 3, content = 4 + i * 3, img = 5 + i * 3, stream = 'q 595.28 0 0 841.89 0 0 cm /Im0 Do Q';
+      obj(page, ['<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 ' + img + ' 0 R >> >> /Contents ' + content + ' 0 R >>']);
+      obj(content, ['<< /Length ' + stream.length + ' >>\nstream\n', stream, '\nendstream']);
+      obj(img, ['<< /Type /XObject /Subtype /Image /Width ' + p.w + ' /Height ' + p.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + p.data.length + ' >>\nstream\n', p.data, '\nendstream']);
+    });
+    var xref = pos;
+    put('xref\n0 ' + (total + 1) + '\n0000000000 65535 f \n');
+    for (var i = 1; i <= total; i++) put(('0000000000' + offs[i]).slice(-10) + ' 00000 n \n');
+    put('trailer\n<< /Size ' + (total + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
+    return new Blob(chunks, { type: 'application/pdf' });
+  }
+  // draws the printed document off-screen, cuts the body at row boundaries into A4 pages, repeats header and footer on each
+  function renderPages(doc) {
+    return Promise.all([loadH2C(), document.fonts ? document.fonts.ready : null]).then(function () {
+      var host = document.createElement('div');
+      host.className = 'ip-cap';
+      host.innerHTML = docHtml(doc);
+      document.body.appendChild(host);
+      var frame = host.querySelector('.ip-frame'), base = host.getBoundingClientRect().top;
+      var rel = function (el) { var b = el.getBoundingClientRect(); return { t: b.top - base, b: b.bottom - base }; };
+      var head = rel(frame.querySelector('thead')), foot = rel(frame.querySelector('tfoot')), cuts = [];
+      Array.prototype.forEach.call(frame.querySelectorAll(':scope > tbody > tr > td > *, .ip-items tbody tr'), function (el) { if (!el.classList.contains('ip-payline')) cuts.push(rel(el).b); }); // a heading never ends a page
+      var headH = head.b - head.t, footH = foot.b - foot.t, cap = PAGE_H - 2 * MARGIN - headH - footH, ranges = [], y = head.b, end = foot.t;
+      if (end - y <= cap) ranges.push([y, end]);
+      else {
+        while (y < end - 0.5) {
+          var lim = y + cap, cut = 0;
+          if (end <= lim) cut = end;
+          else { cuts.forEach(function (c) { if (c > y + 20 && c <= lim && c > cut) cut = c; }); if (!cut) cut = lim; }
+          ranges.push([y, cut]); y = cut;
+        }
+      }
+      return window.html2canvas(host, { scale: SCALE, backgroundColor: '#ffffff', logging: false, width: PAGE_W, windowWidth: PAGE_W }).then(function (canvas) {
+        host.remove();
+        var s = canvas.width / PAGE_W;
+        return Promise.all(ranges.map(function (rg) {
+          var c = document.createElement('canvas'), x;
+          c.width = Math.round(PAGE_W * s); c.height = Math.round(PAGE_H * s);
+          x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+          var draw = function (sy, sh, dy) { if (sh > 0) x.drawImage(canvas, 0, Math.round(sy * s), canvas.width, Math.round(sh * s), 0, Math.round(dy * s), canvas.width, Math.round(sh * s)); };
+          draw(head.t, headH, MARGIN);
+          draw(rg[0], rg[1] - rg[0], MARGIN + headH);
+          draw(foot.t, footH, PAGE_H - MARGIN - footH);
+          return toJpeg(c);
+        }));
+      }, function (e) { host.remove(); throw e; });
+    }).then(buildPdf);
+  }
+  function pdfFile(doc) {
+    var key = docHtml(doc);
+    if (shareCache.key === key && shareCache.file) return Promise.resolve(shareCache.file);
+    return renderPages(doc).then(function (blob) {
+      var name = 'proforma-' + String(doc.docNo || 'draft').replace(/[^A-Za-z0-9._-]+/g, '_') + '.pdf';
+      var file = new File([blob], name, { type: 'application/pdf' });
+      shareCache = { key: key, file: file };
+      return file;
+    });
+  }
+  function saveFile(file) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
+  function shareMsg(text, bad) {
+    var m = dialog.querySelector('#invMsg');
+    if (!m) return;
+    m.textContent = text || ''; m.hidden = !text; m.className = 'inv-msg' + (bad ? ' bad' : '');
+  }
+  function shareDoc(doc, btn) {
+    if (sharing) return;
+    sharing = true;
+    var label = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span>در حال ساخت PDF…</span>'; }
+    shareMsg('');
+    pdfFile(doc).then(function (file) {
+      var data = { files: [file], title: 'پیش‌فاکتور ' + doc.docNo, text: 'پیش‌فاکتور مکث سیلور · ' + doc.docNo };
+      if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+        return navigator.share(data).then(null, function (e) {
+          if (e && e.name === 'AbortError') return;
+          if (e && e.name === 'NotAllowedError') { shareMsg('فایل آماده است؛ یک بار دیگر «ارسال» را بزنید.'); return; }
+          saveFile(file); shareMsg('ارسال مستقیم ممکن نشد؛ فایل PDF روی دستگاه ذخیره شد.');
+        });
+      }
+      saveFile(file); shareMsg('فایل PDF روی دستگاه ذخیره شد. می‌توانید آن را از پوشهٔ دانلودها ارسال کنید.');
+    }).then(null, function () {
+      shareMsg('ساخت PDF انجام نشد (برای بار اول به اینترنت نیاز است). از «دریافت PDF» استفاده کنید.', true);
+    }).then(function () {
+      sharing = false;
+      if (btn) { btn.disabled = false; btn.innerHTML = label; }
+    });
   }
 
   // ----- archive: saved proformas, customers and a portable backup of everything kept on this device
@@ -427,7 +552,7 @@
         '<div class="arc-cust">' + esc(d.customer || 'بدون نام مشتری') + (d.issuer ? ' <small>· ' + esc(d.issuer) + '</small>' : '') + '</div>' +
         '<div class="arc-meta"><span>' + faInt.format(d.lines.length) + ' ردیف</span><b>' + money(t.total, d.unit) + '</b></div>' +
         '<div class="arc-actions"><button type="button" data-arc-edit="' + i + '">ویرایش</button><button type="button" data-arc-copy="' + i + '">کپی</button>' +
-        '<button type="button" data-arc-pdf="' + i + '">PDF</button><button type="button" class="danger" data-arc-del="' + i + '" aria-label="حذف">' + ICON.trash + '</button></div></li>';
+        '<button type="button" data-arc-pdf="' + i + '">PDF</button><button type="button" data-arc-share="' + i + '">ارسال</button><button type="button" class="danger" data-arc-del="' + i + '" aria-label="حذف">' + ICON.trash + '</button></div></li>';
     }).join('');
     var fcards = foreign.map(function (d, i) {
       var t = totalsOf(d);
@@ -435,7 +560,7 @@
         '<div class="arc-head"><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.date) + '</span></div>' +
         '<div class="arc-cust">' + esc(d.customer || 'بدون نام مشتری') + ' <small>· ' + esc(d.ownerName || d.issuer || '') + '</small></div>' +
         '<div class="arc-meta"><span>' + faInt.format(d.lines.length) + ' ردیف</span><b>' + money(t.total, d.unit) + '</b></div>' +
-        '<div class="arc-actions two"><button type="button" data-arc-fcopy="' + i + '">کپی</button><button type="button" data-arc-fpdf="' + i + '">PDF</button></div></li>';
+        '<div class="arc-actions two"><button type="button" data-arc-fcopy="' + i + '">کپی</button><button type="button" data-arc-fpdf="' + i + '">PDF</button><button type="button" data-arc-fshare="' + i + '">ارسال</button></div></li>';
     }).join('');
     openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتورهای ذخیره‌شده</h2><button type="button" class="dlg-link" data-inv-open>پیش‌نویس</button>' +
       '<button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
@@ -552,7 +677,7 @@
   });
 
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-backup],[data-pay-count],[data-pay-equal],[data-close],[data-src]');
+    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-share],[data-arc-fshare],[data-inv-share],[data-arc-backup],[data-pay-count],[data-pay-equal],[data-close],[data-src]');
     if (e.target === dialog) { dialog.close(); return; }
     if (!t) return;
     if (t.hasAttribute('data-open')) detail(t.getAttribute('data-open'));
@@ -563,6 +688,9 @@
     else if (t.hasAttribute('data-inv-rm')) { inv.lines.splice(Number(t.getAttribute('data-inv-rm')), 1); invSave(); trayRender(); invButtons(); invoiceView(); }
     else if (t.hasAttribute('data-pay-count')) { var pq = ensurePay(); pq.count = Math.max(1, Math.min(12, (pq.count || 1) + Number(t.getAttribute('data-pay-count')))); pq.custom = false; payNormalize(); invSave(); payRender(); }
     else if (t.hasAttribute('data-pay-equal')) { ensurePay().custom = false; payNormalize(); invSave(); payRender(); }
+    else if (t.hasAttribute('data-inv-share')) shareDoc(commitDoc(), t);
+    else if (t.hasAttribute('data-arc-share')) shareDoc(archive[Number(t.getAttribute('data-arc-share'))], t);
+    else if (t.hasAttribute('data-arc-fshare')) shareDoc(foreign[Number(t.getAttribute('data-arc-fshare'))], t);
     else if (t.hasAttribute('data-inv-print')) invPrint();
     else if (t.hasAttribute('data-arc-open')) archiveView();
     else if (t.hasAttribute('data-inv-open')) invoiceView();
@@ -697,7 +825,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261127', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261201', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();
