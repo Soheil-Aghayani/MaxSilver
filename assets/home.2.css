@@ -25,5 +25,5 @@ body{min-height:100vh}
 @keyframes hero-copy-in{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
 @keyframes brand-entry{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:980px){.portal-grid{grid-template-columns:1fr}}
-@media(max-width:760px){.portal{padding:14px 12px 36px}.hero{grid-template-columns:1fr;gap:16px;padding:26px 20px;border-radius:20px}.hero-brand{justify-self:center;width:min(300px,100%);padding:14px}.portal-card{padding:16px}}
+@media(max-width:760px){.portal{padding:14px 12px 36px}.hero{grid-template-columns:1fr;gap:16px;padding:26px 20px;border-radius:20px}.hero-brand{display:none}.hero{gap:0;padding:18px 18px;border-radius:18px}.hero h1{font-size:22px}.portal{padding-bottom:16px}.portal-grid{gap:10px;margin-top:10px}.portal-card{gap:2px 12px;padding:12px 14px;border-radius:16px}.card-icon{width:44px;height:44px;border-radius:13px}.card-icon svg{width:23px;height:23px}.portal-card h2{font-size:15px}.portal-card p{font-size:12px;line-height:1.5}.card-go{width:32px;height:32px}.card-go svg{width:16px;height:16px}.data-note{margin-top:10px;padding:9px 12px;font-size:12px}}
 @media(prefers-reduced-motion:reduce){.hero:before,.hero:after,.hero h1,.hero-brand{animation:none!important}}
