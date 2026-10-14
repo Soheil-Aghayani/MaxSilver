@@ -145,7 +145,9 @@
   var faPct = new Intl.NumberFormat('fa-IR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
   var RATE_MIN = 0.5, RATE_MAX = 1.5;
   var COMM_LABEL = { none: 'ثبت نشده', draft: 'پیش‌نویس مالی', reviewed: 'بررسی‌شدهٔ مدیر فروش', approved: 'تأییدشدهٔ مدیرعامل' };
-  S.comm = { year: '', doc: null, results: [], loading: false, busy: false, msg: '', error: '' };
+  S.comm = { year: '', month: '', doc: null, results: [], mdoc: null, mres: [], loading: false, busy: false, msg: '', error: '' };
+  var MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function provinceToRegion() {
     var m = {};
     Object.keys(REGIONS).forEach(function (g) { REGIONS[g].forEach(function (p) { m[p] = g; }); });
@@ -169,16 +171,36 @@
     var yrs = commYears();
     if (!yrs.length) return;
     if (!S.comm.year) S.comm.year = String(yrs[yrs.length - 1]);
-    var y = S.comm.year, p = null;
+    if (!S.comm.month) {
+      var jp = {};                                        // current Jalali month when the year matches, else the first
+      try {
+        new Intl.DateTimeFormat('en-u-ca-persian-nu-latn', { year: 'numeric', month: '2-digit' }).formatToParts(new Date()).forEach(function (x) { jp[x.type] = x.value.replace(/\D/g, ''); });
+      } catch (x) { /* ignore */ }
+      S.comm.month = jp.year === S.comm.year && jp.month ? jp.month : '01';
+    }
+    var y = S.comm.year, mm = S.comm.month, p = null;
+    var names = Object.keys(REGIONS);
     if (can('commission')) {
-      p = db.collection('commission_rates').doc(y).get().then(function (s) { S.comm.doc = s.exists ? s.data() : null; });
+      p = Promise.all([
+        db.collection('commission_rates').doc(y).get().then(function (s) { S.comm.doc = s.exists ? s.data() : null; }),
+        db.collection('commission_months').doc(y + '_' + mm).get().then(function (s) { S.comm.mdoc = s.exists ? s.data() : null; })
+      ]);
     } else if (commOwnRegions().length) {
-      // one document per region, read by id: a rule that depends on the caller's profile cannot be proven for a query
-      var names = Object.keys(REGIONS);
-      p = Promise.all(commOwnRegions().map(function (g) {
+      // one document per region (and month), read by id: a rule that depends on the caller's profile cannot be proven for a query
+      var get = function (col, id) { return db.collection(col).doc(id).get().then(function (s) { return s.exists ? s.data() : null; }, function () { return null; }); };
+      var annual = Promise.all(commOwnRegions().map(function (g) {
         var i = names.indexOf(g);
-        return i < 0 ? null : db.collection('commission_results').doc(y + '_' + (i + 1)).get().then(function (s) { return s.exists ? s.data() : null; }, function () { return null; });
+        return i < 0 ? null : get('commission_results', y + '_' + (i + 1));
       })).then(function (list) { S.comm.results = list.filter(Boolean); });
+      var months = [];
+      commOwnRegions().forEach(function (g) {
+        var i = names.indexOf(g);
+        if (i < 0) return;
+        for (var m = 1; m <= 12; m++) months.push(get('commission_month_results', y + '_' + pad2(m) + '_' + (i + 1)));
+      });
+      p = Promise.all([annual, Promise.all(months).then(function (list) {
+        S.comm.mres = list.filter(Boolean).sort(function (a, b) { return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0); });
+      })]);
     }
     if (!p) return;
     S.comm.loading = true; S.comm.error = ''; render();
@@ -190,6 +212,10 @@
     }).join('') + '</div>';
   }
   function commissionView() {
+    if (!commYears().length) return '';
+    return annualView() + (can('commission') ? monthView() : ownMonthView());
+  }
+  function annualView() {
     var C = S.comm;
     if (!commYears().length) return '';
     if (!can('commission')) {
@@ -223,7 +249,94 @@
       (acts ? '<div class="pn-actions">' + acts + '</div>' : '') +
       '<p class="pn-note">فقط مالی نرخ را وارد می‌کند، مدیر فروش بررسی و مدیرعامل تأیید می‌کند. کارشناس فروش فقط نتیجهٔ منطقهٔ خودش را می‌بیند.</p></section>';
   }
+  function monthChips() {
+    return '<div class="pn-chips pn-months" role="group" aria-label="ماه">' + MONTHS.map(function (n, i) {
+      return '<button type="button" class="pn-year" data-comm-month="' + pad2(i + 1) + '" aria-pressed="' + (pad2(i + 1) === S.comm.month) + '">' + esc(n) + '</button>';
+    }).join('') + '</div>';
+  }
+  function monthView() {
+    var C = S.comm;
+    if (!commYears().length) return '';
+    var md = C.mdoc, st = md ? md.status : 'none', items = (md && md.items) || {}, annual = (C.doc && C.doc.rates) || {};
+    var editable = can('commissionEdit') && st !== 'approved';
+    var totBase = 0, totCom = 0;
+    var rows = Object.keys(REGIONS).map(function (g) {
+      var it = items[g] || {}, rate = it.rate != null ? it.rate : annual[g], base = it.base;
+      var com = (base != null && rate != null) ? base * rate / 100 * 1000 : null;     // billion toman to million toman
+      if (base != null) totBase += base; if (com != null) totCom += com;
+      return '<tr><td>' + esc(g) + '</td><td>' +
+        (editable ? '<input type="number" inputmode="decimal" dir="ltr" data-mbase="' + esc(g) + '" min="0" step="0.01" value="' + (base == null ? '' : base) + '" aria-label="مبنای ' + esc(g) + '">'
+          : (base == null ? '—' : faTwo.format(base))) + '</td><td>' +
+        (editable ? '<input type="number" inputmode="decimal" dir="ltr" data-mrate="' + esc(g) + '" min="' + RATE_MIN + '" max="' + RATE_MAX + '" step="0.05" value="' + (rate == null ? '' : rate) + '" aria-label="نرخ ' + esc(g) + '">'
+          : (rate == null ? '—' : faPct.format(rate) + '٪')) + '</td><td>' + (com == null ? '—' : faOne.format(com)) + '</td></tr>';
+    }).join('');
+    var acts = '';
+    if (editable) acts += '<button type="button" class="pn-secondary" data-comm-act="m-save"' + (C.busy ? ' disabled' : '') + '>ذخیرهٔ پیش‌نویس ماه</button>';
+    if (can('commissionReview') && st === 'draft') acts += '<button type="button" class="pn-primary" data-comm-act="m-review"' + (C.busy ? ' disabled' : '') + '>تأیید بررسی ماه</button>';
+    if (can('commissionApprove') && st === 'reviewed') acts += '<button type="button" class="pn-primary" data-comm-act="m-approve"' + (C.busy ? ' disabled' : '') + '>تأیید نهایی و انتشار ماه</button>';
+    return '<section class="pn-card pn-comm"><h2>پایهٔ ماهانه</h2>' + commYearChips() + monthChips() +
+      '<p class="pn-note"><span class="pn-chip">' + esc(COMM_LABEL[st] || COMM_LABEL.none) + '</span> فروش تأییدشدهٔ ماه هر منطقه را به میلیارد تومان وارد کنید. نرخ از جدول سالانه پیش‌فرض می‌شود و در صورت نیاز برای همین ماه تغییر می‌کند.</p>' +
+      '<div class="pn-scroll"><table class="pn-table"><thead><tr><th>منطقه</th><th>فروش ماه (میلیارد تومان)</th><th>نرخ ٪</th><th>پورسانت (میلیون تومان)</th></tr></thead><tbody>' + rows +
+      '</tbody><tfoot><tr><td>جمع</td><td>' + faTwo.format(totBase) + '</td><td>—</td><td>' + faOne.format(totCom) + '</td></tr></tfoot></table></div>' +
+      (C.msg ? '<p class="pn-ok" role="status">' + esc(C.msg) + '</p>' : '') + (C.error ? '<p class="pn-err" role="alert">' + esc(C.error) + '</p>' : '') +
+      (acts ? '<div class="pn-actions">' + acts + '</div>' : '') +
+      '<p class="pn-note">فقط مالی و حسابداری وارد می‌کند، مدیر فروش بررسی و مدیرعامل تأیید می‌کند.</p></section>';
+  }
+  function ownMonthView() {
+    var C = S.comm;
+    if (!commOwnRegions().length || !commYears().length) return '';
+    var list = C.mres.filter(function (r) { return r.status === 'approved'; });
+    if (!list.length) return '';
+    return '<section class="pn-card pn-comm"><h2>پورسانت ماهانهٔ من</h2><div class="pn-scroll"><table class="pn-table"><thead><tr><th>ماه</th><th>منطقه</th><th>فروش (میلیارد تومان)</th><th>نرخ</th><th>پورسانت (میلیون تومان)</th></tr></thead><tbody>' +
+      list.map(function (r) {
+        return '<tr><td>' + esc(MONTHS[parseInt(r.month, 10) - 1] || r.month) + '</td><td>' + esc(r.region) + '</td><td>' + faTwo.format(r.base) + '</td><td>' + faPct.format(r.rate) + '٪</td><td>' + faOne.format(r.commission) + '</td></tr>';
+      }).join('') + '</tbody></table></div></section>';
+  }
+  function mAct(kind) {
+    var C = S.comm, y = C.year, mm = C.month, uid = S.user.uid, now = Date.now();
+    var ref = db.collection('commission_months').doc(y + '_' + mm);
+    C.msg = ''; C.error = '';
+    var names = Object.keys(REGIONS), annual = (C.doc && C.doc.rates) || {}, items = {}, bad = '', filled = 0;
+    var bases = root.querySelectorAll('input[data-mbase]');
+    if (bases.length) {
+      Array.prototype.forEach.call(bases, function (el) {
+        var g = el.getAttribute('data-mbase'), raw = el.value.trim();
+        var rateEl = root.querySelector('input[data-mrate="' + g + '"]'), rraw = rateEl ? rateEl.value.trim() : '';
+        if (raw === '') return;
+        var b = parseFloat(raw), r = rraw === '' ? annual[g] : parseFloat(rraw);
+        if (!(b >= 0)) { bad = 'مبلغ ' + g + ' درست نیست.'; return; }
+        if (!(r >= RATE_MIN && r <= RATE_MAX)) { bad = 'نرخ ' + g + ' باید بین ' + faPct.format(RATE_MIN) + ' تا ' + faPct.format(RATE_MAX) + ' درصد باشد (یا ابتدا نرخ سالانه را ثبت کنید).'; return; }
+        items[g] = { base: b, rate: r }; filled++;
+      });
+    } else { items = (C.mdoc && C.mdoc.items) || {}; filled = Object.keys(items).length; }
+    var done = function (m) { C.busy = false; if (m) C.msg = m; render(); loadComm(); };
+    var fail = function (e) { C.busy = false; C.error = errText(e); render(); };
+    if (kind === 'm-save') {
+      if (bad) { C.error = bad; render(); return; }
+      if (!filled) { C.error = 'دست‌کم مبلغ یک منطقه را وارد کنید.'; render(); return; }
+      C.busy = true; render();
+      ref.set({ year: y, month: mm, items: items, status: 'draft', updatedBy: uid, updatedAt: now }).then(function () { done('پیش‌نویس ماه ذخیره شد.'); }, fail);
+    } else if (kind === 'm-review') {
+      if (Object.keys(items).length < names.length) { C.error = 'برای بررسی باید مبلغ و نرخ هر شش منطقه ثبت شده باشد.'; render(); return; }
+      C.busy = true; render();
+      ref.update({ status: 'reviewed', reviewedBy: uid, reviewedAt: now }).then(function () { done('بررسی ماه ثبت شد؛ منتظر تأیید مدیرعامل.'); }, fail);
+    } else if (kind === 'm-approve') {
+      if (Object.keys(items).length < names.length) { C.error = 'مبلغ و نرخ هر شش منطقه باید ثبت شده باشد.'; render(); return; }
+      C.busy = true; render();
+      var batch = db.batch();
+      batch.update(ref, { status: 'approved', approvedBy: uid, approvedAt: now });
+      names.forEach(function (g, i) {
+        var it = items[g];
+        batch.set(db.collection('commission_month_results').doc(y + '_' + mm + '_' + (i + 1)), {
+          year: y, month: mm, region: g, base: it.base, rate: it.rate, commission: it.base * it.rate / 100 * 1000,
+          status: 'approved', approvedBy: uid, approvedAt: now
+        });
+      });
+      batch.commit().then(function () { done('پایهٔ ماه تأیید و نتیجهٔ مناطق منتشر شد.'); }, fail);
+    }
+  }
   function commAct(kind) {
+    if (kind.indexOf('m-') === 0) { mAct(kind); return; }
     var C = S.comm, y = C.year, uid = S.user.uid, ref = db.collection('commission_rates').doc(y), now = Date.now();
     C.msg = ''; C.error = '';
     var rates = {}, bad = false, filled = 0;
@@ -343,7 +456,14 @@
       (can('territory') ? '<div data-field="territory"' + (MSRoles.hasField(u.role, 'territory') ? '' : ' hidden') + '><h3>استان‌های منطقهٔ فعالیت</h3>' + regs +
       '<label>شهرها و توضیحات منطقه<textarea name="cities" rows="3" maxlength="400" placeholder="مثلاً: تبریز، مراغه، اهر">' + esc(u.cities || '') + '</textarea></label></div>' : '') +
       (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
-      '<button type="submit" class="pn-primary">ذخیره</button></form>';
+      '<button type="submit" class="pn-primary">ذخیره</button>' +
+      (canDelete(u, self) ? '<div class="pn-danger-zone"><p class="pn-note">حذف، دسترسی این حساب را می‌بندد. پیش‌فاکتورهای صادرشدهٔ او می‌ماند. حساب ورود را هم از Firebase ← Authentication حذف کنید.</p>' +
+        '<button type="button" class="pn-danger" data-del="' + esc(u.id) + '">حذف کاربر</button></div>' : '') + '</form>';
+  }
+  function canDelete(u, self) {
+    if (self || !can('userDelete')) return false;
+    var r = MSRoles.norm(u.role);
+    return can('roleAdmin') || (r !== 'manager' && r !== 'ceo');   // hr never removes management or the CEO (the rules say the same)
   }
   function render() { root.innerHTML = view(); paintMap(); }
 
@@ -351,7 +471,17 @@
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-out]')) { auth.signOut(); return; }
     var cy = e.target.closest('[data-comm-year]');
-    if (cy) { S.comm.year = cy.getAttribute('data-comm-year'); S.comm.doc = null; S.comm.results = []; S.comm.msg = ''; S.comm.error = ''; render(); loadComm(); return; }
+    if (cy) { S.comm.year = cy.getAttribute('data-comm-year'); S.comm.doc = null; S.comm.results = []; S.comm.mdoc = null; S.comm.mres = []; S.comm.msg = ''; S.comm.error = ''; render(); loadComm(); return; }
+    var dl = e.target.closest('[data-del]');
+    if (dl) {
+      if (dl.getAttribute('data-armed') !== '1') { dl.setAttribute('data-armed', '1'); dl.textContent = 'برای حذف قطعی دوباره بزنید'; return; }
+      var did = dl.getAttribute('data-del');
+      dl.disabled = true;
+      db.collection('users').doc(did).delete().then(function () { dlg.close(); S.msg = 'کاربر حذف شد.'; load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(S.team.filter(function (x) { return x.id === did; })[0] || { id: did }); });
+      return;
+    }
+    var cm = e.target.closest('[data-comm-month]');
+    if (cm) { S.comm.month = cm.getAttribute('data-comm-month'); S.comm.mdoc = null; S.comm.msg = ''; S.comm.error = ''; render(); loadComm(); return; }
     var ca = e.target.closest('[data-comm-act]');
     if (ca) { commAct(ca.getAttribute('data-comm-act')); return; }
     var ed = e.target.closest('[data-edit]');

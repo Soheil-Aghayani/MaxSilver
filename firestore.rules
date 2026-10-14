@@ -38,7 +38,10 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || seesTeam());
-      allow create, delete: if adminsRoles();
+      allow create: if adminsRoles();
+      // nobody removes their own account; hr removes accounts but never those of management or the CEO
+      allow delete: if request.auth.uid != uid
+        && (adminsRoles() || (editsPeople() && !(resource.data.get('role', 'visitor') in ['manager', 'ceo', 'it'])));
       allow update: if adminsRoles()
         || (editsPeople() && request.auth.uid != uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'active']))
@@ -86,6 +89,26 @@ service cloud.firestore {
     }
 
     match /commission_results/{id} {
+      allow read: if commissionReaders()
+        || (approved() && resource.data.status == 'approved' && resource.data.region in profile().get('commissionRegions', []));
+      allow create, update: if isManager() && request.resource.data.status == 'approved';
+      allow delete: if false;
+    }
+
+    // Monthly base: one document per year and month holding the six regions' sales and rate; same three-step approval.
+    match /commission_months/{id} {
+      allow read: if commissionReaders();
+      allow create: if hasRole(['finance']) && request.resource.data.status == 'draft';
+      allow update: if
+        (hasRole(['finance']) && resource.data.status != 'approved' && request.resource.data.status == 'draft')
+        || (hasRole(['sales_manager']) && resource.data.status == 'draft' && request.resource.data.status == 'reviewed'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedBy', 'reviewedAt']))
+        || (isManager() && resource.data.status == 'reviewed' && request.resource.data.status == 'approved'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approvedBy', 'approvedAt']));
+      allow delete: if false;
+    }
+
+    match /commission_month_results/{id} {
       allow read: if commissionReaders()
         || (approved() && resource.data.status == 'approved' && resource.data.region in profile().get('commissionRegions', []));
       allow create, update: if isManager() && request.resource.data.status == 'approved';

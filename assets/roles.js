@@ -29,6 +29,7 @@
     team: ['manager', 'ceo', 'sales_manager', 'hr'],                                    // see the team list
     roleAdmin: ['manager', 'ceo'],                                                      // create accounts, set role and code
     people: ['manager', 'ceo', 'hr'],                                                   // name, phone, active flag of others
+    userDelete: ['manager', 'ceo', 'hr'],                                               // remove an account (hr never one of management or the CEO)
     territory: ['manager', 'ceo', 'sales_manager'],                                     // provinces and cities of a specialist
     commission: ['manager', 'ceo', 'sales_manager', 'finance'],                         // see the rate table and every region's result
     commissionEdit: ['finance'],                                                        // enters the rate table (draft)
