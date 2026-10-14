@@ -1,10 +1,33 @@
 // Hides sections the signed-in role does not use. This is navigation hygiene, not access control:
 // the pages themselves are static files. Management data that must be private belongs in Firestore behind the rules.
 // An element or the body marked data-manager-only="<area>" is shown only to the roles listed for that area in roles.js.
+// Someone with no account at all gets the least: the home page (login, contact) and the panel (login, contact).
 (function () {
   'use strict';
   var role = '';
   try { role = localStorage.getItem('ms-role') || ''; } catch (e) { /* ignore */ }
+  var signed = !!role;
+  if (!signed) {
+    try { for (var i = 0; i < localStorage.length; i++) if (/^firebase:authUser:/.test(localStorage.key(i))) { signed = true; break; } } catch (e) { /* ignore */ }
+  }
+  var page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  if (!signed) {
+    if (page !== 'index.html' && page !== 'panel.html') { location.replace('./index.html'); return; }
+    document.documentElement.setAttribute('data-anon', '');
+    var start = function () {
+      Array.prototype.forEach.call(document.querySelectorAll('.ms-nav-links li'), function (li) {
+        var a = li.querySelector('a'), href = a ? a.getAttribute('href') : '';
+        if (href !== './index.html' && href !== './panel.html') li.style.display = 'none';
+      });
+      var box = document.getElementById('anonBox');
+      if (box) {
+        box.hidden = false;
+        Array.prototype.forEach.call(document.querySelectorAll('.portal-grid:not(.anon), .data-note'), function (el) { el.style.display = 'none'; });
+      }
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+    return;
+  }
   if (!role) return;
   var R = window.MSRoles;
   function allowed(area) { return R ? R.can(role, area || 'dashboard') : role !== 'visitor'; }

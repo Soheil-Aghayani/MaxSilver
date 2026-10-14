@@ -68,7 +68,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); });
+    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -480,6 +480,47 @@
     return db.collection('tickets').doc(id).update(data);
   }
 
+  // ----- public contact: no account needed, three contact points only
+  var PUB = { sales: 'فروش و توسعه بازار', service: 'خدمات پس از فروش', management: 'مدیریت' };
+  function contactForm() {
+    return '<form class="pn-card pn-contact" id="contactForm"><h2 id="contact">تماس با ما</h2>' +
+      (S.contactOk ? '<p class="pn-ok" role="status">پیام شما ثبت شد. همکاران ما با شما تماس می‌گیرند.</p>' : '') +
+      '<fieldset class="pn-seg"><legend>به</legend>' + Object.keys(PUB).map(function (k, i) {
+        return '<label><input type="radio" name="pub" value="' + k + '"' + (i === 0 ? ' checked' : '') + '><span>' + esc(PUB[k]) + '</span></label>';
+      }).join('') + '</fieldset>' +
+      '<label>نام<input type="text" name="name" maxlength="60" required></label>' +
+      '<label>تلفن یا ایمیل برای پاسخ<input type="text" name="contact" dir="ltr" maxlength="80" required></label>' +
+      '<label>پیام<textarea name="text" rows="4" maxlength="1000" required></textarea></label>' +
+      '<input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="pn-hp">' +
+      (S.contactErr ? '<p class="pn-err" role="alert">' + esc(S.contactErr) + '</p>' : '') +
+      '<button type="submit" class="pn-primary">ارسال پیام</button></form>';
+  }
+  // messages from outside, for the roles that answer them
+  S.pub = { list: [], loading: false, error: '' };
+  function pubReader() { var r = myRole(); return r === 'manager' || r === 'ceo' || r === 'sales_manager' || r === 'service'; }
+  function loadPublic() {
+    if (!S.profile || !active() || !S.user || !pubReader()) return;
+    var col = db.collection('public_requests'), r = myRole();
+    var q = (r === 'sales_manager') ? col.where('to', '==', 'sales') : (r === 'service' ? col.where('to', '==', 'service') : col);
+    q.get().then(function (qs) {
+      S.pub.list = [];
+      qs.forEach(function (s) { var d = s.data(); d.id = s.id; S.pub.list.push(d); });
+      S.pub.list.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    }).then(null, function (e) { S.pub.error = errText(e); }).then(function () { render(); });
+  }
+  function publicView() {
+    if (!pubReader()) return '';
+    var open = S.pub.list.filter(function (x) { return x.status !== 'closed'; });
+    var rows = open.map(function (x) {
+      return '<li class="pn-tk"><div class="pn-pub"><b>' + esc(x.name) + ' <span class="pn-chip">' + esc(PUB[x.to] || x.to) + '</span></b>' +
+        '<span class="pn-tk-meta" dir="ltr">' + esc(x.contact) + ' · ' + esc(tkWhen(x.createdAt)) + '</span>' +
+        '<p>' + esc(x.text) + '</p><button type="button" class="pn-secondary" data-pub-close="' + esc(x.id) + '">انجام شد</button></div></li>';
+    }).join('');
+    if (!rows && !S.pub.error) return '';
+    return '<section class="pn-card pn-tickets"><h2>پیام‌های بیرونی <span class="pn-badge">' + faInt.format(open.length) + '</span></h2>' +
+      (S.pub.error ? '<p class="pn-err" role="alert">' + esc(S.pub.error) + '</p>' : '') + '<ul class="pn-tk-list">' + rows + '</ul></section>';
+  }
+
   function view() {
     if (S.loading) return '<p class="pn-note">در حال بارگذاری…</p>';
     if (!S.user) {
@@ -488,7 +529,7 @@
         '<label>رمز عبور<input type="password" name="password" dir="ltr" autocomplete="current-password" required></label>' +
         (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
         '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ورود</button>' +
-        '<p class="pn-note">حساب‌ها فقط توسط مدیر ساخته می‌شود.</p></form>';
+        '<p class="pn-note">حساب‌ها فقط توسط مدیر ساخته می‌شود.</p></form>' + contactForm();
     }
     if (!S.profile || !active()) {
       return '<div class="pn-card"><h2>حساب فعال نیست</h2><p class="pn-note">' +
@@ -515,6 +556,7 @@
         return '<li><div><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.customer || 'بدون نام مشتری') + '</span></div><div><span>' + esc(faDate(d.createdAt)) + '</span><b>' + money(M.totals(d).total, d.unit) + '</b></div></li>';
       }).join('') + '</ul>' : '<p class="pn-note">هنوز پیش‌فاکتوری صادر نکرده‌اید.</p>') +
       '<a class="pn-link" href="./product-catalog.html">رفتن به کاتالوگ و ساخت پیش‌فاکتور</a></section>';
+    out += publicView();
     out += ticketsView();
     out += commissionView();
     if (can('team')) out += teamView();
@@ -548,8 +590,12 @@
         return '<label class="pn-check"><input type="checkbox" name="reg" value="' + esc(p) + '"' + ((u.regions || []).indexOf(p) >= 0 ? ' checked' : '') + '><span>' + esc(p) + '</span></label>';
       }).join('') + '</fieldset>';
     }).join('');
-    return '<div class="pn-bar"><h2 id="dlgName">ویرایش ' + esc(u.name || 'کاربر') + '</h2><button type="button" class="pn-x" data-close aria-label="بستن">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>' +
+    return '<div class="pn-bar"><h2 id="dlgName">ویرایش ' + esc(u.name || 'کاربر') + '</h2><div class="pn-bar-actions">' +
+      (canDelete(u, self) ? '<button type="button" class="pn-trash" data-del="' + esc(u.id) + '" aria-label="حذف کاربر" title="حذف کاربر">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>' : '') +
+      '<button type="button" class="pn-x" data-close aria-label="بستن">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div></div>' +
+      '<p class="pn-del-note" id="delNote" hidden></p>' +
       '<form id="editForm" class="pn-edit" data-id="' + esc(u.id) + '">' +
       '<label>نام و نام خانوادگی<input type="text" name="name" value="' + esc(u.name || '') + '" maxlength="60" required' + (can('people') ? '' : ' disabled') + '></label>' +
       '<label>تلفن<input type="tel" name="phone" dir="ltr" value="' + esc(u.phone || '') + '" maxlength="30"' + (can('people') ? '' : ' disabled') + '></label>' +
@@ -562,9 +608,7 @@
       (can('territory') ? '<div data-field="territory"' + (MSRoles.hasField(u.role, 'territory') ? '' : ' hidden') + '><h3>استان‌های منطقهٔ فعالیت</h3>' + regs +
       '<label>شهرها و توضیحات منطقه<textarea name="cities" rows="3" maxlength="400" placeholder="مثلاً: تبریز، مراغه، اهر">' + esc(u.cities || '') + '</textarea></label></div>' : '') +
       (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
-      '<button type="submit" class="pn-primary">ذخیره</button>' +
-      (canDelete(u, self) ? '<div class="pn-danger-zone"><p class="pn-note">حذف، دسترسی این حساب را می‌بندد. پیش‌فاکتورهای صادرشدهٔ او می‌ماند. حساب ورود را هم از Firebase ← Authentication حذف کنید.</p>' +
-        '<button type="button" class="pn-danger" data-del="' + esc(u.id) + '">حذف کاربر</button></div>' : '') + '</form>';
+      '<button type="submit" class="pn-primary">ذخیره</button></form>';
   }
   function canDelete(u, self) {
     if (self || !can('userDelete')) return false;
@@ -589,7 +633,12 @@
     }
     var dl = e.target.closest('[data-del]');
     if (dl) {
-      if (dl.getAttribute('data-armed') !== '1') { dl.setAttribute('data-armed', '1'); dl.textContent = 'برای حذف قطعی دوباره بزنید'; return; }
+      if (dl.getAttribute('data-armed') !== '1') {
+        dl.setAttribute('data-armed', '1'); dl.setAttribute('title', 'برای حذف قطعی دوباره بزنید');
+        var nt = dlg.querySelector('#delNote');
+        if (nt) { nt.hidden = false; nt.textContent = 'برای حذف قطعی دوباره آیکن را بزنید. پیش‌فاکتورهای او می‌ماند و یک درخواست خودکار برای حذف حساب ورود به مدیریت می‌رسد.'; }
+        return;
+      }
       var did = dl.getAttribute('data-del');
       dl.disabled = true;
       var gone = S.team.filter(function (x) { return x.id === did; })[0] || { id: did };
@@ -599,6 +648,8 @@
       }).then(function () { dlg.close(); S.msg = 'کاربر حذف شد و درخواست حذف حساب ورود برای مدیریت ثبت شد.'; load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(S.team.filter(function (x) { return x.id === did; })[0] || { id: did }); });
       return;
     }
+    var pc = e.target.closest('[data-pub-close]');
+    if (pc) { db.collection('public_requests').doc(pc.getAttribute('data-pub-close')).update({ status: 'closed' }).then(loadPublic, function (err) { S.pub.error = errText(err); render(); }); return; }
     var cm = e.target.closest('[data-comm-month]');
     if (cm) { S.comm.month = cm.getAttribute('data-comm-month'); S.comm.mdoc = null; S.comm.msg = ''; S.comm.error = ''; render(); loadComm(); return; }
     var ca = e.target.closest('[data-comm-act]');
@@ -630,6 +681,12 @@
       db.collection('users').doc(S.user.uid).update({ name: v('name'), phone: v('phone') }).then(function () {
         S.profile.name = v('name'); S.profile.phone = v('phone'); S.msg = 'ذخیره شد. از این پس نام شما روی پیش‌فاکتورهای جدید همین است.';
       }, function (err) { S.error = errText(err); }).then(function () { S.busy = false; render(); });
+    } else if (f.id === 'contactForm') {
+      if (f.elements.website.value) return;                       // honeypot: a person never fills this
+      var to = f.querySelector('input[name=pub]:checked');
+      S.contactOk = false; S.contactErr = '';
+      db.collection('public_requests').add({ name: v('name'), contact: v('contact'), to: to ? to.value : 'sales', text: f.elements.text.value.trim(), status: 'open', createdAt: Date.now() })
+        .then(function () { S.contactOk = true; render(); }, function (err) { S.contactErr = errText(err); render(); });
     } else if (f.id === 'tkNewForm') {
       var pick = f.querySelector('input[name=to]:checked'), val = pick ? pick.value : 'role:sales_manager';
       var o = { title: v('title'), text: f.elements.text.value.trim() };

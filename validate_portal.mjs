@@ -104,7 +104,7 @@ assert.ok(!html.includes('xlsx.full.min.js')&&analysisJs.includes('ensureXlsx'),
 assert.ok(analysisJs.includes('indexedDB')&&!analysisJs.includes('source-reports'),'Analysis page must use device storage, not published workbooks');
 assert.ok(!/fetch\s*\(\s*['"`]https?:/i.test(analysisJs),'Workbook loading must not call an external host');
 const pages={ 'index.html':portal, 'ceo-dashboard.html':ceo, 'sales-analysis.html':html, 'product-catalog.html':catalogHtml, 'sales-process.html':roadmap };
-const nav=['./index.html','./ceo-dashboard.html','./sales-analysis.html','./product-catalog.html','./sales-process.html'];
+const nav=['./index.html','./ceo-dashboard.html','./sales-analysis.html','./product-catalog.html','./sales-process.html','./panel.html'];
 for(const [name,page] of Object.entries(pages)){
   assert.ok(page.includes('class="ms-sitebar"')&&page.includes('class="ms-site-footer"'),name+' must carry the shared header and footer in static HTML');
   for(const href of nav)assert.ok(page.includes('href="'+href+'"'),name+' is missing nav link '+href);

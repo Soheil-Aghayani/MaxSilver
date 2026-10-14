@@ -93,3 +93,14 @@ button,input,select{font:inherit}
 @media(display-mode:standalone){
   html{overscroll-behavior-y:none}
 }
+
+/* anonymous and install */
+.ms-install{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border:1px solid var(--ms-line);border-radius:14px;background:#fff;color:var(--ms-navy);font:800 14px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+.ms-install svg{width:20px;height:20px}
+#installSlot{display:flex;justify-content:center;margin:14px 0 0}
+.ms-install-dialog{padding:0}
+.ms-install-body{display:grid;gap:12px;padding:20px}
+.ms-install-body h2{margin:0;color:var(--ms-navy);font-size:18px}
+.ms-install-body ol{margin:0;padding-inline-start:20px;line-height:2;color:var(--ms-ink)}
+.ms-install-close{min-height:46px;border:0;border-radius:14px;background:var(--ms-navy);color:#fff;font:800 14px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+[hidden]{display:none!important}
