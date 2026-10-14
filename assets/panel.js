@@ -292,7 +292,7 @@
       (S.msg ? '<p class="pn-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ذخیرهٔ اطلاعات</button>' +
       '<p class="pn-note">نقش، کد و منطقهٔ فعالیت را مدیر تعیین می‌کند.</p></form></section>';
-    out += '<section class="pn-card"><h2>منطقهٔ فعالیت و فروش من</h2>' + chips(p) + areaView(p) + '</section>';
+    if (MSRoles.hasField(p.role, 'territory')) out += '<section class="pn-card"><h2>منطقهٔ فعالیت و فروش من</h2>' + chips(p) + areaView(p) + '</section>';
     out += '<section class="pn-card"><h2>پیش‌فاکتورهای من</h2><div class="pn-stats"><div><span>تعداد کل</span><b>' + faInt.format(mine.length) + '</b></div>' +
       '<div><span>مجموع این ماه (شمسی)</span><b>' + monthTotals(mine) + '</b></div></div>' +
       (mine.length ? '<ul class="pn-list">' + mine.slice(0, 6).map(function (d) {
@@ -311,8 +311,8 @@
       return '<li class="pn-user' + (u.active === false ? ' off' : '') + '"><div><b>' + esc(u.name || '—') + '</b>' +
         '<span class="pn-role">' + esc(MSRoles.label(u.role)) + '</span>' + (u.active === false ? ' <span class="pn-chip off">غیرفعال</span>' : '') +
         '<p class="pn-note">' + faInt.format(docs.length) + ' پیش‌فاکتور · این ماه: ' + monthTotals(docs) + '</p>' +
-        '<div class="pn-chips">' + (u.regions || []).map(function (r) { return '<span class="pn-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
-        (u.cities ? '<p class="pn-note">' + esc(u.cities) + '</p>' : '') + '</div>' +
+        (MSRoles.hasField(u.role, 'territory') ? '<div class="pn-chips">' + (u.regions || []).map(function (r) { return '<span class="pn-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
+          (u.cities ? '<p class="pn-note">' + esc(u.cities) + '</p>' : '') : '') + '</div>' +
         '<button type="button" class="pn-secondary" data-edit="' + esc(u.id) + '">ویرایش</button></li>';
     }).join('');
     return '<section class="pn-card"><h2>تیم</h2><ul class="pn-users">' + rows + '</ul>' +
@@ -335,12 +335,13 @@
       '<label>نام و نام خانوادگی<input type="text" name="name" value="' + esc(u.name || '') + '" maxlength="60" required' + (can('people') ? '' : ' disabled') + '></label>' +
       '<label>تلفن<input type="tel" name="phone" dir="ltr" value="' + esc(u.phone || '') + '" maxlength="30"' + (can('people') ? '' : ' disabled') + '></label>' +
       (can('roleAdmin') ? '<fieldset class="pn-seg"><legend>نقش</legend>' + MSRoles.ORDER.map(function (r) {
-        return '<label><input type="radio" name="role" value="' + r + '"' + ((u.role || 'visitor') === r ? ' checked' : '') + (self ? ' disabled' : '') + '><span>' + esc(MSRoles.label(r)) + '</span></label>';
-      }).join('') + '</fieldset>' : '<p class="pn-note">نقش: ' + esc(MSRoles.label(u.role)) + ' (تغییر نقش فقط با مدیرعامل یا فناوری است)</p>') +
-      (can('roleAdmin') ? '<label>کد برای شمارهٔ سند (حروف و عدد لاتین)<input type="text" name="code" dir="ltr" value="' + esc(u.code || '') + '" maxlength="6" pattern="[A-Za-z0-9]*"></label>' : '') +
+        return '<label><input type="radio" name="role" value="' + r + '"' + (MSRoles.norm(u.role) === r ? ' checked' : '') + (self ? ' disabled' : '') + '><span>' + esc(MSRoles.label(r)) + '</span></label>';
+      }).join('') + '</fieldset>' : '<p class="pn-note">نقش: ' + esc(MSRoles.label(u.role)) + ' (تغییر نقش فقط با مدیرعامل یا مدیریت عمومی است)</p>') +
+      // fields that belong to one kind of role only; the block follows the chosen role
+      (can('roleAdmin') ? '<div data-field="code"' + (MSRoles.hasField(u.role, 'code') ? '' : ' hidden') + '><label>کد برای شمارهٔ سند (حروف و عدد لاتین)<input type="text" name="code" dir="ltr" value="' + esc(u.code || '') + '" maxlength="6" pattern="[A-Za-z0-9]*"></label></div>' : '') +
       (can('people') ? '<label class="pn-check"><input type="checkbox" name="active"' + (u.active === false ? '' : ' checked') + (self ? ' disabled' : '') + '><span>حساب فعال است</span></label>' : '') +
-      (can('territory') ? '<h3>استان‌های منطقهٔ فعالیت</h3>' + regs +
-      '<label>شهرها و توضیحات منطقه<textarea name="cities" rows="3" maxlength="400" placeholder="مثلاً: تبریز، مراغه، اهر">' + esc(u.cities || '') + '</textarea></label>' : '') +
+      (can('territory') ? '<div data-field="territory"' + (MSRoles.hasField(u.role, 'territory') ? '' : ' hidden') + '><h3>استان‌های منطقهٔ فعالیت</h3>' + regs +
+      '<label>شهرها و توضیحات منطقه<textarea name="cities" rows="3" maxlength="400" placeholder="مثلاً: تبریز، مراغه، اهر">' + esc(u.cities || '') + '</textarea></label></div>' : '') +
       (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<button type="submit" class="pn-primary">ذخیره</button></form>';
   }
@@ -361,6 +362,13 @@
     }
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
   });
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t || t.name !== 'role' || !t.form || t.form.id !== 'editForm') return;
+    Array.prototype.forEach.call(t.form.querySelectorAll('[data-field]'), function (el) {
+      el.hidden = !MSRoles.hasField(t.value, el.getAttribute('data-field'));
+    });
+  });
   document.addEventListener('submit', function (e) {
     e.preventDefault();
     var f = e.target, v = function (n) { return f.elements[n].value.trim(); };
@@ -379,11 +387,18 @@
       var id = f.getAttribute('data-id'), self = id === S.user.uid;
       var data = {};   // only the fields this role is allowed to change, so the rules see no foreign key
       if (can('people')) { data.name = v('name'); data.phone = v('phone'); if (!self) data.active = f.elements.active.checked; }
-      if (can('roleAdmin')) { data.code = v('code').toUpperCase(); if (!self) data.role = f.querySelector('input[name=role]:checked').value; }
+      var known = S.team.filter(function (x) { return x.id === id; })[0] || {};
+      var roleNow = known.role, picked = f.querySelector('input[name=role]:checked');
+      if (can('roleAdmin') && !self && picked) { roleNow = picked.value; data.role = roleNow; }
+      if (can('roleAdmin')) data.code = MSRoles.hasField(roleNow, 'code') ? v('code').toUpperCase() : '';
       if (can('territory')) {
-        data.cities = v('cities');
-        data.regions = Array.prototype.map.call(f.querySelectorAll('input[name=reg]:checked'), function (c) { return c.value; });
-        data.commissionRegions = regionsOf(data.regions);   // the regions whose commission result this person may read
+        if (MSRoles.hasField(roleNow, 'territory')) {
+          data.cities = v('cities');
+          data.regions = Array.prototype.map.call(f.querySelectorAll('input[name=reg]:checked'), function (c) { return c.value; });
+          data.commissionRegions = regionsOf(data.regions);   // the regions whose commission result this person may read
+        } else {          // a role without a territory carries none
+          data.cities = ''; data.regions = []; data.commissionRegions = [];
+        }
       }
       db.collection('users').doc(id).set(data, { merge: true }).then(function () { dlg.close(); load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(Object.assign({ id: id }, S.team.filter(function (x) { return x.id === id; })[0] || {}, data)); });
     }

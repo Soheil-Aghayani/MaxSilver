@@ -7,14 +7,15 @@ rules_version = '2';
 // Nobody is let in until a users/{uid} document exists for their account.
 //
 // Roles (assets/roles.js carries the same table for the interface; keep the two in step):
-//   manager          legacy general manager: everything below
-//   ceo              approves roles and policy; sees every proforma
-//   sales_manager    sees every proforma and the team; edits provinces and cities of specialists
-//   visitor          regional sales specialist: own proformas and own profile only
-//   accounting       accounting and account manager: sees every proforma (settlement control)
-//   finance, operations, production, service, marketing, hr, it
-//                    no proforma access except where listed; hr edits name, phone, active; it reads proformas and the team
-// Only manager, ceo and it create accounts or change role and code. Nobody may change their own role.
+//   manager          general management and development (the legacy value 'it' is the same role)
+//   ceo              CEO and board: approves roles, rates and results; sees every proforma
+//   sales_manager    sees every proforma and the team; edits provinces and cities of specialists; reviews commission
+//   visitor          regional sales specialist: own proformas, own profile and own region's approved commission only
+//   account_manager  sees every proforma (order and settlement control)
+//   finance          finance and accounting (the legacy value 'accounting' is the same role): enters commission rates, sees every proforma
+//   operations, production, service, marketing, hr
+//                    no proforma access; hr edits name, phone and the active flag
+// Only manager and ceo create accounts or change role and code. Nobody may change their own role.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -23,12 +24,15 @@ service cloud.firestore {
     function approved() {
       return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && profile().get('active', true) != false;
     }
-    function hasRole(list) { return approved() && profile().get('role', 'visitor') in list; }
+    // two values were merged into other roles; accounts that still carry them behave as the merged role
+    function rawRole() { return profile().get('role', 'visitor'); }
+    function role() { return rawRole() == 'it' ? 'manager' : (rawRole() == 'accounting' ? 'finance' : rawRole()); }
+    function hasRole(list) { return approved() && role() in list; }
 
     function isManager() { return hasRole(['manager', 'ceo']); }                                   // delete proformas, approve
-    function seesAllInvoices() { return hasRole(['manager', 'ceo', 'sales_manager', 'accounting', 'it']); }
-    function seesTeam() { return hasRole(['manager', 'ceo', 'sales_manager', 'hr', 'it']); }
-    function adminsRoles() { return hasRole(['manager', 'ceo', 'it']); }                           // create, delete, role, code
+    function seesAllInvoices() { return hasRole(['manager', 'ceo', 'sales_manager', 'account_manager', 'finance']); }
+    function seesTeam() { return hasRole(['manager', 'ceo', 'sales_manager', 'hr']); }
+    function adminsRoles() { return hasRole(['manager', 'ceo']); }                                 // create, delete, role, code
     function editsPeople() { return hasRole(['hr']); }                                             // name, phone, active
     function editsTerritory() { return hasRole(['sales_manager']); }                               // regions, cities
 
@@ -67,7 +71,7 @@ service cloud.firestore {
     // Commission: rates per region and year. Finance drafts, the sales manager marks them reviewed, the CEO approves and
     // publishes one result document per region. Nobody who earns commission can read the rate table; a specialist reads
     // only the approved result of the regions listed in their own users/{uid}.commissionRegions.
-    function commissionReaders() { return hasRole(['manager', 'ceo', 'sales_manager', 'finance', 'it']); }
+    function commissionReaders() { return hasRole(['manager', 'ceo', 'sales_manager', 'finance']); }
 
     match /commission_rates/{year} {
       allow read: if commissionReaders();

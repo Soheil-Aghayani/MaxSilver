@@ -4,36 +4,45 @@
 (function (w) {
   'use strict';
   var LABEL = {
-    manager: 'مدیر (عمومی)',
-    ceo: 'مدیرعامل',
+    manager: 'مدیریت عمومی و توسعه',
+    ceo: 'مدیرعامل و هیئت‌مدیره',
     sales_manager: 'مدیر فروش و توسعه بازار',
     visitor: 'کارشناس فروش و توسعه بازار',
-    accounting: 'حسابداری و اکانت منیجر',
-    finance: 'مالی',
+    account_manager: 'اکانت منیجر',
+    finance: 'مالی و حسابداری',
     operations: 'عملیات و لجستیک',
     production: 'تولید و تأمین',
     service: 'خدمات پس از فروش',
     marketing: 'بازاریابی و برند',
-    hr: 'منابع انسانی',
-    it: 'فناوری و توسعه'
+    hr: 'منابع انسانی'
   };
-  var ORDER = ['visitor', 'sales_manager', 'accounting', 'finance', 'operations', 'production', 'service', 'marketing', 'hr', 'ceo', 'it', 'manager'];
-  // area -> roles that may enter it
+  // roles offered when an account is edited
+  var ORDER = ['visitor', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr', 'ceo', 'manager'];
+  // values already stored on accounts that were merged into another role
+  var ALIAS = { accounting: 'finance', it: 'manager' };
+  // area -> roles that may enter it (canonical keys only)
   var AREA = {
-    dashboard: ['manager', 'ceo', 'sales_manager', 'finance', 'it'],                     // CEO dashboard
-    analysis: ['manager', 'ceo', 'sales_manager', 'accounting', 'finance', 'it'],       // customer and product sales analysis
-    brand: ['manager', 'ceo', 'sales_manager', 'accounting', 'finance', 'operations', 'production', 'service', 'marketing', 'hr', 'it'],
-    invoices: ['manager', 'ceo', 'sales_manager', 'accounting', 'it'],                  // read every proforma, not only one's own
-    team: ['manager', 'ceo', 'sales_manager', 'hr', 'it'],                              // see the team list
-    roleAdmin: ['manager', 'ceo', 'it'],                                                // create accounts, set role and code
-    people: ['manager', 'ceo', 'hr', 'it'],                                             // name, phone, active flag of others
-    territory: ['manager', 'ceo', 'sales_manager', 'it'],                               // provinces and cities of a specialist
-    commission: ['manager', 'ceo', 'sales_manager', 'finance', 'it'],                   // see the rate table and every region's result
-    commissionEdit: ['finance'],                                                        // enters and calculates the rate table (draft)
+    dashboard: ['manager', 'ceo', 'sales_manager', 'finance'],                          // CEO dashboard
+    analysis: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // customer and product sales analysis
+    brand: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'],
+    invoices: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // read every proforma, not only one's own
+    team: ['manager', 'ceo', 'sales_manager', 'hr'],                                    // see the team list
+    roleAdmin: ['manager', 'ceo'],                                                      // create accounts, set role and code
+    people: ['manager', 'ceo', 'hr'],                                                   // name, phone, active flag of others
+    territory: ['manager', 'ceo', 'sales_manager'],                                     // provinces and cities of a specialist
+    commission: ['manager', 'ceo', 'sales_manager', 'finance'],                         // see the rate table and every region's result
+    commissionEdit: ['finance'],                                                        // enters the rate table (draft)
     commissionReview: ['sales_manager'],                                                // confirms regions and attribution
     commissionApprove: ['manager', 'ceo']                                               // approves rates and publishes the results
   };
-  function can(role, area) { return (AREA[area] || []).indexOf(role) >= 0; }
-  function label(role) { return LABEL[role] || LABEL.visitor; }
-  w.MSRoles = { LABEL: LABEL, ORDER: ORDER, AREA: AREA, can: can, label: label };
+  // profile fields that exist only for some roles (name, phone and the active flag belong to everyone)
+  var FIELDS = {
+    visitor: ['code', 'territory'],     // document code and the provinces they cover
+    sales_manager: ['code']             // issues proformas too, but covers no province of their own
+  };
+  function norm(role) { role = role || 'visitor'; return ALIAS[role] || role; }
+  function can(role, area) { return (AREA[area] || []).indexOf(norm(role)) >= 0; }
+  function label(role) { return LABEL[norm(role)] || LABEL.visitor; }
+  function hasField(role, field) { return (FIELDS[norm(role)] || []).indexOf(field) >= 0; }
+  w.MSRoles = { LABEL: LABEL, ORDER: ORDER, AREA: AREA, FIELDS: FIELDS, norm: norm, can: can, label: label, hasField: hasField };
 })(window);

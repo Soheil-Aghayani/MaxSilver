@@ -50,7 +50,8 @@ python tools/localize_images.py
 
 ## نقش‌ها و دسترسی
 
-- هر حساب یک `role` در `users/{uid}` دارد: `visitor` (کارشناس فروش و توسعه بازار)، `sales_manager`، `accounting` (حسابداری و اکانت منیجر)، `finance`، `operations`، `production`، `service`، `marketing`، `hr`، `ceo`، `it` و `manager` (مدیر عمومی قدیمی).
+- هر حساب یک `role` در `users/{uid}` دارد: `visitor` (کارشناس فروش و توسعه بازار)، `sales_manager`، `account_manager` (اکانت منیجر)، `finance` (مالی و حسابداری)، `operations`، `production`، `service`، `marketing`، `hr`، `ceo` (مدیرعامل و هیئت‌مدیره) و `manager` (مدیریت عمومی و توسعه). مقدارهای قدیمی `accounting` و `it` همان `finance` و `manager` حساب می‌شوند.
+- هر نقش فیلدهای خودش را دارد (`assets/roles.js` ← `FIELDS`): کد سند و استان‌های منطقه فقط برای کارشناس فروش؛ کد برای مدیر فروش هم هست؛ نقش‌های دیگر استان ندارند.
 - جدول دسترسی یک‌جا در [`assets/roles.js`](assets/roles.js) و همان در [`firestore.rules`](firestore.rules) است؛ هر تغییر باید در هر دو انجام شود. پنهان‌کردن در صفحه فقط ناوبری است و اجرای واقعی با قوانین Firestore است.
 - فناوری (`it`) همه‌چیز را می‌خواند و فقط تأییدی ندارد؛ نقش و کد را فقط `manager`، `ceo` و `it` تغییر می‌دهند.
 - **پورسانت:** نرخ هر منطقه در سال را مالی (پیش‌نویس) وارد می‌کند، مدیر فروش بررسی و مدیرعامل تأیید می‌کند (`commission_rates`)؛ با تأیید، نتیجهٔ هر منطقه منتشر می‌شود (`commission_results`) و کارشناس فقط منطقهٔ خودش را می‌بیند. عددها در صفحهٔ عمومی نیستند.
