@@ -55,7 +55,9 @@
 .t-n.hit{box-shadow:0 0 0 3px #ffd75a;background:#fff3c4;color:var(--ms-navy)}
 
 /* connectors: soft elbows. Every item draws its own piece so the corners are rounded and nothing is cut off. */
-.ad-treewrap{--lc:#cfd8e6;--r:14px}
+.ad-treewrap{--lc:#cfd8e6;--r:14px;position:relative}
+.ad-wires{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.ad-wires path{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:2}
 .b-print,.b-gift,.b-online,.b-mk{--lc:var(--tc)}
 .t-kids>.t{padding-block:5px}
 .t-top>.t-rootli>.t-n{margin-bottom:6px}
@@ -79,6 +81,8 @@
 
 /* wide screens: the tree flows sideways; the stub leaves the parent, the spine joins the items with rounded ends */
 @media(min-width:900px){
+  /* the sideways tree is wired by assets/advertising.js from the real positions of the nodes */
+  .t-kids::before,.t-kids>.t::before,.t-kids>.t::after{display:none!important}
   .t{display:flex;align-items:center}
   .t-n{font-size:15px}
   .t-kids{margin:0;display:flex;flex-direction:column;position:relative;padding-inline-start:36px}
