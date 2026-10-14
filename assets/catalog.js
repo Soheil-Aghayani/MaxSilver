@@ -324,7 +324,7 @@
         '<label>تاریخ<input type="text" data-f="date" data-jdate readonly inputmode="none" value="' + esc(invDate) + '"></label>' +
         '<label>شمارهٔ سند<input type="text" inputmode="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="خودکار" autocomplete="off"></label>' +
         '<label class="wide">مشتری<input type="text" data-f="customer" list="custList" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
-        '<label>تلفن گیرنده<input type="tel" inputmode="numeric" dir="ltr" data-f="custPhone" value="' + esc(inv.custPhone) + '" maxlength="11" pattern="[0-9]*" autocomplete="tel-national" placeholder="۰۹…"><small class="inv-hint bad" data-phone-hint hidden>شماره باید ۱۱ رقم و با صفر شروع شود</small></label>' +
+        '<label>تلفن گیرنده<input type="tel" inputmode="numeric" dir="ltr" data-f="custPhone" value="' + esc(fa0(inv.custPhone)) + '" maxlength="11" autocomplete="tel-national" placeholder="۰۹…"><small class="inv-hint bad" data-phone-hint hidden>شماره باید ۱۱ رقم و با صفر شروع شود</small></label>' +
         '<label>شهر<input type="text" data-f="custCity" value="' + esc(inv.custCity) + '" autocomplete="address-level2" placeholder="شهر گیرنده"></label>' +
         '<label class="wide addr">نشانی گیرنده<input type="text" data-f="custAddr" value="' + esc(inv.custAddr) + '" autocomplete="street-address" placeholder="نشانی کامل"></label>' +
         '<label class="wide">واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label>' +
@@ -394,7 +394,7 @@
         '<h1>پیش‌فاکتور</h1>' +
         '<p class="ip-line"><strong>مشتری:</strong> ' + esc(doc.customer || '—') + '</p>' +
         '<div class="ip-recv"><p class="ip-line"><strong>شهر:</strong> ' + esc(doc.customerCity || '—') + '</p>' +
-        '<p class="ip-line"><strong>تلفن:</strong> <span dir="ltr">' + esc(doc.customerPhone || '—') + '</span></p></div>' +
+        '<p class="ip-line"><strong>تلفن:</strong> <span dir="ltr">' + esc(doc.customerPhone ? fa0(doc.customerPhone) : '—') + '</span></p></div>' +
         '<p class="ip-line"><strong>نشانی:</strong> ' + esc(doc.customerAddress || '—') + '</p>' +
         '<p class="ip-line"><strong>صادرکننده (ویزیتور):</strong> ' + esc(doc.issuer || '—') + '</p>' +
         '<table class="ip-items"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th><th>قیمت واحد (' + esc(u) + ')</th><th>قیمت کل (' + esc(u) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
@@ -501,7 +501,7 @@
       btn.innerHTML = '<span>ارسال شد ✓</span>';
     }, function (err) {
       var code = err && err.code || '';
-      shareMsg(/permission/.test(code) ? 'اجازهٔ ارسال برای این حساب فعال نیست.' : 'ارسال انجام نشد (اینترنت یا VPN). پیش‌فاکتور روی دستگاه ذخیره است؛ دوباره امتحان کنید.', true);
+      shareMsg(/permission/.test(code) ? 'اجازهٔ ارسال برای این حساب فعال نیست؛ از مدیر بخواهید حساب و قوانین را بررسی کند.' : /not-signed-in|no-profile/.test(code) ? 'ابتدا با حساب خود وارد شوید (دکمهٔ حساب بالای صفحه).' : 'ارسال انجام نشد (اینترنت یا VPN). پیش‌فاکتور روی دستگاه ذخیره است؛ دوباره امتحان کنید. [' + (code || 'error') + ']', true);
       btn.innerHTML = label;
     }).then(function () { btn.disabled = false; });
   }
@@ -735,8 +735,8 @@
       if (f === 'price' && l.price > 0) { prices[l.id] = l.price; saveJson(PRICE_KEY, prices); }
     }
     else if (f === 'custPhone') {
-      var cl = cleanPhone(e.target.value);
-      if (e.target.value !== cl) e.target.value = cl;
+      var cl = cleanPhone(e.target.value), shown = fa0(cl);
+      if (e.target.value !== shown) e.target.value = shown;
       inv.custPhone = cl;
       var hint = dialog.querySelector('[data-phone-hint]');
       if (hint) { var ok = !cl || /^0\d{10}$/.test(cl); hint.hidden = ok; }
@@ -925,7 +925,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261228', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261229', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();

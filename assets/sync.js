@@ -159,14 +159,18 @@
     // may this person send a proforma to account management? (signed in and approved; the account manager does not send to themself)
     canSend: function () {
       var p = activeProfile();
-      return approved() && !!p && (window.MSRoles ? window.MSRoles.norm(p.role) : p.role) !== 'account_manager';
+      if (p) return approved() && (window.MSRoles ? window.MSRoles.norm(p.role) : p.role) !== 'account_manager';
+      return hasSession();   // signed in but the profile has not arrived yet: sending waits for it
     },
     // opens a ticket addressed to the account manager role; the proforma itself is pushed to the cloud first (best effort)
     sendProforma: function (doc, text) {
-      if (!approved()) return Promise.reject({ code: 'not-signed-in' });
+      if (!approved() && !hasSession()) return Promise.reject({ code: 'not-signed-in' });
       var ready = live() ? Promise.resolve() : boot();
       return ready.then(function () {
         if (!live()) throw { code: 'unavailable' };
+        return S.profile || cached ? Promise.resolve() : loadProfile();
+      }).then(function () {
+        if (!approved()) throw { code: 'no-profile' };
         return pushPending().then(null, function () { /* the ticket still goes; the copy follows on the next sync */ });
       }).then(function () {
         var p = activeProfile(), me = S.user.uid, now = Date.now(), name = p.name || S.user.email || '';

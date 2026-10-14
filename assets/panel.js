@@ -878,16 +878,80 @@
     home: '<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',
     chat: '<path d="M21 12a8 8 0 0 1-11.600 7.100L4 20l1-4.400A8 8 0 1 1 21 12z"/>',
     comm: '<path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/>',
+    inv: '<path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6"/>',
     team: '<circle cx="9" cy="8" r="3.500"/><path d="M2 20c0-3.300 3-6 7-6s7 2.700 7 6M17 5a3.500 3.500 0 0 1 0 7M22 20c0-2.600-1.800-4.700-4.500-5.600"/>',
     me: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'
   };
-  var TAB_LABEL = { home: 'خانه', chat: 'گفت‌وگوها', comm: 'پورسانت', team: 'تیم', me: 'تنظیمات من' };
-  var HASH_TAB = { tickets: 'chat', public: 'chat', commission: 'comm', team: 'team', notify: 'home' };
+  var TAB_LABEL = { home: 'خانه', inv: 'پیش‌فاکتورها', chat: 'گفت‌وگوها', comm: 'پورسانت', team: 'تیم', me: 'تنظیمات من' };
+  var HASH_TAB = { tickets: 'chat', public: 'chat', commission: 'comm', team: 'team', notify: 'home', invoices: 'inv' };
   function tabFromHash() {
     var h = (location.hash || '').slice(1), k = HASH_TAB[h];
     if (k) { S.tab = k; render(); var el = document.getElementById(h); if (el && el.scrollIntoView) el.scrollIntoView(); }
   }
   window.addEventListener('hashchange', tabFromHash);
+
+  // ---- invoices of everyone: for roles that review proformas (account manager, finance, sales manager, management)
+  S.invF = 'all'; S.invQ = '';
+  function tkForDoc(docNo) {
+    var best = null;
+    S.tk.list.forEach(function (x) { if (x.docNo === docNo && (!best || (x.updatedAt || 0) > (best.updatedAt || 0))) best = x; });
+    return best;
+  }
+  function invKey(d) { return (d.ownerUid || '') + '_' + (d.docNo || ''); }
+  function invMatches(d) {
+    if (S.invF === 'sent' && !d.sentAt) return false;
+    if (S.invF === 'new' && d.sentAt) return false;
+    var q = latinDigits(S.invQ).trim().toLowerCase();
+    if (!q) return true;
+    return latinDigits([d.docNo, d.customer, d.customerCity, d.ownerName, d.issuer].join(' ')).toLowerCase().indexOf(q) >= 0;
+  }
+  function invCard(d) {
+    var t = M.totals(d), tk = tkForDoc(d.docNo), who = d.ownerName || d.issuer || '—';
+    return '<li class="pn-inv"><div class="pn-inv-top"><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(faDate(d.createdAt)) + '</span></div>' +
+      '<div class="pn-inv-mid"><strong>' + esc(d.customer || 'بدون نام مشتری') + '</strong>' + (d.customerCity ? '<span class="pn-note"> · ' + esc(d.customerCity) + '</span>' : '') + '</div>' +
+      '<div class="pn-inv-meta"><span>' + esc(who) + '</span><b>' + money(t.total, d.unit) + '</b></div>' +
+      '<div class="pn-inv-foot">' + (d.sentAt ? '<span class="pn-chip ok">برای اکانت منیجر ارسال شده · ' + esc(tkWhen(d.sentAt)) + '</span>' : '<span class="pn-chip">ارسال‌نشده</span>') +
+      '<span class="pn-inv-act"><button type="button" class="pn-secondary" data-inv-view="' + esc(invKey(d)) + '">جزئیات</button>' +
+      (tk ? '<button type="button" class="pn-secondary" data-tk-open="' + esc(tk.id) + '">گفت‌وگو</button>' : '') + '</span></div></li>';
+  }
+  function invListHtml() {
+    var list = S.docs.filter(invMatches);
+    return list.length ? list.slice(0, 200).map(invCard).join('') : '<li class="pn-note">پیش‌فاکتوری با این فیلتر پیدا نشد.</li>';
+  }
+  function invoicesView() {
+    var sent = S.docs.filter(function (d) { return d.sentAt; }).length;
+    var chips = [['all', 'همه', S.docs.length], ['sent', 'ارسال‌شده برای بررسی', sent], ['new', 'ارسال‌نشده', S.docs.length - sent]].map(function (c) {
+      return '<button type="button" class="pn-fchip" data-inv-f="' + c[0] + '" aria-pressed="' + (S.invF === c[0]) + '">' + c[1] + ' <b>' + faInt.format(c[2]) + '</b></button>';
+    }).join('');
+    return '<section class="pn-card" id="invoices"><h2>پیش‌فاکتورها <span class="pn-badge">' + faInt.format(S.docs.length) + '</span></h2>' +
+      '<p class="pn-note">همهٔ پیش‌فاکتورهای ثبت‌شده در شرکت. هر کدام که کارشناس برای بررسی فرستاده، علامت «ارسال شده» دارد و از «گفت‌وگو» می‌توانید پاسخ بدهید.</p>' +
+      '<input type="search" class="pn-inv-q" data-inv-q placeholder="جست‌وجو: شماره، مشتری، شهر یا صادرکننده" value="' + esc(S.invQ) + '" autocomplete="off">' +
+      '<div class="pn-fchips" role="group" aria-label="فیلتر">' + chips + '</div>' +
+      '<ul class="pn-inv-list" id="invList">' + invListHtml() + '</ul></section>';
+  }
+  function invDetail(key) {
+    var d = S.docs.filter(function (x) { return invKey(x) === key; })[0];
+    if (!d) return;
+    var t = M.totals(d), tk = tkForDoc(d.docNo), p = d.pay || { mode: 'cash' };
+    var rows = (d.lines || []).map(function (l) {
+      return '<tr><td>' + esc(l.name || '') + (l.code ? '<small dir="ltr">' + esc(l.code) + '</small>' : '') + '</td><td>' + faInt.format(l.qty || 0) + '</td><td>' + money(l.price || 0, d.unit) + '</td><td>' + money((l.qty || 0) * (l.price || 0), d.unit) + '</td></tr>';
+    }).join('');
+    var pay = p.mode === 'cheque' ? 'چکی' : p.mode === 'mixed' ? 'نقد و چک' : 'نقدی';
+    var cheques = (p.cheques || []).length ? '<ul class="pn-list">' + p.cheques.map(function (c, i) {
+      return '<li><div><b>چک ' + faInt.format(i + 1) + '</b></div><div><span>' + esc(faDigitsStr(c.date || '')) + '</span><b>' + money(c.amount || 0, d.unit) + '</b></div></li>';
+    }).join('') + '</ul>' : '';
+    var fact = function (l, v, ltr) { return '<div class="pn-fact"><dt>' + l + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + (v ? esc(v) : '<i>ثبت نشده</i>') + '</dd></div>'; };
+    dlg.className = 'pn-dialog';
+    dlg.innerHTML = '<div class="pn-bar"><h2 id="dlgName" dir="ltr">' + esc(d.docNo) + '</h2><div class="pn-bar-actions">' +
+      '<button type="button" class="pn-x" data-close aria-label="بستن"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div></div>' +
+      '<div class="pn-edit"><dl class="pn-facts">' + fact('صادرکننده', d.ownerName || d.issuer) + fact('تاریخ', faDigitsStr(d.date || '')) + fact('مشتری', d.customer) + fact('شهر', d.customerCity) +
+      fact('تلفن گیرنده', d.customerPhone ? faDigitsStr(d.customerPhone) : '', true) + fact('نشانی', d.customerAddress) + '</dl>' +
+      '<div class="pn-tablewrap"><table class="pn-tbl"><thead><tr><th>کالا</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<dl class="pn-facts">' + fact('جمع کل', money(t.sub, d.unit)) + fact('تخفیف', money(t.disc, d.unit)) + fact('مالیات', money(t.tax, d.unit)) + fact('مبلغ قابل پرداخت', money(t.total, d.unit)) + fact('شرایط پرداخت', pay) + '</dl>' + cheques +
+      (d.sentAt ? '<p class="pn-note">برای اکانت منیجر ارسال شده است · ' + esc(tkWhen(d.sentAt)) + '</p>' : '') +
+      (tk ? '<button type="button" class="pn-primary" data-tk-open="' + esc(tk.id) + '">باز کردن گفت‌وگو</button>' : '') + '</div>';
+    if (!dlg.open) dlg.showModal();
+  }
 
   function view() {
     if (S.loading) return '<p class="pn-note">در حال بارگذاری…</p>';
@@ -919,9 +983,14 @@
         return '<li><div><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.customer || 'بدون نام مشتری') + '</span></div><div><span>' + esc(faDate(d.createdAt)) + '</span><b>' + money(M.totals(d).total, d.unit) + '</b></div></li>';
       }).join('') + '</ul>' : '<p class="pn-note">هنوز پیش‌فاکتوری صادر نکرده‌اید.</p>') +
       '<a class="pn-link" href="./product-catalog.html">رفتن به کاتالوگ و ساخت پیش‌فاکتور</a></section>';
-    var secs = { home: home, chat: publicView() + ticketsView(), comm: commissionView(), team: can('team') ? teamView() : '',
+    if (can('invoices')) {
+      var sentN = S.docs.filter(function (d) { return d.sentAt; }).length;
+      home = '<section class="pn-card"><h2>پیش‌فاکتورها</h2><div class="pn-stats"><div><span>همه</span><b>' + faInt.format(S.docs.length) + '</b></div><div><span>ارسال‌شده برای بررسی</span><b>' + faInt.format(sentN) + '</b></div></div>' +
+        '<button type="button" class="pn-primary" data-tab="inv">مشاهدهٔ پیش‌فاکتورها</button></section>' + home;
+    }
+    var secs = { home: home, inv: can('invoices') ? invoicesView() : '', chat: publicView() + ticketsView(), comm: commissionView(), team: can('team') ? teamView() : '',
       me: lookView() + meView() + prefsView() };
-    var keys = ['home', 'chat', 'comm', 'team', 'me'].filter(function (k) { return !!secs[k]; });
+    var keys = ['home', 'inv', 'chat', 'comm', 'team', 'me'].filter(function (k) { return !!secs[k]; });
     if (keys.indexOf(S.tab) < 0) S.tab = 'home';
     out += '<nav class="pn-tabs" role="tablist" aria-label="بخش‌های پنل">' + keys.map(function (k) {
       return '<button type="button" role="tab" class="pn-tab" data-tab="' + k + '" aria-selected="' + (S.tab === k) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICON[k] + '</svg><span>' + TAB_LABEL[k] + '</span></button>';
@@ -993,6 +1062,10 @@
   // ----- actions
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-out]')) { auth.signOut(); return; }
+    var iv = e.target.closest('[data-inv-view]');
+    if (iv) { invDetail(iv.getAttribute('data-inv-view')); return; }
+    var ifl = e.target.closest('[data-inv-f]');
+    if (ifl) { S.invF = ifl.getAttribute('data-inv-f'); render(); return; }
     var tb = e.target.closest('[data-tab]');
     if (tb) { S.tab = tb.getAttribute('data-tab'); S.msg = ''; S.error = ''; render(); return; }
     var cy = e.target.closest('[data-comm-year]');
@@ -1081,6 +1154,7 @@
     }
     if (ta && ta.tagName === 'INPUT' && ta.name === 'phone') { var cp = cleanPhone(ta.value); if (cp !== ta.value) ta.value = cp; }
     if (ta && ta.tagName === 'INPUT' && ta.name === 'nationalId') nidInput(ta);
+    if (ta && ta.hasAttribute && ta.hasAttribute('data-inv-q')) { S.invQ = ta.value; var il = document.getElementById('invList'); if (il) il.innerHTML = invListHtml(); }
   });
   document.addEventListener('keydown', function (e) {
     var ta = e.target;

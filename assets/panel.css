@@ -7,7 +7,7 @@
 .pn-card h2{margin:0;padding-bottom:10px;border-bottom:3px solid var(--ms-gold);color:var(--ms-navy);font-size:16px}
 .pn-card h3{margin:8px 0 0;color:var(--ms-navy);font-size:14px}
 .pn-card label{display:grid;gap:5px;color:var(--ms-muted);font-size:12px;font-weight:700}
-.pn-card input[type=text],.pn-card input[type=email],.pn-card input[type=password],.pn-card input[type=tel],.pn-card select,.pn-card textarea,.pn-edit input[type=text],.pn-edit input[type=tel],.pn-edit select,.pn-edit textarea{width:100%;min-height:48px;padding:8px 12px;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);font:700 15px/1.5 Estedad,Tahoma,sans-serif}
+.pn-card input[type=search],.pn-card input[type=text],.pn-card input[type=email],.pn-card input[type=password],.pn-card input[type=tel],.pn-card select,.pn-card textarea,.pn-edit input[type=text],.pn-edit input[type=tel],.pn-edit select,.pn-edit textarea{width:100%;min-height:48px;padding:8px 12px;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);font:700 15px/1.5 Estedad,Tahoma,sans-serif}
 .pn-card input:focus-visible,.pn-edit input:focus-visible,.pn-edit select:focus-visible,.pn-edit textarea:focus-visible{outline:3px solid #90adff;outline-offset:1px}
 .pn-note{margin:0;color:var(--ms-muted);font-size:13px;line-height:1.9}
 .pn-ok{margin:0;padding:10px 12px;border-radius:12px;background:#ecfdf3;color:var(--ms-green);font-size:13px}
@@ -295,3 +295,24 @@
 .pn-edit .pn-dd{margin:0}
 .pn-edit [data-field][hidden]{display:none}
 @media(max-width:520px){.pn-edit .pn-grid{grid-template-columns:1fr}}
+
+/* invoices tab */
+.pn-inv-q{width:100%;min-height:48px;padding:8px 12px;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);font:700 15px/1.5 Estedad,Tahoma,sans-serif}
+.pn-fchips{display:flex;flex-wrap:wrap;gap:8px}
+.pn-fchip{min-height:40px;padding:0 14px;border:1px solid var(--ms-line);border-radius:999px;background:#fff;color:var(--ms-navy);font:800 13px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+.pn-fchip b{margin-inline-start:4px;color:var(--ms-muted)}
+.pn-fchip[aria-pressed=true]{background:var(--ms-navy);border-color:var(--ms-navy);color:#fff}
+.pn-fchip[aria-pressed=true] b{color:var(--ms-gold)}
+.pn-inv-list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.pn-inv{display:grid;gap:6px;padding:12px 14px;border:1px solid var(--ms-line);border-radius:16px;background:#fafbfd}
+.pn-inv-top,.pn-inv-meta,.pn-inv-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pn-inv-top{color:var(--ms-muted);font-size:12px}.pn-inv-top b{color:var(--ms-navy);font-size:13px}
+.pn-inv-mid strong{color:var(--ms-navy);font-size:15px}
+.pn-inv-meta{color:var(--ms-muted);font-size:13px}.pn-inv-meta b{color:var(--ms-navy);font-size:15px}
+.pn-inv-act{display:flex;gap:8px}
+.pn-chip.ok{background:#ecfdf3;color:#0c6b3d}
+.pn-tablewrap{overflow-x:auto}
+.pn-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.pn-tbl th,.pn-tbl td{padding:8px 10px;border-bottom:1px solid var(--ms-line);text-align:right}
+.pn-tbl th{color:var(--ms-muted);font-size:12px}
+.pn-tbl small{display:block;color:var(--ms-muted)}
