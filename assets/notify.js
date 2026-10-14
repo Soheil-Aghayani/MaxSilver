@@ -182,6 +182,20 @@
     }, function () { /* ignore */ }));
   }
 
+  // "online" is a heartbeat written once a minute while a page is visible, and cleared when the page is hidden or closed
+  var beatTimer = 0;
+  function beat(on) {
+    if (!db || !me) return;
+    db.collection('presence').doc(me).set({ online: on, lastSeen: Date.now() }, { merge: true }).then(null, function () { /* ignore */ });
+  }
+  function heartbeat() {
+    if (beatTimer) return;
+    beat(document.visibilityState === 'visible');
+    beatTimer = setInterval(function () { if (document.visibilityState === 'visible') beat(true); }, 60 * 1000);
+    document.addEventListener('visibilitychange', function () { beat(document.visibilityState === 'visible'); });
+    w.addEventListener('pagehide', function () { beat(false); });
+  }
+
   function start() {
     var r = role();
     if (!r) { if (j(KEY, null)) put(KEY, { at: 0, items: [] }); paint(); return; }
@@ -197,6 +211,7 @@
           if (!u) return;
           me = u.uid;
           watchTickets(r);
+          heartbeat();
           if (r === 'manager' || r === 'ceo' || r === 'sales_manager' || r === 'service') watchPublic(r);
           if (w.MSRoles.can(r, 'commission')) watchCommission(r);
           // everything that existed before this visit is the baseline: only later changes pop up

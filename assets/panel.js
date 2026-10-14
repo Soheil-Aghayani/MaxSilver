@@ -438,6 +438,14 @@
       return x.status === 'open' && x.lastBy !== S.user.uid && (x.audience || []).some(function (a) { return mine.indexOf(a) >= 0; });
     }).length;
   }
+  // phone numbers: digits only, no country code
+  function cleanPhone(v) {
+    var s = String(v || '').replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); })
+      .replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 1632); }).replace(/\D/g, '');
+    if (s.indexOf('0098') === 0) s = s.slice(4); else if (s.indexOf('98') === 0 && s.length >= 12) s = s.slice(2);
+    if (s.length === 10 && s.charAt(0) !== '0') s = '0' + s;
+    return s.slice(0, 11);
+  }
   function tkWhen(ms) { try { return new Intl.DateTimeFormat('fa-IR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
   // ----- the conversation list and the messenger window
   function hue(s) { var h = 0; s = String(s || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
@@ -447,6 +455,8 @@
   }
   function tkTime(ms) { try { return new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
   function tkDay(ms) { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
+  // a presence line only makes sense when the other side is one person
+  function otherUidOf(x) { return x.fromUid === S.user.uid ? (x.toUid || '') : (x.fromUid || ''); }
   function otherParty(x) { return x.fromUid === S.user.uid ? (x.toName || MSRoles.label(x.toRole)) : (x.fromName || '—'); }
   var CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
   var SEND_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.400 20.400 21 12 3.400 3.600l-.1 6.500L15 12l-11.700 1.900z"/></svg>';
@@ -536,7 +546,8 @@
       (open ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.500 3 3 5-6"/></svg>'
             : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.700L3 8m0-5v5h5"/></svg>') + '</button>';
     return '<div class="pn-chat-head"><button type="button" class="pn-x" data-close aria-label="بستن">' + CLOSE_SVG + '</button>' +
-      avatar(other, 44) + '<div class="pn-chat-who"><b id="dlgName">' + esc(x.title) + '</b><span>' + esc(x.fromName || '—') + ' ← ' + esc(x.toName || MSRoles.label(x.toRole)) + (x.kind === 'account-removal' ? ' · خودکار' : '') + '</span></div>' + toggle + '</div>' +
+      avatar(other, 44) + '<div class="pn-chat-who"><b id="dlgName">' + esc(x.title) + '</b><span>' + esc(x.fromName || '—') + ' ← ' + esc(x.toName || MSRoles.label(x.toRole)) + (x.kind === 'account-removal' ? ' · خودکار' : '') + '</span>' +
+      (otherUidOf(x) ? '<span class="pn-presence" id="tkPresence" hidden></span>' : '') + '</div>' + toggle + '</div>' +
       '<ul class="pn-feed" id="tkFeed">' + feedHtml() + '</ul>' +
       (S.tk.error ? '<p class="pn-err" role="alert">' + esc(S.tk.error) + '</p>' : '') +
       (open ? '<form id="tkReplyForm" class="pn-composer" data-id="' + esc(x.id) + '"><textarea name="text" rows="1" maxlength="2000" placeholder="پیام…" aria-label="پیام" required></textarea>' +
@@ -545,14 +556,54 @@
   }
   var unsubFeed = null;
   function stopFeed() { if (unsubFeed) { try { unsubFeed(); } catch (e) { /* ignore */ } unsubFeed = null; } }
-  function paintFeed(first) {
-    var feed = document.getElementById('tkFeed');
-    if (!feed) return;
-    var near = first || feed.scrollHeight - feed.scrollTop - feed.clientHeight < 90;
+  var paintQueued = false, paintFirst = false, lastSig = '';
+  function feedSig() {
+    var c = S.tk.cur || {}, recv = 0, read = 0, me = S.user.uid;
+    Object.keys(c).forEach(function (k) {
+      if (k.indexOf('recv_') === 0 && k !== 'recv_' + me) recv = Math.max(recv, c[k] || 0);
+      if (k.indexOf('read_') === 0 && k !== 'read_' + me) read = Math.max(read, c[k] || 0);
+    });
     var last = S.tk.msgs[S.tk.msgs.length - 1];
-    feed.innerHTML = feedHtml();
-    if (near || (last && last.uid === S.user.uid)) feed.scrollTop = feed.scrollHeight;
+    return S.tk.msgs.length + ':' + (last ? last.at : 0) + ':' + recv + ':' + read;
   }
+  // both listeners (messages and the ticket) can fire together: one repaint per frame, and none when nothing changed
+  function paintFeed(first) {
+    paintFirst = paintFirst || !!first;
+    if (paintQueued) return;
+    paintQueued = true;
+    requestAnimationFrame(function () {
+      paintQueued = false;
+      var feed = document.getElementById('tkFeed');
+      if (!feed) { paintFirst = false; return; }
+      var sig = feedSig();
+      if (!paintFirst && sig === lastSig) return;
+      var near = paintFirst || feed.scrollHeight - feed.scrollTop - feed.clientHeight < 90;
+      var last = S.tk.msgs[S.tk.msgs.length - 1];
+      feed.innerHTML = feedHtml();
+      lastSig = sig; paintFirst = false;
+      if (near || (last && last.uid === S.user.uid)) feed.scrollTop = feed.scrollHeight;
+    });
+  }
+  // typing signal: written at most every 2.5 s while the composer is used, cleared on send or close
+  var typingAt = 0;
+  function signalTyping(id) {
+    var now = Date.now();
+    if (now - typingAt < 2500 || !S.user) return;
+    typingAt = now;
+    db.collection('presence').doc(S.user.uid).set({ typingIn: id, typingAt: now }, { merge: true }).then(null, function () { /* ignore */ });
+  }
+  function clearTyping() {
+    if (!S.user || !typingAt) return;
+    typingAt = 0;
+    db.collection('presence').doc(S.user.uid).set({ typingIn: '', typingAt: 0 }, { merge: true }).then(null, function () { /* ignore */ });
+  }
+  // keep the composer above the on-screen keyboard (iPhone does not resize the page for it)
+  function fitKeyboard() {
+    var vv = window.visualViewport;
+    if (!vv || !dlg.classList.contains('pn-chatdlg') || !dlg.open) return;
+    dlg.style.height = vv.height + 'px'; dlg.style.top = vv.offsetTop + 'px';
+  }
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', fitKeyboard); window.visualViewport.addEventListener('scroll', fitKeyboard); }
   function openThread(id) {
     stopFeed();
     S.tk.open = id; S.tk.msgs = []; S.tk.error = '';
@@ -576,7 +627,23 @@
       lastStatus = d.status;
       markSeen(id);
     }, function () { /* the messages listener reports errors */ });
-    unsubFeed = function () { if (offMsgs) offMsgs(); if (offDoc) offDoc(); };
+    var otherUid = otherUidOf(S.tk.cur || {}), pres = null, offPres = null, presTimer = 0;
+    function paintPresence() {
+      var el = document.getElementById('tkPresence');
+      if (!el || !otherUid) return;
+      if (!pres) { el.hidden = true; return; }
+      var now = Date.now(), typing = pres.typingIn === id && now - (pres.typingAt || 0) < 5000, online = pres.online === true && now - (pres.lastSeen || 0) < 130000;
+      el.hidden = false; el.className = 'pn-presence' + (typing ? ' typing' : (online ? ' on' : ''));
+      el.innerHTML = typing ? '<span class="pn-typing" aria-hidden="true"><i></i><i></i><i></i></span>در حال تایپ…'
+        : online ? '<i class="pn-pdot" aria-hidden="true"></i>آنلاین' : (pres.lastSeen ? 'آخرین بازدید ' + esc(tkWhen(pres.lastSeen)) : '');
+    }
+    if (otherUid) {
+      offPres = db.collection('presence').doc(otherUid).onSnapshot(function (s) { pres = s.exists ? s.data() : null; paintPresence(); }, function () { /* ignore */ });
+      presTimer = setInterval(paintPresence, 3000);
+    }
+    typingAt = 0; lastSig = '';
+    fitKeyboard();
+    unsubFeed = function () { if (offMsgs) offMsgs(); if (offDoc) offDoc(); if (offPres) offPres(); clearInterval(presTimer); clearTyping(); };
   }
   // the window is open on this conversation and the other side wrote last: record "seen"
   function markSeen(id) {
@@ -587,7 +654,7 @@
     c['read_' + S.user.uid] = u['read_' + S.user.uid];
     db.collection('tickets').doc(id).update(u).then(null, function () { /* ignore */ });
   }
-  dlg.addEventListener('close', function () { stopFeed(); S.tk.open = null; S.tk.cur = null; dlg.className = 'pn-dialog'; });
+  dlg.addEventListener('close', function () { stopFeed(); S.tk.open = null; S.tk.cur = null; dlg.className = 'pn-dialog'; dlg.style.height = ''; dlg.style.top = ''; });
   function tkTouch(id, extra) {
     var now = Date.now(), data = { updatedAt: now };
     Object.keys(extra).forEach(function (k) { data[k] = extra[k]; });
@@ -837,7 +904,9 @@
     if (ta && ta.tagName === 'TEXTAREA' && ta.form && ta.form.id === 'tkReplyForm') {
       ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
       var sb = ta.form.querySelector('.pn-send'); if (sb) sb.disabled = !ta.value.trim();
+      if (ta.value.trim()) signalTyping(ta.form.getAttribute('data-id'));
     }
+    if (ta && ta.tagName === 'INPUT' && ta.name === 'phone') { var cp = cleanPhone(ta.value); if (cp !== ta.value) ta.value = cp; }
     if (ta && ta.name === 'notifyEmail') S.prefs.email = ta.value;
   });
   document.addEventListener('keydown', function (e) {
@@ -862,8 +931,10 @@
       auth.signInWithEmailAndPassword(v('email'), f.elements.password.value).then(null, function (err) { S.error = errText(err); S.busy = false; S.loading = false; render(); });
     } else if (f.id === 'meForm') {
       S.busy = true; render();
-      db.collection('users').doc(S.user.uid).update({ name: v('name'), phone: v('phone') }).then(function () {
-        S.profile.name = v('name'); S.profile.phone = v('phone'); S.msg = 'ذخیره شد. از این پس نام شما روی پیش‌فاکتورهای جدید همین است.';
+      var ph = cleanPhone(v('phone'));
+      if (ph && !/^0\d{10}$/.test(ph)) { S.error = 'شمارهٔ تلفن باید ۱۱ رقم، فقط عدد و بدون کد کشور باشد.'; S.busy = false; render(); return; }
+      db.collection('users').doc(S.user.uid).update({ name: v('name'), phone: ph }).then(function () {
+        S.profile.name = v('name'); S.profile.phone = ph; S.msg = 'ذخیره شد. از این پس نام شما روی پیش‌فاکتورهای جدید همین است.';
       }, function (err) { S.error = errText(err); }).then(function () { S.busy = false; render(); });
     } else if (f.id === 'prefsForm') {
       var chosen = S.prefs.channels, mail = f.elements.notifyEmail ? f.elements.notifyEmail.value.trim() : '';
@@ -890,6 +961,7 @@
       var rref = db.collection('tickets').doc(rid), nb = db.batch(), now2 = Date.now();
       nb.set(rref.collection('messages').doc(), { uid: S.user.uid, name: myName(), role: myRole(), text: txt, at: now2 });
       nb.update(rref, { updatedAt: now2, lastText: txt.slice(0, 140), lastBy: S.user.uid, lastByName: myName() });
+      clearTyping();
       var sendBtn = f.querySelector('.pn-send'); if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('sending'); }
       var tkx = S.tk.list.filter(function (k) { return k.id === rid; })[0] || {};
       nb.commit().then(function () {
@@ -904,7 +976,7 @@
     } else if (f.id === 'editForm') {
       var id = f.getAttribute('data-id'), self = id === S.user.uid;
       var data = {};   // only the fields this role is allowed to change, so the rules see no foreign key
-      if (can('people')) { data.name = v('name'); data.phone = v('phone'); if (!self) data.active = f.elements.active.checked; }
+      if (can('people')) { data.name = v('name'); data.phone = cleanPhone(v('phone')); if (!self) data.active = f.elements.active.checked; }
       var known = S.team.filter(function (x) { return x.id === id; })[0] || {};
       var roleNow = known.role, picked = f.elements.role ? { value: f.elements.role.value } : null;
       if (can('roleAdmin') && !self && picked) { roleNow = picked.value; data.role = roleNow; }

@@ -23,7 +23,7 @@
   var state = { q: '', src: '', grp: '', sec: '', sort: 'name' };
   var compare = [];
   var STORE = 'ms-proforma-v1';
-  var inv = { lines: [], docNo: '', issuer: '', customer: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان', pay: { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false } };
+  var inv = { lines: [], docNo: '', issuer: '', customer: '', custCity: '', custPhone: '', custAddr: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان', pay: { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false } };
   var invDate = '';
   try { var saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved && Array.isArray(saved.lines)) inv = Object.assign(inv, saved); } catch (e) { /* storage unavailable: the draft lives for this visit only */ }
   function invSave() { try { localStorage.setItem(STORE, JSON.stringify(inv)); } catch (e) { /* ignore */ } }
@@ -321,6 +321,9 @@
       '<div class="inv-body"><div class="inv-meta">' +
         '<label class="wide">صادرکننده (ویزیتور)<input type="text" data-f="issuer" value="' + esc(inv.issuer) + '" autocomplete="name" placeholder="نام و نام خانوادگی"></label>' +
         '<label class="wide">مشتری<input type="text" data-f="customer" list="custList" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
+        '<label>شهر<input type="text" data-f="custCity" value="' + esc(inv.custCity) + '" autocomplete="address-level2" placeholder="شهر گیرنده"></label>' +
+        '<label>تلفن گیرنده<input type="tel" inputmode="numeric" dir="ltr" data-f="custPhone" value="' + esc(inv.custPhone) + '" maxlength="11" pattern="[0-9]*" autocomplete="tel-national" placeholder="09120000000"><small class="inv-hint" data-phone-hint>فقط عدد، ۱۱ رقم، بدون کد کشور</small></label>' +
+        '<label class="wide">نشانی گیرنده<input type="text" data-f="custAddr" value="' + esc(inv.custAddr) + '" autocomplete="street-address" placeholder="نشانی کامل"></label>' +
         '<datalist id="custList">' + customerNames().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>' +
         '<label>شماره سند<input type="text" inputmode="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="خودکار" autocomplete="off"></label>' +
         '<label>تاریخ<input type="text" data-f="date" data-jdate readonly inputmode="none" value="' + esc(invDate) + '"></label>' +
@@ -360,7 +363,7 @@
   }
   function snapshot() {
     return {
-      docNo: inv.docNo, date: invDate || today(), createdAt: Date.now(), customer: inv.customer, issuer: inv.issuer, unit: inv.unit,
+      docNo: inv.docNo, date: invDate || today(), createdAt: Date.now(), customer: inv.customer, customerCity: inv.custCity, customerPhone: inv.custPhone, customerAddress: inv.custAddr, issuer: inv.issuer, unit: inv.unit,
       tax: inv.tax, discount: inv.discount, discMode: inv.discMode, pay: payCopy(),
       lines: inv.lines.filter(function (l) { return byId[l.id]; }).map(function (l) {
         var it = byId[l.id];
@@ -389,6 +392,9 @@
       '</td></tr></thead><tbody><tr><td>' +
         '<h1>پیش‌فاکتور</h1>' +
         '<p class="ip-line"><strong>مشتری:</strong> ' + esc(doc.customer || '—') + '</p>' +
+        '<div class="ip-recv"><p class="ip-line"><strong>شهر:</strong> ' + esc(doc.customerCity || '—') + '</p>' +
+        '<p class="ip-line"><strong>تلفن:</strong> <span dir="ltr">' + esc(doc.customerPhone || '—') + '</span></p></div>' +
+        '<p class="ip-line"><strong>نشانی:</strong> ' + esc(doc.customerAddress || '—') + '</p>' +
         '<p class="ip-line"><strong>صادرکننده (ویزیتور):</strong> ' + esc(doc.issuer || '—') + '</p>' +
         '<table class="ip-items"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th><th>قیمت واحد (' + esc(u) + ')</th><th>قیمت کل (' + esc(u) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<table class="ip-totals"><tbody><tr><td>جمع کل</td><td>' + money(t.sub, u) + '</td></tr><tr><td>تخفیف</td><td>' + money(t.disc, u) + '</td></tr><tr><td>مبلغ پس از تخفیف</td><td>' + money(t.net, u) + '</td></tr>' +
@@ -397,7 +403,44 @@
         '<div class="ip-sign"><div><b>امضا و تاریخ صادرکننده</b></div><div><b>امضا و تاریخ مشتری</b></div></div>' +
       '</td></tr></tbody><tfoot><tr><td><div class="ip-foot">پیش‌فاکتور | مکث سیلور' + (doc.docNo ? ' | ' + esc(doc.docNo) : '') + '</div></td></tr></tfoot></table>';
   }
-  function printDoc(doc) {
+  // phone numbers are digits only, without a country code: Persian/Arabic digits become Latin, +98 / 0098 / 98 is dropped
+  function cleanPhone(v) {
+    var s = String(v || '').replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); })
+      .replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 1632); }).replace(/\D/g, '');
+    if (s.indexOf('0098') === 0) s = s.slice(4); else if (s.indexOf('98') === 0 && s.length >= 12) s = s.slice(2);
+    if (s.length === 10 && s.charAt(0) !== '0') s = '0' + s;
+    return s.slice(0, 11);
+  }
+  function receiverOk() {
+    if (inv.custPhone && !/^0\d{10}$/.test(inv.custPhone)) {
+      shareMsg('شمارهٔ تلفن گیرنده باید ۱۱ رقم، فقط عدد و بدون کد کشور باشد.', true);
+      var f = dialog.querySelector('[data-f=custPhone]'); if (f) { try { f.focus(); } catch (e) { /* ignore */ } }
+      return false;
+    }
+    return true;
+  }
+  var IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // iPhone and iPad refuse window.print() from inside a dialog and ignore a PDF opened after a wait. So the PDF is built first and
+  // then offered behind one more tap, which is a real gesture the system accepts (Safari shows it with its own Print/Share icons).
+  function openPdfBar(doc, btn) {
+    var label = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span>در حال ساخت PDF…</span>'; }
+    var old = dialog.querySelector('#invOpenBar'); if (old) old.remove();
+    pdfFile(doc).then(function (file) {
+      var url = URL.createObjectURL(file);
+      var bar = document.createElement('div');
+      bar.id = 'invOpenBar'; bar.className = 'inv-openbar';
+      bar.innerHTML = '<span class="inv-openbar-ok" aria-hidden="true"></span><b>PDF آماده است</b>' +
+        '<a class="inv-openbar-go" href="' + url + '" target="_blank" rel="noopener">باز کردن و چاپ</a>' +
+        '<button type="button" class="inv-openbar-x" aria-label="بستن">×</button>';
+      bar.querySelector('.inv-openbar-x').addEventListener('click', function () { bar.remove(); });
+      dialog.appendChild(bar);
+    }).then(null, function () {
+      shareMsg('ساخت PDF انجام نشد (برای بار اول به اینترنت نیاز است).', true);
+    }).then(function () { if (btn) { btn.disabled = false; btn.innerHTML = label; } });
+  }
+  function printDoc(doc, btn) {
+    if (IS_IOS) { openPdfBar(doc, btn); return; }
     $('invPrint').innerHTML = docHtml(doc);
     document.body.classList.add('inv-print');
     window.print();
@@ -414,7 +457,7 @@
     if (window.MSSync) window.MSSync.push();
     return doc;
   }
-  function invPrint() { printDoc(commitDoc()); }
+  function invPrint(btn) { if (!receiverOk()) return; printDoc(commitDoc(), btn); }
 
   // ----- share / save the proforma as a real PDF file (one JPEG per A4 page inside a minimal PDF container)
   var H2C = './assets/vendor/html2canvas-1.4.1.min.js', PAGE_W = 794, PAGE_H = 1123, MARGIN = 45, SCALE = 2;
@@ -576,7 +619,7 @@
     var kept = d.lines.filter(function (l) { return byId[l.id]; });
     inv.lines = kept.map(function (l) { return { id: l.id, qty: l.qty, price: l.price }; });
     inv.docNo = keepNo ? d.docNo : '';
-    inv.customer = d.customer; inv.issuer = d.issuer || inv.issuer; inv.unit = d.unit; inv.tax = d.tax; inv.discount = d.discount; inv.discMode = d.discMode;
+    inv.customer = d.customer; inv.custCity = d.customerCity || ''; inv.custPhone = d.customerPhone || ''; inv.custAddr = d.customerAddress || ''; inv.issuer = d.issuer || inv.issuer; inv.unit = d.unit; inv.tax = d.tax; inv.discount = d.discount; inv.discMode = d.discMode;
     inv.pay = d.pay ? JSON.parse(JSON.stringify(d.pay)) : { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false };
     invDate = keepNo ? d.date : today();
     invSave(); trayRender(); invButtons(); invoiceView();
@@ -644,6 +687,14 @@
       l[f] = parseNum(e.target.value);
       if (f === 'price' && l.price > 0) { prices[l.id] = l.price; saveJson(PRICE_KEY, prices); }
     }
+    else if (f === 'custPhone') {
+      var cl = cleanPhone(e.target.value);
+      if (e.target.value !== cl) e.target.value = cl;
+      inv.custPhone = cl;
+      var hint = dialog.querySelector('[data-phone-hint]');
+      if (hint) { var ok = !cl || /^0\d{10}$/.test(cl); hint.textContent = ok ? 'فقط عدد، ۱۱ رقم، بدون کد کشور' : 'شماره باید ۱۱ رقم و با صفر شروع شود'; hint.classList.toggle('bad', !ok); }
+    }
+    else if (f === 'custCity' || f === 'custAddr') inv[f] = e.target.value;
     else if (f === 'docNo' || f === 'issuer' || f === 'customer' || f === 'unit' || f === 'discMode') inv[f] = e.target.value;
     else if (f === 'date') invDate = e.target.value;
     else if (f === 'discount' || f === 'tax') inv[f] = parseNum(e.target.value);
@@ -688,18 +739,18 @@
     else if (t.hasAttribute('data-inv-rm')) { inv.lines.splice(Number(t.getAttribute('data-inv-rm')), 1); invSave(); trayRender(); invButtons(); invoiceView(); }
     else if (t.hasAttribute('data-pay-count')) { var pq = ensurePay(); pq.count = Math.max(1, Math.min(12, (pq.count || 1) + Number(t.getAttribute('data-pay-count')))); pq.custom = false; payNormalize(); invSave(); payRender(); }
     else if (t.hasAttribute('data-pay-equal')) { ensurePay().custom = false; payNormalize(); invSave(); payRender(); }
-    else if (t.hasAttribute('data-inv-share')) shareDoc(commitDoc(), t);
+    else if (t.hasAttribute('data-inv-share')) { if (receiverOk()) shareDoc(commitDoc(), t); }
     else if (t.hasAttribute('data-arc-share')) shareDoc(archive[Number(t.getAttribute('data-arc-share'))], t);
     else if (t.hasAttribute('data-arc-fshare')) shareDoc(foreign[Number(t.getAttribute('data-arc-fshare'))], t);
-    else if (t.hasAttribute('data-inv-print')) invPrint();
+    else if (t.hasAttribute('data-inv-print')) invPrint(t);
     else if (t.hasAttribute('data-arc-open')) archiveView();
     else if (t.hasAttribute('data-inv-open')) invoiceView();
     else if (t.hasAttribute('data-arc-edit')) loadDraft(archive[Number(t.getAttribute('data-arc-edit'))], true);
     else if (t.hasAttribute('data-arc-copy')) loadDraft(archive[Number(t.getAttribute('data-arc-copy'))], false);
-    else if (t.hasAttribute('data-arc-pdf')) printDoc(archive[Number(t.getAttribute('data-arc-pdf'))]);
+    else if (t.hasAttribute('data-arc-pdf')) printDoc(archive[Number(t.getAttribute('data-arc-pdf'))], t);
     else if (t.hasAttribute('data-arc-del')) { if (window.confirm('این پیش‌فاکتور از سوابق حذف شود؟')) { var gone = archive.splice(Number(t.getAttribute('data-arc-del')), 1)[0]; saveJson(ARCH_KEY, archive); if (window.MSSync && gone) window.MSSync.remove(gone.docNo); archiveView(); } }
     else if (t.hasAttribute('data-arc-fcopy')) loadDraft(foreign[Number(t.getAttribute('data-arc-fcopy'))], false);
-    else if (t.hasAttribute('data-arc-fpdf')) printDoc(foreign[Number(t.getAttribute('data-arc-fpdf'))]);
+    else if (t.hasAttribute('data-arc-fpdf')) printDoc(foreign[Number(t.getAttribute('data-arc-fpdf'))], t);
     else if (t.hasAttribute('data-arc-backup')) downloadBackup();
     else if (t.hasAttribute('data-inv-clear')) { if (window.confirm('همهٔ ردیف‌های پیش‌فاکتور پاک شود؟')) { inv.lines = []; inv.docNo = ''; invSave(); trayRender(); invButtons(); invoiceView(); } }
     else if (t.hasAttribute('data-close')) dialog.close();
@@ -825,7 +876,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261212', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261213', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();

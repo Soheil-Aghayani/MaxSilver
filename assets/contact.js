@@ -62,6 +62,13 @@
     var f = e.target;
     if (f.elements.website.value || state.busy) return;
     var name = f.elements.name.value.trim(), contact = f.elements.contact.value.trim(), text = f.elements.text.value.trim();
+    // a phone number is digits only, no country code; an e-mail address is kept as written
+    if (contact.indexOf('@') < 0) {
+      contact = contact.replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); }).replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 1632); }).replace(/\D/g, '');
+      if (contact.indexOf('0098') === 0) contact = contact.slice(4); else if (contact.indexOf('98') === 0 && contact.length >= 12) contact = contact.slice(2);
+      if (contact.length === 10 && contact.charAt(0) !== '0') contact = '0' + contact;
+      if (!/^0\d{10}$/.test(contact)) { state.error = 'شمارهٔ تلفن باید ۱۱ رقم، فقط عدد و بدون کد کشور باشد (یا یک ایمیل بنویسید).'; render(true); return; }
+    }
     if (!name || contact.length < 3 || !text) { state.error = 'نام، راه تماس و پیام را کامل کنید.'; render(true); return; }
     if (!window.firebase || !cfg) { state.error = 'سرویس در دسترس نیست. صفحه را دوباره باز کنید.'; render(true); return; }
     state.error = ''; state.busy = true; render(true);
