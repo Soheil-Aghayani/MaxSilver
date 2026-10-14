@@ -741,7 +741,7 @@
         '<div class="pn-look-actions"><button type="button" class="pn-secondary" data-photo-pick' + (S.look.busy ? ' disabled' : '') + '>' + (p.photo ? 'تغییر عکس' : 'انتخاب عکس') + '</button>' +
         (p.photo ? '<button type="button" class="pn-ico" data-photo-del aria-label="حذف عکس" title="حذف عکس"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>' : '') +
         '<input type="file" id="photoFile" accept="image/*" hidden></div></div>' +
-      '<p class="pn-note">عکس مربع و با چهرهٔ واضح، JPG یا PNG، دست‌کم ۱۲۸ پیکسل؛ خودکار بُرش و کوچک می‌شود. رنگ پروفایل روی حباب پیام‌ها و آواتار دیده می‌شود.</p>' +
+      '<p class="pn-note">عکس مربع و با چهرهٔ واضح، JPG، PNG یا WebP، حداکثر ۱ مگابایت و دست‌کم ۱۲۸ پیکسل؛ خودکار بُرش، کوچک و به WebP تبدیل می‌شود. رنگ پروفایل روی حباب پیام‌ها و آواتار دیده می‌شود.</p>' +
       '<div class="pn-swatches" role="radiogroup" aria-label="رنگ پروفایل">' + sw + '</div>' +
       (S.look.msg ? '<p class="pn-ok" role="status">' + esc(S.look.msg) + '</p>' : '') + '</section>';
   }
@@ -764,8 +764,8 @@
           if (side < 128) { URL.revokeObjectURL(url); reject(new Error('small')); return; }
           c.width = N; c.height = N;
           c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, N, N);
-          var q = 0.85, out = c.toDataURL('image/jpeg', q);
-          while (out.length > 36000 && q > 0.35) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+          var q = 0.8, out = c.toDataURL('image/webp', q);
+          while (out.length > 20000 && q > 0.3) { q -= 0.1; out = c.toDataURL('image/webp', q); }
           URL.revokeObjectURL(url); resolve(out);
         } catch (e) { reject(e); }
       };
@@ -824,13 +824,14 @@
     db.collection('personal').doc(S.user.uid).get().then(function (s) { S.nid = s.exists ? String(s.data().nationalId || '') : ''; render(); }, function () { /* rules not published yet */ });
   }
   var LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z"/></svg>';
-  function fact(label, val, ltr) {
-    return '<div class="pn-fact"><dt>' + label + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + (val ? esc(val) : '<i>ثبت نشده</i>') + '</dd><span class="pn-lock" title="فقط منابع انسانی یا مدیریت تغییر می‌دهد">' + LOCK + '</span></div>';
+  function faDigits(s) { return String(s).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); }
+  function fact(label, val, ltr, digits) {
+    return '<div class="pn-fact"><dt>' + label + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + (val ? esc(digits ? faDigits(val) : val) : '<i>ثبت نشده</i>') + '</dd><span class="pn-lock" title="فقط منابع انسانی یا مدیریت تغییر می‌دهد">' + LOCK + '</span></div>';
   }
   function meView() {
     var p = S.profile;
     return '<section class="pn-card pn-person"><h2>اطلاعات شخصی</h2>' +
-      '<dl class="pn-facts">' + fact('نام و نام خانوادگی', p.name) + fact('تلفن تماس', p.phone, true) + fact('کد ملی', S.nid, true) + fact('ایمیل ورود', S.user.email, true) + '</dl>' +
+      '<dl class="pn-facts">' + fact('نام و نام خانوادگی', p.name) + fact('تلفن تماس', p.phone, true, true) + fact('کد ملی', S.nid, true, true) + fact('ایمیل ورود', S.user.email, true) + '</dl>' +
       '<p class="pn-note">این موارد قفل است و روی پیش‌فاکتور می‌آید؛ برای اصلاح، با منابع انسانی یا مدیریت تماس بگیرید.</p>' +
       '<form id="meForm"><label>ایمیل من (برای تماس)<input type="email" name="contactEmail" dir="ltr" value="' + esc(p.contactEmail || '') + '" maxlength="80" autocomplete="email" placeholder="name@example.com"></label>' +
       (S.msg ? '<p class="pn-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
@@ -1043,7 +1044,7 @@
     if (e.target && e.target.id === 'photoFile' && e.target.files && e.target.files[0]) {
       var file = e.target.files[0]; e.target.value = '';
       if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { S.look.msg = 'فقط عکس JPG، PNG یا WebP پذیرفته می‌شود.'; render(); return; }
-      if (file.size > 12 * 1024 * 1024) { S.look.msg = 'عکس بزرگ‌تر از ۱۲ مگابایت است.'; render(); return; }
+      if (file.size > 1024 * 1024) { S.look.msg = 'عکس بزرگ‌تر از ۱ مگابایت است.'; render(); return; }
       photoFrom(file).then(function (dataUrl) { return saveLook({ photo: dataUrl }); }, function (er) { S.look.msg = er && er.message === 'small' ? 'عکس خیلی کوچک است؛ دست‌کم ۱۲۸ پیکسل لازم است.' : 'عکس خوانده نشد.'; render(); });
       return;
     }
