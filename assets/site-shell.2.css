@@ -152,3 +152,8 @@ a.ms-install-go{border:0;background:var(--ms-navy);color:#fff}
 .ms-toast-x{display:grid;place-items:center;width:34px;height:34px;flex:none;border:0;border-radius:10px;background:none;color:var(--ms-muted);cursor:pointer}
 .ms-toast-x svg{width:18px;height:18px}
 .ms-toast-x:hover{background:rgba(7,27,54,.07)}
+.ms-toast[data-state=info]{border-color:#bcd0f7;background:#f4f8ff}
+.ms-toast[data-state=info] .ms-toast-ico{color:var(--ms-blue)}
+.ms-toast[data-state=info] .ms-toast-ico svg{width:26px;height:26px}
+.ms-note .ms-toast-text{color:var(--ms-navy);text-decoration:none;font-weight:600}
+.ms-note .ms-toast-text b{font-weight:800}

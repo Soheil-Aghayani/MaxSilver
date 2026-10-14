@@ -69,7 +69,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); if (window.MSNotify) window.MSNotify.refresh(true); });
+    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -428,7 +428,9 @@
     var b = db.batch();
     b.set(ref, head);
     b.set(ref.collection('messages').doc(), { uid: me, name: myName(), role: myRole(), text: o.text, at: now });
-    return b.commit();
+    return b.commit().then(function () {
+      if (window.MSNotify) window.MSNotify.emailTo(o.toUid ? { uid: o.toUid } : { role: o.toRole }, 'پیام تازه از ' + myName() + ': ' + o.title, o.text, './panel.html#tickets');
+    });
   }
   function tkWaiting() {
     var mine = ['uid:' + S.user.uid, 'role:' + myRole()];   // general management reads everything but is only asked about its own
@@ -447,7 +449,7 @@
   function tkDay(ms) { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
   function otherParty(x) { return x.fromUid === S.user.uid ? (x.toName || MSRoles.label(x.toRole)) : (x.fromName || '—'); }
   var CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
-  var SEND_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 3 10.500l7 3 3 7z"/><path d="m10 13.500 11-10.500"/></svg>';
+  var SEND_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.400 20.400 21 12 3.400 3.600l-.1 6.500L15 12l-11.700 1.900z"/></svg>';
   var CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 
   // a drop-down that follows the site font (the browser's own list does not); the value lives in a hidden input
@@ -494,6 +496,19 @@
       '<button type="submit" class="pn-primary">ارسال</button></form>';
   }
 
+  // Telegram-style receipts: one tick sent, two ticks received on the other side, two blue ticks seen
+  function ticks(at) {
+    var c = S.tk.cur || {}, me = S.user.uid, recv = 0, read = 0;
+    Object.keys(c).forEach(function (k) {
+      if (k.indexOf('recv_') === 0 && k !== 'recv_' + me) recv = Math.max(recv, c[k] || 0);
+      if (k.indexOf('read_') === 0 && k !== 'read_' + me) read = Math.max(read, c[k] || 0);
+    });
+    var st = read >= at ? 'seen' : (recv >= at || read >= at ? 'recv' : 'sent');
+    var one = '<svg viewBox="0 0 18 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.800 5.300 9 12.500 1.500"/></svg>';
+    var two = '<svg viewBox="0 0 18 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.500 5.800 4.800 9 12 1.500"/><path d="M7 8.200 8.300 9.300 15.500 1.500"/></svg>';
+    var label = st === 'seen' ? 'دیده شد' : (st === 'recv' ? 'دریافت شد' : 'ارسال شد');
+    return '<span class="pn-tick" data-s="' + st + '" title="' + label + '" aria-label="' + label + '">' + (st === 'sent' ? one : two) + '</span>';
+  }
   function feedHtml() {
     var me = S.user.uid, out = '', prev = null;
     var msgs = S.tk.msgs;
@@ -508,7 +523,7 @@
       out += '<li class="pn-row ' + (mine ? 'mine' : 'other') + (joinPrev ? '' : ' first') + (joinNext ? '' : ' last') + '">' +
         (mine ? '' : '<span class="pn-row-av">' + (joinNext ? '' : avatar(m.name, 34)) + '</span>') +
         '<div class="pn-bubble">' + (!mine && !joinPrev ? '<b class="pn-from">' + esc(m.name || '—') + '</b>' : '') +
-        '<p>' + esc(m.text) + '</p><time>' + esc(tkTime(m.at)) + '</time></div></li>';
+        '<p>' + esc(m.text) + '</p><span class="pn-meta"><time>' + esc(tkTime(m.at)) + '</time>' + (mine ? ticks(m.at) : '') + '</span></div></li>';
       prev = m;
     });
     return out;
@@ -525,7 +540,7 @@
       '<ul class="pn-feed" id="tkFeed">' + feedHtml() + '</ul>' +
       (S.tk.error ? '<p class="pn-err" role="alert">' + esc(S.tk.error) + '</p>' : '') +
       (open ? '<form id="tkReplyForm" class="pn-composer" data-id="' + esc(x.id) + '"><textarea name="text" rows="1" maxlength="2000" placeholder="پیام…" aria-label="پیام" required></textarea>' +
-        '<button type="submit" class="pn-send" aria-label="ارسال">' + SEND_SVG + '</button></form>'
+        '<button type="submit" class="pn-send" aria-label="ارسال" title="ارسال" disabled>' + SEND_SVG + '</button></form>'
         : '<div class="pn-closed"><span>این گفت‌وگو بسته است.</span><button type="button" class="pn-secondary" data-tk-status="open" data-id="' + esc(x.id) + '">بازکردن دوباره</button></div>');
   }
   var unsubFeed = null;
@@ -546,12 +561,33 @@
     if (!dlg.open) dlg.showModal();
     var first = true;
     // live: a reply from the other side appears without a refresh
-    unsubFeed = db.collection('tickets').doc(id).collection('messages').orderBy('at').onSnapshot(function (qs) {
+    var ref = db.collection('tickets').doc(id), offMsgs = null, offDoc = null, lastStatus = '';
+    S.tk.cur = (S.tk.list.filter(function (k) { return k.id === id; })[0]) || {};
+    offMsgs = ref.collection('messages').orderBy('at').onSnapshot(function (qs) {
       S.tk.msgs = []; qs.forEach(function (s) { S.tk.msgs.push(s.data()); });
       paintFeed(first); first = false;
+      markSeen(id);
     }, function (e) { S.tk.error = errText(e); dlg.innerHTML = tkThread(id); });
+    offDoc = ref.onSnapshot(function (s) {
+      if (!s.exists) return;
+      var d = s.data(); d.id = id; S.tk.cur = d;
+      var i = S.tk.list.map(function (k) { return k.id; }).indexOf(id); if (i >= 0) S.tk.list[i] = d;
+      if (lastStatus && lastStatus !== d.status) dlg.innerHTML = tkThread(id); else paintFeed(false);
+      lastStatus = d.status;
+      markSeen(id);
+    }, function () { /* the messages listener reports errors */ });
+    unsubFeed = function () { if (offMsgs) offMsgs(); if (offDoc) offDoc(); };
   }
-  dlg.addEventListener('close', function () { stopFeed(); S.tk.open = null; dlg.className = 'pn-dialog'; });
+  // the window is open on this conversation and the other side wrote last: record "seen"
+  function markSeen(id) {
+    var c = S.tk.cur;
+    if (S.tk.open !== id || !c || c.lastBy === S.user.uid || !dlg.open) return;
+    if ((c['read_' + S.user.uid] || 0) >= (c.updatedAt || 0)) return;
+    var u = {}; u['read_' + S.user.uid] = Date.now(); u['recv_' + S.user.uid] = Math.max(c.updatedAt || 0, c['recv_' + S.user.uid] || 0);
+    c['read_' + S.user.uid] = u['read_' + S.user.uid];
+    db.collection('tickets').doc(id).update(u).then(null, function () { /* ignore */ });
+  }
+  dlg.addEventListener('close', function () { stopFeed(); S.tk.open = null; S.tk.cur = null; dlg.className = 'pn-dialog'; });
   function tkTouch(id, extra) {
     var now = Date.now(), data = { updatedAt: now };
     Object.keys(extra).forEach(function (k) { data[k] = extra[k]; });
@@ -596,6 +632,43 @@
   }
   window.addEventListener('ms-notify', function () { if (S.profile) render(); });
 
+  // how this person wants to be told
+  S.prefs = { channels: 'push', email: '', msg: '', busy: false, emailOk: null };
+  var PREF_CHOICES = [
+    { v: 'none', t: 'بدون اعلان', icon: '<path d="M6 8a6 6 0 0 1 9.800-4.600M18 8c0 7 3 8 3 8h-6M10.300 20a2 2 0 0 0 3.400 0M3 3l18 18"/>' },
+    { v: 'push', t: 'اعلان', icon: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10.300 20a2 2 0 0 0 3.400 0"/>' },
+    { v: 'email', t: 'ایمیل', icon: '<rect x="3" y="5" width="18" height="14" rx="2.500"/><path d="m3 7 9 6 9-6"/>' },
+    { v: 'both', t: 'هر دو', icon: '<path d="M4 7a5 5 0 0 1 9.500-2M2 14s2.500-.5 2.500-6M7.500 18a1.800 1.800 0 0 0 3 0"/><rect x="11" y="10" width="11" height="8" rx="2"/><path d="m11.500 11.500 5 3.500 5-3.500"/>' }
+  ];
+  function loadPrefs() {
+    if (!window.MSNotify || !S.user) return;
+    var p = window.MSNotify.prefs();
+    S.prefs.channels = p.channels; S.prefs.email = p.email || S.prefs.email;
+    db.collection('notify_prefs').doc(S.user.uid).get().then(function (s) {
+      if (s.exists) { var d = s.data(); S.prefs.channels = d.channels || 'push'; S.prefs.email = d.email || ''; window.MSNotify.setPrefs(d); }
+      render();
+    }, function () { render(); });
+    window.MSNotify.emailReady().then(function (ok) { S.prefs.emailOk = ok; render(); });
+  }
+  function permLabel() {
+    var p = window.MSNotify ? window.MSNotify.permission() : 'unsupported';
+    return p === 'granted' ? 'اجازهٔ اعلان در این دستگاه داده شده است.' : p === 'denied' ? 'اعلان در این دستگاه مسدود است؛ از تنظیمات مرورگر باز کنید.'
+      : p === 'unsupported' ? 'این مرورگر اعلان سیستمی را پشتیبانی نمی‌کند؛ پیام‌ها داخل برنامه نمایش داده می‌شود.' : 'هنگام ذخیره، مرورگر اجازهٔ اعلان را می‌پرسد.';
+  }
+  function prefsView() {
+    var P = S.prefs, wantsMail = P.channels === 'email' || P.channels === 'both', wantsPush = P.channels === 'push' || P.channels === 'both';
+    return '<section class="pn-card pn-prefs"><h2>روش اطلاع‌رسانی</h2>' +
+      '<form id="prefsForm"><div class="pn-pref-choices" role="radiogroup" aria-label="روش اطلاع‌رسانی">' + PREF_CHOICES.map(function (c) {
+        return '<button type="button" role="radio" class="pn-pref" data-pref="' + c.v + '" aria-checked="' + (P.channels === c.v) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + c.icon + '</svg><span>' + c.t + '</span></button>';
+      }).join('') + '</div>' +
+      (wantsMail ? '<label>ایمیل برای اطلاع‌رسانی<input type="email" name="notifyEmail" dir="ltr" value="' + esc(P.email) + '" placeholder="name@example.com" autocomplete="email"></label>' +
+        (P.emailOk === false ? '<p class="pn-note">ارسال ایمیل هنوز راه‌اندازی نشده است (کلیدهای EmailJS در ' + '<span dir="ltr">notify-config.js</span> خالی است). تنظیم شما ذخیره می‌شود و پس از راه‌اندازی کار می‌کند.</p>' : '') : '') +
+      (wantsPush ? '<p class="pn-note">' + esc(permLabel()) + ' اعلان تنها زمانی نمایش داده می‌شود که برنامه باز یا در پس‌زمینهٔ دستگاه باشد.</p>' : '') +
+      (P.err ? '<p class="pn-err" role="alert">' + esc(P.err) + '</p>' : '') +
+      (P.msg ? '<p class="pn-ok" role="status">' + esc(P.msg) + '</p>' : '') +
+      '<button type="submit" class="pn-primary"' + (P.busy ? ' disabled' : '') + '>ذخیرهٔ روش اطلاع‌رسانی</button></form></section>';
+  }
+
   function view() {
     if (S.loading) return '<p class="pn-note">در حال بارگذاری…</p>';
     if (!S.user) {
@@ -610,14 +683,14 @@
       return '<div class="pn-card"><h2>حساب فعال نیست</h2><p class="pn-note">' +
         (S.profile ? 'این حساب توسط مدیر غیرفعال شده است.' : 'حساب شما هنوز توسط مدیر فعال نشده است. این شناسه را به مدیر بدهید:') + '</p>' +
         '<p class="pn-uid" dir="ltr">' + esc(S.user.uid) + '</p>' + (S.error ? '<p class="pn-err">' + esc(S.error) + '</p>' : '') +
-        '<button type="button" class="pn-secondary" data-out>خروج</button></div>';
+        '<button type="button" class="pn-ico" data-out aria-label="خروج" title="خروج"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>';
     }
     var p = S.profile, mine = S.docs.filter(function (d) { return d.ownerUid === S.user.uid; });
     var out = '';
     out += '<section class="pn-card pn-hero"><div class="pn-avatar" aria-hidden="true">' + esc((p.name || S.user.email || '؟').trim().charAt(0)) + '</div>' +
       '<div><h2>' + esc(p.name || S.user.email) + '</h2><p class="pn-note" dir="ltr">' + esc(S.user.email) + '</p>' +
       '<span class="pn-role">' + esc(MSRoles.label(p.role)) + '</span>' + (p.code ? ' <span class="pn-chip" dir="ltr">' + esc(p.code) + '</span>' : '') + '</div>' +
-      '<button type="button" class="pn-secondary" data-out>خروج</button></section>';
+      '<button type="button" class="pn-ico" data-out aria-label="خروج" title="خروج"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></section>';
     out += '<section class="pn-card"><h2>اطلاعات من</h2><form id="meForm">' +
       '<label>نام و نام خانوادگی (روی پیش‌فاکتور چاپ می‌شود)<input type="text" name="name" value="' + esc(p.name || '') + '" maxlength="60" required></label>' +
       '<label>تلفن تماس<input type="tel" name="phone" dir="ltr" value="' + esc(p.phone || '') + '" maxlength="30" inputmode="tel"></label>' +
@@ -632,6 +705,7 @@
       }).join('') + '</ul>' : '<p class="pn-note">هنوز پیش‌فاکتوری صادر نکرده‌اید.</p>') +
       '<a class="pn-link" href="./product-catalog.html">رفتن به کاتالوگ و ساخت پیش‌فاکتور</a></section>';
     out += notifyView();
+    out += prefsView();
     out += publicView();
     out += ticketsView();
     out += commissionView();
@@ -725,6 +799,8 @@
       return;
     }
     if (!e.target.closest('.pn-dd')) Array.prototype.forEach.call(document.querySelectorAll('.pn-dd-list'), function (l) { l.hidden = true; });
+    var pf = e.target.closest('[data-pref]');
+    if (pf) { S.prefs.channels = pf.getAttribute('data-pref'); S.prefs.msg = ''; render(); return; }
     var dl = e.target.closest('[data-del]');
     if (dl) {
       if (dl.getAttribute('data-armed') !== '1') {
@@ -758,7 +834,11 @@
   });
   document.addEventListener('input', function (e) {
     var ta = e.target;
-    if (ta && ta.tagName === 'TEXTAREA' && ta.form && ta.form.id === 'tkReplyForm') { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; }
+    if (ta && ta.tagName === 'TEXTAREA' && ta.form && ta.form.id === 'tkReplyForm') {
+      ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+      var sb = ta.form.querySelector('.pn-send'); if (sb) sb.disabled = !ta.value.trim();
+    }
+    if (ta && ta.name === 'notifyEmail') S.prefs.email = ta.value;
   });
   document.addEventListener('keydown', function (e) {
     var ta = e.target;
@@ -785,6 +865,16 @@
       db.collection('users').doc(S.user.uid).update({ name: v('name'), phone: v('phone') }).then(function () {
         S.profile.name = v('name'); S.profile.phone = v('phone'); S.msg = 'ذخیره شد. از این پس نام شما روی پیش‌فاکتورهای جدید همین است.';
       }, function (err) { S.error = errText(err); }).then(function () { S.busy = false; render(); });
+    } else if (f.id === 'prefsForm') {
+      var chosen = S.prefs.channels, mail = f.elements.notifyEmail ? f.elements.notifyEmail.value.trim() : '';
+      if ((chosen === 'email' || chosen === 'both') && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { S.prefs.msg = ''; S.prefs.err = 'ایمیل درست وارد کنید.'; S.prefs.email = mail; render(); return; }
+      S.prefs.busy = true; S.prefs.err = ''; S.prefs.email = mail; render();
+      var doc = { role: myRole(), name: myName().slice(0, 60), channels: chosen, email: (chosen === 'email' || chosen === 'both') ? mail : '', updatedAt: Date.now() };
+      var asked = (chosen === 'push' || chosen === 'both') && window.MSNotify ? window.MSNotify.askPermission() : Promise.resolve('');
+      asked.then(function () { return db.collection('notify_prefs').doc(S.user.uid).set(doc); }).then(function () {
+        if (window.MSNotify) window.MSNotify.setPrefs(doc);
+        S.prefs.msg = 'ذخیره شد.';
+      }, function (err) { S.prefs.msg = ''; S.prefs.err = errText(err); }).then(function () { S.prefs.busy = false; render(); });
     } else if (f.id === 'tkNewForm') {
       var val = f.elements.to ? f.elements.to.value : 'role:sales_manager';
       var o = { title: v('title'), text: f.elements.text.value.trim() };
@@ -800,7 +890,15 @@
       var rref = db.collection('tickets').doc(rid), nb = db.batch(), now2 = Date.now();
       nb.set(rref.collection('messages').doc(), { uid: S.user.uid, name: myName(), role: myRole(), text: txt, at: now2 });
       nb.update(rref, { updatedAt: now2, lastText: txt.slice(0, 140), lastBy: S.user.uid, lastByName: myName() });
-      nb.commit().then(function () { f.elements.text.value = ''; f.elements.text.style.height = ''; loadTickets(); }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkThread(rid); });
+      var sendBtn = f.querySelector('.pn-send'); if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('sending'); }
+      var tkx = S.tk.list.filter(function (k) { return k.id === rid; })[0] || {};
+      nb.commit().then(function () {
+        f.elements.text.value = ''; f.elements.text.style.height = ''; if (sendBtn) sendBtn.classList.remove('sending'); loadTickets();
+        if (window.MSNotify) {
+          var target = tkx.fromUid === S.user.uid ? (tkx.toUid ? { uid: tkx.toUid } : { role: tkx.toRole }) : { uid: tkx.fromUid };
+          if ((target.uid || target.role)) window.MSNotify.emailTo(target, 'پیام تازه از ' + myName(), txt, './panel.html#tickets');
+        }
+      }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkThread(rid); });
     } else if (f.id === 'addForm') {
       db.collection('users').doc(v('uid')).set({ name: v('name'), email: v('email'), role: 'visitor', active: true, regions: [], cities: '' }).then(function () { load(); }, function (err) { S.error = errText(err); render(); });
     } else if (f.id === 'editForm') {

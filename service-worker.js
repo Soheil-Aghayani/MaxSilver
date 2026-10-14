@@ -2,7 +2,7 @@
 
 // Every release changes VERSION and the ?v= stamp on the pages. Assets that carry ?v= are matched exactly,
 // so a page can never be combined with CSS/JS from another release.
-const VERSION = 'v3-20261211';
+const VERSION = 'v3-20261212';
 const CACHE_NAME = 'maxsilver-portal-' + VERSION;
 const SCOPE = self.registration.scope;
 const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'product-catalog.html', 'sales-process.html', 'brand-books.html', 'panel.html', 'contact.html'];
@@ -86,4 +86,14 @@ self.addEventListener('fetch', (event) => {
     const refresh = fetch(request).then((response) => { if (response && response.ok) cache.put(request, response.clone()); return response; }).catch(() => cached);
     return cached || refresh;
   })());
+});
+
+// a notification shown by notify.js: tapping it brings the app to the front (or opens it) at the right place
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || './panel.html', SCOPE).href;
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    for (const c of list) { if ('focus' in c) { c.navigate(target).catch(() => {}); return c.focus(); } }
+    return self.clients.openWindow(target);
+  }));
 });

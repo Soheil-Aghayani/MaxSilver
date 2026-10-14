@@ -129,8 +129,11 @@ service cloud.firestore {
         && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
         && request.resource.data.audience is list && request.resource.data.audience.size() <= 3
         && ('uid:' + request.auth.uid) in request.resource.data.audience;
-      allow update: if approved() && (inAudience(resource.data.audience) || hasRole(['manager']))
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'lastText', 'lastBy', 'lastByName']);
+      allow update: if (approved() && (inAudience(resource.data.audience) || hasRole(['manager']))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'lastText', 'lastBy', 'lastByName']))
+        // delivery receipts: a member of the conversation records only their own "received" and "seen" times
+        || (approved() && inAudience(resource.data.audience)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['recv_' + request.auth.uid, 'read_' + request.auth.uid]));
       allow delete: if false;
 
       match /messages/{mid} {
@@ -161,6 +164,18 @@ service cloud.firestore {
       allow read: if approved() && readsPublic(resource.data.to);
       allow update: if approved() && readsPublic(resource.data.to)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if false;
+    }
+
+    // How a person wants to be told: none, push, email or both, and the address for email. Readable by people of the company
+    // (the sender's browser needs it to send the mail); only the owner writes it.
+    match /notify_prefs/{uid} {
+      allow read: if approved();
+      allow create, update: if approved() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['role', 'name', 'channels', 'email', 'updatedAt'])
+        && request.resource.data.channels in ['none', 'push', 'email', 'both']
+        && request.resource.data.email is string && request.resource.data.email.size() <= 80
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60;
       allow delete: if false;
     }
 

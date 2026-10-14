@@ -5,7 +5,7 @@
   'use strict';
   var LABEL = {
     manager: 'تکنولوژی سازمانی',
-    ceo: 'مدیرعامل و هیئت‌مدیره',
+    ceo: 'مدیریت',
     sales_manager: 'مدیر فروش و توسعه بازار',
     visitor: 'کارشناس فروش و توسعه بازار',
     account_manager: 'اکانت منیجر',

@@ -180,8 +180,6 @@
 .pn-row-av{width:34px;flex:none}
 .pn-bubble{max-width:min(78%,420px);padding:8px 12px 6px;border-radius:18px;background:#fff;color:var(--ms-navy);box-shadow:0 1px 1px rgba(7,27,54,.08)}
 .pn-row.mine .pn-bubble{background:var(--ms-navy);color:#fff}
-.pn-row.mine.last .pn-bubble{border-end-start-radius:6px}
-.pn-row.other.last .pn-bubble{border-end-end-radius:6px}
 .pn-from{display:block;margin-bottom:2px;font-size:12px;color:hsl(210 55% 38%)}
 .pn-bubble p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:14.5px}
 .pn-bubble time{display:block;margin-top:2px;text-align:end;font-size:10.5px;opacity:.6}
@@ -192,3 +190,31 @@
 .pn-send svg{width:22px;height:22px;transform:scaleX(-1)}
 .pn-closed{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:#fff;border-top:1px solid #e6ebf3;color:var(--ms-muted);font-size:13px}
 @media(max-width:560px){.pn-chatdlg{width:100vw;height:100dvh;border-radius:0;margin:0}}
+
+/* messenger: my messages right, theirs left, receipts, a better send button */
+.pn-feed .pn-row{direction:ltr}
+.pn-feed .pn-row.mine{justify-content:flex-end;flex-direction:row}
+.pn-feed .pn-row.other{justify-content:flex-start;flex-direction:row}
+.pn-bubble{direction:rtl}
+.pn-meta{display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-top:2px}
+.pn-meta time{display:inline;margin:0}
+.pn-tick{display:inline-flex;color:rgba(255,255,255,.6)}
+.pn-tick svg{width:17px;height:11px}
+.pn-tick[data-s=seen]{color:#5ac8fa}
+.pn-send{position:relative;width:50px;height:50px;background:linear-gradient(145deg,#0d2c55,var(--ms-navy));color:var(--ms-gold);box-shadow:0 6px 16px rgba(7,27,54,.32);transition:transform .15s,box-shadow .15s,opacity .15s,background .15s}
+.pn-send svg{width:24px;height:24px;transform:scaleX(-1) translateX(1px)}
+.pn-send:hover:not(:disabled){transform:translateY(-1px) scale(1.04);box-shadow:0 9px 20px rgba(7,27,54,.36)}
+.pn-send:active:not(:disabled){transform:scale(.94)}
+.pn-send:disabled{background:#d9dfe8;color:#fff;box-shadow:none;cursor:default}
+.pn-send.sending svg{animation:pn-fly .5s ease-in}
+@keyframes pn-fly{to{transform:scaleX(-1) translate(-18px,-12px);opacity:0}}
+
+/* notification choices */
+.pn-pref-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.pn-pref{display:grid;place-items:center;gap:6px;min-height:76px;padding:10px 6px;border:1px solid var(--ms-line);border-radius:16px;background:#fff;color:var(--ms-navy);font:800 12.5px/1.3 Estedad,Tahoma,sans-serif;cursor:pointer}
+.pn-pref svg{width:26px;height:26px}
+.pn-pref[aria-checked=true]{background:var(--ms-navy);border-color:var(--ms-navy);color:#fff}
+.pn-pref[aria-checked=true] svg{color:var(--ms-gold)}
+@media(max-width:420px){.pn-pref-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pn-feed .pn-row.mine.last .pn-bubble{border-end-start-radius:6px;border-end-end-radius:18px}
+.pn-feed .pn-row.other.last .pn-bubble{border-end-end-radius:6px;border-end-start-radius:18px}
