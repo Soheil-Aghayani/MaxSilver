@@ -120,7 +120,7 @@ for(const required of ['ceo-dashboard.html','sales-analysis.html','product-catal
 assert.equal((shellCss.match(/@font-face/g)||[]).length,1,'Exactly one Estedad @font-face is allowed');
 assert.ok(!/@font-face/.test(fs.readFileSync(path.join(root,'assets','ceo-dashboard.2.css'),'utf8')),'CEO css must not redeclare the font');
 assert.ok(shellCss.includes('.ms-site-footer{'),'Shared producer footer styles are missing');
-assert.ok(roadmap.includes('نقشهٔ فروش حضوری منطقه‌ای')&&roadmap.includes('نماینده')&&roadmap.includes('مرکز'),'Sales process page content is incomplete');
+assert.ok(roadmap.includes('نقشهٔ فروش حضوری منطقه‌ای')&&roadmap.includes('کارشناس فروش')&&roadmap.includes('مرکز')&&roadmap.includes('حسابداری')&&!roadmap.includes('نماینده'),'Sales process page content is incomplete');
 assert.ok(!/class="pill|show-changes|id="chg"|legend-changes/.test(roadmap),'Review markers must not appear on the sales process page');
 assert.ok(portal.includes('class="hero-brand"')&&portal.includes('./assets/branding/maxsilver-logo.svg'),'Portal hero must use the supplied Max Silver wordmark');
 assert.ok(portal.includes('alt="لوگوی مکث‌سیلور"'),'Hero logo must be accessible');
