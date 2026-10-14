@@ -67,11 +67,16 @@
     }
     toastEl.setAttribute('data-state', state);
     toastEl.innerHTML = '<span class="ms-toast-ico">' + (state === 'working' ? SPIN : state === 'ok' ? OK : BAD) + '</span><span class="ms-toast-text">' + text + '</span>' +
-      (action ? '<button type="button" class="ms-toast-act">' + action.label + '</button>' : '') + (state === 'working' ? '<span class="ms-bar" aria-hidden="true"></span>' : '');
+      (action ? '<button type="button" class="ms-toast-act">' + action.label + '</button>' : '') +
+      '<button type="button" class="ms-toast-x" aria-label="بستن"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>' +
+      (state === 'working' ? '<span class="ms-bar" aria-hidden="true"></span>' : '');
     toastEl.hidden = false;
+    var x = toastEl.querySelector('.ms-toast-x');
+    if (x) x.addEventListener('click', function () { toastEl.hidden = true; clearTimeout(toastTimer); });
     var btn = toastEl.querySelector('.ms-toast-act');
     if (btn) btn.addEventListener('click', function () { toastEl.hidden = true; action.run(); });
     if (state === 'ok') toastTimer = setTimeout(function () { toastEl.hidden = true; }, 6000);
+    if (state === 'fail') toastTimer = setTimeout(function () { toastEl.hidden = true; }, 15000);
   }
 
   var prompt = null, installedWaiter = 0;

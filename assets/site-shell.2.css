@@ -149,3 +149,6 @@ a.ms-install-go{border:0;background:var(--ms-navy);color:#fff}
 @keyframes ms-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 @keyframes ms-toast-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.ms-spin,.ms-bar::after,.ms-bad{animation-duration:2.4s}.ms-toast{animation:none}}
+.ms-toast-x{display:grid;place-items:center;width:34px;height:34px;flex:none;border:0;border-radius:10px;background:none;color:var(--ms-muted);cursor:pointer}
+.ms-toast-x svg{width:18px;height:18px}
+.ms-toast-x:hover{background:rgba(7,27,54,.07)}

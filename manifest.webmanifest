@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "مکث‌سیلور | درگاه مدیریتی",
-  "short_name": "مکث‌سیلور",
-  "description": "درگاه مدیریتی، کاتالوگ و پیش‌فاکتور مکث‌سیلور",
+  "name": "Max Silver",
+  "short_name": "Max Silver",
+  "description": "درگاه مدیریتی، کاتالوگ و پیش‌فاکتور مکث‌سیلور (Max Silver)",
   "lang": "fa",
   "dir": "rtl",
   "start_url": "./index.html",

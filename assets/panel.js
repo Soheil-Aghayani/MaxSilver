@@ -437,82 +437,129 @@
     }).length;
   }
   function tkWhen(ms) { try { return new Intl.DateTimeFormat('fa-IR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
+  // ----- the conversation list and the messenger window
+  function hue(s) { var h = 0; s = String(s || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
+  function avatar(name, px) {
+    var ch = String(name || '').trim().charAt(0) || '؟';
+    return '<span class="pn-av" style="--h:' + hue(name) + ';--px:' + (px || 40) + 'px" aria-hidden="true">' + esc(ch) + '</span>';
+  }
+  function tkTime(ms) { try { return new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
+  function tkDay(ms) { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
+  function otherParty(x) { return x.fromUid === S.user.uid ? (x.toName || MSRoles.label(x.toRole)) : (x.fromName || '—'); }
+  var CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  var SEND_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 3 10.500l7 3 3 7z"/><path d="m10 13.500 11-10.500"/></svg>';
+  var CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+
+  // a drop-down that follows the site font (the browser's own list does not); the value lives in a hidden input
+  function dropdown(name, label, groups, selected) {
+    var flat = []; groups.forEach(function (g) { g.options.forEach(function (o) { flat.push(o); }); });
+    var cur = flat.filter(function (o) { return o.v === selected; })[0] || flat[0] || { v: '', t: '' };
+    var lis = groups.map(function (g) {
+      return (g.label ? '<li class="pn-dd-group" role="presentation">' + esc(g.label) + '</li>' : '') + g.options.map(function (o) {
+        return '<li role="option" tabindex="-1" data-dd-v="' + esc(o.v) + '" aria-selected="' + (o.v === cur.v) + '">' + esc(o.t) + '</li>';
+      }).join('');
+    }).join('');
+    return '<div class="pn-dd"><span class="pn-dd-label">' + esc(label) + '</span><input type="hidden" name="' + name + '" value="' + esc(cur.v) + '">' +
+      '<button type="button" class="pn-dd-btn" data-dd-btn aria-haspopup="listbox" aria-expanded="false"><span>' + esc(cur.t) + '</span>' + CHEV_SVG + '</button>' +
+      '<ul class="pn-dd-list" role="listbox" hidden>' + lis + '</ul></div>';
+  }
+
   function ticketsView() {
     var T = S.tk, wait = tkWaiting();
-    var items = T.list.map(function (x) {
-      var mineLast = x.lastBy === S.user.uid;
-      return '<li class="pn-tk' + (x.status === 'closed' ? ' off' : '') + (!mineLast && x.status === 'open' ? ' wait' : '') + '"><button type="button" data-tk-open="' + esc(x.id) + '">' +
-        '<b>' + esc(x.title) + '</b>' +
-        '<span class="pn-tk-meta">' + esc(x.fromName || '—') + ' ← ' + esc(x.toName || MSRoles.label(x.toRole)) + ' · ' + esc(tkWhen(x.updatedAt)) +
-        (x.kind === 'account-removal' ? ' <span class="pn-chip">خودکار</span>' : '') + (x.status === 'closed' ? ' <span class="pn-chip off">بسته</span>' : '') + '</span>' +
-        '<span class="pn-tk-last">' + esc(x.lastText || '') + '</span></button></li>';
+    var rows = T.list.map(function (x) {
+      var other = otherParty(x), mineLast = x.lastBy === S.user.uid, waiting = !mineLast && x.status === 'open';
+      return '<li><button type="button" class="pn-chat' + (x.status === 'closed' ? ' off' : '') + (waiting ? ' wait' : '') + '" data-tk-open="' + esc(x.id) + '">' +
+        avatar(other, 46) +
+        '<span class="pn-chat-main"><span class="pn-chat-top"><b>' + esc(x.title) + '</b><time>' + esc(tkTime(x.updatedAt)) + '</time></span>' +
+        '<span class="pn-chat-sub">' + esc(other) + (x.kind === 'account-removal' ? ' · خودکار' : '') + (x.status === 'closed' ? ' · بسته' : '') + '</span>' +
+        '<span class="pn-chat-last">' + (mineLast ? '<i class="pn-you">شما:</i> ' : '') + esc(x.lastText || '') + '</span></span>' +
+        (waiting ? '<i class="pn-unread" aria-label="منتظر پاسخ شما"></i>' : '') + '</button></li>';
     }).join('');
-    return '<section class="pn-card pn-tickets" id="tickets"><div class="pn-tk-head"><h2>درخواست‌ها و گفت‌وگو' + (wait ? ' <span class="pn-badge" aria-label="منتظر پاسخ شما">' + faInt.format(wait) + '</span>' : '') + '</h2>' +
-      '<button type="button" class="pn-secondary" data-tk-new>درخواست جدید</button></div>' +
+    return '<section class="pn-card pn-tickets" id="tickets"><div class="pn-tk-head"><h2>گفت‌وگوها' + (wait ? ' <span class="pn-badge" aria-label="منتظر پاسخ شما">' + faInt.format(wait) + '</span>' : '') + '</h2>' +
+      '<button type="button" class="pn-secondary" data-tk-new>گفت‌وگوی تازه</button></div>' +
       (T.error ? '<p class="pn-err" role="alert">' + esc(T.error) + '</p>' : '') +
-      (items ? '<ul class="pn-tk-list">' + items + '</ul>' : '<p class="pn-note">' + (T.loading ? 'در حال بارگذاری…' : 'درخواستی نیست. برای گفت‌وگو با فروش، مالی، مدیریت یا هر واحد دیگر «درخواست جدید» را بزنید.') + '</p>') + '</section>';
+      (rows ? '<ul class="pn-chats">' + rows + '</ul>' : '<p class="pn-note">' + (T.loading ? 'در حال بارگذاری…' : 'گفت‌وگویی نیست. برای پیام به فروش، مالی، مدیریت یا هر واحد دیگر «گفت‌وگوی تازه» را بزنید.') + '</p>') + '</section>';
   }
   function tkNewForm() {
-    var opts = TK_TARGETS.map(function (r, i) {
-      return '<label><input type="radio" name="to" value="role:' + r + '"' + (i === 0 ? ' checked' : '') + '><span>' + esc(MSRoles.label(r)) + '</span></label>';
-    }).join('');
-    var people = can('team') ? S.team.filter(function (u) { return u.id !== S.user.uid && u.active !== false; }).map(function (u) {
-      return '<label><input type="radio" name="to" value="uid:' + esc(u.id) + '"><span>' + esc(u.name || '—') + '</span></label>';
-    }).join('') : '';
-    return '<div class="pn-bar"><h2 id="dlgName">درخواست جدید</h2><button type="button" class="pn-x" data-close aria-label="بستن">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>' +
-      '<form id="tkNewForm" class="pn-edit">' +
-      '<fieldset class="pn-seg"><legend>به</legend>' + opts + '</fieldset>' +
-      (people ? '<fieldset class="pn-seg"><legend>یا یک نفر</legend>' + people + '</fieldset>' : '') +
+    var groups = [{ label: 'واحد', options: TK_TARGETS.map(function (r) { return { v: 'role:' + r, t: MSRoles.label(r) }; }) }];
+    if (can('team')) {
+      var people = S.team.filter(function (u) { return u.id !== S.user.uid && u.active !== false; }).map(function (u) { return { v: 'uid:' + u.id, t: (u.name || '—') + ' · ' + MSRoles.label(u.role) }; });
+      if (people.length) groups.push({ label: 'یک نفر', options: people });
+    }
+    return '<div class="pn-bar"><h2 id="dlgName">گفت‌وگوی تازه</h2><div class="pn-bar-actions"><button type="button" class="pn-x" data-close aria-label="بستن">' + CLOSE_SVG + '</button></div></div>' +
+      '<form id="tkNewForm" class="pn-edit">' + dropdown('to', 'به', groups, 'role:' + TK_TARGETS[0]) +
       '<label>موضوع<input type="text" name="title" maxlength="120" required></label>' +
       '<label>پیام<textarea name="text" rows="5" maxlength="2000" required></textarea></label>' +
       (S.tk.error ? '<p class="pn-err" role="alert">' + esc(S.tk.error) + '</p>' : '') +
       '<button type="submit" class="pn-primary">ارسال</button></form>';
   }
+
+  function feedHtml() {
+    var me = S.user.uid, out = '', prev = null;
+    var msgs = S.tk.msgs;
+    if (!msgs.length) return '<li class="pn-feed-empty">در حال بارگذاری…</li>';
+    msgs.forEach(function (m, i) {
+      var next = msgs[i + 1];
+      var newDay = !prev || tkDay(prev.at) !== tkDay(m.at);
+      var joinPrev = prev && !newDay && prev.uid === m.uid && m.at - prev.at < 5 * 60000;
+      var joinNext = next && next.uid === m.uid && tkDay(next.at) === tkDay(m.at) && next.at - m.at < 5 * 60000;
+      var mine = m.uid === me;
+      if (newDay) out += '<li class="pn-day"><span>' + esc(tkDay(m.at)) + '</span></li>';
+      out += '<li class="pn-row ' + (mine ? 'mine' : 'other') + (joinPrev ? '' : ' first') + (joinNext ? '' : ' last') + '">' +
+        (mine ? '' : '<span class="pn-row-av">' + (joinNext ? '' : avatar(m.name, 34)) + '</span>') +
+        '<div class="pn-bubble">' + (!mine && !joinPrev ? '<b class="pn-from">' + esc(m.name || '—') + '</b>' : '') +
+        '<p>' + esc(m.text) + '</p><time>' + esc(tkTime(m.at)) + '</time></div></li>';
+      prev = m;
+    });
+    return out;
+  }
   function tkThread(id) {
     var x = S.tk.list.filter(function (k) { return k.id === id; })[0];
     if (!x) return '';
-    var msgs = S.tk.msgs.map(function (m) {
-      return '<li class="pn-msg' + (m.uid === S.user.uid ? ' mine' : '') + '"><b>' + esc(m.name || '—') + '</b><p>' + esc(m.text) + '</p><span>' + esc(tkWhen(m.at)) + '</span></li>';
-    }).join('');
-    var canClose = x.status === 'open';
-    return '<div class="pn-bar"><h2 id="dlgName">' + esc(x.title) + '</h2><button type="button" class="pn-x" data-close aria-label="بستن">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>' +
-      '<p class="pn-note">' + esc(x.fromName || '—') + ' ← ' + esc(x.toName || MSRoles.label(x.toRole)) + (x.kind === 'account-removal' ? ' · خودکار' : '') + '</p>' +
-      '<ul class="pn-msgs">' + (msgs || '<li class="pn-note">در حال بارگذاری…</li>') + '</ul>' +
+    var other = otherParty(x), open = x.status === 'open';
+    var toggle = '<button type="button" class="pn-ico" data-tk-status="' + (open ? 'closed' : 'open') + '" data-id="' + esc(x.id) + '" aria-label="' + (open ? 'بستن گفت‌وگو' : 'بازکردن دوباره') + '" title="' + (open ? 'بستن گفت‌وگو' : 'بازکردن دوباره') + '">' +
+      (open ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.500 3 3 5-6"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.700L3 8m0-5v5h5"/></svg>') + '</button>';
+    return '<div class="pn-chat-head"><button type="button" class="pn-x" data-close aria-label="بستن">' + CLOSE_SVG + '</button>' +
+      avatar(other, 44) + '<div class="pn-chat-who"><b id="dlgName">' + esc(x.title) + '</b><span>' + esc(x.fromName || '—') + ' ← ' + esc(x.toName || MSRoles.label(x.toRole)) + (x.kind === 'account-removal' ? ' · خودکار' : '') + '</span></div>' + toggle + '</div>' +
+      '<ul class="pn-feed" id="tkFeed">' + feedHtml() + '</ul>' +
       (S.tk.error ? '<p class="pn-err" role="alert">' + esc(S.tk.error) + '</p>' : '') +
-      (x.status === 'open' ? '<form id="tkReplyForm" class="pn-edit" data-id="' + esc(x.id) + '"><label>پاسخ<textarea name="text" rows="3" maxlength="2000" required></textarea></label>' +
-        '<button type="submit" class="pn-primary">ارسال پاسخ</button></form>' : '') +
-      '<div class="pn-actions"><button type="button" class="pn-secondary" data-tk-status="' + (canClose ? 'closed' : 'open') + '" data-id="' + esc(x.id) + '">' + (canClose ? 'بستن درخواست' : 'بازکردن دوباره') + '</button></div>';
+      (open ? '<form id="tkReplyForm" class="pn-composer" data-id="' + esc(x.id) + '"><textarea name="text" rows="1" maxlength="2000" placeholder="پیام…" aria-label="پیام" required></textarea>' +
+        '<button type="submit" class="pn-send" aria-label="ارسال">' + SEND_SVG + '</button></form>'
+        : '<div class="pn-closed"><span>این گفت‌وگو بسته است.</span><button type="button" class="pn-secondary" data-tk-status="open" data-id="' + esc(x.id) + '">بازکردن دوباره</button></div>');
+  }
+  var unsubFeed = null;
+  function stopFeed() { if (unsubFeed) { try { unsubFeed(); } catch (e) { /* ignore */ } unsubFeed = null; } }
+  function paintFeed(first) {
+    var feed = document.getElementById('tkFeed');
+    if (!feed) return;
+    var near = first || feed.scrollHeight - feed.scrollTop - feed.clientHeight < 90;
+    var last = S.tk.msgs[S.tk.msgs.length - 1];
+    feed.innerHTML = feedHtml();
+    if (near || (last && last.uid === S.user.uid)) feed.scrollTop = feed.scrollHeight;
   }
   function openThread(id) {
+    stopFeed();
     S.tk.open = id; S.tk.msgs = []; S.tk.error = '';
-    dlg.innerHTML = tkThread(id); if (!dlg.open) dlg.showModal();
-    db.collection('tickets').doc(id).collection('messages').orderBy('at').get().then(function (qs) {
+    dlg.className = 'pn-dialog pn-chatdlg';
+    dlg.innerHTML = tkThread(id);
+    if (!dlg.open) dlg.showModal();
+    var first = true;
+    // live: a reply from the other side appears without a refresh
+    unsubFeed = db.collection('tickets').doc(id).collection('messages').orderBy('at').onSnapshot(function (qs) {
       S.tk.msgs = []; qs.forEach(function (s) { S.tk.msgs.push(s.data()); });
-    }).then(null, function (e) { S.tk.error = errText(e); }).then(function () { if (S.tk.open === id) { dlg.innerHTML = tkThread(id); var m = dlg.querySelector('.pn-msgs'); if (m) m.scrollTop = m.scrollHeight; } });
+      paintFeed(first); first = false;
+    }, function (e) { S.tk.error = errText(e); dlg.innerHTML = tkThread(id); });
   }
+  dlg.addEventListener('close', function () { stopFeed(); S.tk.open = null; dlg.className = 'pn-dialog'; });
   function tkTouch(id, extra) {
     var now = Date.now(), data = { updatedAt: now };
     Object.keys(extra).forEach(function (k) { data[k] = extra[k]; });
     return db.collection('tickets').doc(id).update(data);
   }
 
-  // ----- public contact: no account needed, three contact points only
+  // ----- outside messages (the contact page writes them)
   var PUB = { sales: 'فروش و توسعه بازار', service: 'خدمات پس از فروش', management: 'مدیریت' };
-  function contactForm() {
-    return '<form class="pn-card pn-contact" id="contactForm"><h2 id="contact">تماس با ما</h2>' +
-      (S.contactOk ? '<p class="pn-ok" role="status">پیام شما ثبت شد. همکاران ما با شما تماس می‌گیرند.</p>' : '') +
-      '<fieldset class="pn-seg"><legend>به</legend>' + Object.keys(PUB).map(function (k, i) {
-        return '<label><input type="radio" name="pub" value="' + k + '"' + (i === 0 ? ' checked' : '') + '><span>' + esc(PUB[k]) + '</span></label>';
-      }).join('') + '</fieldset>' +
-      '<label>نام<input type="text" name="name" maxlength="60" required></label>' +
-      '<label>تلفن یا ایمیل برای پاسخ<input type="text" name="contact" dir="ltr" maxlength="80" required></label>' +
-      '<label>پیام<textarea name="text" rows="4" maxlength="1000" required></textarea></label>' +
-      '<input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="pn-hp">' +
-      (S.contactErr ? '<p class="pn-err" role="alert">' + esc(S.contactErr) + '</p>' : '') +
-      '<button type="submit" class="pn-primary">ارسال پیام</button></form>';
-  }
   // messages from outside, for the roles that answer them
   S.pub = { list: [], loading: false, error: '' };
   function pubReader() { var r = myRole(); return r === 'manager' || r === 'ceo' || r === 'sales_manager' || r === 'service'; }
@@ -552,12 +599,12 @@
   function view() {
     if (S.loading) return '<p class="pn-note">در حال بارگذاری…</p>';
     if (!S.user) {
-      return '<form class="pn-card pn-login" id="loginForm"><h2>ورود به پنل کاربری</h2>' +
+      return '<form class="pn-card pn-login" id="loginForm"><span class="pn-login-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.500"/><path d="M5 20c0-3.900 3.100-7 7-7s7 3.100 7 7"/></svg></span>' +
+        '<h2>ورود به حساب</h2><p class="pn-note">با ایمیل و رمزی که مدیر برای شما ساخته وارد شوید.</p>' +
         '<label>ایمیل<input type="email" name="email" dir="ltr" autocomplete="username" required></label>' +
         '<label>رمز عبور<input type="password" name="password" dir="ltr" autocomplete="current-password" required></label>' +
         (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
-        '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ورود</button>' +
-        '<p class="pn-note">حساب‌ها فقط توسط مدیر ساخته می‌شود.</p></form>' + contactForm();
+        '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ورود</button></form>';
     }
     if (!S.profile || !active()) {
       return '<div class="pn-card"><h2>حساب فعال نیست</h2><p class="pn-note">' +
@@ -628,9 +675,8 @@
       '<form id="editForm" class="pn-edit" data-id="' + esc(u.id) + '">' +
       '<label>نام و نام خانوادگی<input type="text" name="name" value="' + esc(u.name || '') + '" maxlength="60" required' + (can('people') ? '' : ' disabled') + '></label>' +
       '<label>تلفن<input type="tel" name="phone" dir="ltr" value="' + esc(u.phone || '') + '" maxlength="30"' + (can('people') ? '' : ' disabled') + '></label>' +
-      (can('roleAdmin') ? '<fieldset class="pn-seg"><legend>نقش</legend>' + MSRoles.ORDER.map(function (r) {
-        return '<label><input type="radio" name="role" value="' + r + '"' + (MSRoles.norm(u.role) === r ? ' checked' : '') + (self ? ' disabled' : '') + '><span>' + esc(MSRoles.label(r)) + '</span></label>';
-      }).join('') + '</fieldset>' : '<p class="pn-note">نقش: ' + esc(MSRoles.label(u.role)) + ' (تغییر نقش فقط با مدیرعامل یا تکنولوژی سازمانی است)</p>') +
+      (can('roleAdmin') && !self ? dropdown('role', 'نقش', [{ label: '', options: MSRoles.ORDER.map(function (r) { return { v: r, t: MSRoles.label(r) }; }) }], MSRoles.norm(u.role))
+        : '<p class="pn-note">نقش: ' + esc(MSRoles.label(u.role)) + (can('roleAdmin') ? '' : ' (تغییر نقش فقط با مدیرعامل یا تکنولوژی سازمانی است)') + '</p>') +
       // fields that belong to one kind of role only; the block follows the chosen role
       (can('roleAdmin') ? '<div data-field="code"' + (MSRoles.hasField(u.role, 'code') ? '' : ' hidden') + '><label>کد برای شمارهٔ سند (حروف و عدد لاتین)<input type="text" name="code" dir="ltr" value="' + esc(u.code || '') + '" maxlength="6" pattern="[A-Za-z0-9]*"></label></div>' : '') +
       (can('people') ? '<label class="pn-check"><input type="checkbox" name="active"' + (u.active === false ? '' : ' checked') + (self ? ' disabled' : '') + '><span>حساب فعال است</span></label>' : '') +
@@ -644,7 +690,7 @@
     var r = MSRoles.norm(u.role);
     return can('roleAdmin') || (r !== 'manager' && r !== 'ceo');   // hr never removes management or the CEO (the rules say the same)
   }
-  function render() { root.innerHTML = view(); paintMap(); }
+  function render() { root.innerHTML = view(); var h = document.querySelector('.pn-head'); if (h) h.classList.toggle('anon', !S.user && !S.loading); paintMap(); }
 
   // ----- actions
   document.addEventListener('click', function (e) {
@@ -660,6 +706,25 @@
       tkTouch(tid, { status: st }).then(function () { dlg.close(); S.tk.open = null; loadTickets(); }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkThread(tid); });
       return;
     }
+    var ddb = e.target.closest('[data-dd-btn]');
+    if (ddb) {
+      var lst = ddb.parentNode.querySelector('.pn-dd-list'), openNow = lst.hidden;
+      Array.prototype.forEach.call(document.querySelectorAll('.pn-dd-list'), function (l) { l.hidden = true; });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-dd-btn]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+      lst.hidden = !openNow; ddb.setAttribute('aria-expanded', String(openNow));
+      return;
+    }
+    var ddv = e.target.closest('[data-dd-v]');
+    if (ddv) {
+      var box = ddv.closest('.pn-dd'), hid = box.querySelector('input[type=hidden]');
+      hid.value = ddv.getAttribute('data-dd-v');
+      box.querySelector('[data-dd-btn] span').textContent = ddv.textContent;
+      Array.prototype.forEach.call(box.querySelectorAll('[data-dd-v]'), function (o) { o.setAttribute('aria-selected', String(o === ddv)); });
+      box.querySelector('.pn-dd-list').hidden = true; box.querySelector('[data-dd-btn]').setAttribute('aria-expanded', 'false');
+      hid.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
+    if (!e.target.closest('.pn-dd')) Array.prototype.forEach.call(document.querySelectorAll('.pn-dd-list'), function (l) { l.hidden = true; });
     var dl = e.target.closest('[data-del]');
     if (dl) {
       if (dl.getAttribute('data-armed') !== '1') {
@@ -691,6 +756,16 @@
     }
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
   });
+  document.addEventListener('input', function (e) {
+    var ta = e.target;
+    if (ta && ta.tagName === 'TEXTAREA' && ta.form && ta.form.id === 'tkReplyForm') { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; }
+  });
+  document.addEventListener('keydown', function (e) {
+    var ta = e.target;
+    if (ta && ta.tagName === 'TEXTAREA' && ta.form && ta.form.id === 'tkReplyForm' && e.key === 'Enter' && !e.shiftKey && !(window.matchMedia && window.matchMedia('(pointer:coarse)').matches)) {
+      e.preventDefault(); if (ta.value.trim()) ta.form.requestSubmit();
+    }
+  });
   document.addEventListener('change', function (e) {
     var t = e.target;
     if (!t || t.name !== 'role' || !t.form || t.form.id !== 'editForm') return;
@@ -710,14 +785,8 @@
       db.collection('users').doc(S.user.uid).update({ name: v('name'), phone: v('phone') }).then(function () {
         S.profile.name = v('name'); S.profile.phone = v('phone'); S.msg = 'ذخیره شد. از این پس نام شما روی پیش‌فاکتورهای جدید همین است.';
       }, function (err) { S.error = errText(err); }).then(function () { S.busy = false; render(); });
-    } else if (f.id === 'contactForm') {
-      if (f.elements.website.value) return;                       // honeypot: a person never fills this
-      var to = f.querySelector('input[name=pub]:checked');
-      S.contactOk = false; S.contactErr = '';
-      db.collection('public_requests').add({ name: v('name'), contact: v('contact'), to: to ? to.value : 'sales', text: f.elements.text.value.trim(), status: 'open', createdAt: Date.now() })
-        .then(function () { S.contactOk = true; render(); }, function (err) { S.contactErr = errText(err); render(); });
     } else if (f.id === 'tkNewForm') {
-      var pick = f.querySelector('input[name=to]:checked'), val = pick ? pick.value : 'role:sales_manager';
+      var val = f.elements.to ? f.elements.to.value : 'role:sales_manager';
       var o = { title: v('title'), text: f.elements.text.value.trim() };
       if (val.indexOf('uid:') === 0) {
         var tu = S.team.filter(function (x) { return x.id === val.slice(4); })[0] || {};
@@ -731,7 +800,7 @@
       var rref = db.collection('tickets').doc(rid), nb = db.batch(), now2 = Date.now();
       nb.set(rref.collection('messages').doc(), { uid: S.user.uid, name: myName(), role: myRole(), text: txt, at: now2 });
       nb.update(rref, { updatedAt: now2, lastText: txt.slice(0, 140), lastBy: S.user.uid, lastByName: myName() });
-      nb.commit().then(function () { loadTickets(); openThread(rid); }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkThread(rid); });
+      nb.commit().then(function () { f.elements.text.value = ''; f.elements.text.style.height = ''; loadTickets(); }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkThread(rid); });
     } else if (f.id === 'addForm') {
       db.collection('users').doc(v('uid')).set({ name: v('name'), email: v('email'), role: 'visitor', active: true, regions: [], cities: '' }).then(function () { load(); }, function (err) { S.error = errText(err); render(); });
     } else if (f.id === 'editForm') {
@@ -739,7 +808,7 @@
       var data = {};   // only the fields this role is allowed to change, so the rules see no foreign key
       if (can('people')) { data.name = v('name'); data.phone = v('phone'); if (!self) data.active = f.elements.active.checked; }
       var known = S.team.filter(function (x) { return x.id === id; })[0] || {};
-      var roleNow = known.role, picked = f.querySelector('input[name=role]:checked');
+      var roleNow = known.role, picked = f.elements.role ? { value: f.elements.role.value } : null;
       if (can('roleAdmin') && !self && picked) { roleNow = picked.value; data.role = roleNow; }
       if (can('roleAdmin')) data.code = MSRoles.hasField(roleNow, 'code') ? v('code').toUpperCase() : '';
       if (can('territory')) {
