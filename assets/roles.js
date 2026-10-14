@@ -38,7 +38,7 @@
   };
   // profile fields that exist only for some roles (name, phone and the active flag belong to everyone)
   var FIELDS = {
-    visitor: ['code', 'territory'],     // document code and the provinces they cover
+    visitor: ['code', 'territory', 'proformas'],     // document code, the provinces they cover, and their own proforma figures
     sales_manager: ['code']             // issues proformas too, but covers no province of their own
   };
   function norm(role) { role = role || 'visitor'; return ALIAS[role] || role; }

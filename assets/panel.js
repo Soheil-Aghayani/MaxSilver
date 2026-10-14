@@ -42,6 +42,8 @@
   var can = function (area) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, area)); };
   var active = function () { return !!(S.profile && S.profile.active !== false); };
 
+  function u_email() { return S.user && S.user.email ? String(S.user.email).toLowerCase() : ''; }
+
   // ----- data
   function load() {
     S.loading = true; S.error = ''; render();
@@ -49,6 +51,7 @@
     var timeout = new Promise(function (_, rej) { setTimeout(function () { rej({ code: 'timeout' }); }, 15000); });
     Promise.race([db.collection('users').doc(uid).get(), timeout]).then(function (snap) {
       S.profile = snap.exists ? snap.data() : null;
+      if (S.profile && !S.profile.email && u_email()) { db.collection('users').doc(uid).update({ email: u_email() }).then(function () { S.profile.email = u_email(); }, function () { /* the rules may not be published yet */ }); }
       try { localStorage.setItem('ms-role', active() ? (S.profile.role || '') : ''); } catch (x) { /* ignore */ }
       if (!active()) return null;
       var q = can('invoices') ? db.collection('invoices') : db.collection('invoices').where('ownerUid', '==', uid);
@@ -65,7 +68,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); loadComm(); });
+    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -377,6 +380,106 @@
     }
   }
 
+  // ----- tickets: a conversation between people and departments. A message is immutable; a ticket has an audience
+  // (the sender, the addressee person or role). Account removals open one automatically so management is told to also
+  // delete the sign-in account, which only the Firebase console can do.
+  var TK_TARGETS = ['sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr', 'ceo', 'manager'];
+  S.tk = { list: [], loading: false, error: '', msgs: [], open: null, busy: false };
+  function myRole() { return MSRoles.norm(S.profile && S.profile.role); }
+  function myName() { return (S.profile && S.profile.name) || (S.user && S.user.email) || ''; }
+  function loadTickets() {
+    if (!S.profile || !active() || !S.user) return;
+    var col = db.collection('tickets'), uid = S.user.uid, qs;
+    if (myRole() === 'manager') qs = [col.get()];
+    else qs = [col.where('audience', 'array-contains', 'uid:' + uid).get(), col.where('audience', 'array-contains', 'role:' + myRole()).get()];
+    S.tk.loading = true; S.tk.error = ''; render();
+    Promise.all(qs).then(function (res) {
+      var by = {};
+      res.forEach(function (snap) { snap.forEach(function (s) { var d = s.data(); d.id = s.id; by[d.id] = d; }); });
+      S.tk.list = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+    }).then(null, function (e) { S.tk.error = errText(e); }).then(function () { S.tk.loading = false; render(); });
+  }
+  function createTicket(o) {
+    var me = S.user.uid, now = Date.now(), ref = db.collection('tickets').doc();
+    var aud = ['uid:' + me];
+    aud.push(o.toUid ? 'uid:' + o.toUid : 'role:' + o.toRole);
+    var head = {
+      title: o.title, fromUid: me, fromName: myName(), fromRole: myRole(), toRole: o.toRole, toUid: o.toUid || '', toName: o.toName || '',
+      kind: o.kind || 'message', status: 'open', createdAt: now, updatedAt: now, lastText: String(o.text).slice(0, 140), lastBy: me, lastByName: myName(), audience: aud
+    };
+    var b = db.batch();
+    b.set(ref, head);
+    b.set(ref.collection('messages').doc(), { uid: me, name: myName(), role: myRole(), text: o.text, at: now });
+    return b.commit();
+  }
+  function tkWaiting() {
+    var mine = ['uid:' + S.user.uid, 'role:' + myRole()];   // general management reads everything but is only asked about its own
+    return S.tk.list.filter(function (x) {
+      return x.status === 'open' && x.lastBy !== S.user.uid && (x.audience || []).some(function (a) { return mine.indexOf(a) >= 0; });
+    }).length;
+  }
+  function tkWhen(ms) { try { return new Intl.DateTimeFormat('fa-IR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
+  function ticketsView() {
+    var T = S.tk, wait = tkWaiting();
+    var items = T.list.map(function (x) {
+      var mineLast = x.lastBy === S.user.uid;
+      return '<li class="pn-tk' + (x.status === 'closed' ? ' off' : '') + (!mineLast && x.status === 'open' ? ' wait' : '') + '"><button type="button" data-tk-open="' + esc(x.id) + '">' +
+        '<b>' + esc(x.title) + '</b>' +
+        '<span class="pn-tk-meta">' + esc(x.fromName || '—') + ' ← ' + esc(x.toName || MSRoles.label(x.toRole)) + ' · ' + esc(tkWhen(x.updatedAt)) +
+        (x.kind === 'account-removal' ? ' <span class="pn-chip">خودکار</span>' : '') + (x.status === 'closed' ? ' <span class="pn-chip off">بسته</span>' : '') + '</span>' +
+        '<span class="pn-tk-last">' + esc(x.lastText || '') + '</span></button></li>';
+    }).join('');
+    return '<section class="pn-card pn-tickets"><div class="pn-tk-head"><h2>درخواست‌ها و گفت‌وگو' + (wait ? ' <span class="pn-badge" aria-label="منتظر پاسخ شما">' + faInt.format(wait) + '</span>' : '') + '</h2>' +
+      '<button type="button" class="pn-secondary" data-tk-new>درخواست جدید</button></div>' +
+      (T.error ? '<p class="pn-err" role="alert">' + esc(T.error) + '</p>' : '') +
+      (items ? '<ul class="pn-tk-list">' + items + '</ul>' : '<p class="pn-note">' + (T.loading ? 'در حال بارگذاری…' : 'درخواستی نیست. برای گفت‌وگو با فروش، مالی، مدیریت یا هر واحد دیگر «درخواست جدید» را بزنید.') + '</p>') + '</section>';
+  }
+  function tkNewForm() {
+    var opts = TK_TARGETS.map(function (r, i) {
+      return '<label><input type="radio" name="to" value="role:' + r + '"' + (i === 0 ? ' checked' : '') + '><span>' + esc(MSRoles.label(r)) + '</span></label>';
+    }).join('');
+    var people = can('team') ? S.team.filter(function (u) { return u.id !== S.user.uid && u.active !== false; }).map(function (u) {
+      return '<label><input type="radio" name="to" value="uid:' + esc(u.id) + '"><span>' + esc(u.name || '—') + '</span></label>';
+    }).join('') : '';
+    return '<div class="pn-bar"><h2 id="dlgName">درخواست جدید</h2><button type="button" class="pn-x" data-close aria-label="بستن">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>' +
+      '<form id="tkNewForm" class="pn-edit">' +
+      '<fieldset class="pn-seg"><legend>به</legend>' + opts + '</fieldset>' +
+      (people ? '<fieldset class="pn-seg"><legend>یا یک نفر</legend>' + people + '</fieldset>' : '') +
+      '<label>موضوع<input type="text" name="title" maxlength="120" required></label>' +
+      '<label>پیام<textarea name="text" rows="5" maxlength="2000" required></textarea></label>' +
+      (S.tk.error ? '<p class="pn-err" role="alert">' + esc(S.tk.error) + '</p>' : '') +
+      '<button type="submit" class="pn-primary">ارسال</button></form>';
+  }
+  function tkThread(id) {
+    var x = S.tk.list.filter(function (k) { return k.id === id; })[0];
+    if (!x) return '';
+    var msgs = S.tk.msgs.map(function (m) {
+      return '<li class="pn-msg' + (m.uid === S.user.uid ? ' mine' : '') + '"><b>' + esc(m.name || '—') + '</b><p>' + esc(m.text) + '</p><span>' + esc(tkWhen(m.at)) + '</span></li>';
+    }).join('');
+    var canClose = x.status === 'open';
+    return '<div class="pn-bar"><h2 id="dlgName">' + esc(x.title) + '</h2><button type="button" class="pn-x" data-close aria-label="بستن">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>' +
+      '<p class="pn-note">' + esc(x.fromName || '—') + ' ← ' + esc(x.toName || MSRoles.label(x.toRole)) + (x.kind === 'account-removal' ? ' · خودکار' : '') + '</p>' +
+      '<ul class="pn-msgs">' + (msgs || '<li class="pn-note">در حال بارگذاری…</li>') + '</ul>' +
+      (S.tk.error ? '<p class="pn-err" role="alert">' + esc(S.tk.error) + '</p>' : '') +
+      (x.status === 'open' ? '<form id="tkReplyForm" class="pn-edit" data-id="' + esc(x.id) + '"><label>پاسخ<textarea name="text" rows="3" maxlength="2000" required></textarea></label>' +
+        '<button type="submit" class="pn-primary">ارسال پاسخ</button></form>' : '') +
+      '<div class="pn-actions"><button type="button" class="pn-secondary" data-tk-status="' + (canClose ? 'closed' : 'open') + '" data-id="' + esc(x.id) + '">' + (canClose ? 'بستن درخواست' : 'بازکردن دوباره') + '</button></div>';
+  }
+  function openThread(id) {
+    S.tk.open = id; S.tk.msgs = []; S.tk.error = '';
+    dlg.innerHTML = tkThread(id); if (!dlg.open) dlg.showModal();
+    db.collection('tickets').doc(id).collection('messages').orderBy('at').get().then(function (qs) {
+      S.tk.msgs = []; qs.forEach(function (s) { S.tk.msgs.push(s.data()); });
+    }).then(null, function (e) { S.tk.error = errText(e); }).then(function () { if (S.tk.open === id) { dlg.innerHTML = tkThread(id); var m = dlg.querySelector('.pn-msgs'); if (m) m.scrollTop = m.scrollHeight; } });
+  }
+  function tkTouch(id, extra) {
+    var now = Date.now(), data = { updatedAt: now };
+    Object.keys(extra).forEach(function (k) { data[k] = extra[k]; });
+    return db.collection('tickets').doc(id).update(data);
+  }
+
   function view() {
     if (S.loading) return '<p class="pn-note">در حال بارگذاری…</p>';
     if (!S.user) {
@@ -406,12 +509,13 @@
       '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ذخیرهٔ اطلاعات</button>' +
       '<p class="pn-note">نقش، کد و منطقهٔ فعالیت را مدیر تعیین می‌کند.</p></form></section>';
     if (MSRoles.hasField(p.role, 'territory')) out += '<section class="pn-card"><h2>منطقهٔ فعالیت و فروش من</h2>' + chips(p) + areaView(p) + '</section>';
-    out += '<section class="pn-card"><h2>پیش‌فاکتورهای من</h2><div class="pn-stats"><div><span>تعداد کل</span><b>' + faInt.format(mine.length) + '</b></div>' +
+    if (MSRoles.hasField(p.role, 'proformas')) out += '<section class="pn-card"><h2>پیش‌فاکتورهای من</h2><div class="pn-stats"><div><span>تعداد کل</span><b>' + faInt.format(mine.length) + '</b></div>' +
       '<div><span>مجموع این ماه (شمسی)</span><b>' + monthTotals(mine) + '</b></div></div>' +
       (mine.length ? '<ul class="pn-list">' + mine.slice(0, 6).map(function (d) {
         return '<li><div><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.customer || 'بدون نام مشتری') + '</span></div><div><span>' + esc(faDate(d.createdAt)) + '</span><b>' + money(M.totals(d).total, d.unit) + '</b></div></li>';
       }).join('') + '</ul>' : '<p class="pn-note">هنوز پیش‌فاکتوری صادر نکرده‌اید.</p>') +
       '<a class="pn-link" href="./product-catalog.html">رفتن به کاتالوگ و ساخت پیش‌فاکتور</a></section>';
+    out += ticketsView();
     out += commissionView();
     if (can('team')) out += teamView();
     return out;
@@ -423,7 +527,8 @@
       var docs = byOwner[u.id] || [];
       return '<li class="pn-user' + (u.active === false ? ' off' : '') + '"><div><b>' + esc(u.name || '—') + '</b>' +
         '<span class="pn-role">' + esc(MSRoles.label(u.role)) + '</span>' + (u.active === false ? ' <span class="pn-chip off">غیرفعال</span>' : '') +
-        '<p class="pn-note">' + faInt.format(docs.length) + ' پیش‌فاکتور · این ماه: ' + monthTotals(docs) + '</p>' +
+        (MSRoles.hasField(u.role, 'proformas') ? '<p class="pn-note">' + faInt.format(docs.length) + ' پیش‌فاکتور · این ماه: ' + monthTotals(docs) + '</p>' : '') +
+        (can('people') && u.email ? '<p class="pn-note" dir="ltr">' + esc(u.email) + '</p>' : '') +
         (MSRoles.hasField(u.role, 'territory') ? '<div class="pn-chips">' + (u.regions || []).map(function (r) { return '<span class="pn-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
           (u.cities ? '<p class="pn-note">' + esc(u.cities) + '</p>' : '') : '') + '</div>' +
         '<button type="button" class="pn-secondary" data-edit="' + esc(u.id) + '">ویرایش</button></li>';
@@ -433,6 +538,7 @@
         '<p class="pn-note">ابتدا در Firebase ← Authentication ← Users کاربر را بسازید و «User UID» را اینجا بچسبانید. نقش اولیه کارشناس فروش است؛ پس از افزودن از «ویرایش» تغییر دهید.</p>' +
         '<label>User UID<input type="text" name="uid" dir="ltr" required pattern="[A-Za-z0-9]{10,}" title="فقط حروف و عدد"></label>' +
         '<label>نام و نام خانوادگی<input type="text" name="name" required maxlength="60"></label>' +
+        '<label>ایمیل ورود<input type="email" name="email" dir="ltr" required></label>' +
         '<button type="submit" class="pn-primary">افزودن</button></form>' : '') + '</section>';
   }
   function editForm(u) {
@@ -472,12 +578,25 @@
     if (e.target.closest('[data-out]')) { auth.signOut(); return; }
     var cy = e.target.closest('[data-comm-year]');
     if (cy) { S.comm.year = cy.getAttribute('data-comm-year'); S.comm.doc = null; S.comm.results = []; S.comm.mdoc = null; S.comm.mres = []; S.comm.msg = ''; S.comm.error = ''; render(); loadComm(); return; }
+    if (e.target.closest('[data-tk-new]')) { S.tk.error = ''; dlg.innerHTML = tkNewForm(); dlg.showModal(); return; }
+    var to = e.target.closest('[data-tk-open]');
+    if (to) { openThread(to.getAttribute('data-tk-open')); return; }
+    var ts = e.target.closest('[data-tk-status]');
+    if (ts) {
+      var tid = ts.getAttribute('data-id'), st = ts.getAttribute('data-tk-status');
+      tkTouch(tid, { status: st }).then(function () { dlg.close(); S.tk.open = null; loadTickets(); }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkThread(tid); });
+      return;
+    }
     var dl = e.target.closest('[data-del]');
     if (dl) {
       if (dl.getAttribute('data-armed') !== '1') { dl.setAttribute('data-armed', '1'); dl.textContent = 'برای حذف قطعی دوباره بزنید'; return; }
       var did = dl.getAttribute('data-del');
       dl.disabled = true;
-      db.collection('users').doc(did).delete().then(function () { dlg.close(); S.msg = 'کاربر حذف شد.'; load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(S.team.filter(function (x) { return x.id === did; })[0] || { id: did }); });
+      var gone = S.team.filter(function (x) { return x.id === did; })[0] || { id: did };
+      db.collection('users').doc(did).delete().then(function () {
+        return createTicket({ title: 'حذف حساب ورود: ' + (gone.name || did), toRole: 'manager', kind: 'account-removal',
+          text: 'کاربر «' + (gone.name || '—') + '» (' + MSRoles.label(gone.role) + ') از پنل حذف شد.\nایمیل: ' + (gone.email || 'ثبت نشده') + '\nشناسه: ' + did + '\nلطفاً حساب ورود را از Firebase ← Authentication ← Users حذف کنید و سپس این درخواست را ببندید.' });
+      }).then(function () { dlg.close(); S.msg = 'کاربر حذف شد و درخواست حذف حساب ورود برای مدیریت ثبت شد.'; load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(S.team.filter(function (x) { return x.id === did; })[0] || { id: did }); });
       return;
     }
     var cm = e.target.closest('[data-comm-month]');
@@ -511,8 +630,24 @@
       db.collection('users').doc(S.user.uid).update({ name: v('name'), phone: v('phone') }).then(function () {
         S.profile.name = v('name'); S.profile.phone = v('phone'); S.msg = 'ذخیره شد. از این پس نام شما روی پیش‌فاکتورهای جدید همین است.';
       }, function (err) { S.error = errText(err); }).then(function () { S.busy = false; render(); });
+    } else if (f.id === 'tkNewForm') {
+      var pick = f.querySelector('input[name=to]:checked'), val = pick ? pick.value : 'role:sales_manager';
+      var o = { title: v('title'), text: f.elements.text.value.trim() };
+      if (val.indexOf('uid:') === 0) {
+        var tu = S.team.filter(function (x) { return x.id === val.slice(4); })[0] || {};
+        o.toUid = val.slice(4); o.toRole = MSRoles.norm(tu.role); o.toName = tu.name || '';
+      } else { o.toRole = val.slice(5); }
+      if (!o.title || !o.text) return;
+      createTicket(o).then(function () { dlg.close(); loadTickets(); }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkNewForm(); });
+    } else if (f.id === 'tkReplyForm') {
+      var rid = f.getAttribute('data-id'), txt = f.elements.text.value.trim();
+      if (!txt) return;
+      var rref = db.collection('tickets').doc(rid), nb = db.batch(), now2 = Date.now();
+      nb.set(rref.collection('messages').doc(), { uid: S.user.uid, name: myName(), role: myRole(), text: txt, at: now2 });
+      nb.update(rref, { updatedAt: now2, lastText: txt.slice(0, 140), lastBy: S.user.uid, lastByName: myName() });
+      nb.commit().then(function () { loadTickets(); openThread(rid); }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkThread(rid); });
     } else if (f.id === 'addForm') {
-      db.collection('users').doc(v('uid')).set({ name: v('name'), role: 'visitor', active: true, regions: [], cities: '' }).then(function () { load(); }, function (err) { S.error = errText(err); render(); });
+      db.collection('users').doc(v('uid')).set({ name: v('name'), email: v('email'), role: 'visitor', active: true, regions: [], cities: '' }).then(function () { load(); }, function (err) { S.error = errText(err); render(); });
     } else if (f.id === 'editForm') {
       var id = f.getAttribute('data-id'), self = id === S.user.uid;
       var data = {};   // only the fields this role is allowed to change, so the rules see no foreign key
