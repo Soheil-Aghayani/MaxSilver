@@ -257,3 +257,19 @@
 .pn-pref small{color:inherit;opacity:.75;font-weight:600;font-size:11px;line-height:1.6;text-align:center}
 .pn-user{align-items:center;gap:12px}
 .pn-user>div{flex:1;min-width:0}
+
+/* sections of the panel */
+.pn-tabs{position:sticky;top:0;z-index:20;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;margin:0 0 4px;padding:5px;border:1px solid var(--ms-line);border-radius:18px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);box-shadow:var(--ms-shadow)}
+.pn-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:6px 4px;border:0;border-radius:13px;background:transparent;color:#51627a;font:800 12px/1.2 Estedad,Tahoma,sans-serif;cursor:pointer}
+.pn-tab svg{width:22px;height:22px}
+.pn-tab[aria-selected=true]{background:var(--ms-navy);color:#fff}
+.pn-tab:focus-visible{outline:3px solid #90adff;outline-offset:1px}
+.pn-tabpane{display:grid;gap:16px}
+.pn-facts{display:grid;gap:8px;margin:0}
+.pn-fact{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#f6f8fb}
+.pn-fact dt{flex:none;min-width:116px;color:var(--ms-muted);font-size:12px;font-weight:700}
+.pn-fact dd{flex:1;min-width:0;margin:0;color:var(--ms-navy);font-weight:800;font-size:14px;overflow-wrap:anywhere}
+.pn-fact dd i{color:var(--ms-muted);font-style:normal;font-weight:600}
+.pn-lock{display:grid;place-items:center;color:#98a6ba;flex:none}
+.pn-lock svg{width:17px;height:17px}
+@media(max-width:420px){.pn-fact{flex-wrap:wrap}.pn-fact dt{min-width:0;flex:1 1 100%}.pn-tab{font-size:11px}}

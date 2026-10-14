@@ -47,13 +47,22 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'active']))
         || (editsTerritory()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['regions', 'cities', 'commissionRegions']))
-        // anyone may edit only their own display name, phone and sign-in e-mail (which must be the one they signed in with);
-        // role, code, regions and active stay with the roles above
+        // anyone may edit only their own contact e-mail (and record the sign-in e-mail they signed in with);
+        // name, phone, role, code, regions and active stay with the roles above
         || (approved() && request.auth.uid == uid
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'email'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email', 'contactEmail'])
             && (!('email' in request.resource.data) || request.resource.data.email == request.auth.token.email)
-            && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
-            && (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.size() <= 30)));
+            && (!('contactEmail' in request.resource.data) || (request.resource.data.contactEmail is string && request.resource.data.contactEmail.size() <= 80)));
+    }
+
+    // National id: one private card per person. The person reads it; hr and management write it. The team list never carries it.
+    match /personal/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || adminsRoles() || editsPeople());
+      allow create, update: if (adminsRoles() || editsPeople())
+        && request.resource.data.keys().hasOnly(['nationalId', 'updatedAt'])
+        && request.resource.data.nationalId is string
+        && (request.resource.data.nationalId == '' || request.resource.data.nationalId.matches('^[0-9]{10}$'));
+      allow delete: if adminsRoles() || editsPeople();
     }
 
     match /invoices/{id} {

@@ -69,7 +69,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
+    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); loadPersonal(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -736,12 +736,12 @@
     var sw = PROFILE_COLORS.map(function (c) {
       return '<button type="button" role="radio" class="pn-sw" data-color="' + c + '" aria-checked="' + (cur === c) + '" aria-label="رنگ ' + c + '" style="--c:' + c + '"></button>';
     }).join('');
-    return '<section class="pn-card pn-look"><h2>ظاهر پروفایل</h2>' +
+    return '<section class="pn-card pn-look"><h2>عکس و رنگ</h2>' +
       '<div class="pn-look-row">' + avatar(S.profile.name || S.user.email, 76, me) +
         '<div class="pn-look-actions"><button type="button" class="pn-secondary" data-photo-pick' + (S.look.busy ? ' disabled' : '') + '>' + (p.photo ? 'تغییر عکس' : 'انتخاب عکس') + '</button>' +
         (p.photo ? '<button type="button" class="pn-ico" data-photo-del aria-label="حذف عکس" title="حذف عکس"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>' : '') +
         '<input type="file" id="photoFile" accept="image/*" hidden></div></div>' +
-      '<p class="pn-note">رنگ پروفایل شما روی حباب پیام‌ها و آواتار دیده می‌شود.</p>' +
+      '<p class="pn-note">عکس مربع و با چهرهٔ واضح، JPG یا PNG، دست‌کم ۱۲۸ پیکسل؛ خودکار بُرش و کوچک می‌شود. رنگ پروفایل روی حباب پیام‌ها و آواتار دیده می‌شود.</p>' +
       '<div class="pn-swatches" role="radiogroup" aria-label="رنگ پروفایل">' + sw + '</div>' +
       (S.look.msg ? '<p class="pn-ok" role="status">' + esc(S.look.msg) + '</p>' : '') + '</section>';
   }
@@ -761,6 +761,7 @@
       img.onload = function () {
         try {
           var side = Math.min(img.width, img.height), c = document.createElement('canvas'), N = 192;
+          if (side < 128) { URL.revokeObjectURL(url); reject(new Error('small')); return; }
           c.width = N; c.height = N;
           c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, N, N);
           var q = 0.85, out = c.toDataURL('image/jpeg', q);
@@ -805,7 +806,7 @@
   }
   function prefsView() {
     var P = S.prefs, perm = window.MSNotify ? window.MSNotify.permission() : 'unsupported';
-    return '<section class="pn-card pn-prefs"><h2>روش اطلاع‌رسانی</h2>' +
+    return '<section class="pn-card pn-prefs"><h2>اطلاع‌رسانی</h2>' +
       '<div class="pn-pref-choices two" role="radiogroup" aria-label="روش اطلاع‌رسانی">' + PREF_CHOICES.map(function (c) {
         return '<button type="button" role="radio" class="pn-pref" data-pref="' + c.v + '" aria-checked="' + (P.channels === c.v) + '"' + (P.busy ? ' disabled' : '') +
           '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + c.icon + '</svg><span>' + c.t + '</span><small>' + c.d + '</small></button>';
@@ -815,6 +816,40 @@
       (P.err ? '<p class="pn-err" role="alert">' + esc(P.err) + '</p>' : '') +
       (P.msg ? '<p class="pn-ok" role="status">' + esc(P.msg) + '</p>' : '') + '</section>';
   }
+
+  // ---- private card: national id, written by hr or management only
+  S.nid = ''; S.tab = 'home';
+  function loadPersonal() {
+    if (!S.user) return;
+    db.collection('personal').doc(S.user.uid).get().then(function (s) { S.nid = s.exists ? String(s.data().nationalId || '') : ''; render(); }, function () { /* rules not published yet */ });
+  }
+  var LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z"/></svg>';
+  function fact(label, val, ltr) {
+    return '<div class="pn-fact"><dt>' + label + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + (val ? esc(val) : '<i>ثبت نشده</i>') + '</dd><span class="pn-lock" title="فقط منابع انسانی یا مدیریت تغییر می‌دهد">' + LOCK + '</span></div>';
+  }
+  function meView() {
+    var p = S.profile;
+    return '<section class="pn-card pn-person"><h2>اطلاعات شخصی</h2>' +
+      '<dl class="pn-facts">' + fact('نام و نام خانوادگی', p.name) + fact('تلفن تماس', p.phone, true) + fact('کد ملی', S.nid, true) + fact('ایمیل ورود', S.user.email, true) + '</dl>' +
+      '<p class="pn-note">این موارد قفل است و روی پیش‌فاکتور می‌آید؛ برای اصلاح، با منابع انسانی یا مدیریت تماس بگیرید.</p>' +
+      '<form id="meForm"><label>ایمیل من (برای تماس)<input type="email" name="contactEmail" dir="ltr" value="' + esc(p.contactEmail || '') + '" maxlength="80" autocomplete="email" placeholder="name@example.com"></label>' +
+      (S.msg ? '<p class="pn-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
+      '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ذخیرهٔ ایمیل</button></form></section>';
+  }
+  var TAB_ICON = {
+    home: '<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',
+    chat: '<path d="M21 12a8 8 0 0 1-11.600 7.100L4 20l1-4.400A8 8 0 1 1 21 12z"/>',
+    comm: '<path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/>',
+    team: '<circle cx="9" cy="8" r="3.500"/><path d="M2 20c0-3.300 3-6 7-6s7 2.700 7 6M17 5a3.500 3.500 0 0 1 0 7M22 20c0-2.600-1.800-4.700-4.500-5.600"/>',
+    me: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'
+  };
+  var TAB_LABEL = { home: 'خانه', chat: 'گفت‌وگوها', comm: 'پورسانت', team: 'تیم', me: 'تنظیمات من' };
+  var HASH_TAB = { tickets: 'chat', public: 'chat', commission: 'comm', team: 'team', notify: 'home' };
+  function tabFromHash() {
+    var h = (location.hash || '').slice(1), k = HASH_TAB[h];
+    if (k) { S.tab = k; render(); var el = document.getElementById(h); if (el && el.scrollIntoView) el.scrollIntoView(); }
+  }
+  window.addEventListener('hashchange', tabFromHash);
 
   function view() {
     if (S.loading) return '<p class="pn-note">در حال بارگذاری…</p>';
@@ -835,29 +870,25 @@
     var p = S.profile, mine = S.docs.filter(function (d) { return d.ownerUid === S.user.uid; });
     var out = '';
     out += '<section class="pn-card pn-hero">' + avatar(p.name || S.user.email, 56, S.user.uid).replace('class="pn-av', 'class="pn-av hero') +
-      '<div><h2>' + esc(p.name || S.user.email) + '</h2><p class="pn-note" dir="ltr">' + esc(S.user.email) + '</p>' +
+      '<div><h2>' + esc(p.name || S.user.email) + '</h2>' +
       '<span class="pn-role">' + esc(MSRoles.label(p.role)) + '</span>' + (p.code ? ' <span class="pn-chip" dir="ltr">' + esc(p.code) + '</span>' : '') + '</div>' +
       '<button type="button" class="pn-ico" data-out aria-label="خروج" title="خروج"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></section>';
-    out += '<section class="pn-card"><h2>اطلاعات من</h2><form id="meForm">' +
-      '<label>نام و نام خانوادگی (روی پیش‌فاکتور چاپ می‌شود)<input type="text" name="name" value="' + esc(p.name || '') + '" maxlength="60" required></label>' +
-      '<label>تلفن تماس<input type="tel" name="phone" dir="ltr" value="' + esc(p.phone || '') + '" maxlength="30" inputmode="tel"></label>' +
-      (S.msg ? '<p class="pn-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
-      '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ذخیرهٔ اطلاعات</button>' +
-      '<p class="pn-note">نقش، کد و منطقهٔ فعالیت را مدیر تعیین می‌کند.</p></form></section>';
-    if (MSRoles.hasField(p.role, 'territory')) out += '<section class="pn-card"><h2>منطقهٔ فعالیت و فروش من</h2>' + chips(p) + areaView(p) + '</section>';
-    if (MSRoles.hasField(p.role, 'proformas')) out += '<section class="pn-card"><h2>پیش‌فاکتورهای من</h2><div class="pn-stats"><div><span>تعداد کل</span><b>' + faInt.format(mine.length) + '</b></div>' +
+    var home = notifyView();
+    if (MSRoles.hasField(p.role, 'territory')) home += '<section class="pn-card"><h2>منطقهٔ فعالیت و فروش من</h2>' + chips(p) + areaView(p) + '</section>';
+    if (MSRoles.hasField(p.role, 'proformas')) home += '<section class="pn-card"><h2>پیش‌فاکتورهای من</h2><div class="pn-stats"><div><span>تعداد کل</span><b>' + faInt.format(mine.length) + '</b></div>' +
       '<div><span>مجموع این ماه (شمسی)</span><b>' + monthTotals(mine) + '</b></div></div>' +
       (mine.length ? '<ul class="pn-list">' + mine.slice(0, 6).map(function (d) {
         return '<li><div><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.customer || 'بدون نام مشتری') + '</span></div><div><span>' + esc(faDate(d.createdAt)) + '</span><b>' + money(M.totals(d).total, d.unit) + '</b></div></li>';
       }).join('') + '</ul>' : '<p class="pn-note">هنوز پیش‌فاکتوری صادر نکرده‌اید.</p>') +
       '<a class="pn-link" href="./product-catalog.html">رفتن به کاتالوگ و ساخت پیش‌فاکتور</a></section>';
-    out += notifyView();
-    out += prefsView();
-    out += lookView();
-    out += publicView();
-    out += ticketsView();
-    out += commissionView();
-    if (can('team')) out += teamView();
+    var secs = { home: home, chat: publicView() + ticketsView(), comm: commissionView(), team: can('team') ? teamView() : '',
+      me: lookView() + meView() + prefsView() };
+    var keys = ['home', 'chat', 'comm', 'team', 'me'].filter(function (k) { return !!secs[k]; });
+    if (keys.indexOf(S.tab) < 0) S.tab = 'home';
+    out += '<nav class="pn-tabs" role="tablist" aria-label="بخش‌های پنل">' + keys.map(function (k) {
+      return '<button type="button" role="tab" class="pn-tab" data-tab="' + k + '" aria-selected="' + (S.tab === k) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICON[k] + '</svg><span>' + TAB_LABEL[k] + '</span></button>';
+    }).join('') + '</nav>';
+    out += '<div class="pn-tabpane" role="tabpanel">' + secs[S.tab] + '</div>';
     return out;
   }
   function teamView() {
@@ -898,6 +929,7 @@
       '<form id="editForm" class="pn-edit" data-id="' + esc(u.id) + '">' +
       '<label>نام و نام خانوادگی<input type="text" name="name" value="' + esc(u.name || '') + '" maxlength="60" required' + (can('people') ? '' : ' disabled') + '></label>' +
       '<label>تلفن<input type="tel" name="phone" dir="ltr" value="' + esc(u.phone || '') + '" maxlength="30"' + (can('people') ? '' : ' disabled') + '></label>' +
+      (can('people') ? '<label>کد ملی (۱۰ رقم)<input type="text" name="nationalId" dir="ltr" inputmode="numeric" maxlength="10" autocomplete="off" disabled></label>' : '') +
       (can('roleAdmin') && !self ? dropdown('role', 'نقش', [{ label: '', options: MSRoles.ORDER.map(function (r) { return { v: r, t: MSRoles.label(r) }; }) }], MSRoles.norm(u.role))
         : '<p class="pn-note">نقش: ' + esc(MSRoles.label(u.role)) + (can('roleAdmin') ? '' : ' (تغییر نقش فقط با مدیرعامل یا تکنولوژی سازمانی است)') + '</p>') +
       // fields that belong to one kind of role only; the block follows the chosen role
@@ -918,6 +950,8 @@
   // ----- actions
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-out]')) { auth.signOut(); return; }
+    var tb = e.target.closest('[data-tab]');
+    if (tb) { S.tab = tb.getAttribute('data-tab'); S.msg = ''; S.error = ''; render(); return; }
     var cy = e.target.closest('[data-comm-year]');
     if (cy) { S.comm.year = cy.getAttribute('data-comm-year'); S.comm.doc = null; S.comm.results = []; S.comm.mdoc = null; S.comm.mres = []; S.comm.msg = ''; S.comm.error = ''; render(); loadComm(); return; }
     if (e.target.closest('[data-tk-new]')) { S.tk.error = ''; dlg.innerHTML = tkNewForm(); dlg.showModal(); return; }
@@ -981,7 +1015,11 @@
     var ed = e.target.closest('[data-edit]');
     if (ed) {
       var u = S.team.filter(function (x) { return x.id === ed.getAttribute('data-edit'); })[0];
-      if (u) { S.error = ''; dlg.innerHTML = editForm(u); dlg.showModal(); }
+      if (u) {
+        S.error = ''; dlg.innerHTML = editForm(u); dlg.showModal();
+        var nf = dlg.querySelector('input[name=nationalId]');
+        if (nf) db.collection('personal').doc(u.id).get().then(function (s) { nf.value = s.exists ? String(s.data().nationalId || '') : ''; nf.disabled = false; }, function () { nf.disabled = false; });
+      }
       return;
     }
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
@@ -1004,8 +1042,9 @@
   document.addEventListener('change', function (e) {
     if (e.target && e.target.id === 'photoFile' && e.target.files && e.target.files[0]) {
       var file = e.target.files[0]; e.target.value = '';
-      if (file.size > 12 * 1024 * 1024) { S.look.msg = ''; S.error = 'عکس بزرگ‌تر از ۱۲ مگابایت است.'; render(); return; }
-      photoFrom(file).then(function (dataUrl) { return saveLook({ photo: dataUrl }); }, function () { S.look.msg = 'عکس خوانده نشد.'; render(); });
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { S.look.msg = 'فقط عکس JPG، PNG یا WebP پذیرفته می‌شود.'; render(); return; }
+      if (file.size > 12 * 1024 * 1024) { S.look.msg = 'عکس بزرگ‌تر از ۱۲ مگابایت است.'; render(); return; }
+      photoFrom(file).then(function (dataUrl) { return saveLook({ photo: dataUrl }); }, function (er) { S.look.msg = er && er.message === 'small' ? 'عکس خیلی کوچک است؛ دست‌کم ۱۲۸ پیکسل لازم است.' : 'عکس خوانده نشد.'; render(); });
       return;
     }
     var t = e.target;
@@ -1022,11 +1061,11 @@
       S.busy = true; render();
       auth.signInWithEmailAndPassword(v('email'), f.elements.password.value).then(null, function (err) { S.error = errText(err); S.busy = false; S.loading = false; render(); });
     } else if (f.id === 'meForm') {
+      var em = v('contactEmail').toLowerCase();
+      if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { S.error = 'نشانی ایمیل درست نیست.'; render(); return; }
       S.busy = true; render();
-      var ph = cleanPhone(v('phone'));
-      if (ph && !/^0\d{10}$/.test(ph)) { S.error = 'شمارهٔ تلفن باید ۱۱ رقم، فقط عدد و بدون کد کشور باشد.'; S.busy = false; render(); return; }
-      db.collection('users').doc(S.user.uid).update({ name: v('name'), phone: ph }).then(function () {
-        S.profile.name = v('name'); S.profile.phone = ph; S.msg = 'ذخیره شد. از این پس نام شما روی پیش‌فاکتورهای جدید همین است.';
+      db.collection('users').doc(S.user.uid).update({ contactEmail: em }).then(function () {
+        S.profile.contactEmail = em; S.msg = 'ذخیره شد.';
       }, function (err) { S.error = errText(err); }).then(function () { S.busy = false; render(); });
     } else if (f.id === 'tkNewForm') {
       var val = f.elements.to ? f.elements.to.value : 'role:sales_manager';
@@ -1067,7 +1106,11 @@
           data.cities = ''; data.regions = []; data.commissionRegions = [];
         }
       }
-      db.collection('users').doc(id).set(data, { merge: true }).then(function () { dlg.close(); load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(Object.assign({ id: id }, S.team.filter(function (x) { return x.id === id; })[0] || {}, data)); });
+      var nidIn = f.elements.nationalId, nid = nidIn ? cleanPhone(nidIn.value).replace(/^0+(?=\d{10,})/, '') : '';
+      if (nidIn && !nidIn.disabled) { nid = String(nidIn.value).replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); }).replace(/\D/g, ''); if (nid && !/^\d{10}$/.test(nid)) { S.error = 'کد ملی باید ۱۰ رقم باشد.'; dlg.innerHTML = editForm(Object.assign({ id: id }, known, data)); return; } }
+      db.collection('users').doc(id).set(data, { merge: true }).then(function () {
+        return (nidIn && !nidIn.disabled && can('people')) ? db.collection('personal').doc(id).set({ nationalId: nid, updatedAt: Date.now() }) : null;
+      }).then(function () { dlg.close(); load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(Object.assign({ id: id }, S.team.filter(function (x) { return x.id === id; })[0] || {}, data)); });
     }
   });
   render();
