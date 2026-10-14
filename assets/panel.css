@@ -234,3 +234,10 @@
 .pn-typing i:nth-child(3){animation-delay:.3s}
 @keyframes pn-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 @media(prefers-reduced-motion:reduce){.pn-typing i{animation:none;opacity:.7}}
+
+/* composer: no scrollbar arrows or resize handle; few messages sit at the bottom next to the box, not at the top */
+.pn-composer textarea{overflow-x:hidden;overflow-y:auto;resize:none;white-space:pre-wrap;overflow-wrap:anywhere;scrollbar-width:none;-ms-overflow-style:none;box-sizing:border-box;align-self:stretch}
+.pn-composer textarea::-webkit-scrollbar{display:none}
+.pn-composer textarea::-webkit-resizer{display:none}
+.pn-feed>li:first-child{margin-top:auto}
+.pn-feed{scrollbar-width:thin}
