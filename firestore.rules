@@ -1,10 +1,20 @@
 rules_version = '2';
 
 // Max Silver portal.
-//   users/{uid}      role: 'manager' | 'visitor', name, phone, code, regions[], cities, active — a visitor edits only name and phone
-//   invoices/{uid}_{docNo}   one saved proforma per document, owned by the visitor who issued it
-//   prices/{uid}     remembered unit prices of one visitor
+//   users/{uid}      role (see below), name, phone, code, regions[], cities, active
+//   invoices/{uid}_{docNo}   one saved proforma per document, owned by the specialist who issued it
+//   prices/{uid}     remembered unit prices of one specialist
 // Nobody is let in until a users/{uid} document exists for their account.
+//
+// Roles (assets/roles.js carries the same table for the interface; keep the two in step):
+//   manager          legacy general manager: everything below
+//   ceo              approves roles and policy; sees every proforma
+//   sales_manager    sees every proforma and the team; edits provinces and cities of specialists
+//   visitor          regional sales specialist: own proformas and own profile only
+//   accounting       accounting and account manager: sees every proforma (settlement control)
+//   finance, operations, production, service, marketing, hr, it
+//                    no proforma access except where listed; hr edits name, phone, active; it reads proformas and the team
+// Only manager, ceo and it create accounts or change role and code. Nobody may change their own role.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -13,13 +23,24 @@ service cloud.firestore {
     function approved() {
       return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && profile().get('active', true) != false;
     }
-    function isManager() { return approved() && profile().role == 'manager'; }
+    function hasRole(list) { return approved() && profile().get('role', 'visitor') in list; }
+
+    function isManager() { return hasRole(['manager', 'ceo']); }                                   // delete proformas, approve
+    function seesAllInvoices() { return hasRole(['manager', 'ceo', 'sales_manager', 'accounting', 'it']); }
+    function seesTeam() { return hasRole(['manager', 'ceo', 'sales_manager', 'hr', 'it']); }
+    function adminsRoles() { return hasRole(['manager', 'ceo', 'it']); }                           // create, delete, role, code
+    function editsPeople() { return hasRole(['hr']); }                                             // name, phone, active
+    function editsTerritory() { return hasRole(['sales_manager']); }                               // regions, cities
 
     match /users/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || isManager());
-      allow create, delete: if isManager();
-      // a visitor may edit only their own display name and phone; role, code, regions and active are the manager's
-      allow update: if isManager()
+      allow read: if signedIn() && (request.auth.uid == uid || seesTeam());
+      allow create, delete: if adminsRoles();
+      allow update: if adminsRoles()
+        || (editsPeople() && request.auth.uid != uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'active']))
+        || (editsTerritory()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['regions', 'cities', 'commissionRegions']))
+        // anyone may edit only their own display name and phone; role, code, regions and active stay with the roles above
         || (approved() && request.auth.uid == uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone'])
             && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
@@ -27,7 +48,7 @@ service cloud.firestore {
     }
 
     match /invoices/{id} {
-      allow read: if approved() && (resource.data.ownerUid == request.auth.uid || isManager());
+      allow read: if approved() && (resource.data.ownerUid == request.auth.uid || seesAllInvoices());
       allow create: if approved()
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.docNo is string
@@ -41,6 +62,30 @@ service cloud.firestore {
         && request.resource.data.lines is list
         && request.resource.data.lines.size() <= 200;
       allow delete: if approved() && (resource.data.ownerUid == request.auth.uid || isManager());
+    }
+
+    // Commission: rates per region and year. Finance drafts, the sales manager marks them reviewed, the CEO approves and
+    // publishes one result document per region. Nobody who earns commission can read the rate table; a specialist reads
+    // only the approved result of the regions listed in their own users/{uid}.commissionRegions.
+    function commissionReaders() { return hasRole(['manager', 'ceo', 'sales_manager', 'finance', 'it']); }
+
+    match /commission_rates/{year} {
+      allow read: if commissionReaders();
+      allow create: if hasRole(['finance']) && request.resource.data.status == 'draft';
+      allow update: if
+        (hasRole(['finance']) && resource.data.status != 'approved' && request.resource.data.status == 'draft')
+        || (hasRole(['sales_manager']) && resource.data.status == 'draft' && request.resource.data.status == 'reviewed'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedBy', 'reviewedAt']))
+        || (isManager() && resource.data.status == 'reviewed' && request.resource.data.status == 'approved'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approvedBy', 'approvedAt']));
+      allow delete: if false;
+    }
+
+    match /commission_results/{id} {
+      allow read: if commissionReaders()
+        || (approved() && resource.data.status == 'approved' && resource.data.region in profile().get('commissionRegions', []));
+      allow create, update: if isManager() && request.resource.data.status == 'approved';
+      allow delete: if false;
     }
 
     match /prices/{uid} {

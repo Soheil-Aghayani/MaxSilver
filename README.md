@@ -48,6 +48,13 @@
 python tools/localize_images.py
 ```
 
+## نقش‌ها و دسترسی
+
+- هر حساب یک `role` در `users/{uid}` دارد: `visitor` (کارشناس فروش و توسعه بازار)، `sales_manager`، `accounting` (حسابداری و اکانت منیجر)، `finance`، `operations`، `production`، `service`، `marketing`، `hr`، `ceo`، `it` و `manager` (مدیر عمومی قدیمی).
+- جدول دسترسی یک‌جا در [`assets/roles.js`](assets/roles.js) و همان در [`firestore.rules`](firestore.rules) است؛ هر تغییر باید در هر دو انجام شود. پنهان‌کردن در صفحه فقط ناوبری است و اجرای واقعی با قوانین Firestore است.
+- فناوری (`it`) همه‌چیز را می‌خواند و فقط تأییدی ندارد؛ نقش و کد را فقط `manager`، `ceo` و `it` تغییر می‌دهند.
+- **پورسانت:** نرخ هر منطقه در سال را مالی (پیش‌نویس) وارد می‌کند، مدیر فروش بررسی و مدیرعامل تأیید می‌کند (`commission_rates`)؛ با تأیید، نتیجهٔ هر منطقه منتشر می‌شود (`commission_results`) و کارشناس فقط منطقهٔ خودش را می‌بیند. عددها در صفحهٔ عمومی نیستند.
+- پس از تغییر `firestore.rules` آن را در Firebase ← Firestore ← Rules منتشر کنید؛ پوش‌کردن مخزن قوانین را عوض نمی‌کند.
 ## اجرای محلی
 
 ```powershell

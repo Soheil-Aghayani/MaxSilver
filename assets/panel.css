@@ -59,3 +59,12 @@
 .pn-table tbody tr:nth-child(even) td{background:#f3f5f7}.pn-table tfoot td{background:#fff7d6;font-weight:900;color:var(--ms-navy)}
 @media(max-width:720px){.pn{padding:12px 12px 24px}.pn-hero{grid-template-columns:auto 1fr}.pn-hero .pn-secondary{grid-column:1/-1}.pn-stats{grid-template-columns:1fr}.pn-user{flex-direction:column}}
 .pn-card .pn-primary{width:100%}
+
+/* commission */
+.pn-years{margin:2px 0 10px}
+.pn-year{min-height:40px;padding:0 16px;border:1px solid var(--ms-line);border-radius:999px;background:#fff;color:var(--ms-navy);font:800 13px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+.pn-year[aria-pressed=true]{background:var(--ms-navy);border-color:var(--ms-navy);color:#fff}
+.pn-comm input[type=number]{width:84px;min-height:38px;padding:4px 8px;border:1px solid var(--ms-line);border-radius:10px;text-align:center;font:inherit}
+.pn-comm input[type=number]:focus{outline:3px solid #90adff;outline-offset:1px}
+.pn-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.pn-actions .pn-primary,.pn-actions .pn-secondary{width:auto;flex:1 1 180px}

@@ -92,7 +92,7 @@
     var first = S.profile ? Promise.resolve() : loadProfile();
     return first.then(function () {
       if (!approved()) return null;
-      var manager = activeProfile().role === 'manager';
+      var manager = !!(window.MSRoles && window.MSRoles.can(activeProfile().role, 'invoices'));
       var q = manager ? db.collection('invoices') : db.collection('invoices').where('ownerUid', '==', uid);
       return withTimeout(Promise.all([q.get(), db.collection('prices').doc(uid).get()])).then(function (res) {
         var mine = [], others = [];
@@ -189,7 +189,7 @@
     if (!p) {
       return head + '<div class="acc-body"><p class="acc-note">این حساب توسط مدیر غیرفعال شده است.</p>' + err + '<button type="button" class="acc-secondary" data-acc-out>خروج</button></div>';
     }
-    var n = pendingDocs().length, role = p.role === 'manager' ? 'مدیر' : 'ویزیتور';
+    var n = pendingDocs().length, role = window.MSRoles ? window.MSRoles.label(p.role) : 'ویزیتور';
     var status = S.busy ? 'در حال همگام‌سازی…' : S.last ? 'آخرین همگام‌سازی: ' + esc(faTime.format(new Date(S.last))) : 'هنوز در این نشست همگام‌سازی نشده است.';
     return head + '<div class="acc-body"><div class="acc-id"><b>' + esc(p.name || (S.user && S.user.email) || '') + '</b><span class="acc-role">' + role + '</span></div>' +
       '<p class="acc-note" dir="ltr">' + esc((S.user && S.user.email) || '') + '</p>' +

@@ -39,7 +39,7 @@
   dlg.className = 'pn-dialog';
   document.body.appendChild(dlg);
 
-  var isManager = function () { return !!(S.profile && S.profile.role === 'manager' && S.profile.active !== false); };
+  var can = function (area) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, area)); };
   var active = function () { return !!(S.profile && S.profile.active !== false); };
 
   // ----- data
@@ -51,8 +51,8 @@
       S.profile = snap.exists ? snap.data() : null;
       try { localStorage.setItem('ms-role', active() ? (S.profile.role || '') : ''); } catch (x) { /* ignore */ }
       if (!active()) return null;
-      var q = isManager() ? db.collection('invoices') : db.collection('invoices').where('ownerUid', '==', uid);
-      return Promise.race([Promise.all([q.get(), isManager() ? db.collection('users').get() : null]), timeout]).then(function (res) {
+      var q = can('invoices') ? db.collection('invoices') : db.collection('invoices').where('ownerUid', '==', uid);
+      return Promise.race([Promise.all([q.get(), can('team') ? db.collection('users').get() : null]), timeout]).then(function (res) {
         S.docs = [];
         res[0].forEach(function (s) { S.docs.push(s.data()); });
         S.docs.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
@@ -65,7 +65,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); });
+    }).then(function () { S.loading = false; render(); loadComm(); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -139,6 +139,131 @@
     var keys = Object.keys(by);
     return keys.length ? keys.map(function (u) { return money(by[u], u); }).join(' + ') : '—';
   }
+  // ----- commission: rates by region and year (finance drafts, sales manager reviews, CEO approves). The income base is the
+  // yearly regional sales already in this page's data (MS_AREA); the rates and results live only in Firestore behind the rules.
+  var faTwo = new Intl.NumberFormat('fa-IR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var faPct = new Intl.NumberFormat('fa-IR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  var RATE_MIN = 0.5, RATE_MAX = 1.5;
+  var COMM_LABEL = { none: 'ثبت نشده', draft: 'پیش‌نویس مالی', reviewed: 'بررسی‌شدهٔ مدیر فروش', approved: 'تأییدشدهٔ مدیرعامل' };
+  S.comm = { year: '', doc: null, results: [], loading: false, busy: false, msg: '', error: '' };
+  function provinceToRegion() {
+    var m = {};
+    Object.keys(REGIONS).forEach(function (g) { REGIONS[g].forEach(function (p) { m[p] = g; }); });
+    return m;
+  }
+  function regionsOf(provinces) {
+    var m = provinceToRegion(), seen = {}, out = [];
+    (provinces || []).forEach(function (p) { var g = m[p]; if (g && !seen[g]) { seen[g] = true; out.push(g); } });
+    return out;
+  }
+  function commYears() { return window.MS_AREA && window.MS_AREA.years ? window.MS_AREA.years.slice() : []; }
+  function regionIncome(year) {
+    var out = {}, m = provinceToRegion();
+    Object.keys(REGIONS).forEach(function (g) { out[g] = 0; });
+    if (window.MS_AREA) window.MS_AREA.rows.forEach(function (r) { if (String(r.year) === String(year) && m[r.province]) out[m[r.province]] += r.sales || 0; });
+    return out;
+  }
+  function commOwnRegions() { return (S.profile && S.profile.commissionRegions) || []; }
+  function loadComm() {
+    if (!S.profile || !active() || !S.user) return;
+    var yrs = commYears();
+    if (!yrs.length) return;
+    if (!S.comm.year) S.comm.year = String(yrs[yrs.length - 1]);
+    var y = S.comm.year, p = null;
+    if (can('commission')) {
+      p = db.collection('commission_rates').doc(y).get().then(function (s) { S.comm.doc = s.exists ? s.data() : null; });
+    } else if (commOwnRegions().length) {
+      // one document per region, read by id: a rule that depends on the caller's profile cannot be proven for a query
+      var names = Object.keys(REGIONS);
+      p = Promise.all(commOwnRegions().map(function (g) {
+        var i = names.indexOf(g);
+        return i < 0 ? null : db.collection('commission_results').doc(y + '_' + (i + 1)).get().then(function (s) { return s.exists ? s.data() : null; }, function () { return null; });
+      })).then(function (list) { S.comm.results = list.filter(Boolean); });
+    }
+    if (!p) return;
+    S.comm.loading = true; S.comm.error = ''; render();
+    p.then(null, function (e) { S.comm.error = errText(e); }).then(function () { S.comm.loading = false; render(); });
+  }
+  function commYearChips() {
+    return '<div class="pn-chips pn-years" role="group" aria-label="سال">' + commYears().map(function (y) {
+      return '<button type="button" class="pn-year" data-comm-year="' + y + '" aria-pressed="' + (String(y) === S.comm.year) + '">' + faInt.format(y).replace(/٬/g, '') + '</button>';
+    }).join('') + '</div>';
+  }
+  function commissionView() {
+    var C = S.comm;
+    if (!commYears().length) return '';
+    if (!can('commission')) {
+      if (!commOwnRegions().length) return '';
+      var mine = C.results.filter(function (r) { return r.status === 'approved'; });
+      return '<section class="pn-card pn-comm"><h2>پورسانت من</h2>' + commYearChips() +
+        (C.error ? '<p class="pn-err" role="alert">' + esc(C.error) + '</p>' : '') +
+        (mine.length ? '<div class="pn-scroll"><table class="pn-table"><thead><tr><th>منطقه</th><th>درآمد سالانه (میلیارد تومان)</th><th>نرخ</th><th>پورسانت (میلیارد تومان)</th></tr></thead><tbody>' +
+          mine.map(function (r) { return '<tr><td>' + esc(r.region) + '</td><td>' + faOne.format(r.income) + '</td><td>' + faPct.format(r.rate) + '٪</td><td>' + faTwo.format(r.commission) + '</td></tr>'; }).join('') +
+          '</tbody></table></div>' : '<p class="pn-note">' + (C.loading ? 'در حال بارگذاری…' : 'برای این سال نتیجهٔ تأییدشده‌ای برای منطقهٔ شما منتشر نشده است.') + '</p>') + '</section>';
+    }
+    var doc = C.doc, rates = (doc && doc.rates) || {}, status = doc ? doc.status : 'none', inc = regionIncome(C.year);
+    var editable = can('commissionEdit') && status !== 'approved';
+    var tot = 0, totInc = 0;
+    var rows = Object.keys(REGIONS).map(function (g) {
+      var r = rates[g], cm = r == null ? null : inc[g] * r / 100;
+      totInc += inc[g]; if (cm != null) tot += cm;
+      return '<tr><td>' + esc(g) + '</td><td>' + faOne.format(inc[g]) + '</td><td>' +
+        (editable ? '<input type="number" inputmode="decimal" dir="ltr" data-rate="' + esc(g) + '" min="' + RATE_MIN + '" max="' + RATE_MAX + '" step="0.05" value="' + (r == null ? '' : r) + '" aria-label="نرخ ' + esc(g) + '">'
+          : (r == null ? '—' : faPct.format(r) + '٪')) + '</td><td>' + (cm == null ? '—' : faTwo.format(cm)) + '</td></tr>';
+    }).join('');
+    var acts = '';
+    if (editable) acts += '<button type="button" class="pn-secondary" data-comm-act="save"' + (C.busy ? ' disabled' : '') + '>ذخیرهٔ پیش‌نویس</button>';
+    if (can('commissionReview') && status === 'draft') acts += '<button type="button" class="pn-primary" data-comm-act="review"' + (C.busy ? ' disabled' : '') + '>تأیید بررسی</button>';
+    if (can('commissionApprove') && status === 'reviewed') acts += '<button type="button" class="pn-primary" data-comm-act="approve"' + (C.busy ? ' disabled' : '') + '>تأیید نهایی و انتشار</button>';
+    return '<section class="pn-card pn-comm"><h2>پورسانت مناطق</h2>' + commYearChips() +
+      '<p class="pn-note"><span class="pn-chip">' + esc(COMM_LABEL[status] || COMM_LABEL.none) + '</span> مبنا: درآمد سالانهٔ هر منطقه؛ نرخ بین ' + faPct.format(RATE_MIN) + ' تا ' + faPct.format(RATE_MAX) + ' درصد.</p>' +
+      '<div class="pn-scroll"><table class="pn-table"><thead><tr><th>منطقه</th><th>درآمد (میلیارد تومان)</th><th>نرخ ٪</th><th>پورسانت (میلیارد تومان)</th></tr></thead><tbody>' + rows +
+      '</tbody><tfoot><tr><td>جمع</td><td>' + faOne.format(totInc) + '</td><td>—</td><td>' + faTwo.format(tot) + '</td></tr></tfoot></table></div>' +
+      (C.msg ? '<p class="pn-ok" role="status">' + esc(C.msg) + '</p>' : '') + (C.error ? '<p class="pn-err" role="alert">' + esc(C.error) + '</p>' : '') +
+      (acts ? '<div class="pn-actions">' + acts + '</div>' : '') +
+      '<p class="pn-note">فقط مالی نرخ را وارد می‌کند، مدیر فروش بررسی و مدیرعامل تأیید می‌کند. کارشناس فروش فقط نتیجهٔ منطقهٔ خودش را می‌بیند.</p></section>';
+  }
+  function commAct(kind) {
+    var C = S.comm, y = C.year, uid = S.user.uid, ref = db.collection('commission_rates').doc(y), now = Date.now();
+    C.msg = ''; C.error = '';
+    var rates = {}, bad = false, filled = 0;
+    var inputs = root.querySelectorAll('input[data-rate]');
+    if (inputs.length) {
+      Array.prototype.forEach.call(inputs, function (el) {
+        var raw = el.value.trim();
+        if (raw === '') return;
+        var v = parseFloat(raw);
+        if (!(v >= RATE_MIN && v <= RATE_MAX)) { bad = true; return; }
+        rates[el.getAttribute('data-rate')] = v; filled++;
+      });
+    } else { rates = (C.doc && C.doc.rates) || {}; filled = Object.keys(rates).length; }
+    var all = Object.keys(REGIONS).length;
+    var done = function (m) { C.busy = false; if (m) C.msg = m; render(); loadComm(); };
+    var fail = function (e) { C.busy = false; C.error = errText(e); render(); };
+    if (kind === 'save') {
+      if (bad) { C.error = 'نرخ هر منطقه باید بین ' + faPct.format(RATE_MIN) + ' تا ' + faPct.format(RATE_MAX) + ' درصد باشد.'; render(); return; }
+      if (!filled) { C.error = 'دست‌کم نرخ یک منطقه را وارد کنید.'; render(); return; }
+      C.busy = true; render();
+      ref.set({ year: y, rates: rates, status: 'draft', updatedBy: uid, updatedAt: now }).then(function () { done('پیش‌نویس ذخیره شد.'); }, fail);
+    } else if (kind === 'review') {
+      if (Object.keys(rates).length < all) { C.error = 'برای بررسی باید نرخ هر شش منطقه ثبت شده باشد.'; render(); return; }
+      C.busy = true; render();
+      ref.update({ status: 'reviewed', reviewedBy: uid, reviewedAt: now }).then(function () { done('بررسی ثبت شد؛ منتظر تأیید مدیرعامل.'); }, fail);
+    } else if (kind === 'approve') {
+      if (Object.keys(rates).length < all) { C.error = 'نرخ هر شش منطقه باید ثبت شده باشد.'; render(); return; }
+      C.busy = true; render();
+      var inc = regionIncome(y), batch = db.batch();
+      batch.update(ref, { status: 'approved', approvedBy: uid, approvedAt: now });
+      Object.keys(REGIONS).forEach(function (g, i) {
+        batch.set(db.collection('commission_results').doc(y + '_' + (i + 1)), {
+          year: y, region: g, income: inc[g], rate: rates[g], commission: inc[g] * rates[g] / 100,
+          status: 'approved', approvedBy: uid, approvedAt: now
+        });
+      });
+      batch.commit().then(function () { done('نرخ‌ها تأیید و نتیجهٔ مناطق منتشر شد.'); }, fail);
+    }
+  }
+
   function view() {
     if (S.loading) return '<p class="pn-note">در حال بارگذاری…</p>';
     if (!S.user) {
@@ -159,7 +284,7 @@
     var out = '';
     out += '<section class="pn-card pn-hero"><div class="pn-avatar" aria-hidden="true">' + esc((p.name || S.user.email || '؟').trim().charAt(0)) + '</div>' +
       '<div><h2>' + esc(p.name || S.user.email) + '</h2><p class="pn-note" dir="ltr">' + esc(S.user.email) + '</p>' +
-      '<span class="pn-role">' + (isManager() ? 'مدیر' : 'ویزیتور') + '</span>' + (p.code ? ' <span class="pn-chip" dir="ltr">' + esc(p.code) + '</span>' : '') + '</div>' +
+      '<span class="pn-role">' + esc(MSRoles.label(p.role)) + '</span>' + (p.code ? ' <span class="pn-chip" dir="ltr">' + esc(p.code) + '</span>' : '') + '</div>' +
       '<button type="button" class="pn-secondary" data-out>خروج</button></section>';
     out += '<section class="pn-card"><h2>اطلاعات من</h2><form id="meForm">' +
       '<label>نام و نام خانوادگی (روی پیش‌فاکتور چاپ می‌شود)<input type="text" name="name" value="' + esc(p.name || '') + '" maxlength="60" required></label>' +
@@ -174,7 +299,8 @@
         return '<li><div><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.customer || 'بدون نام مشتری') + '</span></div><div><span>' + esc(faDate(d.createdAt)) + '</span><b>' + money(M.totals(d).total, d.unit) + '</b></div></li>';
       }).join('') + '</ul>' : '<p class="pn-note">هنوز پیش‌فاکتوری صادر نکرده‌اید.</p>') +
       '<a class="pn-link" href="./product-catalog.html">رفتن به کاتالوگ و ساخت پیش‌فاکتور</a></section>';
-    if (isManager()) out += teamView();
+    out += commissionView();
+    if (can('team')) out += teamView();
     return out;
   }
   function teamView() {
@@ -183,18 +309,18 @@
     var rows = S.team.sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'fa'); }).map(function (u) {
       var docs = byOwner[u.id] || [];
       return '<li class="pn-user' + (u.active === false ? ' off' : '') + '"><div><b>' + esc(u.name || '—') + '</b>' +
-        '<span class="pn-role">' + (u.role === 'manager' ? 'مدیر' : 'ویزیتور') + '</span>' + (u.active === false ? ' <span class="pn-chip off">غیرفعال</span>' : '') +
+        '<span class="pn-role">' + esc(MSRoles.label(u.role)) + '</span>' + (u.active === false ? ' <span class="pn-chip off">غیرفعال</span>' : '') +
         '<p class="pn-note">' + faInt.format(docs.length) + ' پیش‌فاکتور · این ماه: ' + monthTotals(docs) + '</p>' +
         '<div class="pn-chips">' + (u.regions || []).map(function (r) { return '<span class="pn-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
         (u.cities ? '<p class="pn-note">' + esc(u.cities) + '</p>' : '') + '</div>' +
         '<button type="button" class="pn-secondary" data-edit="' + esc(u.id) + '">ویرایش</button></li>';
     }).join('');
-    return '<section class="pn-card"><h2>تیم فروش</h2><ul class="pn-users">' + rows + '</ul>' +
-      '<form id="addForm" class="pn-add"><h3>افزودن ویزیتور</h3>' +
-      '<p class="pn-note">ابتدا در Firebase ← Authentication ← Users کاربر را بسازید و «User UID» را اینجا بچسبانید.</p>' +
-      '<label>User UID<input type="text" name="uid" dir="ltr" required pattern="[A-Za-z0-9]{10,}" title="فقط حروف و عدد"></label>' +
-      '<label>نام و نام خانوادگی<input type="text" name="name" required maxlength="60"></label>' +
-      '<button type="submit" class="pn-primary">افزودن</button></form></section>';
+    return '<section class="pn-card"><h2>تیم</h2><ul class="pn-users">' + rows + '</ul>' +
+      (can('roleAdmin') ? '<form id="addForm" class="pn-add"><h3>افزودن کاربر</h3>' +
+        '<p class="pn-note">ابتدا در Firebase ← Authentication ← Users کاربر را بسازید و «User UID» را اینجا بچسبانید. نقش اولیه کارشناس فروش است؛ پس از افزودن از «ویرایش» تغییر دهید.</p>' +
+        '<label>User UID<input type="text" name="uid" dir="ltr" required pattern="[A-Za-z0-9]{10,}" title="فقط حروف و عدد"></label>' +
+        '<label>نام و نام خانوادگی<input type="text" name="name" required maxlength="60"></label>' +
+        '<button type="submit" class="pn-primary">افزودن</button></form>' : '') + '</section>';
   }
   function editForm(u) {
     var self = u.id === S.user.uid;
@@ -206,15 +332,15 @@
     return '<div class="pn-bar"><h2 id="dlgName">ویرایش ' + esc(u.name || 'کاربر') + '</h2><button type="button" class="pn-x" data-close aria-label="بستن">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>' +
       '<form id="editForm" class="pn-edit" data-id="' + esc(u.id) + '">' +
-      '<label>نام و نام خانوادگی<input type="text" name="name" value="' + esc(u.name || '') + '" maxlength="60" required></label>' +
-      '<label>تلفن<input type="tel" name="phone" dir="ltr" value="' + esc(u.phone || '') + '" maxlength="30"></label>' +
-      '<fieldset class="pn-seg"><legend>نقش</legend>' +
-        '<label><input type="radio" name="role" value="visitor"' + (u.role !== 'manager' ? ' checked' : '') + (self ? ' disabled' : '') + '><span>ویزیتور</span></label>' +
-        '<label><input type="radio" name="role" value="manager"' + (u.role === 'manager' ? ' checked' : '') + (self ? ' disabled' : '') + '><span>مدیر</span></label></fieldset>' +
-      '<label>کد برای شمارهٔ سند (حروف و عدد لاتین)<input type="text" name="code" dir="ltr" value="' + esc(u.code || '') + '" maxlength="6" pattern="[A-Za-z0-9]*"></label>' +
-      '<label class="pn-check"><input type="checkbox" name="active"' + (u.active === false ? '' : ' checked') + (self ? ' disabled' : '') + '><span>حساب فعال است</span></label>' +
-      '<h3>استان‌های منطقهٔ فعالیت</h3>' + regs +
-      '<label>شهرها و توضیحات منطقه<textarea name="cities" rows="3" maxlength="400" placeholder="مثلاً: تبریز، مراغه، اهر">' + esc(u.cities || '') + '</textarea></label>' +
+      '<label>نام و نام خانوادگی<input type="text" name="name" value="' + esc(u.name || '') + '" maxlength="60" required' + (can('people') ? '' : ' disabled') + '></label>' +
+      '<label>تلفن<input type="tel" name="phone" dir="ltr" value="' + esc(u.phone || '') + '" maxlength="30"' + (can('people') ? '' : ' disabled') + '></label>' +
+      (can('roleAdmin') ? '<fieldset class="pn-seg"><legend>نقش</legend>' + MSRoles.ORDER.map(function (r) {
+        return '<label><input type="radio" name="role" value="' + r + '"' + ((u.role || 'visitor') === r ? ' checked' : '') + (self ? ' disabled' : '') + '><span>' + esc(MSRoles.label(r)) + '</span></label>';
+      }).join('') + '</fieldset>' : '<p class="pn-note">نقش: ' + esc(MSRoles.label(u.role)) + ' (تغییر نقش فقط با مدیرعامل یا فناوری است)</p>') +
+      (can('roleAdmin') ? '<label>کد برای شمارهٔ سند (حروف و عدد لاتین)<input type="text" name="code" dir="ltr" value="' + esc(u.code || '') + '" maxlength="6" pattern="[A-Za-z0-9]*"></label>' : '') +
+      (can('people') ? '<label class="pn-check"><input type="checkbox" name="active"' + (u.active === false ? '' : ' checked') + (self ? ' disabled' : '') + '><span>حساب فعال است</span></label>' : '') +
+      (can('territory') ? '<h3>استان‌های منطقهٔ فعالیت</h3>' + regs +
+      '<label>شهرها و توضیحات منطقه<textarea name="cities" rows="3" maxlength="400" placeholder="مثلاً: تبریز، مراغه، اهر">' + esc(u.cities || '') + '</textarea></label>' : '') +
       (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<button type="submit" class="pn-primary">ذخیره</button></form>';
   }
@@ -223,6 +349,10 @@
   // ----- actions
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-out]')) { auth.signOut(); return; }
+    var cy = e.target.closest('[data-comm-year]');
+    if (cy) { S.comm.year = cy.getAttribute('data-comm-year'); S.comm.doc = null; S.comm.results = []; S.comm.msg = ''; S.comm.error = ''; render(); loadComm(); return; }
+    var ca = e.target.closest('[data-comm-act]');
+    if (ca) { commAct(ca.getAttribute('data-comm-act')); return; }
     var ed = e.target.closest('[data-edit]');
     if (ed) {
       var u = S.team.filter(function (x) { return x.id === ed.getAttribute('data-edit'); })[0];
@@ -247,12 +377,15 @@
       db.collection('users').doc(v('uid')).set({ name: v('name'), role: 'visitor', active: true, regions: [], cities: '' }).then(function () { load(); }, function (err) { S.error = errText(err); render(); });
     } else if (f.id === 'editForm') {
       var id = f.getAttribute('data-id'), self = id === S.user.uid;
-      var data = {
-        name: v('name'), phone: v('phone'), code: v('code').toUpperCase(), cities: v('cities'),
-        regions: Array.prototype.map.call(f.querySelectorAll('input[name=reg]:checked'), function (c) { return c.value; })
-      };
-      if (!self) { data.role = f.querySelector('input[name=role]:checked').value; data.active = f.elements.active.checked; }
-      db.collection('users').doc(id).set(data, { merge: true }).then(function () { dlg.close(); load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(Object.assign({ id: id }, data)); });
+      var data = {};   // only the fields this role is allowed to change, so the rules see no foreign key
+      if (can('people')) { data.name = v('name'); data.phone = v('phone'); if (!self) data.active = f.elements.active.checked; }
+      if (can('roleAdmin')) { data.code = v('code').toUpperCase(); if (!self) data.role = f.querySelector('input[name=role]:checked').value; }
+      if (can('territory')) {
+        data.cities = v('cities');
+        data.regions = Array.prototype.map.call(f.querySelectorAll('input[name=reg]:checked'), function (c) { return c.value; });
+        data.commissionRegions = regionsOf(data.regions);   // the regions whose commission result this person may read
+      }
+      db.collection('users').doc(id).set(data, { merge: true }).then(function () { dlg.close(); load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(Object.assign({ id: id }, S.team.filter(function (x) { return x.id === id; })[0] || {}, data)); });
     }
   });
   render();
