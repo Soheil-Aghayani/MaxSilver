@@ -1,12 +1,12 @@
 // Notifications that are always in view and live.
 //  - A red count on the profile icon of the navigation bar (every page) and the list at the top of the panel.
 //  - Live: listeners on the database keep the count current while any page of the app is open; a new message pops up at once.
-//  - Channels, chosen by each person in the panel: none, push (system notification + in-page pop-up), email, or both.
+//  - Channels, chosen by each person in the panel: push (system notification + in-page pop-up, the default) or none.
 //  - Delivery receipts: when this device sees a new message it records "received" on the conversation; opening it records "seen".
 // What is counted is only what waits for this person: conversations that need their reply, outside messages for their role,
 // and commission steps they must review or approve, plus proformas still unsent on this device.
 // Honest limits: a notification can only appear while the app is open or running in the background of the device. Reaching a
-// closed phone needs a server that sends it; email is sent by the person who writes (through EmailJS, see notify-config.js).
+// closed phone needs a server that sends it.
 (function (w) {
   'use strict';
   var KEY = 'ms-notify-v1', SEEN = 'ms-notify-seen-v1', PREFS = 'ms-notify-prefs-v1';
@@ -16,8 +16,9 @@
   function role() { try { return w.MSRoles ? w.MSRoles.norm(localStorage.getItem('ms-role') || '') : ''; } catch (e) { return ''; } }
   function j(key, fb) { try { var v = JSON.parse(localStorage.getItem(key) || 'null'); return v == null ? fb : v; } catch (e) { return fb; } }
   function put(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) { /* ignore */ } }
-  function prefs() { var p = j(PREFS, null) || {}; return { channels: p.channels || 'push', email: p.email || '' }; }
-  function setPrefs(p) { put(PREFS, { channels: p.channels || 'push', email: p.email || '' }); }
+  // only two choices exist; anything older (email, both) behaves as push
+  function prefs() { var p = j(PREFS, null) || {}; return { channels: p.channels === 'none' ? 'none' : 'push' }; }
+  function setPrefs(p) { put(PREFS, { channels: p.channels === 'none' ? 'none' : 'push' }); }
 
   // proformas saved on this device and not yet sent: only the vendors who issue them, counted from the device itself.
   // Online they normally send themselves within moments, so a short grace avoids flashing; offline they count at once.
@@ -70,7 +71,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function announce(title, body, url, tag) {
     var p = prefs();
-    if (p.channels !== 'push' && p.channels !== 'both') return;
+    if (p.channels !== 'push') return;
     var visible = document.visibilityState === 'visible' && (!document.hasFocus || document.hasFocus());
     if (visible || !('Notification' in w) || Notification.permission !== 'granted') { popup(title, body, url); return; }
     var opts = { body: body, tag: tag || 'ms', icon: './assets/branding/maxsilver-pwa-192.png', badge: './assets/branding/maxsilver-pwa-192.png', dir: 'rtl', lang: 'fa', data: { url: url || './panel.html' } };
@@ -222,40 +223,12 @@
     setInterval(paint, 60 * 1000);                    // a proforma that has waited past the grace appears without a reload
   }
 
-  // ---- email: sent by the person who writes, through EmailJS (the keys live in notify-config.js)
-  function emailConfig() {
-    if (w.MS_NOTIFY && w.MS_NOTIFY.emailjs) return Promise.resolve(w.MS_NOTIFY.emailjs);
-    return load('./assets/notify-config.js').then(function () { return (w.MS_NOTIFY && w.MS_NOTIFY.emailjs) || null; }, function () { return null; });
-  }
-  function emailReady() { return emailConfig().then(function (c) { return !!(c && c.service && c.template && c.key); }); }
-  // to: { uid } or { role }; returns how many mails were handed over
-  function emailTo(to, subject, text, link) {
-    return Promise.all([emailConfig(), ensureSdk()]).then(function (res) {
-      var c = res[0];
-      if (!c || !c.service || !c.template || !c.key) return 0;
-      if (!db) { var app = w.firebase.apps.length ? w.firebase.app() : w.firebase.initializeApp(w.MS_FIREBASE); db = w.firebase.firestore(app); }
-      var col = db.collection('notify_prefs');
-      var q = to.uid ? col.doc(to.uid).get().then(function (s) { return s.exists ? [Object.assign({ uid: s.id }, s.data())] : []; })
-        : col.where('role', '==', to.role).get().then(function (qs) { var a = []; qs.forEach(function (s) { a.push(Object.assign({ uid: s.id }, s.data())); }); return a; });
-      return q.then(function (people) {
-        var wanted = people.filter(function (p) { return p.uid !== me && (p.channels === 'email' || p.channels === 'both') && /@/.test(p.email || ''); });
-        return Promise.all(wanted.map(function (p) {
-          return fetch('https://api.emailjs.com/api/v1.0/email/send', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ service_id: c.service, template_id: c.template, user_id: c.key,
-              template_params: { to_email: p.email, to_name: p.name || '', subject: subject, message: text, link: new URL(link || './panel.html', location.href).href } })
-          }).then(function (r) { return r.ok ? 1 : 0; }, function () { return 0; });
-        })).then(function (r) { return r.reduce(function (a, b) { return a + b; }, 0); });
-      });
-    }).then(null, function () { return 0; });
-  }
-
   w.MSNotify = {
     items: items, total: function () { return total(items()); }, paint: paint,
     refresh: function () { start(); return Promise.resolve(); },
     prefs: prefs, setPrefs: setPrefs, askPermission: askPermission,
     permission: function () { return 'Notification' in w ? Notification.permission : 'unsupported'; },
-    emailReady: emailReady, emailTo: emailTo, announce: announce
+    announce: announce
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   w.addEventListener('storage', function (e) { if (e.key === 'ms-role') { started = false; start(); } });

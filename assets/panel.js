@@ -69,7 +69,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); if (window.MSNotify) window.MSNotify.refresh(true); });
+    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -415,6 +415,7 @@
       var by = {};
       res.forEach(function (snap) { snap.forEach(function (s) { var d = s.data(); d.id = s.id; by[d.id] = d; }); });
       S.tk.list = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+      var ids = [S.user.uid]; S.tk.list.forEach(function (x) { ids.push(x.fromUid, x.toUid); }); needProfiles(ids);
     }).then(null, function (e) { S.tk.error = errText(e); }).then(function () { S.tk.loading = false; render(); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   function createTicket(o) {
@@ -428,9 +429,7 @@
     var b = db.batch();
     b.set(ref, head);
     b.set(ref.collection('messages').doc(), { uid: me, name: myName(), role: myRole(), text: o.text, at: now });
-    return b.commit().then(function () {
-      if (window.MSNotify) window.MSNotify.emailTo(o.toUid ? { uid: o.toUid } : { role: o.toRole }, 'پیام تازه از ' + myName() + ': ' + o.title, o.text, './panel.html#tickets');
-    });
+    return b.commit();
   }
   function tkWaiting() {
     var mine = ['uid:' + S.user.uid, 'role:' + myRole()];   // general management reads everything but is only asked about its own
@@ -449,9 +448,38 @@
   function tkWhen(ms) { try { return new Intl.DateTimeFormat('fa-IR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
   // ----- the conversation list and the messenger window
   function hue(s) { var h = 0; s = String(s || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
-  function avatar(name, px) {
+  // each person's look: a picture or a colour, stored in profiles/{uid} (readable by people of the company)
+  var PROFILE_COLORS = ['#071b36', '#2456d8', '#0f766e', '#14804a', '#6b7a1a', '#b7791f', '#c2410c', '#b42318', '#be185d', '#6b3fc0', '#475467'];
+  var PROFILES = {}, profilePending = {}, profileTimer = 0;
+  function profOf(uid) { return uid ? PROFILES[uid] || null : null; }
+  function needProfiles(list) {
+    (list || []).forEach(function (uid) {
+      if (!uid || PROFILES[uid] !== undefined || profilePending[uid]) return;
+      profilePending[uid] = 1;
+      db.collection('profiles').doc(uid).get().then(function (s) { PROFILES[uid] = s.exists ? s.data() : null; }, function () { PROFILES[uid] = null; })
+        .then(function () {
+          delete profilePending[uid];
+          clearTimeout(profileTimer);
+          profileTimer = setTimeout(function () { render(); repaintChatLooks(); }, 60);
+        });
+    });
+  }
+  function colorOf(uid, name) { var p = profOf(uid); return p && p.color ? p.color : ''; }
+  function avatar(name, px, uid) {
+    var p = profOf(uid), size = px || 40;
+    if (p && p.photo) return '<span class="pn-av photo" style="--px:' + size + 'px" aria-hidden="true"><img src="' + esc(p.photo) + '" alt="" width="' + size + '" height="' + size + '"></span>';
     var ch = String(name || '').trim().charAt(0) || '؟';
-    return '<span class="pn-av" style="--h:' + hue(name) + ';--px:' + (px || 40) + 'px" aria-hidden="true">' + esc(ch) + '</span>';
+    var st = p && p.color ? '--c:' + p.color : '--h:' + hue(name);
+    return '<span class="pn-av' + (p && p.color ? ' tint' : '') + '" style="' + st + ';--px:' + size + 'px" aria-hidden="true">' + esc(ch) + '</span>';
+  }
+  // pictures that arrive while a conversation is open
+  function repaintChatLooks() {
+    if (!S.tk || !S.tk.open || !dlg.open) return;
+    var x = (S.tk.list || []).filter(function (k) { return k.id === S.tk.open; })[0];
+    if (!x) return;
+    var head = dlg.querySelector('.pn-chat-head .pn-av');
+    if (head) head.outerHTML = avatar(otherParty(x), 44, otherUidOf(x));
+    lastSig = ''; paintFeed(false);
   }
   function tkTime(ms) { try { return new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
   function tkDay(ms) { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
@@ -481,7 +509,7 @@
     var rows = T.list.map(function (x) {
       var other = otherParty(x), mineLast = x.lastBy === S.user.uid, waiting = !mineLast && x.status === 'open';
       return '<li><button type="button" class="pn-chat' + (x.status === 'closed' ? ' off' : '') + (waiting ? ' wait' : '') + '" data-tk-open="' + esc(x.id) + '">' +
-        avatar(other, 46) +
+        avatar(other, 46, otherUidOf(x)) +
         '<span class="pn-chat-main"><span class="pn-chat-top"><b>' + esc(x.title) + '</b><time>' + esc(tkTime(x.updatedAt)) + '</time></span>' +
         '<span class="pn-chat-sub">' + esc(other) + (x.kind === 'account-removal' ? ' · خودکار' : '') + (x.status === 'closed' ? ' · بسته' : '') + '</span>' +
         '<span class="pn-chat-last">' + (mineLast ? '<i class="pn-you">شما:</i> ' : '') + esc(x.lastText || '') + '</span></span>' +
@@ -531,8 +559,9 @@
       var mine = m.uid === me;
       if (newDay) out += '<li class="pn-day"><span>' + esc(tkDay(m.at)) + '</span></li>';
       out += '<li class="pn-row ' + (mine ? 'mine' : 'other') + (joinPrev ? '' : ' first') + (joinNext ? '' : ' last') + '">' +
-        (mine ? '' : '<span class="pn-row-av">' + (joinNext ? '' : avatar(m.name, 34)) + '</span>') +
-        '<div class="pn-bubble">' + (!mine && !joinPrev ? '<b class="pn-from">' + esc(m.name || '—') + '</b>' : '') +
+        (mine ? '' : '<span class="pn-row-av">' + (joinNext ? '' : avatar(m.name, 34, m.uid)) + '</span>') +
+        '<div class="pn-bubble"' + (mine && colorOf(me) ? ' style="background:' + colorOf(me) + '"' : '') + '>' +
+        (!mine && !joinPrev ? '<b class="pn-from"' + (colorOf(m.uid) ? ' style="color:' + colorOf(m.uid) + '"' : '') + '>' + esc(m.name || '—') + '</b>' : '') +
         '<p>' + esc(m.text) + '</p><span class="pn-meta"><time>' + esc(tkTime(m.at)) + '</time>' + (mine ? ticks(m.at) : '') + '</span></div></li>';
       prev = m;
     });
@@ -546,7 +575,7 @@
       (open ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.500 3 3 5-6"/></svg>'
             : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.700L3 8m0-5v5h5"/></svg>') + '</button>';
     return '<div class="pn-chat-head"><button type="button" class="pn-x" data-close aria-label="بستن">' + CLOSE_SVG + '</button>' +
-      avatar(other, 44) + '<div class="pn-chat-who"><b id="dlgName">' + esc(x.title) + '</b><span>' + esc(x.fromName || '—') + ' ← ' + esc(x.toName || MSRoles.label(x.toRole)) + (x.kind === 'account-removal' ? ' · خودکار' : '') + '</span>' +
+      avatar(other, 44, otherUidOf(x)) + '<div class="pn-chat-who"><b id="dlgName">' + esc(x.title) + '</b><span>' + esc(x.fromName || '—') + ' ← ' + esc(x.toName || MSRoles.label(x.toRole)) + (x.kind === 'account-removal' ? ' · خودکار' : '') + '</span>' +
       (otherUidOf(x) ? '<span class="pn-presence" id="tkPresence" hidden></span>' : '') + '</div>' + toggle + '</div>' +
       '<ul class="pn-feed" id="tkFeed">' + feedHtml() + '</ul>' +
       (S.tk.error ? '<p class="pn-err" role="alert">' + esc(S.tk.error) + '</p>' : '') +
@@ -616,6 +645,7 @@
     S.tk.cur = (S.tk.list.filter(function (k) { return k.id === id; })[0]) || {};
     offMsgs = ref.collection('messages').orderBy('at').onSnapshot(function (qs) {
       S.tk.msgs = []; qs.forEach(function (s) { S.tk.msgs.push(s.data()); });
+      needProfiles(S.tk.msgs.map(function (m) { return m.uid; }));
       paintFeed(first); first = false;
       markSeen(id);
     }, function (e) { S.tk.error = errText(e); dlg.innerHTML = tkThread(id); });
@@ -699,41 +729,91 @@
   }
   window.addEventListener('ms-notify', function () { if (S.profile) render(); });
 
-  // how this person wants to be told
-  S.prefs = { channels: 'push', email: '', msg: '', busy: false, emailOk: null };
+  // ---- my look: picture and colour
+  S.look = { busy: false, msg: '' };
+  function lookView() {
+    var me = S.user.uid, p = profOf(me) || {}, cur = p.color || '';
+    var sw = PROFILE_COLORS.map(function (c) {
+      return '<button type="button" role="radio" class="pn-sw" data-color="' + c + '" aria-checked="' + (cur === c) + '" aria-label="رنگ ' + c + '" style="--c:' + c + '"></button>';
+    }).join('');
+    return '<section class="pn-card pn-look"><h2>ظاهر پروفایل</h2>' +
+      '<div class="pn-look-row">' + avatar(S.profile.name || S.user.email, 76, me) +
+        '<div class="pn-look-actions"><button type="button" class="pn-secondary" data-photo-pick' + (S.look.busy ? ' disabled' : '') + '>' + (p.photo ? 'تغییر عکس' : 'انتخاب عکس') + '</button>' +
+        (p.photo ? '<button type="button" class="pn-ico" data-photo-del aria-label="حذف عکس" title="حذف عکس"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>' : '') +
+        '<input type="file" id="photoFile" accept="image/*" hidden></div></div>' +
+      '<p class="pn-note">رنگ پروفایل شما روی حباب پیام‌ها و آواتار دیده می‌شود.</p>' +
+      '<div class="pn-swatches" role="radiogroup" aria-label="رنگ پروفایل">' + sw + '</div>' +
+      (S.look.msg ? '<p class="pn-ok" role="status">' + esc(S.look.msg) + '</p>' : '') + '</section>';
+  }
+  function saveLook(patch) {
+    var me = S.user.uid, cur = profOf(me) || {};
+    var doc = { name: String(S.profile.name || '').slice(0, 60), color: cur.color || '', photo: cur.photo || '', updatedAt: Date.now() };
+    Object.keys(patch).forEach(function (k) { doc[k] = patch[k]; });
+    S.look.busy = true; S.look.msg = ''; render();
+    return db.collection('profiles').doc(me).set(doc).then(function () {
+      PROFILES[me] = doc; S.look.msg = 'ذخیره شد.';
+    }, function (err) { S.look.msg = ''; S.error = errText(err); }).then(function () { S.look.busy = false; render(); repaintChatLooks(); });
+  }
+  // a photo is cut to a centred square and shrunk to fit comfortably in one database document
+  function photoFrom(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        try {
+          var side = Math.min(img.width, img.height), c = document.createElement('canvas'), N = 192;
+          c.width = N; c.height = N;
+          c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, N, N);
+          var q = 0.85, out = c.toDataURL('image/jpeg', q);
+          while (out.length > 36000 && q > 0.35) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+          URL.revokeObjectURL(url); resolve(out);
+        } catch (e) { reject(e); }
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('image')); };
+      img.src = url;
+    });
+  }
+
+  // how this person wants to be told: nothing, or a push notification
+  S.prefs = { channels: 'push', msg: '', busy: false, err: '' };
   var PREF_CHOICES = [
-    { v: 'none', t: 'بدون اعلان', icon: '<path d="M6 8a6 6 0 0 1 9.800-4.600M18 8c0 7 3 8 3 8h-6M10.300 20a2 2 0 0 0 3.400 0M3 3l18 18"/>' },
-    { v: 'push', t: 'اعلان', icon: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10.300 20a2 2 0 0 0 3.400 0"/>' },
-    { v: 'email', t: 'ایمیل', icon: '<rect x="3" y="5" width="18" height="14" rx="2.500"/><path d="m3 7 9 6 9-6"/>' },
-    { v: 'both', t: 'هر دو', icon: '<path d="M4 7a5 5 0 0 1 9.500-2M2 14s2.500-.5 2.500-6M7.500 18a1.800 1.800 0 0 0 3 0"/><rect x="11" y="10" width="11" height="8" rx="2"/><path d="m11.500 11.500 5 3.500 5-3.500"/>' }
+    { v: 'push', t: 'اعلان', d: 'پیام تازه همان لحظه اعلام می‌شود', icon: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10.300 20a2 2 0 0 0 3.400 0"/>' },
+    { v: 'none', t: 'بدون اعلان', d: 'فقط عدد قرمز روی آیکن حساب', icon: '<path d="M6 8a6 6 0 0 1 9.800-4.600M18 8c0 7 3 8 3 8h-6M10.300 20a2 2 0 0 0 3.400 0M3 3l18 18"/>' }
   ];
   function loadPrefs() {
     if (!window.MSNotify || !S.user) return;
-    var p = window.MSNotify.prefs();
-    S.prefs.channels = p.channels; S.prefs.email = p.email || S.prefs.email;
+    S.prefs.channels = window.MSNotify.prefs().channels;
     db.collection('notify_prefs').doc(S.user.uid).get().then(function (s) {
-      if (s.exists) { var d = s.data(); S.prefs.channels = d.channels || 'push'; S.prefs.email = d.email || ''; window.MSNotify.setPrefs(d); }
+      if (s.exists) { S.prefs.channels = s.data().channels === 'none' ? 'none' : 'push'; window.MSNotify.setPrefs({ channels: S.prefs.channels }); }
+      else { savePrefs('push', true); }   // push is the default: write it once so the choice is recorded
       render();
     }, function () { render(); });
-    window.MSNotify.emailReady().then(function (ok) { S.prefs.emailOk = ok; render(); });
+  }
+  function savePrefs(choice, quiet) {
+    S.prefs.channels = choice; S.prefs.err = ''; S.prefs.msg = '';
+    if (!quiet) { S.prefs.busy = true; render(); }
+    var doc = { role: myRole(), name: myName().slice(0, 60), channels: choice, email: '', updatedAt: Date.now() };
+    var asked = choice === 'push' && window.MSNotify && !quiet ? window.MSNotify.askPermission() : Promise.resolve('');
+    return asked.then(function () { return db.collection('notify_prefs').doc(S.user.uid).set(doc); }).then(function () {
+      if (window.MSNotify) window.MSNotify.setPrefs(doc);
+      if (!quiet) S.prefs.msg = 'ذخیره شد.';
+    }, function (err) { S.prefs.err = errText(err); }).then(function () { S.prefs.busy = false; if (!quiet) render(); });
   }
   function permLabel() {
     var p = window.MSNotify ? window.MSNotify.permission() : 'unsupported';
     return p === 'granted' ? 'اجازهٔ اعلان در این دستگاه داده شده است.' : p === 'denied' ? 'اعلان در این دستگاه مسدود است؛ از تنظیمات مرورگر باز کنید.'
-      : p === 'unsupported' ? 'این مرورگر اعلان سیستمی را پشتیبانی نمی‌کند؛ پیام‌ها داخل برنامه نمایش داده می‌شود.' : 'هنگام ذخیره، مرورگر اجازهٔ اعلان را می‌پرسد.';
+      : p === 'unsupported' ? 'این مرورگر اعلان سیستمی را پشتیبانی نمی‌کند؛ پیام‌ها داخل برنامه نمایش داده می‌شود (روی iPhone ابتدا برنامه را نصب کنید).' : 'هنوز اجازهٔ اعلان در این دستگاه داده نشده است.';
   }
   function prefsView() {
-    var P = S.prefs, wantsMail = P.channels === 'email' || P.channels === 'both', wantsPush = P.channels === 'push' || P.channels === 'both';
+    var P = S.prefs, perm = window.MSNotify ? window.MSNotify.permission() : 'unsupported';
     return '<section class="pn-card pn-prefs"><h2>روش اطلاع‌رسانی</h2>' +
-      '<form id="prefsForm"><div class="pn-pref-choices" role="radiogroup" aria-label="روش اطلاع‌رسانی">' + PREF_CHOICES.map(function (c) {
-        return '<button type="button" role="radio" class="pn-pref" data-pref="' + c.v + '" aria-checked="' + (P.channels === c.v) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + c.icon + '</svg><span>' + c.t + '</span></button>';
+      '<div class="pn-pref-choices two" role="radiogroup" aria-label="روش اطلاع‌رسانی">' + PREF_CHOICES.map(function (c) {
+        return '<button type="button" role="radio" class="pn-pref" data-pref="' + c.v + '" aria-checked="' + (P.channels === c.v) + '"' + (P.busy ? ' disabled' : '') +
+          '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + c.icon + '</svg><span>' + c.t + '</span><small>' + c.d + '</small></button>';
       }).join('') + '</div>' +
-      (wantsMail ? '<label>ایمیل برای اطلاع‌رسانی<input type="email" name="notifyEmail" dir="ltr" value="' + esc(P.email) + '" placeholder="name@example.com" autocomplete="email"></label>' +
-        (P.emailOk === false ? '<p class="pn-note">ارسال ایمیل هنوز راه‌اندازی نشده است (کلیدهای EmailJS در ' + '<span dir="ltr">notify-config.js</span> خالی است). تنظیم شما ذخیره می‌شود و پس از راه‌اندازی کار می‌کند.</p>' : '') : '') +
-      (wantsPush ? '<p class="pn-note">' + esc(permLabel()) + ' اعلان تنها زمانی نمایش داده می‌شود که برنامه باز یا در پس‌زمینهٔ دستگاه باشد.</p>' : '') +
+      (P.channels === 'push' ? '<p class="pn-note">' + esc(permLabel()) + ' اعلان زمانی نمایش داده می‌شود که برنامه باز یا در پس‌زمینهٔ دستگاه باشد.</p>' +
+        (perm === 'default' ? '<button type="button" class="pn-secondary" data-allow-notify>اجازهٔ اعلان را بده</button>' : '') : '') +
       (P.err ? '<p class="pn-err" role="alert">' + esc(P.err) + '</p>' : '') +
-      (P.msg ? '<p class="pn-ok" role="status">' + esc(P.msg) + '</p>' : '') +
-      '<button type="submit" class="pn-primary"' + (P.busy ? ' disabled' : '') + '>ذخیرهٔ روش اطلاع‌رسانی</button></form></section>';
+      (P.msg ? '<p class="pn-ok" role="status">' + esc(P.msg) + '</p>' : '') + '</section>';
   }
 
   function view() {
@@ -754,7 +834,7 @@
     }
     var p = S.profile, mine = S.docs.filter(function (d) { return d.ownerUid === S.user.uid; });
     var out = '';
-    out += '<section class="pn-card pn-hero"><div class="pn-avatar" aria-hidden="true">' + esc((p.name || S.user.email || '؟').trim().charAt(0)) + '</div>' +
+    out += '<section class="pn-card pn-hero">' + avatar(p.name || S.user.email, 56, S.user.uid).replace('class="pn-av', 'class="pn-av hero') +
       '<div><h2>' + esc(p.name || S.user.email) + '</h2><p class="pn-note" dir="ltr">' + esc(S.user.email) + '</p>' +
       '<span class="pn-role">' + esc(MSRoles.label(p.role)) + '</span>' + (p.code ? ' <span class="pn-chip" dir="ltr">' + esc(p.code) + '</span>' : '') + '</div>' +
       '<button type="button" class="pn-ico" data-out aria-label="خروج" title="خروج"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></section>';
@@ -773,6 +853,7 @@
       '<a class="pn-link" href="./product-catalog.html">رفتن به کاتالوگ و ساخت پیش‌فاکتور</a></section>';
     out += notifyView();
     out += prefsView();
+    out += lookView();
     out += publicView();
     out += ticketsView();
     out += commissionView();
@@ -780,11 +861,12 @@
     return out;
   }
   function teamView() {
+    needProfiles(S.team.map(function (u) { return u.id; }));
     var byOwner = {};
     S.docs.forEach(function (d) { (byOwner[d.ownerUid] = byOwner[d.ownerUid] || []).push(d); });
     var rows = S.team.sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'fa'); }).map(function (u) {
       var docs = byOwner[u.id] || [];
-      return '<li class="pn-user' + (u.active === false ? ' off' : '') + '"><div><b>' + esc(u.name || '—') + '</b>' +
+      return '<li class="pn-user' + (u.active === false ? ' off' : '') + '">' + avatar(u.name, 42, u.id) + '<div><b>' + esc(u.name || '—') + '</b>' +
         '<span class="pn-role">' + esc(MSRoles.label(u.role)) + '</span>' + (u.active === false ? ' <span class="pn-chip off">غیرفعال</span>' : '') +
         (MSRoles.hasField(u.role, 'proformas') ? '<p class="pn-note">' + faInt.format(docs.length) + ' پیش‌فاکتور · این ماه: ' + monthTotals(docs) + '</p>' : '') +
         (can('people') && u.email ? '<p class="pn-note" dir="ltr">' + esc(u.email) + '</p>' : '') +
@@ -867,7 +949,12 @@
     }
     if (!e.target.closest('.pn-dd')) Array.prototype.forEach.call(document.querySelectorAll('.pn-dd-list'), function (l) { l.hidden = true; });
     var pf = e.target.closest('[data-pref]');
-    if (pf) { S.prefs.channels = pf.getAttribute('data-pref'); S.prefs.msg = ''; render(); return; }
+    if (pf) { savePrefs(pf.getAttribute('data-pref')); return; }
+    if (e.target.closest('[data-allow-notify]')) { if (window.MSNotify) window.MSNotify.askPermission().then(function () { render(); }); return; }
+    if (e.target.closest('[data-photo-pick]')) { var fi = document.getElementById('photoFile'); if (fi) fi.click(); return; }
+    var pc2 = e.target.closest('[data-color]');
+    if (pc2) { saveLook({ color: pc2.getAttribute('data-color') }); return; }
+    if (e.target.closest('[data-photo-del]')) { saveLook({ photo: '' }); return; }
     var dl = e.target.closest('[data-del]');
     if (dl) {
       if (dl.getAttribute('data-armed') !== '1') {
@@ -907,7 +994,6 @@
       if (ta.value.trim()) signalTyping(ta.form.getAttribute('data-id'));
     }
     if (ta && ta.tagName === 'INPUT' && ta.name === 'phone') { var cp = cleanPhone(ta.value); if (cp !== ta.value) ta.value = cp; }
-    if (ta && ta.name === 'notifyEmail') S.prefs.email = ta.value;
   });
   document.addEventListener('keydown', function (e) {
     var ta = e.target;
@@ -916,6 +1002,12 @@
     }
   });
   document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'photoFile' && e.target.files && e.target.files[0]) {
+      var file = e.target.files[0]; e.target.value = '';
+      if (file.size > 12 * 1024 * 1024) { S.look.msg = ''; S.error = 'عکس بزرگ‌تر از ۱۲ مگابایت است.'; render(); return; }
+      photoFrom(file).then(function (dataUrl) { return saveLook({ photo: dataUrl }); }, function () { S.look.msg = 'عکس خوانده نشد.'; render(); });
+      return;
+    }
     var t = e.target;
     if (!t || t.name !== 'role' || !t.form || t.form.id !== 'editForm') return;
     Array.prototype.forEach.call(t.form.querySelectorAll('[data-field]'), function (el) {
@@ -936,16 +1028,6 @@
       db.collection('users').doc(S.user.uid).update({ name: v('name'), phone: ph }).then(function () {
         S.profile.name = v('name'); S.profile.phone = ph; S.msg = 'ذخیره شد. از این پس نام شما روی پیش‌فاکتورهای جدید همین است.';
       }, function (err) { S.error = errText(err); }).then(function () { S.busy = false; render(); });
-    } else if (f.id === 'prefsForm') {
-      var chosen = S.prefs.channels, mail = f.elements.notifyEmail ? f.elements.notifyEmail.value.trim() : '';
-      if ((chosen === 'email' || chosen === 'both') && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { S.prefs.msg = ''; S.prefs.err = 'ایمیل درست وارد کنید.'; S.prefs.email = mail; render(); return; }
-      S.prefs.busy = true; S.prefs.err = ''; S.prefs.email = mail; render();
-      var doc = { role: myRole(), name: myName().slice(0, 60), channels: chosen, email: (chosen === 'email' || chosen === 'both') ? mail : '', updatedAt: Date.now() };
-      var asked = (chosen === 'push' || chosen === 'both') && window.MSNotify ? window.MSNotify.askPermission() : Promise.resolve('');
-      asked.then(function () { return db.collection('notify_prefs').doc(S.user.uid).set(doc); }).then(function () {
-        if (window.MSNotify) window.MSNotify.setPrefs(doc);
-        S.prefs.msg = 'ذخیره شد.';
-      }, function (err) { S.prefs.msg = ''; S.prefs.err = errText(err); }).then(function () { S.prefs.busy = false; render(); });
     } else if (f.id === 'tkNewForm') {
       var val = f.elements.to ? f.elements.to.value : 'role:sales_manager';
       var o = { title: v('title'), text: f.elements.text.value.trim() };
@@ -963,13 +1045,8 @@
       nb.update(rref, { updatedAt: now2, lastText: txt.slice(0, 140), lastBy: S.user.uid, lastByName: myName() });
       clearTyping();
       var sendBtn = f.querySelector('.pn-send'); if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('sending'); }
-      var tkx = S.tk.list.filter(function (k) { return k.id === rid; })[0] || {};
       nb.commit().then(function () {
         f.elements.text.value = ''; f.elements.text.style.height = ''; if (sendBtn) sendBtn.classList.remove('sending'); loadTickets();
-        if (window.MSNotify) {
-          var target = tkx.fromUid === S.user.uid ? (tkx.toUid ? { uid: tkx.toUid } : { role: tkx.toRole }) : { uid: tkx.fromUid };
-          if ((target.uid || target.role)) window.MSNotify.emailTo(target, 'پیام تازه از ' + myName(), txt, './panel.html#tickets');
-        }
       }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkThread(rid); });
     } else if (f.id === 'addForm') {
       db.collection('users').doc(v('uid')).set({ name: v('name'), email: v('email'), role: 'visitor', active: true, regions: [], cities: '' }).then(function () { load(); }, function (err) { S.error = errText(err); render(); });

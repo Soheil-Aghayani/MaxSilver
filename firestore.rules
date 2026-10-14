@@ -167,14 +167,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // How a person wants to be told: none, push, email or both, and the address for email. Readable by people of the company
-    // (the sender's browser needs it to send the mail); only the owner writes it.
+    // How a person wants to be told: push (default) or none. Readable by people of the company; only the owner writes it.
     match /notify_prefs/{uid} {
       allow read: if approved();
       allow create, update: if approved() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['role', 'name', 'channels', 'email', 'updatedAt'])
-        && request.resource.data.channels in ['none', 'push', 'email', 'both']
-        && request.resource.data.email is string && request.resource.data.email.size() <= 80
+        && request.resource.data.channels in ['none', 'push']
+        && (!('email' in request.resource.data) || (request.resource.data.email is string && request.resource.data.email.size() <= 80))
         && request.resource.data.name is string && request.resource.data.name.size() <= 60;
       allow delete: if false;
     }
@@ -187,6 +186,18 @@ service cloud.firestore {
         && (!('lastSeen' in request.resource.data) || request.resource.data.lastSeen is number)
         && (!('typingAt' in request.resource.data) || request.resource.data.typingAt is number)
         && (!('typingIn' in request.resource.data) || (request.resource.data.typingIn is string && request.resource.data.typingIn.size() <= 40));
+      allow delete: if false;
+    }
+
+    // A person's look: a colour from the palette and an optional small picture (a data URL cut to 192 px). People of the
+    // company read it so conversations can show faces; only the owner writes it.
+    match /profiles/{uid} {
+      allow read: if approved();
+      allow create, update: if approved() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'color', 'photo', 'updatedAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60
+        && request.resource.data.color is string && request.resource.data.color.size() <= 9
+        && request.resource.data.photo is string && request.resource.data.photo.size() <= 45000;
       allow delete: if false;
     }
 

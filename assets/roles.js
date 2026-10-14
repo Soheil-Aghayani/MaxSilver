@@ -25,6 +25,7 @@
     dashboard: ['manager', 'ceo', 'sales_manager', 'finance'],                          // CEO dashboard
     analysis: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // customer and product sales analysis
     brand: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'],
+    advertising: ['manager', 'ceo', 'sales_manager', 'marketing'],                      // advertising strategy tree
     invoices: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // read every proforma, not only one's own
     team: ['manager', 'ceo', 'sales_manager', 'hr'],                                    // see the team list
     roleAdmin: ['manager', 'ceo'],                                                      // create accounts, set role and code
