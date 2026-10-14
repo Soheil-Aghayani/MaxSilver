@@ -39,7 +39,7 @@
   // ----- cached identity: lets numbering, role and name work with no connection at all
   function readCache() { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { return null; } }
   function writeCache(uid, profile) { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ uid: uid, profile: profile })); } catch (e) { /* ignore */ } }
-  function clearIdentity() { try { localStorage.removeItem(CACHE_KEY); localStorage.removeItem('ms-role'); } catch (e) { /* ignore */ } }
+  function clearIdentity() { try { localStorage.removeItem(CACHE_KEY); localStorage.removeItem('ms-role'); } catch (e) { /* ignore */ } if (window.MSGate) window.MSGate.apply(); }
   var cached = readCache();
   if (cached && cached.profile && cached.profile.active !== false) {
     // offline start-up: role-aware navigation and the receipt name must not wait for the network
@@ -75,6 +75,7 @@
     return withTimeout(batch.commit()).then(function () {
       pend.forEach(function (d) { d.synced = true; });
       A.save();
+      if (window.MSNotify) window.MSNotify.paint();
     });
   }
   function loadProfile() {
@@ -82,6 +83,7 @@
       S.profile = snap.exists ? snap.data() : null;
       if (S.profile) writeCache(S.user.uid, S.profile); else clearIdentity();
       try { localStorage.setItem('ms-role', activeProfile() ? (S.profile.role || '') : ''); } catch (e) { /* ignore */ }
+      if (window.MSGate) window.MSGate.apply();
       if (S.profile) A.setIssuer(S.profile.name);
     });
   }

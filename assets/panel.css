@@ -95,7 +95,8 @@
 .pn-trash:hover,.pn-trash[data-armed='1']{color:#b42318}
 .pn-trash[data-armed='1']{background:#fff5f4}
 .pn-del-note{margin:0;padding:8px 14px;background:#fff5f4;color:#b42318;font-size:13px;line-height:1.8}
-.pn-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.pn-contact{position:relative}
+.pn-hp{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip-path:inset(50%);pointer-events:none}
 .pn-contact .pn-primary{width:100%}
 .pn-pub{display:grid;gap:4px;padding:11px 14px;border:1px solid var(--ms-line);border-radius:14px;background:#fff}
 .pn-pub p{margin:0;white-space:pre-wrap;line-height:1.8}

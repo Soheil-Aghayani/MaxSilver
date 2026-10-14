@@ -4,7 +4,7 @@
 (function (w) {
   'use strict';
   var LABEL = {
-    manager: 'مدیریت عمومی و توسعه',
+    manager: 'تکنولوژی سازمانی',
     ceo: 'مدیرعامل و هیئت‌مدیره',
     sales_manager: 'مدیر فروش و توسعه بازار',
     visitor: 'کارشناس فروش و توسعه بازار',

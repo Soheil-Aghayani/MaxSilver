@@ -273,3 +273,22 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
   body.inv-print{padding:0!important;background:#fff}
   body.inv-print .ip-sheet{display:block;color:#051934;font:12.5px/1.8 Estedad,Tahoma,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* phone on its side: filters scroll with the page, the brand tiles shrink, the grid keeps more rows in view */
+@media(orientation:landscape) and (max-height:480px){
+  .cat-tools{position:static;top:auto}
+  .brand-strip{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:8px}
+  .bt{min-height:46px;padding:7px 10px 11px;gap:2px 8px}
+  .bt-ico{width:28px;height:28px;border-radius:9px}
+  .bt-n{font-size:16px}
+  .bt-name{font-size:12.5px}
+  .cat-head{margin:2px 4px 8px}
+  .cat-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+  .cmp-tray{bottom:8px}
+}
+@media(orientation:landscape) and (max-height:480px){
+  .cat-tools{padding:6px;gap:6px}
+  .cat-search{flex:1 1 150px;min-width:140px}
+  .cs-btn{min-width:104px;max-width:150px;min-height:42px;padding-inline-end:34px}
+  .cat-search input,.cat-reset{min-height:42px}
+}

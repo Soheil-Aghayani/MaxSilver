@@ -53,6 +53,7 @@
       S.profile = snap.exists ? snap.data() : null;
       if (S.profile && !S.profile.email && u_email()) { db.collection('users').doc(uid).update({ email: u_email() }).then(function () { S.profile.email = u_email(); }, function () { /* the rules may not be published yet */ }); }
       try { localStorage.setItem('ms-role', active() ? (S.profile.role || '') : ''); } catch (x) { /* ignore */ }
+      if (window.MSGate) window.MSGate.apply();
       if (!active()) return null;
       var q = can('invoices') ? db.collection('invoices') : db.collection('invoices').where('ownerUid', '==', uid);
       return Promise.race([Promise.all([q.get(), can('team') ? db.collection('users').get() : null]), timeout]).then(function (res) {
@@ -72,7 +73,7 @@
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
-    if (!u) { try { localStorage.removeItem('ms-role'); } catch (x) { /* ignore */ } S.loading = false; render(); return; }
+    if (!u) { try { localStorage.removeItem('ms-role'); } catch (x) { /* ignore */ } if (window.MSGate) window.MSGate.apply(); S.loading = false; render(); return; }
     load();
   });
 
@@ -541,7 +542,7 @@
   function notifyView() {
     var list = window.MSNotify ? window.MSNotify.items() : [];
     var rows = list.map(function (x) {
-      return '<li><a href="#' + esc(x.target) + '"><span class="pn-dot" aria-hidden="true"></span>' + esc(x.text) + '</a></li>';
+      return '<li><a href="' + (x.href ? esc(x.href) : '#' + esc(x.target)) + '"><span class="pn-dot" aria-hidden="true"></span>' + esc(x.text) + '</a></li>';
     }).join('');
     return '<section class="pn-card pn-notify' + (list.length ? ' has' : '') + '" aria-live="polite"><h2>اعلان‌ها</h2>' +
       (rows ? '<ul>' + rows + '</ul>' : '<p class="pn-note">فعلاً چیزی منتظر شما نیست.</p>') + '</section>';
@@ -629,7 +630,7 @@
       '<label>تلفن<input type="tel" name="phone" dir="ltr" value="' + esc(u.phone || '') + '" maxlength="30"' + (can('people') ? '' : ' disabled') + '></label>' +
       (can('roleAdmin') ? '<fieldset class="pn-seg"><legend>نقش</legend>' + MSRoles.ORDER.map(function (r) {
         return '<label><input type="radio" name="role" value="' + r + '"' + (MSRoles.norm(u.role) === r ? ' checked' : '') + (self ? ' disabled' : '') + '><span>' + esc(MSRoles.label(r)) + '</span></label>';
-      }).join('') + '</fieldset>' : '<p class="pn-note">نقش: ' + esc(MSRoles.label(u.role)) + ' (تغییر نقش فقط با مدیرعامل یا مدیریت عمومی است)</p>') +
+      }).join('') + '</fieldset>' : '<p class="pn-note">نقش: ' + esc(MSRoles.label(u.role)) + ' (تغییر نقش فقط با مدیرعامل یا تکنولوژی سازمانی است)</p>') +
       // fields that belong to one kind of role only; the block follows the chosen role
       (can('roleAdmin') ? '<div data-field="code"' + (MSRoles.hasField(u.role, 'code') ? '' : ' hidden') + '><label>کد برای شمارهٔ سند (حروف و عدد لاتین)<input type="text" name="code" dir="ltr" value="' + esc(u.code || '') + '" maxlength="6" pattern="[A-Za-z0-9]*"></label></div>' : '') +
       (can('people') ? '<label class="pn-check"><input type="checkbox" name="active"' + (u.active === false ? '' : ' checked') + (self ? ' disabled' : '') + '><span>حساب فعال است</span></label>' : '') +

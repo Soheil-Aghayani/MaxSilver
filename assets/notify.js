@@ -12,7 +12,25 @@
   function role() { try { return w.MSRoles ? w.MSRoles.norm(localStorage.getItem('ms-role') || '') : ''; } catch (e) { return ''; } }
   function read() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
   function write(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { /* ignore */ } }
-  function items() { var c = read(); return c && c.items ? c.items : []; }
+  // proformas saved on this device and not yet sent: only the vendors who issue them, counted from the device itself.
+  // Online they normally send themselves within moments, so a short grace avoids flashing; offline they count at once.
+  function pending() {
+    try {
+      if (!w.MSRoles || !w.MSRoles.hasField(localStorage.getItem('ms-role') || '', 'proformas')) return null;
+      var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'), uid = c && c.uid || '';
+      var arch = JSON.parse(localStorage.getItem('ms-proforma-archive-v1') || '[]'), now = Date.now(), off = navigator.onLine === false, n = 0;
+      if (!Array.isArray(arch)) return null;
+      arch.forEach(function (d) {
+        if (d && d.synced !== true && d.docNo && (!d.ownerUid || d.ownerUid === uid) && (off || now - (d.createdAt || 0) > 3 * 60 * 1000)) n++;
+      });
+      return n ? { kind: 'pending', n: n, text: fa.format(n) + ' پیش‌فاکتور هنوز ارسال نشده؛ فقط روی همین دستگاه است', href: './product-catalog.html' } : null;
+    } catch (e) { return null; }
+  }
+  function items() {
+    var c = read(), list = c && c.items && c.role === role() ? c.items.slice() : [], p = pending();   // a count cached for another role is never shown
+    if (p) list.unshift(p);
+    return list;
+  }
   function total(list) { return list.reduce(function (s, x) { return s + (x.n || 1); }, 0); }
 
   function paint() {
@@ -109,6 +127,7 @@
     if (!role()) { var c = read(); if (c) write({ at: 0, items: [] }); paint(); return; }
     paint();
     setTimeout(function () { refresh(false); }, 1200);
+    setInterval(paint, 60 * 1000);                    // a proforma that has waited past the grace appears without a reload
   }
   w.MSNotify = { items: items, total: function () { return total(items()); }, refresh: refresh, paint: paint };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
