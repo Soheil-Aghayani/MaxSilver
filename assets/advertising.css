@@ -54,43 +54,52 @@
 .b-print{--tc:#c98a00}.b-gift{--tc:#14804a}.b-online{--tc:#2456d8}.b-mk{--tc:#6b3fc0}
 .t-n.hit{box-shadow:0 0 0 3px #ffd75a;background:#fff3c4;color:var(--ms-navy)}
 
-/* phones: indent outline with a guide line */
-.t-kids{margin-inline-start:16px;padding-inline-start:18px;border-inline-start:2px solid #cfd8e6}
+/* connectors: soft elbows. Every item draws its own piece so the corners are rounded and nothing is cut off. */
+.ad-treewrap{--lc:#cfd8e6;--r:14px}
+.b-print,.b-gift,.b-online,.b-mk{--lc:var(--tc)}
 .t-kids>.t{padding-block:5px}
-.t-kids>.t::before{content:"";position:absolute;inset-inline-start:-18px;top:25px;width:18px;border-top:2px solid #cfd8e6}
-.b-print>.t-kids,.b-gift>.t-kids,.b-online>.t-kids,.b-mk>.t-kids,.b-print .t-kids,.b-gift .t-kids,.b-online .t-kids,.b-mk .t-kids{border-color:var(--tc)}
-.b-print .t-kids>.t::before,.b-gift .t-kids>.t::before,.b-online .t-kids>.t::before,.b-mk .t-kids>.t::before{border-color:var(--tc)}
-.t-n.meta+.t-kids{display:flex;flex-wrap:wrap;gap:6px;border:0;margin-inline-start:0;padding:8px 0 0}
-.t-n.meta+.t-kids>.t{padding:0}
-.t-n.meta+.t-kids>.t::before{display:none}
 .t-top>.t-rootli>.t-n{margin-bottom:6px}
+/* phones: vertical outline, the guide runs down the start edge and each item turns off it with a curve */
+.t-kids{margin-inline-start:14px;padding-inline-start:22px}
+.t-kids>.t{position:relative}
+.t-kids>.t::before{content:"";position:absolute;inset-inline-start:-22px;top:0;width:22px;height:25px;border-inline-start:2px solid var(--lc);border-bottom:2px solid var(--lc);border-end-start-radius:var(--r)}
+.t-kids>.t:not(:last-child)::after{content:"";position:absolute;inset-inline-start:-22px;top:25px;bottom:0;border-inline-start:2px solid var(--lc)}
+.t-n.meta+.t-kids{display:flex;flex-wrap:wrap;gap:6px;margin-inline-start:0;padding:8px 0 0}
+.t-n.meta+.t-kids>.t{padding:0}
+.t-n.meta+.t-kids>.t::before,.t-n.meta+.t-kids>.t::after{display:none}
 
-/* wide screens: left-flowing horizontal tree with elbow connectors */
-@media(min-width:900px){
-  .t{display:flex;align-items:center}
-  .t-kids{margin:0;padding:0;border:0;display:flex;flex-direction:column;position:relative;padding-inline-start:34px}
-  .t-kids::before{content:"";position:absolute;inset-inline-start:0;top:50%;width:17px;border-top:2px solid #cfd8e6}
-  .t-kids>.t{padding-block:5px;padding-inline-start:0}
-  .t-kids>.t::before{top:50%;inset-inline-start:-17px;width:17px}
-  .t-kids>.t::after{content:"";position:absolute;inset-inline-start:-17px;top:0;bottom:0;border-inline-start:2px solid #cfd8e6}
-  .t-kids>.t:first-child::after{top:50%}
-  .t-kids>.t:last-child::after{top:0;bottom:50%}
-  .t-kids>.t:only-child::after{display:none}
-  .b-print .t-kids::before,.b-gift .t-kids::before,.b-online .t-kids::before,.b-mk .t-kids::before,
-  .b-print .t-kids>.t::before,.b-gift .t-kids>.t::before,.b-online .t-kids>.t::before,.b-mk .t-kids>.t::before{border-color:var(--tc)}
-  .b-print .t-kids>.t::after,.b-gift .t-kids>.t::after,.b-online .t-kids>.t::after,.b-mk .t-kids>.t::after{border-color:var(--tc)}
-  .t-n.meta+.t-kids{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;max-width:300px;padding:0 0 0 0;padding-inline-start:26px}
-  .t-n.meta+.t-kids::before{width:13px}
-  .t-n.meta+.t-kids>.t::before,.t-n.meta+.t-kids>.t::after{display:none}
-}
 /* the root is a title bar; branches are the first level, each flowing sideways */
 .t-rootli{display:block}
 .t-rootli>.t-n.root{display:flex;justify-content:center;margin-bottom:12px}
-.t-rootli>.t-kids{margin:0;padding:0;border:0}
-.t-rootli>.t-kids::before,.t-rootli>.t-kids>.t::before,.t-rootli>.t-kids>.t::after{display:none}
+.t-rootli>.t-kids{margin:0;padding:0}
+.t-rootli>.t-kids::before{display:none}
+.t-rootli>.t-kids>.t::before,.t-rootli>.t-kids>.t::after{display:none!important}
 .t-rootli>.t-kids>.t{padding-block:14px;border-top:1px dashed var(--ms-line)}
 .t-rootli>.t-kids>.t:first-child{border-top:0}
-@media(min-width:900px){.t-rootli>.t-kids>.t{display:flex;align-items:center}.t-n{font-size:15px}.t-kids>.t{padding-block:6px}}
+
+/* wide screens: the tree flows sideways; the stub leaves the parent, the spine joins the items with rounded ends */
+@media(min-width:900px){
+  .t{display:flex;align-items:center}
+  .t-n{font-size:15px}
+  .t-kids{margin:0;display:flex;flex-direction:column;position:relative;padding-inline-start:36px}
+  .t-kids::before{content:"";position:absolute;inset-inline-start:0;top:50%;width:18px;border-top:2px solid var(--lc)}
+  .t-kids>.t{padding-block:6px}
+  .t-kids>.t::before,.t-kids>.t::after{inset-inline-start:-18px;width:18px;border:0;border-radius:0;height:auto}
+  /* middle items: a straight branch off the spine */
+  .t-kids>.t::before{top:50%;height:0;border-top:2px solid var(--lc)}
+  .t-kids>.t:not(:last-child)::after,.t-kids>.t::after{content:"";position:absolute;top:0;bottom:0;border-inline-start:2px solid var(--lc)}
+  /* first item: the spine begins at its centre with a rounded corner */
+  .t-kids>.t:first-child::before{top:50%;bottom:0;height:auto;border-top:2px solid var(--lc);border-inline-start:2px solid var(--lc);border-start-start-radius:var(--r)}
+  .t-kids>.t:first-child::after{display:none}
+  /* last item: the spine ends at its centre with a rounded corner */
+  .t-kids>.t:last-child::before{top:0;bottom:50%;height:auto;border-bottom:2px solid var(--lc);border-top:0;border-inline-start:2px solid var(--lc);border-end-start-radius:var(--r)}
+  .t-kids>.t:last-child::after{display:none}
+  /* a lone item continues the stub in a straight line */
+  .t-kids>.t:only-child::before{top:50%;bottom:auto;height:0;border-inline-start:0;border-radius:0;border-top:2px solid var(--lc)}
+  .t-n.meta+.t-kids{flex-direction:row;flex-wrap:wrap;gap:6px;max-width:300px;padding:0;padding-inline-start:26px}
+  .t-n.meta+.t-kids::before{width:13px}
+  .t-rootli>.t-kids>.t{display:flex;align-items:center}
+}
 .ad-empty{margin:0;padding:18px;border-radius:14px;background:#fff;color:var(--ms-muted);text-align:center}
 .ad-map{margin:0;padding:12px;border:1px solid var(--ms-line);border-radius:20px;background:#fff;box-shadow:var(--ms-shadow)}
 .ad-map img{display:block;width:100%;height:auto;border-radius:12px}

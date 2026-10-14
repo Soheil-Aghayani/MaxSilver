@@ -226,7 +226,7 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .arc-close{display:grid;place-items:center;flex:0 0 50px;height:50px;border:1px solid var(--ms-line);border-radius:14px;background:#fff;color:var(--ms-muted);cursor:pointer}.arc-close svg{width:20px;height:20px}
 @media(max-width:1100px){
   .ms-actions{display:flex;align-items:center;gap:8px}
-  .cat-tools{position:relative;z-index:30}
+  .cat-tools{position:relative;top:auto;z-index:30}
   .ms-search-btn{position:relative;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);cursor:pointer}
   .ms-search-btn[hidden]{display:none}
   .ms-search-btn svg{width:20px;height:20px}
@@ -301,3 +301,15 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .inv-openbar b{flex:1;color:#14573a;font-size:14px}
 .inv-openbar-go{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;background:var(--ms-navy);color:#fff;font-weight:800;font-size:14px;text-decoration:none}
 .inv-openbar-x{width:40px;height:40px;border:0;border-radius:10px;background:none;color:#14573a;font-size:24px;cursor:pointer}
+
+/* phone dropdowns: the list becomes a sheet above the tab bar with a dimmed backdrop, never cut off or hidden under cards */
+@media(max-width:720px){
+  .cat-tools{backdrop-filter:none;-webkit-backdrop-filter:none;background:#fff}
+  .cat-select .cs-list{position:fixed;left:12px;right:12px;top:auto;bottom:calc(var(--ms-tabbar-offset,0px) + 12px);width:auto;min-width:0;max-width:none;max-height:min(52vh,420px);padding:8px;border-radius:20px;box-shadow:0 -12px 50px rgba(7,27,54,.28);z-index:80;animation:cs-sheet .18s ease-out}
+  .cs-list li{padding:13px 14px;font-size:15px;border-radius:12px}
+  body.cs-open::after{content:"";position:fixed;inset:0;z-index:25;background:rgba(7,27,54,.38);animation:cs-fade .18s ease-out}
+  body.cs-open .cat-tools{z-index:30}
+}
+@keyframes cs-sheet{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes cs-fade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.cat-select .cs-list,body.cs-open::after{animation:none}}

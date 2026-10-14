@@ -764,6 +764,7 @@
   var menus = [];
   function openMenu(m, on) {
     menus.forEach(function (x) { if (x !== m || !on) { x.list.hidden = true; x.btn.setAttribute('aria-expanded', 'false'); } });
+    document.body.classList.toggle('cs-open', !!on && window.matchMedia('(max-width:720px)').matches);
     if (on) { m.list.hidden = false; m.btn.setAttribute('aria-expanded', 'true'); var cur = m.list.querySelector('[aria-selected=true]'); if (cur) cur.scrollIntoView({ block: 'nearest' }); }
   }
   function syncMenu(m) {
@@ -876,7 +877,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261221', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261225', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();
