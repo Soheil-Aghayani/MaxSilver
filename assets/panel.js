@@ -818,10 +818,10 @@
   }
 
   // ---- private card: national id, written by hr or management only
-  S.nid = ''; S.tab = 'home';
+  S.nid = ''; S.bday = ''; S.tab = 'home';
   function loadPersonal() {
     if (!S.user) return;
-    db.collection('personal').doc(S.user.uid).get().then(function (s) { S.nid = s.exists ? String(s.data().nationalId || '') : ''; render(); }, function () { /* rules not published yet */ });
+    db.collection('personal').doc(S.user.uid).get().then(function (s) { S.nid = s.exists ? String(s.data().nationalId || '') : ''; S.bday = s.exists ? String(s.data().birthday || '') : ''; render(); }, function () { /* rules not published yet */ });
   }
   var LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z"/></svg>';
   function faDigits(s) { return String(s).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); }
@@ -831,7 +831,7 @@
   function meView() {
     var p = S.profile;
     return '<section class="pn-card pn-person"><h2>اطلاعات شخصی</h2>' +
-      '<dl class="pn-facts">' + fact('نام و نام خانوادگی', p.name) + fact('تلفن تماس', p.phone, true, true) + fact('کد ملی', S.nid, true, true) + fact('ایمیل ورود', S.user.email, true) + '</dl>' +
+      '<dl class="pn-facts">' + fact('نام و نام خانوادگی', p.name) + fact('تلفن تماس', p.phone, true, true) + fact('کد ملی', S.nid, true, true) + fact('تاریخ تولد', S.bday, true, true) + fact('ایمیل ورود', S.user.email, true) + '</dl>' +
       '<p class="pn-note">این موارد قفل است و روی پیش‌فاکتور می‌آید؛ برای اصلاح، با منابع انسانی یا مدیریت تماس بگیرید.</p>' +
       '<form id="meForm"><label>ایمیل من (برای تماس)<input type="email" name="contactEmail" dir="ltr" value="' + esc(p.contactEmail || '') + '" maxlength="80" autocomplete="email" placeholder="name@example.com"></label>' +
       (S.msg ? '<p class="pn-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
@@ -931,6 +931,7 @@
       '<label>نام و نام خانوادگی<input type="text" name="name" value="' + esc(u.name || '') + '" maxlength="60" required' + (can('people') ? '' : ' disabled') + '></label>' +
       '<label>تلفن<input type="tel" name="phone" dir="ltr" value="' + esc(u.phone || '') + '" maxlength="30"' + (can('people') ? '' : ' disabled') + '></label>' +
       (can('people') ? '<label>کد ملی (۱۰ رقم)<input type="text" name="nationalId" dir="ltr" inputmode="numeric" maxlength="10" autocomplete="off" disabled></label>' : '') +
+      (can('people') ? '<label>تاریخ تولد (شمسی، مثل ۱۳۷۰/۰۵/۱۲)<input type="text" name="birthday" dir="ltr" inputmode="numeric" maxlength="10" placeholder="۱۳۷۰/۰۵/۱۲" autocomplete="off" disabled></label>' : '') +
       (can('roleAdmin') && !self ? dropdown('role', 'نقش', [{ label: '', options: MSRoles.ORDER.map(function (r) { return { v: r, t: MSRoles.label(r) }; }) }], MSRoles.norm(u.role))
         : '<p class="pn-note">نقش: ' + esc(MSRoles.label(u.role)) + (can('roleAdmin') ? '' : ' (تغییر نقش فقط با مدیرعامل یا تکنولوژی سازمانی است)') + '</p>') +
       // fields that belong to one kind of role only; the block follows the chosen role
@@ -1018,8 +1019,8 @@
       var u = S.team.filter(function (x) { return x.id === ed.getAttribute('data-edit'); })[0];
       if (u) {
         S.error = ''; dlg.innerHTML = editForm(u); dlg.showModal();
-        var nf = dlg.querySelector('input[name=nationalId]');
-        if (nf) db.collection('personal').doc(u.id).get().then(function (s) { nf.value = s.exists ? String(s.data().nationalId || '') : ''; nf.disabled = false; }, function () { nf.disabled = false; });
+        var nf = dlg.querySelector('input[name=nationalId]'), bf = dlg.querySelector('input[name=birthday]');
+        if (nf) db.collection('personal').doc(u.id).get().then(function (s) { nf.value = s.exists ? String(s.data().nationalId || '') : ''; if (bf) bf.value = s.exists ? String(s.data().birthday || '') : ''; nf.disabled = false; if (bf) bf.disabled = false; }, function () { nf.disabled = false; if (bf) bf.disabled = false; });
       }
       return;
     }
@@ -1107,10 +1108,19 @@
           data.cities = ''; data.regions = []; data.commissionRegions = [];
         }
       }
-      var nidIn = f.elements.nationalId, nid = nidIn ? cleanPhone(nidIn.value).replace(/^0+(?=\d{10,})/, '') : '';
-      if (nidIn && !nidIn.disabled) { nid = String(nidIn.value).replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); }).replace(/\D/g, ''); if (nid && !/^\d{10}$/.test(nid)) { S.error = 'کد ملی باید ۱۰ رقم باشد.'; dlg.innerHTML = editForm(Object.assign({ id: id }, known, data)); return; } }
+      var nidIn = f.elements.nationalId, nid = '', bdIn = f.elements.birthday, bd = '';
+      var lat = function (s) { return String(s).replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); }).replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 1632); }); };
+      if (nidIn && !nidIn.disabled) {
+        nid = lat(nidIn.value).replace(/\D/g, '');
+        bd = bdIn ? lat(bdIn.value).replace(/[^\d]/g, '') : '';
+        var bad = '';
+        if (nid && !/^\d{10}$/.test(nid)) bad = 'کد ملی باید ۱۰ رقم باشد.';
+        else if (bd && !(/^\d{8}$/.test(bd) && +bd.slice(0, 4) >= 1250 && +bd.slice(0, 4) <= 1420 && +bd.slice(4, 6) >= 1 && +bd.slice(4, 6) <= 12 && +bd.slice(6) >= 1 && +bd.slice(6) <= 31)) bad = 'تاریخ تولد را مثل ۱۳۷۰/۰۵/۱۲ بنویسید.';
+        if (bad) { S.error = bad; dlg.innerHTML = editForm(Object.assign({ id: id }, known, data)); return; }
+        if (bd) bd = bd.slice(0, 4) + '/' + bd.slice(4, 6) + '/' + bd.slice(6);
+      }
       db.collection('users').doc(id).set(data, { merge: true }).then(function () {
-        return (nidIn && !nidIn.disabled && can('people')) ? db.collection('personal').doc(id).set({ nationalId: nid, updatedAt: Date.now() }) : null;
+        return (nidIn && !nidIn.disabled && can('people')) ? db.collection('personal').doc(id).set({ nationalId: nid, birthday: bd, updatedAt: Date.now() }) : null;
       }).then(function () { dlg.close(); load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(Object.assign({ id: id }, S.team.filter(function (x) { return x.id === id; })[0] || {}, data)); });
     }
   });

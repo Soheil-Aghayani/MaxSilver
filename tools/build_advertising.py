@@ -73,28 +73,35 @@ def count_leaves(children):
     return n
 
 
-def leaf(text, note=None):
-    return '<li class="ad-leaf" data-q="%s"><span>%s</span>%s</li>' % (e(text), e(text), ('<small>%s</small>' % e(note)) if note else '')
+def li(title, note=None, kids='', cls='', badge=None, icon=None):
+    head = '<div class="t-n %s">%s<span class="t-t">%s</span>%s%s</div>' % (
+        cls, ('<span class="t-i">%s</span>' % icon) if icon else '', e(title),
+        ('<b>%s</b>' % badge) if badge else '', ('<small>%s</small>' % e(note)) if note else '')
+    return '<li class="t">%s%s</li>' % (head, ('<ul class="t-kids">%s</ul>' % kids) if kids else '')
 
 
 def child(c):
     if isinstance(c, str):
-        return leaf(c)
+        return li(c, cls='leaf')
     title, subs = c[0], c[1]
     note = c[2] if len(c) > 2 else None
     fmts = c[3] if len(c) > 3 else None
     if not subs:
-        return leaf(title, note)
-    inner = ''.join(leaf(s) for s in subs)
-    out = '<li class="ad-group"><details class="ad-d lvl3" open><summary><span>%s</span><b>%s</b></summary><ul class="ad-list">%s</ul>' % (e(title), fa(len(subs)), inner)
+        return li(title, note, cls='leaf')
+    kids = ''.join(li(s, cls='leaf') for s in subs)
     if fmts:
-        out += '<div class="ad-fmt"><span class="ad-fmt-t">قالب محتوا</span>%s</div>' % ''.join('<span class="ad-chip">%s</span>' % e(f) for f in fmts)
-    return out + '</details></li>'
+        kids += li('قالب محتوا', kids=''.join(li(f, cls='chip') for f in fmts), cls='meta')
+    return li(title, note, kids, cls='mid', badge=fa(len(subs)))
 
 
-def branch(title, icon, children):
-    return ('<section class="ad-branch" data-branch="%s"><details class="ad-d lvl2" open><summary><span class="ad-ico">%s</span><span class="ad-t">%s</span><b>%s</b></summary>'
-            '<ul class="ad-list">%s</ul></details></section>') % (icon, SVG % ICONS[icon], e(title), fa(count_leaves(children)), ''.join(child(c) for c in children))
+KEYS = {'print': 'چاپی', 'gift': 'هدایای تبلیغاتی', 'online': 'آنلاین', 'mk': 'فعالیت‌های پشتیبان'}
+
+
+def branch(title, key, children, count=None):
+    icon = SVG % ICONS[key]
+    kids = ''.join(child(c) for c in children)
+    return '<li class="t b-%s" data-branch="%s">%s<ul class="t-kids">%s</ul></li>' % (
+        key, key, '<div class="t-n branch"><span class="t-i">%s</span><span class="t-t">%s</span><b>%s</b></div>' % (icon, e(title), fa(count if count is not None else count_leaves(children))), kids)
 
 
 def build():
@@ -107,8 +114,11 @@ def build():
     head = head.replace('<li><a href="./sales-process.html" aria-current="page"', '<li><a href="./sales-process.html"')
     head = head.replace('<body class="ms-portal-body">', '<body class="ms-portal-body" data-manager-only="advertising">')
     goals = ''.join('<li><span class="ad-goal-n">%s</span><span>%s</span></li>' % (fa(i + 1), e(g)) for i, g in enumerate(GOALS))
-    mk = ''.join('<li class="ad-leaf" data-q="%s"><span>%s</span></li>' % (e(m), e(m)) for m in MARKETING)
-    body = '''<main class="ad" id="ad">
+    branches = ''.join(branch(t, k, ch) for t, k, ch in BRANCHES) + branch('فعالیت‌های پشتیبان بازاریابی', 'mk', MARKETING)
+    chips = '<button type="button" class="ad-chipbtn" data-pick="all" aria-pressed="true">همه</button>' + ''.join(
+        '<button type="button" class="ad-chipbtn c-%s" data-pick="%s" aria-pressed="false"><span class="ad-dot"></span>%s</button>' % (k, k, e(t))
+        for t, k, _ in BRANCHES) + '<button type="button" class="ad-chipbtn c-mk" data-pick="mk" aria-pressed="false"><span class="ad-dot"></span>پشتیبان بازاریابی</button>'
+    body = """<main class="ad" id="ad">
     <header class="ad-head">
       <div><h1>استراتژی تبلیغات</h1><p>نمودار مرجع · نسخهٔ ۳</p></div>
       <div class="ad-tools">
@@ -116,23 +126,17 @@ def build():
           <button type="button" role="tab" aria-selected="true" data-view="tree">درخت</button>
           <button type="button" role="tab" aria-selected="false" data-view="map">نقشه</button>
         </div>
-        <button type="button" class="ad-ico-btn" data-expand="open" aria-label="باز کردن همه" title="باز کردن همه">%(open)s</button>
-        <button type="button" class="ad-ico-btn" data-expand="close" aria-label="بستن همه" title="بستن همه">%(close)s</button>
         <a class="ad-ico-btn" href="./assets/advertising-strategy-map-v03.pdf" download aria-label="دریافت PDF" title="دریافت PDF">%(dl)s</a>
       </div>
     </header>
 
     <section class="ad-view" id="viewTree">
-      <label class="ad-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.300-4.300"/></svg><input type="search" id="adQ" placeholder="جست‌وجو در درخت…" autocomplete="off" aria-label="جست‌وجو در درخت"></label>
-
-      <section class="ad-root" aria-labelledby="adRoot">
-        <div class="ad-root-node"><span class="ad-ico">%(mk)s</span><div><h2 id="adRoot">تبلیغات</h2><p>زیرمجموعهٔ بازاریابی</p></div></div>
-        <div class="ad-goals"><h3><span class="ad-ico">%(goal)s</span>اهداف</h3><ul>%(goals)s</ul></div>
-      </section>
-
-      <div class="ad-branches">%(branches)s</div>
-
-      <section class="ad-marketing"><details class="ad-d lvl2" open><summary><span class="ad-ico">%(mk)s</span><span class="ad-t">بازاریابی؛ فعالیت‌های پشتیبان</span><b>%(mkn)s</b></summary><ul class="ad-list">%(mkl)s</ul></details></section>
+      <section class="ad-goals" aria-labelledby="adGoals"><h2 id="adGoals"><span class="ad-i">%(goal)s</span>اهداف تبلیغات</h2><ul>%(goals)s</ul></section>
+      <div class="ad-bar">
+        <div class="ad-picks" role="group" aria-label="شاخه">%(chips)s</div>
+        <label class="ad-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.300-4.300"/></svg><input type="search" id="adQ" placeholder="جست‌وجو…" autocomplete="off" aria-label="جست‌وجو در درخت"></label>
+      </div>
+      <div class="ad-treewrap"><ul class="t-top"><li class="t t-rootli"><div class="t-n root"><span class="t-i">%(mk)s</span><span class="t-t">تبلیغات</span></div><ul class="t-kids" id="adTree">%(branches)s</ul></li></ul></div>
       <p class="ad-empty" id="adEmpty" hidden>موردی پیدا نشد.</p>
     </section>
 
@@ -151,13 +155,10 @@ def build():
   <script src="./assets/sw-register.js?v=%(v)s" defer></script>
 </body>
 </html>
-''' % {
-        'open': SVG % '<path d="m7 15 5 5 5-5M7 9l5-5 5 5"/>',
-        'close': SVG % '<path d="m7 20 5-5 5 5M7 4l5 5 5-5"/>',
+""" % {
         'dl': SVG % '<path d="M12 3v12m0 0-4-4m4 4 4-4M5 19h14"/>',
-        'mk': SVG % ICONS['mk'], 'goal': SVG % ICONS['goal'], 'goals': goals,
-        'branches': ''.join(branch(*b) for b in BRANCHES),
-        'mkn': fa(len(MARKETING)), 'mkl': mk, 'v': stamp,
+        'mk': SVG % ICONS['mk'], 'goal': SVG % ICONS['goal'], 'goals': goals, 'chips': chips,
+        'branches': branches, 'v': stamp,
     }
     with open(os.path.join(ROOT, 'advertising.html'), 'w', encoding='utf-8', newline='') as f:
         f.write(head + body)
