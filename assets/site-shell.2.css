@@ -104,3 +104,15 @@ button,input,select{font:inherit}
 .ms-install-body ol{margin:0;padding-inline-start:20px;line-height:2;color:var(--ms-ink)}
 .ms-install-close{min-height:46px;border:0;border-radius:14px;background:var(--ms-navy);color:#fff;font:800 14px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
 [hidden]{display:none!important}
+
+/* notifications, install, seasons */
+.ms-badge{position:absolute;top:-4px;inset-inline-end:-4px;display:grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#d92d20;color:#fff;font:800 11px/1 Estedad,Tahoma,sans-serif;font-style:normal;box-shadow:0 0 0 2px #fff}
+.ms-nav-links a[aria-current=page] .ms-badge{box-shadow:0 0 0 2px var(--ms-navy)}
+.ms-install{gap:10px}
+.ms-install-hero{display:flex;align-items:center;gap:14px}
+.ms-install-hero h2{margin:0}
+.ms-install-body p{margin:0;color:var(--ms-muted);line-height:1.9}
+.ms-install-actions{display:grid;grid-template-columns:1fr auto;gap:10px}
+.ms-install-go,.ms-install-later{min-height:48px;border-radius:14px;font:800 14px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+.ms-install-go{border:0;background:var(--ms-navy);color:#fff}
+.ms-install-later{padding:0 20px;border:1px solid var(--ms-line);background:#fff;color:var(--ms-navy)}

@@ -100,3 +100,25 @@
 .pn-pub{display:grid;gap:4px;padding:11px 14px;border:1px solid var(--ms-line);border-radius:14px;background:#fff}
 .pn-pub p{margin:0;white-space:pre-wrap;line-height:1.8}
 .pn-pub .pn-secondary{justify-self:start;min-height:40px}
+
+/* notification card and the month picker */
+.pn-notify{border-inline-start:4px solid var(--ms-line)}
+.pn-notify.has{border-inline-start-color:#d92d20;background:#fffaf9}
+.pn-notify ul{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.pn-notify a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid #f4d3cf;color:var(--ms-navy);font-weight:700;text-decoration:none}
+.pn-dot{width:10px;height:10px;border-radius:50%;background:#d92d20;flex:none}
+.pn-seasons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:6px 0 4px}
+.pn-season{--c:#14804a;display:grid;gap:6px;padding:10px;border:1px solid var(--ms-line);border-radius:16px;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 9%,#fff),#fff 70%)}
+.pn-season.spring{--c:#14804a}.pn-season.summer{--c:#c98a00}.pn-season.autumn{--c:#c2410c}.pn-season.winter{--c:#2456d8}
+.pn-season-head{display:flex;align-items:center;gap:8px;color:var(--c);font-weight:800;font-size:13px}
+.pn-season-head svg{width:20px;height:20px}
+.pn-m{display:flex;align-items:center;gap:8px;min-height:42px;padding:0 10px;border:1px solid transparent;border-radius:12px;background:#fff;color:var(--ms-navy);font:700 13px/1 Estedad,Tahoma,sans-serif;cursor:pointer;text-align:start}
+.pn-m:hover{border-color:var(--c)}
+.pn-m[aria-pressed=true]{background:var(--ms-navy);color:#fff}
+.pn-m i,.pn-legend i{width:9px;height:9px;border-radius:50%;background:#d9dfe8;flex:none}
+.pn-m[data-st=draft] i,.pn-legend i[data-st=draft]{background:#f5a623}
+.pn-m[data-st=reviewed] i,.pn-legend i[data-st=reviewed]{background:#2456d8}
+.pn-m[data-st=approved] i,.pn-legend i[data-st=approved]{background:#14804a}
+.pn-legend{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0 0;color:var(--ms-muted);font-size:12px}
+.pn-legend span{display:inline-flex;align-items:center;gap:6px}
+@media(max-width:620px){.pn-seasons{grid-template-columns:repeat(2,minmax(0,1fr))}}

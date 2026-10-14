@@ -68,7 +68,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); });
+    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -148,7 +148,7 @@
   var faPct = new Intl.NumberFormat('fa-IR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
   var RATE_MIN = 0.5, RATE_MAX = 1.5;
   var COMM_LABEL = { none: 'ثبت نشده', draft: 'پیش‌نویس مالی', reviewed: 'بررسی‌شدهٔ مدیر فروش', approved: 'تأییدشدهٔ مدیرعامل' };
-  S.comm = { year: '', month: '', doc: null, results: [], mdoc: null, mres: [], loading: false, busy: false, msg: '', error: '' };
+  S.comm = { year: '', month: '', doc: null, results: [], mdoc: null, mall: {}, mres: [], loading: false, busy: false, msg: '', error: '' };
   var MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function provinceToRegion() {
@@ -186,7 +186,11 @@
     if (can('commission')) {
       p = Promise.all([
         db.collection('commission_rates').doc(y).get().then(function (s) { S.comm.doc = s.exists ? s.data() : null; }),
-        db.collection('commission_months').doc(y + '_' + mm).get().then(function (s) { S.comm.mdoc = s.exists ? s.data() : null; })
+        db.collection('commission_months').get().then(function (qs) {
+          S.comm.mall = {};
+          qs.forEach(function (s) { S.comm.mall[s.id] = s.data(); });
+          S.comm.mdoc = S.comm.mall[y + '_' + mm] || null;
+        })
       ]);
     } else if (commOwnRegions().length) {
       // one document per region (and month), read by id: a rule that depends on the caller's profile cannot be proven for a query
@@ -207,7 +211,7 @@
     }
     if (!p) return;
     S.comm.loading = true; S.comm.error = ''; render();
-    p.then(null, function (e) { S.comm.error = errText(e); }).then(function () { S.comm.loading = false; render(); });
+    p.then(null, function (e) { S.comm.error = errText(e); }).then(function () { S.comm.loading = false; render(); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   function commYearChips() {
     return '<div class="pn-chips pn-years" role="group" aria-label="سال">' + commYears().map(function (y) {
@@ -244,7 +248,7 @@
     if (editable) acts += '<button type="button" class="pn-secondary" data-comm-act="save"' + (C.busy ? ' disabled' : '') + '>ذخیرهٔ پیش‌نویس</button>';
     if (can('commissionReview') && status === 'draft') acts += '<button type="button" class="pn-primary" data-comm-act="review"' + (C.busy ? ' disabled' : '') + '>تأیید بررسی</button>';
     if (can('commissionApprove') && status === 'reviewed') acts += '<button type="button" class="pn-primary" data-comm-act="approve"' + (C.busy ? ' disabled' : '') + '>تأیید نهایی و انتشار</button>';
-    return '<section class="pn-card pn-comm"><h2>پورسانت مناطق</h2>' + commYearChips() +
+    return '<section class="pn-card pn-comm" id="commission"><h2>پورسانت مناطق</h2>' + commYearChips() +
       '<p class="pn-note"><span class="pn-chip">' + esc(COMM_LABEL[status] || COMM_LABEL.none) + '</span> مبنا: درآمد سالانهٔ هر منطقه؛ نرخ بین ' + faPct.format(RATE_MIN) + ' تا ' + faPct.format(RATE_MAX) + ' درصد.</p>' +
       '<div class="pn-scroll"><table class="pn-table"><thead><tr><th>منطقه</th><th>درآمد (میلیارد تومان)</th><th>نرخ ٪</th><th>پورسانت (میلیارد تومان)</th></tr></thead><tbody>' + rows +
       '</tbody><tfoot><tr><td>جمع</td><td>' + faOne.format(totInc) + '</td><td>—</td><td>' + faTwo.format(tot) + '</td></tr></tfoot></table></div>' +
@@ -252,10 +256,23 @@
       (acts ? '<div class="pn-actions">' + acts + '</div>' : '') +
       '<p class="pn-note">فقط مالی نرخ را وارد می‌کند، مدیر فروش بررسی و مدیرعامل تأیید می‌کند. کارشناس فروش فقط نتیجهٔ منطقهٔ خودش را می‌بیند.</p></section>';
   }
+  var SEASONS = [
+    { key: 'spring', name: 'بهار', icon: '<path d="M12 21v-8M12 13c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z"/>' },
+    { key: 'summer', name: 'تابستان', icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.900 4.900l1.400 1.400m11.400 11.400 1.400 1.400M2 12h2m16 0h2M4.900 19.100l1.400-1.400m11.400-11.400 1.400-1.400"/>' },
+    { key: 'autumn', name: 'پاییز', icon: '<path d="M5 19c0-8 5-14 14-14 0 9-6 14-14 14zM5 19l8-8"/>' },
+    { key: 'winter', name: 'زمستان', icon: '<path d="M12 2v20M4 6.500l16 11M20 6.500l-16 11"/>' }
+  ];
   function monthChips() {
-    return '<div class="pn-chips pn-months" role="group" aria-label="ماه">' + MONTHS.map(function (n, i) {
-      return '<button type="button" class="pn-year" data-comm-month="' + pad2(i + 1) + '" aria-pressed="' + (pad2(i + 1) === S.comm.month) + '">' + esc(n) + '</button>';
-    }).join('') + '</div>';
+    var C = S.comm;
+    return '<div class="pn-seasons" role="group" aria-label="ماه">' + SEASONS.map(function (s, si) {
+      return '<div class="pn-season ' + s.key + '"><div class="pn-season-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + s.icon + '</svg><span>' + s.name + '</span></div>' +
+        [0, 1, 2].map(function (k) {
+          var i = si * 3 + k, mm = pad2(i + 1), d = C.mall[C.year + '_' + mm], st = d ? d.status : 'none';
+          return '<button type="button" class="pn-m" data-comm-month="' + mm + '" data-st="' + st + '" aria-pressed="' + (mm === C.month) + '" title="' + esc(COMM_LABEL[st] || COMM_LABEL.none) + '">' +
+            '<i aria-hidden="true"></i><span>' + esc(MONTHS[i]) + '</span></button>';
+        }).join('') + '</div>';
+    }).join('') + '</div>' +
+      '<p class="pn-legend"><span><i data-st="draft"></i>پیش‌نویس</span><span><i data-st="reviewed"></i>بررسی‌شده</span><span><i data-st="approved"></i>تأییدشده</span></p>';
   }
   function monthView() {
     var C = S.comm;
@@ -397,7 +414,7 @@
       var by = {};
       res.forEach(function (snap) { snap.forEach(function (s) { var d = s.data(); d.id = s.id; by[d.id] = d; }); });
       S.tk.list = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
-    }).then(null, function (e) { S.tk.error = errText(e); }).then(function () { S.tk.loading = false; render(); });
+    }).then(null, function (e) { S.tk.error = errText(e); }).then(function () { S.tk.loading = false; render(); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   function createTicket(o) {
     var me = S.user.uid, now = Date.now(), ref = db.collection('tickets').doc();
@@ -429,7 +446,7 @@
         (x.kind === 'account-removal' ? ' <span class="pn-chip">خودکار</span>' : '') + (x.status === 'closed' ? ' <span class="pn-chip off">بسته</span>' : '') + '</span>' +
         '<span class="pn-tk-last">' + esc(x.lastText || '') + '</span></button></li>';
     }).join('');
-    return '<section class="pn-card pn-tickets"><div class="pn-tk-head"><h2>درخواست‌ها و گفت‌وگو' + (wait ? ' <span class="pn-badge" aria-label="منتظر پاسخ شما">' + faInt.format(wait) + '</span>' : '') + '</h2>' +
+    return '<section class="pn-card pn-tickets" id="tickets"><div class="pn-tk-head"><h2>درخواست‌ها و گفت‌وگو' + (wait ? ' <span class="pn-badge" aria-label="منتظر پاسخ شما">' + faInt.format(wait) + '</span>' : '') + '</h2>' +
       '<button type="button" class="pn-secondary" data-tk-new>درخواست جدید</button></div>' +
       (T.error ? '<p class="pn-err" role="alert">' + esc(T.error) + '</p>' : '') +
       (items ? '<ul class="pn-tk-list">' + items + '</ul>' : '<p class="pn-note">' + (T.loading ? 'در حال بارگذاری…' : 'درخواستی نیست. برای گفت‌وگو با فروش، مالی، مدیریت یا هر واحد دیگر «درخواست جدید» را بزنید.') + '</p>') + '</section>';
@@ -506,7 +523,7 @@
       S.pub.list = [];
       qs.forEach(function (s) { var d = s.data(); d.id = s.id; S.pub.list.push(d); });
       S.pub.list.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-    }).then(null, function (e) { S.pub.error = errText(e); }).then(function () { render(); });
+    }).then(null, function (e) { S.pub.error = errText(e); }).then(function () { render(); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   function publicView() {
     if (!pubReader()) return '';
@@ -517,9 +534,19 @@
         '<p>' + esc(x.text) + '</p><button type="button" class="pn-secondary" data-pub-close="' + esc(x.id) + '">انجام شد</button></div></li>';
     }).join('');
     if (!rows && !S.pub.error) return '';
-    return '<section class="pn-card pn-tickets"><h2>پیام‌های بیرونی <span class="pn-badge">' + faInt.format(open.length) + '</span></h2>' +
+    return '<section class="pn-card pn-tickets" id="public"><h2>پیام‌های بیرونی <span class="pn-badge">' + faInt.format(open.length) + '</span></h2>' +
       (S.pub.error ? '<p class="pn-err" role="alert">' + esc(S.pub.error) + '</p>' : '') + '<ul class="pn-tk-list">' + rows + '</ul></section>';
   }
+
+  function notifyView() {
+    var list = window.MSNotify ? window.MSNotify.items() : [];
+    var rows = list.map(function (x) {
+      return '<li><a href="#' + esc(x.target) + '"><span class="pn-dot" aria-hidden="true"></span>' + esc(x.text) + '</a></li>';
+    }).join('');
+    return '<section class="pn-card pn-notify' + (list.length ? ' has' : '') + '" aria-live="polite"><h2>اعلان‌ها</h2>' +
+      (rows ? '<ul>' + rows + '</ul>' : '<p class="pn-note">فعلاً چیزی منتظر شما نیست.</p>') + '</section>';
+  }
+  window.addEventListener('ms-notify', function () { if (S.profile) render(); });
 
   function view() {
     if (S.loading) return '<p class="pn-note">در حال بارگذاری…</p>';
@@ -556,6 +583,7 @@
         return '<li><div><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.customer || 'بدون نام مشتری') + '</span></div><div><span>' + esc(faDate(d.createdAt)) + '</span><b>' + money(M.totals(d).total, d.unit) + '</b></div></li>';
       }).join('') + '</ul>' : '<p class="pn-note">هنوز پیش‌فاکتوری صادر نکرده‌اید.</p>') +
       '<a class="pn-link" href="./product-catalog.html">رفتن به کاتالوگ و ساخت پیش‌فاکتور</a></section>';
+    out += notifyView();
     out += publicView();
     out += ticketsView();
     out += commissionView();
