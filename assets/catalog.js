@@ -295,7 +295,10 @@
     });
     payRefresh();
   }
+  // a draft number from the old scheme (PF-…) that was never saved is dropped so the new coded number is used
+  function legacyDraftNo() { return !!inv.docNo && !/^[A-Z]{2}-\d{6}-/.test(inv.docNo) && !archive.some(function (d) { return d.docNo === inv.docNo; }); }
   function invoiceView() {
+    if (legacyDraftNo()) { inv.docNo = ''; invSave(); }
     if (!invDate) invDate = today();
     var rows = inv.lines.map(function (l, i) {
       var it = byId[l.id];
@@ -315,14 +318,14 @@
       '<section class="pay" id="payBox">' + (payNormalize(), payHtml()) + '</section>'
       : '<p class="inv-empty">پیش‌فاکتور خالی است. با دکمهٔ + روی هر محصول، آن را اضافه کنید.</p>';
     var foot = has ? '<div class="inv-foot"><p class="inv-msg" id="invMsg" role="status" hidden></p><div class="inv-pay"><span>مبلغ قابل پرداخت</span><b data-t="total"></b></div>' +
-      '<div class="inv-actions"><button type="button" class="inv-clear" data-inv-clear aria-label="پاک‌کردن پیش‌فاکتور" title="پاک‌کردن پیش‌فاکتور">' + ICON.trash + '</button>' +
+      amButton() + '<div class="inv-actions"><button type="button" class="inv-clear" data-inv-clear aria-label="پاک‌کردن پیش‌فاکتور" title="پاک‌کردن پیش‌فاکتور">' + ICON.trash + '</button>' +
       '<button type="button" class="inv-pdf alt" data-inv-print>' + ICON.print + '<span>دریافت PDF</span></button>' +
-      '<button type="button" class="inv-pdf" data-inv-share>' + ICON.share + '<span>ارسال</span></button></div>' + amButton() + '</div>' : '';
+      '<button type="button" class="inv-pdf alt" data-inv-share>' + ICON.share + '<span>اشتراک‌گذاری</span></button></div></div>' : '';
     openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتور</h2><button type="button" class="dlg-link" data-arc-open>سوابق</button><button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
       '<div class="inv-body"><div class="inv-meta">' +
         '<label class="wide">صادرکننده (ویزیتور)<input type="text" data-f="issuer" value="' + esc(inv.issuer) + '" autocomplete="name" placeholder="نام و نام خانوادگی"></label>' +
         '<label>تاریخ<input type="text" data-f="date" data-jdate readonly inputmode="none" value="' + esc(invDate) + '"></label>' +
-        '<label>شمارهٔ سند<input type="text" inputmode="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="خودکار" autocomplete="off"></label>' +
+        '<label>شمارهٔ سند<input type="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="خودکار" readonly aria-readonly="true" autocomplete="off"></label>' +
         '<label class="wide">مشتری<input type="text" data-f="customer" list="custList" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
         '<label>تلفن گیرنده<input type="tel" inputmode="numeric" dir="ltr" data-f="custPhone" value="' + esc(fa0(inv.custPhone)) + '" maxlength="11" autocomplete="tel-national" placeholder="۰۹…"><small class="inv-hint bad" data-phone-hint hidden>شماره باید ۱۱ رقم و با صفر شروع شود</small></label>' +
         '<label>شهر<input type="text" data-f="custCity" value="' + esc(inv.custCity) + '" autocomplete="address-level2" placeholder="شهر گیرنده"></label>' +
@@ -352,15 +355,24 @@
     }
     return groups.join(' و ');
   }
-  // PF-<yymmdd Jalali>-<running number>; assigned once per invoice and kept until the draft is cleared
+  // <ROLE>-<yymmdd Jalali>-<OWNER CODE>-<running number>, e.g. SM-051018-AB-003. The two letters say what kind of person issued it
+  // (SM sales manager, SE sales specialist, AM account manager ...). The running number continues after the highest one already used
+  // for the same prefix on this device or in the cloud copies; the cloud then moves it on if another device already took it.
   function nextDocNo() {
-    var parts = [], seq = 1;
+    var parts = [];
     try { parts = new Intl.DateTimeFormat('en-u-ca-persian-nu-latn', { year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()); } catch (e) { /* fall back to a timestamp */ }
     var part = function (type) { var x = parts.filter(function (p) { return p.type === type; })[0]; return x ? x.value.replace(/\D/g, '') : ''; };
     var ymd = (part('year').slice(-2) + part('month') + part('day')) || String(Date.now()).slice(-6);
-    try { seq = (Number(localStorage.getItem('ms-proforma-seq')) || 0) + 1; localStorage.setItem('ms-proforma-seq', String(seq)); } catch (e) { /* ignore */ }
-    var owner = window.MSSync ? window.MSSync.code() : '';
-    return 'PF-' + ymd + (owner ? '-' + owner : '') + '-' + ('00' + seq).slice(-3);
+    var role = window.MSSync ? window.MSSync.roleCode() : 'XX';
+    var owner = (window.MSSync ? window.MSSync.code() : '') || 'X';
+    var prefix = role + '-' + ymd + '-' + owner + '-', max = 0, key = 'ms-seq-' + prefix;
+    archive.concat(foreign).forEach(function (d) {
+      if (d.docNo && d.docNo.indexOf(prefix) === 0) { var n = parseInt(d.docNo.slice(prefix.length), 10); if (n > max) max = n; }
+    });
+    try { max = Math.max(max, Number(localStorage.getItem(key)) || 0); } catch (e) { /* ignore */ }
+    var seq = max + 1;
+    try { localStorage.setItem(key, String(seq)); } catch (e) { /* ignore */ }
+    return prefix + ('00' + seq).slice(-3);
   }
   function snapshot() {
     return {
@@ -447,8 +459,12 @@
     window.print();
   }
   function commitDoc() {
+    if (legacyDraftNo()) inv.docNo = '';
     if (!inv.docNo) { inv.docNo = nextDocNo(); invSave(); var field = dialog.querySelector('[data-f=docNo]'); if (field) field.value = inv.docNo; }
     var doc = snapshot();
+    // saving the same document again keeps its identity: creation time, review result and the fact that it was sent
+    var prev = archive.filter(function (d) { return d.docNo === doc.docNo; })[0];
+    if (prev) { doc.createdAt = prev.createdAt || doc.createdAt; ['sentAt', 'review', 'cloudSeen', 'sendPending', 'ownerUid', 'ownerName'].forEach(function (k) { if (prev[k] !== undefined) doc[k] = prev[k]; }); }
     doc.updatedAt = Date.now();
     doc.synced = false;
     archive = archive.filter(function (d) { return d.docNo !== doc.docNo; });
@@ -460,12 +476,23 @@
   }
   function invPrint(btn) { if (!receiverOk()) return; printDoc(commitDoc(), btn); }
 
-  // ----- send the proforma to account management as a ticket (they are notified about the sale)
+  // ----- send the proforma to account management (a ticket; the account manager is notified about the sale)
+  function reviewLine(d) {
+    var r = d.review || {};
+    if (r.status === 'approved') return '<div class="arc-review ok">تأیید اکانت منیجر ✓</div>';
+    if (r.status === 'refusal') return '<div class="arc-review bad">رد شد · منتظر تصمیم مدیر فروش' + (r.reason ? ' — ' + esc(r.reason) : '') + '</div>';
+    if (r.status === 'kept') return '<div class="arc-review">رد اکانت منیجر پذیرفته نشد؛ پیش‌فاکتور معتبر است</div>';
+    if (d.sendPending) return '<div class="arc-review wait">در انتظار اتصال برای ارسال به اکانت منیجر</div>';
+    if (d.sentAt) return '<div class="arc-review">برای اکانت منیجر ارسال شده · ' + esc(faTimeShort(d.sentAt)) + '</div>';
+    return '';
+  }
   function amButton() {
-    if (!window.MSSync || !window.MSSync.canSend || !window.MSSync.canSend()) return '';
-    var d = archive.filter(function (x) { return x.docNo && x.docNo === inv.docNo; })[0], sent = d && d.sentAt;
-    return '<button type="button" class="inv-am" data-inv-send>' + ICON.send + '<span>' + (sent ? 'ارسال دوباره به اکانت منیجر' : 'ارسال به اکانت منیجر') + '</span></button>' +
-      (sent ? '<p class="inv-sent">برای اکانت منیجر ارسال شده است · ' + esc(faTimeShort(sent)) + '</p>' : '');
+    if (!window.MSSync || !window.MSSync.sendState) return '';
+    var st = window.MSSync.sendState();
+    if (st === 'self') return '';
+    var d = archive.filter(function (x) { return x.docNo && x.docNo === inv.docNo; })[0];
+    var label = st === 'signin' ? 'برای ارسال به اکانت منیجر وارد شوید' : (d && d.sentAt ? 'ارسال دوباره به اکانت منیجر' : 'ارسال به اکانت منیجر برای بررسی');
+    return '<button type="button" class="inv-am" data-inv-send>' + ICON.send + '<span>' + label + '</span></button>' + (d ? reviewLine(d) : '');
   }
   function faTimeShort(ms) { try { return new Intl.DateTimeFormat('fa-IR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
   function amText(doc) {
@@ -479,31 +506,45 @@
       'مبلغ قابل پرداخت: ' + faInt.format(Math.round(t.total || 0)) + ' ' + (doc.unit || ''),
       'شرایط پرداخت: ' + pay,
       'صادرکننده: ' + (doc.issuer || '—'),
-      'نسخهٔ کامل در سوابق پیش‌فاکتور (بخش «پیش‌فاکتورهای سایر ویزیتورها») قابل مشاهده است.'];
+      'برای بررسی: پنل کاربری ← پیش‌فاکتورها؛ پس از بررسی «تأیید» یا «رد با دلیل» را بزنید.'];
     return lines.filter(Boolean).join('\n').slice(0, 1900);
   }
   function fa0(s) { return String(s).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); }
+  function say(text, bad) {
+    if (dialog.querySelector('#invMsg')) shareMsg(text, bad); else if (text) window.alert(text);
+  }
+  function sendDoc(doc, btn) {
+    if (window.MSSync.sendState() === 'signin') { window.MSSync.openAccount(); return; }
+    if (doc.sentAt && !window.confirm('این پیش‌فاکتور قبلاً برای اکانت منیجر ارسال شده است. دوباره ارسال شود؟')) return;
+    var label = btn.innerHTML, text = amText(doc);
+    btn.disabled = true; btn.innerHTML = '<span>در حال ارسال…</span>';
+    say('');
+    window.MSSync.sendProforma(doc, text).then(function () {
+      doc.sentAt = Date.now(); delete doc.sendPending; doc.synced = false;
+      saveJson(ARCH_KEY, archive);
+      window.MSSync.push();
+      say('پیش‌فاکتور برای اکانت منیجر ارسال شد و به او اطلاع داده می‌شود.');
+      btn.innerHTML = '<span>ارسال شد ✓</span>';
+    }, function (err) {
+      var code = String(err && (err.code || err.message) || 'error');
+      if (/permission/.test(code)) { say('اجازهٔ ارسال برای این حساب فعال نیست؛ از مدیر بخواهید حساب را بررسی کند. [' + code + ']', true); btn.innerHTML = label; return; }
+      if (/not-signed-in|no-profile/.test(code)) { say('ابتدا با حساب خود وارد شوید (دکمهٔ حساب بالای صفحه).', true); btn.innerHTML = label; return; }
+      // no connection: keep it queued, it is sent automatically when the connection returns
+      doc.sendPending = text; doc.synced = false; saveJson(ARCH_KEY, archive);
+      window.MSSync.push();
+      say('اتصال برقرار نیست. پیش‌فاکتور ذخیره شد و به‌محض اتصال خودکار برای اکانت منیجر ارسال می‌شود. [' + code + ']', true);
+      btn.innerHTML = '<span>در صف ارسال</span>';
+    }).then(function () { btn.disabled = false; });
+  }
   function sendToAM(btn) {
+    if (window.MSSync.sendState() === 'signin') { window.MSSync.openAccount(); return; }
     if (!receiverOk()) return;
     if (!String(inv.customer || '').trim()) {
       shareMsg('نام مشتری را بنویسید تا اکانت منیجر بداند پیش‌فاکتور برای کیست.', true);
       var cf = dialog.querySelector('[data-f=customer]'); if (cf) { try { cf.focus(); } catch (e) { /* ignore */ } }
       return;
     }
-    var doc = commitDoc(), label = btn.innerHTML;
-    btn.disabled = true; btn.innerHTML = '<span>در حال ارسال…</span>';
-    shareMsg('');
-    window.MSSync.sendProforma(doc, amText(doc)).then(function () {
-      doc.sentAt = Date.now(); doc.synced = false;
-      saveJson(ARCH_KEY, archive);
-      if (window.MSSync) window.MSSync.push();
-      shareMsg('پیش‌فاکتور برای اکانت منیجر ارسال شد و به او اطلاع داده می‌شود.');
-      btn.innerHTML = '<span>ارسال شد ✓</span>';
-    }, function (err) {
-      var code = err && err.code || '';
-      shareMsg(/permission/.test(code) ? 'اجازهٔ ارسال برای این حساب فعال نیست؛ از مدیر بخواهید حساب و قوانین را بررسی کند.' : /not-signed-in|no-profile/.test(code) ? 'ابتدا با حساب خود وارد شوید (دکمهٔ حساب بالای صفحه).' : 'ارسال انجام نشد (اینترنت یا VPN). پیش‌فاکتور روی دستگاه ذخیره است؛ دوباره امتحان کنید. [' + (code || 'error') + ']', true);
-      btn.innerHTML = label;
-    }).then(function () { btn.disabled = false; });
+    sendDoc(commitDoc(), btn);
   }
 
   // ----- share / save the proforma as a real PDF file (one JPEG per A4 page inside a minimal PDF container)
@@ -611,7 +652,7 @@
       if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
         return navigator.share(data).then(null, function (e) {
           if (e && e.name === 'AbortError') return;
-          if (e && e.name === 'NotAllowedError') { shareMsg('فایل آماده است؛ یک بار دیگر «ارسال» را بزنید.'); return; }
+          if (e && e.name === 'NotAllowedError') { shareMsg('فایل آماده است؛ یک بار دیگر «اشتراک‌گذاری» را بزنید.'); return; }
           saveFile(file); shareMsg('ارسال مستقیم ممکن نشد؛ فایل PDF روی دستگاه ذخیره شد.');
         });
       }
@@ -640,9 +681,9 @@
       return '<li class="arc-card" data-q="' + esc(norm([d.docNo, d.customer, d.issuer, d.date].join(' '))) + '">' +
         '<div class="arc-head"><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.date) + '</span></div>' +
         '<div class="arc-cust">' + esc(d.customer || 'بدون نام مشتری') + (d.issuer ? ' <small>· ' + esc(d.issuer) + '</small>' : '') + '</div>' +
-        '<div class="arc-meta"><span>' + faInt.format(d.lines.length) + ' ردیف</span><b>' + money(t.total, d.unit) + '</b></div>' +
+        '<div class="arc-meta"><span>' + faInt.format(d.lines.length) + ' ردیف</span><b>' + money(t.total, d.unit) + '</b></div>' + reviewLine(d) +
         '<div class="arc-actions"><button type="button" data-arc-edit="' + i + '">ویرایش</button><button type="button" data-arc-copy="' + i + '">کپی</button>' +
-        '<button type="button" data-arc-pdf="' + i + '">PDF</button><button type="button" data-arc-share="' + i + '">ارسال</button><button type="button" class="danger" data-arc-del="' + i + '" aria-label="حذف">' + ICON.trash + '</button></div></li>';
+        '<button type="button" data-arc-pdf="' + i + '">PDF</button><button type="button" data-arc-share="' + i + '">اشتراک</button>' + (window.MSSync && window.MSSync.sendState && window.MSSync.sendState() === 'ok' ? '<button type="button" class="am" data-arc-send="' + i + '">به اکانت منیجر</button>' : '') + '<button type="button" class="danger" data-arc-del="' + i + '" aria-label="حذف">' + ICON.trash + '</button></div></li>';
     }).join('');
     var fcards = foreign.map(function (d, i) {
       var t = totalsOf(d);
@@ -650,7 +691,7 @@
         '<div class="arc-head"><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.date) + '</span></div>' +
         '<div class="arc-cust">' + esc(d.customer || 'بدون نام مشتری') + ' <small>· ' + esc(d.ownerName || d.issuer || '') + '</small></div>' +
         '<div class="arc-meta"><span>' + faInt.format(d.lines.length) + ' ردیف</span><b>' + money(t.total, d.unit) + '</b></div>' +
-        '<div class="arc-actions two"><button type="button" data-arc-fcopy="' + i + '">کپی</button><button type="button" data-arc-fpdf="' + i + '">PDF</button><button type="button" data-arc-fshare="' + i + '">ارسال</button></div></li>';
+        '<div class="arc-actions two"><button type="button" data-arc-fcopy="' + i + '">کپی</button><button type="button" data-arc-fpdf="' + i + '">PDF</button><button type="button" data-arc-fshare="' + i + '">اشتراک</button></div></li>';
     }).join('');
     openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتورهای ذخیره‌شده</h2><button type="button" class="dlg-link" data-inv-open>پیش‌نویس</button>' +
       '<button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
@@ -775,7 +816,7 @@
   });
 
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-share],[data-arc-fshare],[data-inv-share],[data-inv-send],[data-arc-backup],[data-pay-count],[data-pay-equal],[data-close],[data-src]');
+    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-share],[data-arc-fshare],[data-inv-share],[data-inv-send],[data-arc-send],[data-arc-backup],[data-pay-count],[data-pay-equal],[data-close],[data-src]');
     if (e.target === dialog) { dialog.close(); return; }
     if (!t) return;
     if (t.hasAttribute('data-open')) detail(t.getAttribute('data-open'));
@@ -788,6 +829,7 @@
     else if (t.hasAttribute('data-pay-equal')) { ensurePay().custom = false; payNormalize(); invSave(); payRender(); }
     else if (t.hasAttribute('data-inv-share')) { if (receiverOk()) shareDoc(commitDoc(), t); }
     else if (t.hasAttribute('data-inv-send')) sendToAM(t);
+    else if (t.hasAttribute('data-arc-send')) sendDoc(archive[Number(t.getAttribute('data-arc-send'))], t);
     else if (t.hasAttribute('data-arc-share')) shareDoc(archive[Number(t.getAttribute('data-arc-share'))], t);
     else if (t.hasAttribute('data-arc-fshare')) shareDoc(foreign[Number(t.getAttribute('data-arc-fshare'))], t);
     else if (t.hasAttribute('data-inv-print')) invPrint(t);
@@ -925,7 +967,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261229', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261232', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();

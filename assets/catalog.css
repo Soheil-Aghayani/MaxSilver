@@ -322,3 +322,10 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .inv-am svg{width:20px;height:20px;color:var(--ms-blue)}
 .inv-am:disabled{opacity:.6}
 .inv-sent{margin:0;color:#0c6b3d;font-size:12.5px;font-weight:700;text-align:center}
+.inv-am{background:var(--ms-navy)!important;color:#fff!important;border-color:var(--ms-navy)!important}
+.inv-am svg{color:var(--ms-gold)!important}
+.arc-review{padding:6px 10px;border-radius:10px;background:#f3f5f7;color:var(--ms-navy);font-size:12.5px;font-weight:700;line-height:1.8}
+.arc-review.ok{background:#ecfdf3;color:#0c6b3d}.arc-review.bad{background:#fff1f0;color:#b42318}.arc-review.wait{background:#fffaeb;color:#93370d}
+.arc-actions .am{background:var(--ms-navy);color:#fff}
+.arc-actions{flex-wrap:wrap}
+.inv-body input[readonly][data-f=docNo]{background:#f3f5f9;color:#41536b}

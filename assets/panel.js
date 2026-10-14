@@ -69,7 +69,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); loadPersonal(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
+    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); loadPersonal(); loadArchive(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -890,49 +890,66 @@
   }
   window.addEventListener('hashchange', tabFromHash);
 
-  // ---- invoices of everyone: for roles that review proformas (account manager, finance, sales manager, management)
-  S.invF = 'all'; S.invQ = '';
-  function tkForDoc(docNo) {
+  // ---- invoices of everyone: for the roles that review proformas. The account manager approves a proforma or refuses it with a
+  // written reason (a letter to the sales manager); the sales manager decides: accepting moves the proforma to the archive and
+  // removes it everywhere else, declining keeps it valid.
+  S.invF = 'all'; S.invQ = ''; S.archDocs = []; S.invOpen = '';
+  function tkForDoc(docNo, kind) {
     var best = null;
-    S.tk.list.forEach(function (x) { if (x.docNo === docNo && (!best || (x.updatedAt || 0) > (best.updatedAt || 0))) best = x; });
+    S.tk.list.forEach(function (x) {
+      if (x.docNo === docNo && (x.kind || 'proforma') === (kind || 'proforma') && (!best || (x.updatedAt || 0) > (best.updatedAt || 0))) best = x;
+    });
     return best;
   }
   function invKey(d) { return (d.ownerUid || '') + '_' + (d.docNo || ''); }
+  function revStatus(d) { return d.status === 'refused' ? 'archive' : ((d.review && d.review.status) || (d.sentAt ? 'pending' : 'new')); }
+  var REV_TEXT = { archive: 'بایگانی‌شده · ردشده', approved: 'تأیید اکانت منیجر', refusal: 'رد شده · منتظر تصمیم مدیر فروش', kept: 'رد اکانت منیجر پذیرفته نشد', pending: 'ارسال شده · منتظر بررسی', 'new': 'ارسال‌نشده' };
+  function reviewChip(d) {
+    var st = revStatus(d), cls = st === 'approved' ? ' ok' : (st === 'refusal' ? ' warn' : (st === 'archive' ? ' off' : ''));
+    return '<span class="pn-chip' + cls + '">' + REV_TEXT[st] + (st === 'pending' && d.sentAt ? ' · ' + esc(tkWhen(d.sentAt)) : '') + '</span>';
+  }
+  function reviewTxt(d) { var st = revStatus(d); return st === 'new' ? '' : REV_TEXT[st]; }
   function invMatches(d) {
-    if (S.invF === 'sent' && !d.sentAt) return false;
-    if (S.invF === 'new' && d.sentAt) return false;
+    var f = S.invF, st = revStatus(d);
+    if (f !== 'all' && f !== 'archive' && st !== f) return false;
     var q = latinDigits(S.invQ).trim().toLowerCase();
     if (!q) return true;
     return latinDigits([d.docNo, d.customer, d.customerCity, d.ownerName, d.issuer].join(' ')).toLowerCase().indexOf(q) >= 0;
   }
+  function invSource() { return S.invF === 'archive' ? S.archDocs : S.docs; }
   function invCard(d) {
-    var t = M.totals(d), tk = tkForDoc(d.docNo), who = d.ownerName || d.issuer || '—';
+    var t = M.totals(d), tk = tkForDoc(d.docNo, 'proforma') || tkForDoc(d.docNo, 'proforma-refusal'), who = d.ownerName || d.issuer || '—';
     return '<li class="pn-inv"><div class="pn-inv-top"><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(faDate(d.createdAt)) + '</span></div>' +
       '<div class="pn-inv-mid"><strong>' + esc(d.customer || 'بدون نام مشتری') + '</strong>' + (d.customerCity ? '<span class="pn-note"> · ' + esc(d.customerCity) + '</span>' : '') + '</div>' +
       '<div class="pn-inv-meta"><span>' + esc(who) + '</span><b>' + money(t.total, d.unit) + '</b></div>' +
-      '<div class="pn-inv-foot">' + (d.sentAt ? '<span class="pn-chip ok">برای اکانت منیجر ارسال شده · ' + esc(tkWhen(d.sentAt)) + '</span>' : '<span class="pn-chip">ارسال‌نشده</span>') +
+      '<div class="pn-inv-foot">' + reviewChip(d) +
       '<span class="pn-inv-act"><button type="button" class="pn-secondary" data-inv-view="' + esc(invKey(d)) + '">جزئیات</button>' +
       (tk ? '<button type="button" class="pn-secondary" data-tk-open="' + esc(tk.id) + '">گفت‌وگو</button>' : '') + '</span></div></li>';
   }
   function invListHtml() {
-    var list = S.docs.filter(invMatches);
+    var list = invSource().filter(invMatches);
     return list.length ? list.slice(0, 200).map(invCard).join('') : '<li class="pn-note">پیش‌فاکتوری با این فیلتر پیدا نشد.</li>';
   }
   function invoicesView() {
-    var sent = S.docs.filter(function (d) { return d.sentAt; }).length;
-    var chips = [['all', 'همه', S.docs.length], ['sent', 'ارسال‌شده برای بررسی', sent], ['new', 'ارسال‌نشده', S.docs.length - sent]].map(function (c) {
+    var n = function (st) { return S.docs.filter(function (d) { return revStatus(d) === st; }).length; };
+    var chips = [['all', 'همه', S.docs.length], ['pending', 'منتظر بررسی', n('pending')], ['refusal', 'رد شده', n('refusal')], ['approved', 'تأییدشده', n('approved')],
+      ['new', 'ارسال‌نشده', n('new')], ['archive', 'بایگانی', S.archDocs.length]].map(function (c) {
       return '<button type="button" class="pn-fchip" data-inv-f="' + c[0] + '" aria-pressed="' + (S.invF === c[0]) + '">' + c[1] + ' <b>' + faInt.format(c[2]) + '</b></button>';
     }).join('');
     return '<section class="pn-card" id="invoices"><h2>پیش‌فاکتورها <span class="pn-badge">' + faInt.format(S.docs.length) + '</span></h2>' +
-      '<p class="pn-note">همهٔ پیش‌فاکتورهای ثبت‌شده در شرکت. هر کدام که کارشناس برای بررسی فرستاده، علامت «ارسال شده» دارد و از «گفت‌وگو» می‌توانید پاسخ بدهید.</p>' +
+      '<p class="pn-note">همهٔ پیش‌فاکتورهای شرکت. اکانت منیجر هر پیش‌فاکتور ارسال‌شده را تأیید می‌کند یا با نوشتن دلیل رد می‌کند؛ رد باید مدیر فروش بپذیرد و تنها پس از آن، پیش‌فاکتور از برنامه برداشته و در «بایگانی» نگه داشته می‌شود.</p>' +
       '<input type="search" class="pn-inv-q" data-inv-q placeholder="جست‌وجو: شماره، مشتری، شهر یا صادرکننده" value="' + esc(S.invQ) + '" autocomplete="off">' +
       '<div class="pn-fchips" role="group" aria-label="فیلتر">' + chips + '</div>' +
       '<ul class="pn-inv-list" id="invList">' + invListHtml() + '</ul></section>';
   }
+  function findInv(key) {
+    return S.docs.filter(function (x) { return invKey(x) === key; })[0] || S.archDocs.filter(function (x) { return invKey(x) === key; })[0];
+  }
   function invDetail(key) {
-    var d = S.docs.filter(function (x) { return invKey(x) === key; })[0];
+    var d = findInv(key);
     if (!d) return;
-    var t = M.totals(d), tk = tkForDoc(d.docNo), p = d.pay || { mode: 'cash' };
+    S.invOpen = key;
+    var t = M.totals(d), tk = tkForDoc(d.docNo, 'proforma'), p = d.pay || { mode: 'cash' }, r = d.review || {}, arch = d.status === 'refused';
     var rows = (d.lines || []).map(function (l) {
       return '<tr><td>' + esc(l.name || '') + (l.code ? '<small dir="ltr">' + esc(l.code) + '</small>' : '') + '</td><td>' + faInt.format(l.qty || 0) + '</td><td>' + money(l.price || 0, d.unit) + '</td><td>' + money((l.qty || 0) * (l.price || 0), d.unit) + '</td></tr>';
     }).join('');
@@ -941,16 +958,124 @@
       return '<li><div><b>چک ' + faInt.format(i + 1) + '</b></div><div><span>' + esc(faDigitsStr(c.date || '')) + '</span><b>' + money(c.amount || 0, d.unit) + '</b></div></li>';
     }).join('') + '</ul>' : '';
     var fact = function (l, v, ltr) { return '<div class="pn-fact"><dt>' + l + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + (v ? esc(v) : '<i>ثبت نشده</i>') + '</dd></div>'; };
+    var box = '';
+    if (arch) box = '<div class="pn-rv bad"><b>بایگانی‌شده · رد شد</b><p>دلیل اکانت منیجر: ' + esc(r.reason || '—') + '</p>' + (r.decision ? '<p>تصمیم ' + esc(r.decision.byName || '') + ' (' + esc(tkWhen(r.decision.at)) + ')' + (r.decision.note ? ': ' + esc(r.decision.note) : '') + '</p>' : '') + '</div>';
+    else if (r.status === 'approved') box = '<div class="pn-rv ok"><b>تأیید اکانت منیجر</b><p>' + esc(r.byName || '') + ' · ' + esc(tkWhen(r.at)) + '</p></div>';
+    else if (r.status === 'refusal') box = '<div class="pn-rv bad"><b>رد شده · منتظر تصمیم مدیر فروش</b><p>' + esc(r.byName || '') + ' · ' + esc(tkWhen(r.at)) + '</p><p>دلیل: ' + esc(r.reason || '') + '</p></div>';
+    else if (r.status === 'kept') box = '<div class="pn-rv"><b>رد اکانت منیجر پذیرفته نشد</b><p>پیش‌فاکتور معتبر است.' + (r.decision && r.decision.note ? ' ' + esc(r.decision.note) : '') + '</p></div>';
+    var actions = '';
+    if (!arch && can('invoiceReview') && r.status !== 'refusal') {
+      actions = '<div class="pn-rv-actions"><button type="button" class="pn-primary" data-rv-approve>تأیید پیش‌فاکتور</button>' +
+        '<button type="button" class="pn-secondary danger" data-rv-refuse>رد با نوشتن دلیل</button></div>' +
+        '<div id="rvBox" hidden><label>دلیل رد (به‌صورت نامه برای مدیر فروش فرستاده می‌شود)<textarea id="rvReason" rows="4" maxlength="800" placeholder="دلیل را روشن بنویسید؛ مثلاً قیمت، مبلغ پرداخت یا اطلاعات ناقص"></textarea></label>' +
+        '<button type="button" class="pn-primary" data-rv-send>ارسال نامه به مدیر فروش</button></div>';
+    } else if (!arch && can('invoiceDecide') && r.status === 'refusal') {
+      actions = '<label>یادداشت (اختیاری)<textarea id="dcNote" rows="2" maxlength="500"></textarea></label>' +
+        '<div class="pn-rv-actions"><button type="button" class="pn-primary" data-dc-accept>پذیرش رد و انتقال به بایگانی</button>' +
+        '<button type="button" class="pn-secondary" data-dc-keep>رد پذیرفته نشد؛ پیش‌فاکتور بماند</button></div>';
+    }
     dlg.className = 'pn-dialog';
     dlg.innerHTML = '<div class="pn-bar"><h2 id="dlgName" dir="ltr">' + esc(d.docNo) + '</h2><div class="pn-bar-actions">' +
       '<button type="button" class="pn-x" data-close aria-label="بستن"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div></div>' +
-      '<div class="pn-edit"><dl class="pn-facts">' + fact('صادرکننده', d.ownerName || d.issuer) + fact('تاریخ', faDigitsStr(d.date || '')) + fact('مشتری', d.customer) + fact('شهر', d.customerCity) +
+      '<div class="pn-edit">' + box + '<dl class="pn-facts">' + fact('صادرکننده', d.ownerName || d.issuer) + fact('تاریخ', faDigitsStr(d.date || '')) + fact('مشتری', d.customer) + fact('شهر', d.customerCity) +
       fact('تلفن گیرنده', d.customerPhone ? faDigitsStr(d.customerPhone) : '', true) + fact('نشانی', d.customerAddress) + '</dl>' +
       '<div class="pn-tablewrap"><table class="pn-tbl"><thead><tr><th>کالا</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<dl class="pn-facts">' + fact('جمع کل', money(t.sub, d.unit)) + fact('تخفیف', money(t.disc, d.unit)) + fact('مالیات', money(t.tax, d.unit)) + fact('مبلغ قابل پرداخت', money(t.total, d.unit)) + fact('شرایط پرداخت', pay) + '</dl>' + cheques +
-      (d.sentAt ? '<p class="pn-note">برای اکانت منیجر ارسال شده است · ' + esc(tkWhen(d.sentAt)) + '</p>' : '') +
-      (tk ? '<button type="button" class="pn-primary" data-tk-open="' + esc(tk.id) + '">باز کردن گفت‌وگو</button>' : '') + '</div>';
+      actions + '<p class="pn-err" id="rvErr" role="alert" hidden></p>' +
+      (tk && !arch ? '<button type="button" class="pn-secondary" data-tk-open="' + esc(tk.id) + '">باز کردن گفت‌وگو</button>' : '') + '</div>';
     if (!dlg.open) dlg.showModal();
+  }
+  function rvFail(msg) {
+    var e = dlg.querySelector('#rvErr');
+    if (e) { e.textContent = msg; e.hidden = !msg; }
+    Array.prototype.forEach.call(dlg.querySelectorAll('[data-rv-approve],[data-rv-send],[data-dc-accept],[data-dc-keep],[data-rv-refuse]'), function (b) { b.disabled = false; });
+  }
+  function rvLock() {
+    Array.prototype.forEach.call(dlg.querySelectorAll('[data-rv-approve],[data-rv-send],[data-dc-accept],[data-dc-keep],[data-rv-refuse]'), function (b) { b.disabled = true; });
+    rvFail('');
+    Array.prototype.forEach.call(dlg.querySelectorAll('[data-rv-approve],[data-rv-send],[data-dc-accept],[data-dc-keep],[data-rv-refuse]'), function (b) { b.disabled = true; });
+  }
+  function reloadInvoices() {
+    var uid = S.user.uid, q = can('invoices') ? db.collection('invoices') : db.collection('invoices').where('ownerUid', '==', uid);
+    return q.get().then(function (res) {
+      S.docs = [];
+      res.forEach(function (s) { S.docs.push(s.data()); });
+      S.docs.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    }).then(function () { loadArchive(); loadTickets(); render(); });
+  }
+  function loadArchive() {
+    if (!S.profile || !active() || !S.user) return;
+    var col = db.collection('invoice_archive'), q = can('invoices') ? col : col.where('ownerUid', '==', S.user.uid);
+    q.get().then(function (qs) {
+      S.archDocs = [];
+      qs.forEach(function (s) { S.archDocs.push(s.data()); });
+      S.archDocs.sort(function (a, b) { return (b.archivedAt || 0) - (a.archivedAt || 0); });
+      render();
+    }, function () { /* rules not published yet */ });
+  }
+  // a note inside the conversation that already exists for this proforma, optionally closing it
+  function noteTicket(b, tk, text, close) {
+    if (!tk) return;
+    var now = Date.now(), ref = db.collection('tickets').doc(tk.id);
+    b.set(ref.collection('messages').doc(), { uid: S.user.uid, name: myName(), role: myRole(), text: String(text).slice(0, 1900), at: now });
+    var upd = { updatedAt: now, lastText: String(text).slice(0, 140), lastBy: S.user.uid, lastByName: myName() };
+    if (close) upd.status = 'closed';
+    b.update(ref, upd);
+  }
+  function newTicket(b, o) {
+    var me = S.user.uid, now = Date.now(), ref = db.collection('tickets').doc();
+    b.set(ref, Object.assign({ fromUid: me, fromName: myName(), fromRole: myRole(), toUid: '', toName: '', status: 'open', createdAt: now, updatedAt: now,
+      lastText: String(o.text).slice(0, 140), lastBy: me, lastByName: myName() }, o.head));
+    b.set(ref.collection('messages').doc(), { uid: me, name: myName(), role: myRole(), text: String(o.text).slice(0, 1900), at: now });
+  }
+  // account manager: approve, or refuse with a reason (the reason travels as a letter to the sales manager)
+  function reviewDoc(status, reason) {
+    var d = findInv(S.invOpen);
+    if (!d || !S.user) return;
+    var me = S.user.uid, now = Date.now(), t = M.totals(d), b = db.batch();
+    var review = { status: status, by: me, byName: myName(), at: now };
+    if (reason) review.reason = reason;
+    b.update(db.collection('invoices').doc(invKey(d)), { review: review, updatedAt: now });
+    var tk = tkForDoc(d.docNo, 'proforma');
+    if (status === 'refusal') {
+      var letter = 'مدیر فروش گرامی،\n' +
+        'پیش‌فاکتور ' + d.docNo + ' (' + (d.customer || '—') + (d.customerCity ? '، ' + d.customerCity : '') + ') به مبلغ ' + money(t.total, d.unit) +
+        ' که ' + (d.ownerName || d.issuer || '—') + ' صادر کرده، در بررسی اکانت منیجر (' + myName() + ') رد شد.\n\n' +
+        'دلیل رد:\n' + reason + '\n\n' +
+        'لطفاً در پنل ← پیش‌فاکتورها ← جزئیات همین پیش‌فاکتور تصمیم بگیرید. با پذیرش رد، پیش‌فاکتور از برنامه حذف و در بایگانی نگه‌داری می‌شود.';
+      newTicket(b, { text: letter, head: { title: ('رد پیش‌فاکتور ' + d.docNo + ' · ' + (d.customer || '')).slice(0, 120), toRole: 'sales_manager', kind: 'proforma-refusal',
+        docNo: d.docNo, ownerUid: d.ownerUid, audience: ['uid:' + me, 'role:sales_manager'] } });
+      noteTicket(b, tk, 'پیش‌فاکتور توسط اکانت منیجر رد شد و برای تصمیم‌گیری به مدیر فروش ارجاع شد.\nدلیل: ' + reason, false);
+    } else {
+      noteTicket(b, tk, 'پیش‌فاکتور توسط اکانت منیجر تأیید شد.', true);
+    }
+    rvLock();
+    b.commit().then(function () { return reloadInvoices(); }).then(function () { dlg.close(); }, function (err) { rvFail(errText(err)); });
+  }
+  // sales manager (or management): accept the refusal (archive and remove everywhere) or decline it (the proforma stays valid)
+  function decideRefusal(accept, note) {
+    var d = findInv(S.invOpen);
+    if (!d || !S.user) return;
+    var me = S.user.uid, now = Date.now(), key = invKey(d), r = d.review || {}, b = db.batch();
+    var decision = { by: me, byName: myName(), at: now, note: note || '' };
+    if (accept) {
+      var arch = JSON.parse(JSON.stringify(d));
+      arch.status = 'refused'; arch.archivedAt = now; arch.review = Object.assign({}, r, { decision: decision });
+      b.set(db.collection('invoice_archive').doc(key), arch);
+      b.delete(db.collection('invoices').doc(key));
+    } else {
+      b.update(db.collection('invoices').doc(key), { review: Object.assign({}, r, { status: 'kept', decision: decision }), updatedAt: now });
+    }
+    noteTicket(b, tkForDoc(d.docNo, 'proforma-refusal'), accept ? 'رد پیش‌فاکتور پذیرفته شد؛ پیش‌فاکتور از برنامه حذف و بایگانی شد.' : 'رد پیش‌فاکتور پذیرفته نشد؛ پیش‌فاکتور معتبر می‌ماند.', true);
+    var owner = S.team.filter(function (u) { return u.id === d.ownerUid; })[0] || {};
+    var text = 'تصمیم دربارهٔ پیش‌فاکتور ' + d.docNo + ' (' + (d.customer || '—') + '):\n' +
+      (accept ? 'رد اکانت منیجر پذیرفته شد. پیش‌فاکتور از برنامه برداشته و در بایگانی نگه‌داری می‌شود.' : 'رد اکانت منیجر پذیرفته نشد و پیش‌فاکتور معتبر است.') +
+      '\nدلیل اکانت منیجر: ' + (r.reason || '—') + (note ? '\nیادداشت ' + myName() + ': ' + note : '');
+    newTicket(b, { text: text, head: { title: ((accept ? 'بایگانی پیش‌فاکتور ' : 'ماندن پیش‌فاکتور ') + d.docNo).slice(0, 120), toRole: MSRoles.norm(owner.role || d.ownerRole || 'visitor'),
+      toUid: d.ownerUid, toName: d.ownerName || '', kind: 'proforma-decision', docNo: d.docNo, ownerUid: d.ownerUid,
+      audience: ['uid:' + me, 'uid:' + d.ownerUid, 'role:account_manager'] } });
+    rvLock();
+    b.commit().then(function () { return reloadInvoices(); }).then(function () { dlg.close(); }, function (err) { rvFail(errText(err)); });
   }
 
   function view() {
@@ -980,12 +1105,19 @@
     if (MSRoles.hasField(p.role, 'proformas')) home += '<section class="pn-card"><h2>پیش‌فاکتورهای من</h2><div class="pn-stats"><div><span>تعداد کل</span><b>' + faInt.format(mine.length) + '</b></div>' +
       '<div><span>مجموع این ماه (شمسی)</span><b>' + monthTotals(mine) + '</b></div></div>' +
       (mine.length ? '<ul class="pn-list">' + mine.slice(0, 6).map(function (d) {
-        return '<li><div><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.customer || 'بدون نام مشتری') + '</span></div><div><span>' + esc(faDate(d.createdAt)) + '</span><b>' + money(M.totals(d).total, d.unit) + '</b></div></li>';
+        return '<li><div><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.customer || 'بدون نام مشتری') + (reviewTxt(d) ? ' · ' + esc(reviewTxt(d)) : '') + '</span></div><div><span>' + esc(faDate(d.createdAt)) + '</span><b>' + money(M.totals(d).total, d.unit) + '</b></div></li>';
       }).join('') + '</ul>' : '<p class="pn-note">هنوز پیش‌فاکتوری صادر نکرده‌اید.</p>') +
+      (S.archDocs.filter(function (d) { return d.ownerUid === S.user.uid; }).length ? '<h3 class="pn-sub">بایگانی‌شده (ردشده)</h3><ul class="pn-list">' + S.archDocs.filter(function (d) { return d.ownerUid === S.user.uid; }).slice(0, 8).map(function (d) {
+        return '<li><div><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.customer || 'بدون نام مشتری') + '</span></div><div><span>' + esc(d.review && d.review.reason ? d.review.reason.slice(0, 60) : '') + '</span><b>' + money(M.totals(d).total, d.unit) + '</b></div></li>';
+      }).join('') + '</ul>' : '') +
       '<a class="pn-link" href="./product-catalog.html">رفتن به کاتالوگ و ساخت پیش‌فاکتور</a></section>';
     if (can('invoices')) {
-      var sentN = S.docs.filter(function (d) { return d.sentAt; }).length;
-      home = '<section class="pn-card"><h2>پیش‌فاکتورها</h2><div class="pn-stats"><div><span>همه</span><b>' + faInt.format(S.docs.length) + '</b></div><div><span>ارسال‌شده برای بررسی</span><b>' + faInt.format(sentN) + '</b></div></div>' +
+      var cnt = function (st) { return S.docs.filter(function (d) { return revStatus(d) === st; }).length; };
+      var stats = '<div><span>همه</span><b>' + faInt.format(S.docs.length) + '</b></div>';
+      if (can('invoiceReview')) stats += '<div><span>منتظر بررسی شما</span><b>' + faInt.format(cnt('pending')) + '</b></div>';
+      else if (can('invoiceDecide')) stats += '<div><span>رد شده، منتظر تصمیم شما</span><b>' + faInt.format(cnt('refusal')) + '</b></div>';
+      else stats += '<div><span>ارسال‌شده برای بررسی</span><b>' + faInt.format(S.docs.filter(function (d) { return d.sentAt; }).length) + '</b></div>';
+      home = '<section class="pn-card"><h2>پیش‌فاکتورها</h2><div class="pn-stats">' + stats + '</div>' +
         '<button type="button" class="pn-primary" data-tab="inv">مشاهدهٔ پیش‌فاکتورها</button></section>' + home;
     }
     var secs = { home: home, inv: can('invoices') ? invoicesView() : '', chat: publicView() + ticketsView(), comm: commissionView(), team: can('team') ? teamView() : '',
@@ -1062,6 +1194,16 @@
   // ----- actions
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-out]')) { auth.signOut(); return; }
+    if (e.target.closest('[data-rv-approve]')) { reviewDoc('approved'); return; }
+    if (e.target.closest('[data-rv-refuse]')) { var rb = dlg.querySelector('#rvBox'); if (rb) { rb.hidden = !rb.hidden; var rr = dlg.querySelector('#rvReason'); if (rr && !rb.hidden) rr.focus(); } return; }
+    if (e.target.closest('[data-rv-send]')) {
+      var why = (dlg.querySelector('#rvReason') || {}).value || '';
+      why = why.trim();
+      if (why.length < 10) { rvFail('دلیل رد را دست‌کم در یک جملهٔ روشن بنویسید.'); return; }
+      reviewDoc('refusal', why); return;
+    }
+    if (e.target.closest('[data-dc-accept]')) { decideRefusal(true, ((dlg.querySelector('#dcNote') || {}).value || '').trim()); return; }
+    if (e.target.closest('[data-dc-keep]')) { decideRefusal(false, ((dlg.querySelector('#dcNote') || {}).value || '').trim()); return; }
     var iv = e.target.closest('[data-inv-view]');
     if (iv) { invDetail(iv.getAttribute('data-inv-view')); return; }
     var ifl = e.target.closest('[data-inv-f]');
@@ -1220,6 +1362,10 @@
       var roleNow = known.role, picked = f.elements.role ? { value: f.elements.role.value } : null;
       if (can('roleAdmin') && !self && picked) { roleNow = picked.value; data.role = roleNow; }
       if (can('roleAdmin')) data.code = MSRoles.hasField(roleNow, 'code') ? v('code').toUpperCase() : '';
+      if (data.code) {
+        var dup = S.team.filter(function (x) { return x.id !== id && String(x.code || '').toUpperCase() === data.code; })[0];
+        if (dup) { formErr(f, 'این کد برای «' + (dup.name || 'کاربر دیگر') + '» ثبت شده است؛ کد هر نفر باید یکتا باشد.'); return; }
+      }
       if (can('territory')) {
         if (MSRoles.hasField(roleNow, 'territory')) {
           data.cities = v('cities');

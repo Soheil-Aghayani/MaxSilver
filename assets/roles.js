@@ -35,8 +35,12 @@
     commission: ['manager', 'ceo', 'sales_manager', 'finance'],                         // see the rate table and every region's result
     commissionEdit: ['finance'],                                                        // enters the rate table (draft)
     commissionReview: ['sales_manager'],                                                // confirms regions and attribution
-    commissionApprove: ['manager', 'ceo']                                               // approves rates and publishes the results
+    commissionApprove: ['manager', 'ceo'],                                              // approves rates and publishes the results
+    invoiceReview: ['account_manager'],                                                 // approves a proforma or refuses it with a written reason
+    invoiceDecide: ['manager', 'ceo', 'sales_manager']                                  // accepts or declines a refusal (accepting archives the proforma)
   };
+  // two letters that open every document number, so the kind of issuer is known before the name is read
+  var CODE = { manager: 'IT', ceo: 'CE', sales_manager: 'SM', visitor: 'SE', account_manager: 'AM', finance: 'FN', operations: 'OP', production: 'PR', service: 'SV', marketing: 'MK', hr: 'HR' };
   // profile fields that exist only for some roles (name, phone and the active flag belong to everyone)
   var FIELDS = {
     visitor: ['code', 'territory', 'proformas'],     // document code, the provinces they cover, and their own proforma figures
@@ -46,5 +50,6 @@
   function can(role, area) { return (AREA[area] || []).indexOf(norm(role)) >= 0; }
   function label(role) { return LABEL[norm(role)] || LABEL.visitor; }
   function hasField(role, field) { return (FIELDS[norm(role)] || []).indexOf(field) >= 0; }
-  w.MSRoles = { LABEL: LABEL, ORDER: ORDER, AREA: AREA, FIELDS: FIELDS, norm: norm, can: can, label: label, hasField: hasField };
+  function codeOf(role) { return CODE[norm(role)] || 'XX'; }
+  w.MSRoles = { LABEL: LABEL, ORDER: ORDER, AREA: AREA, FIELDS: FIELDS, CODE: CODE, norm: norm, can: can, label: label, hasField: hasField, codeOf: codeOf };
 })(window);

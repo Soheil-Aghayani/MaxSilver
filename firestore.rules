@@ -66,21 +66,41 @@ service cloud.firestore {
       allow delete: if adminsRoles() || editsPeople();
     }
 
+    // A proforma. The owner writes it; the account manager approves or refuses it (only the `review` field); a refusal is decided
+    // by the sales manager or management: declining keeps the proforma, accepting moves it to invoice_archive and deletes it here.
     match /invoices/{id} {
-      allow read: if approved() && (resource.data.ownerUid == request.auth.uid || seesAllInvoices());
+      allow read: if approved() && (id.matches(request.auth.uid + '_.*') || resource.data.ownerUid == request.auth.uid || seesAllInvoices());
       allow create: if approved()
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.docNo is string
         && id == request.auth.uid + '_' + request.resource.data.docNo
         && request.resource.data.lines is list
         && request.resource.data.lines.size() <= 200;
-      allow update: if approved()
-        && resource.data.ownerUid == request.auth.uid
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.docNo == resource.data.docNo
-        && request.resource.data.lines is list
-        && request.resource.data.lines.size() <= 200;
-      allow delete: if approved() && (resource.data.ownerUid == request.auth.uid || isManager());
+      allow update: if approved() && (
+        (resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.docNo == resource.data.docNo
+          && request.resource.data.lines is list
+          && request.resource.data.lines.size() <= 200
+          && request.resource.data.get('review', null) == resource.data.get('review', null))
+        || (hasRole(['account_manager'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['review', 'updatedAt'])
+          && request.resource.data.review.status in ['approved', 'refusal']
+          && request.resource.data.review.by == request.auth.uid)
+        || (hasRole(['sales_manager', 'manager', 'ceo'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['review', 'updatedAt'])
+          && resource.data.get('review', {}).get('status', '') == 'refusal'
+          && request.resource.data.review.status == 'kept'));
+      allow delete: if approved() && (resource.data.ownerUid == request.auth.uid || isManager()
+        || (hasRole(['sales_manager']) && resource.data.get('review', {}).get('status', '') == 'refusal'));
+    }
+
+    // Refused proformas kept for the record (written when the sales manager accepts a refusal). Nobody edits or deletes them.
+    match /invoice_archive/{id} {
+      allow read: if approved() && (resource.data.ownerUid == request.auth.uid || seesAllInvoices());
+      allow create: if hasRole(['sales_manager', 'manager', 'ceo']) && request.resource.data.status == 'refused'
+        && request.resource.data.ownerUid is string && request.resource.data.docNo is string;
+      allow update, delete: if false;
     }
 
     // Commission: rates per region and year. Finance drafts, the sales manager marks them reviewed, the CEO approves and

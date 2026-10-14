@@ -56,7 +56,30 @@
   }
 
   // ----- sync
-  function clean(d) { var o = JSON.parse(JSON.stringify(d)); delete o.synced; return o; }
+  // fields that live only on this device or are written by reviewers never travel with the owner's copy
+  function clean(d) { var o = JSON.parse(JSON.stringify(d)); ['synced', 'review', 'sendPending', 'cloudSeen'].forEach(function (k) { delete o[k]; }); return o; }
+  // a number that the cloud already gives to another document is moved to the next free sequence
+  function bumpSeq(no) { var m = /^(.*-)(\d+)$/.exec(no); return m ? m[1] + ('00' + (Number(m[2]) + 1)).slice(-Math.max(3, m[2].length)) : no + '-2'; }
+  function ensureFree(uid, d) {
+    var tries = 0;
+    function check() {
+      return db.collection('invoices').doc(uid + '_' + d.docNo).get().then(function (s) {
+        if (!s.exists || s.data().createdAt === d.createdAt) return;
+        if (++tries > 30) throw { code: 'docno-conflict' };
+        d.docNo = bumpSeq(d.docNo);
+        return check();
+      }, function () { /* cannot look (rules not published yet): push anyway */ });
+    }
+    return check();
+  }
+  var waiters = [];
+  function whenUser(ms) {
+    if (S.user) return Promise.resolve(S.user);
+    return new Promise(function (resolve, reject) {
+      var t = setTimeout(function () { reject({ code: 'timeout' }); }, ms || 12000);
+      waiters.push({ ok: function (u) { clearTimeout(t); resolve(u); }, no: function () { clearTimeout(t); reject({ code: 'not-signed-in' }); } });
+    });
+  }
   function pendingDocs() {
     var uid = currentUid();
     return A.list().filter(function (d) { return d.synced !== true && d.docNo && (!d.ownerUid || d.ownerUid === uid); });
@@ -64,19 +87,50 @@
   function pushPending() {
     if (!live() || !approved()) return Promise.resolve();
     var uid = S.user.uid, pend = pendingDocs(), p = activeProfile();
-    var batch = db.batch();
-    pend.forEach(function (d) {
-      d.ownerUid = uid;
-      d.ownerName = p.name || S.user.email || '';
-      d.updatedAt = d.updatedAt || d.createdAt || Date.now();
-      batch.set(db.collection('invoices').doc(uid + '_' + d.docNo), clean(d));
-    });
-    batch.set(db.collection('prices').doc(uid), { map: A.prices(), updatedAt: Date.now() });
-    return withTimeout(batch.commit()).then(function () {
-      pend.forEach(function (d) { d.synced = true; });
+    var checks = Promise.all(pend.filter(function (d) { return !d.cloudSeen; }).map(function (d) { return ensureFree(uid, d); }));
+    return checks.then(function () {
+      var batch = db.batch();
+      pend.forEach(function (d) {
+        d.ownerUid = uid;
+        d.ownerName = p.name || S.user.email || '';
+        d.ownerRole = window.MSRoles ? window.MSRoles.norm(p.role) : p.role;
+        d.updatedAt = d.updatedAt || d.createdAt || Date.now();
+        // merge: a reviewer's `review` field in the cloud copy is never overwritten by this device
+        batch.set(db.collection('invoices').doc(uid + '_' + d.docNo), clean(d), { merge: true });
+      });
+      batch.set(db.collection('prices').doc(uid), { map: A.prices(), updatedAt: Date.now() });
+      return withTimeout(batch.commit());
+    }).then(function () {
+      pend.forEach(function (d) { d.synced = true; d.cloudSeen = true; });
       A.save();
       if (window.MSNotify) window.MSNotify.paint();
     });
+  }
+  // a proforma that could not be sent while offline is sent as soon as the connection is back
+  function flushSends() {
+    if (!live() || !approved()) return Promise.resolve();
+    var uid = S.user.uid, todo = A.list().filter(function (d) { return d.sendPending && (!d.ownerUid || d.ownerUid === uid); });
+    return todo.reduce(function (chain, d) {
+      return chain.then(function () {
+        return createProformaTicket(d, d.sendPending).then(function () {
+          d.sentAt = Date.now(); delete d.sendPending; d.synced = false; A.save();
+        }, function () { /* stays queued */ });
+      });
+    }, Promise.resolve()).then(function () { return todo.length ? pushPending() : null; });
+  }
+  function createProformaTicket(doc, text) {
+    var p = activeProfile(), me = S.user.uid, now = Date.now(), name = p.name || S.user.email || '';
+    var role = window.MSRoles ? window.MSRoles.norm(p.role) : p.role, ref = db.collection('tickets').doc();
+    var head = {
+      title: ('پیش‌فاکتور ' + doc.docNo + (doc.customer ? ' · ' + doc.customer : '')).slice(0, 120),
+      fromUid: me, fromName: name, fromRole: role, toRole: 'account_manager', toUid: '', toName: '',
+      kind: 'proforma', docNo: doc.docNo, status: 'open', createdAt: now, updatedAt: now,
+      lastText: String(text).slice(0, 140), lastBy: me, lastByName: name, audience: ['uid:' + me, 'role:account_manager']
+    };
+    var b = db.batch();
+    b.set(ref, head);
+    b.set(ref.collection('messages').doc(), { uid: me, name: name, role: role, text: String(text).slice(0, 1900), at: now });
+    return withTimeout(b.commit());
   }
   function loadProfile() {
     return withTimeout(db.collection('users').doc(S.user.uid).get()).then(function (snap) {
@@ -97,19 +151,22 @@
       var manager = !!(window.MSRoles && window.MSRoles.can(activeProfile().role, 'invoices'));
       var q = manager ? db.collection('invoices') : db.collection('invoices').where('ownerUid', '==', uid);
       return withTimeout(Promise.all([q.get(), db.collection('prices').doc(uid).get()])).then(function (res) {
-        var mine = [], others = [];
-        res[0].forEach(function (s) { var d = s.data(); (d.ownerUid === uid ? mine : others).push(d); });
+        var mine = [], others = [], remoteMine = {};
+        res[0].forEach(function (s) { var d = s.data(); if (d.ownerUid === uid) { mine.push(d); remoteMine[d.docNo] = d; } else others.push(d); });
         var byNo = {};
         A.list().forEach(function (d) { byNo[d.docNo] = d; });
         mine.forEach(function (r) {
           var l = byNo[r.docNo];
-          if (!l || (l.synced === true && (r.updatedAt || 0) > (l.updatedAt || l.createdAt || 0))) byNo[r.docNo] = Object.assign({}, r, { synced: true });
+          if (!l || (l.synced === true && (r.updatedAt || 0) > (l.updatedAt || l.createdAt || 0))) byNo[r.docNo] = Object.assign({}, r, { synced: true, cloudSeen: true });
+          else { l.review = r.review; l.cloudSeen = true; if (r.sentAt && !l.sentAt) l.sentAt = r.sentAt; }
         });
+        // removed in the cloud (a refusal accepted by the sales manager, or deleted on another device): gone here too
+        Object.keys(byNo).forEach(function (no) { var l = byNo[no]; if (l.synced === true && l.cloudSeen && l.ownerUid === uid && !remoteMine[no]) delete byNo[no]; });
         var merged = Object.keys(byNo).map(function (k) { return byNo[k]; }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
         var remotePrices = res[1].exists && res[1].data().map || {};
         A.replace(merged, Object.assign({}, remotePrices, A.prices()));
         A.setForeign(others.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }));
-        return pushPending();
+        return pushPending().then(flushSends);
       });
     }).then(function () { S.last = Date.now(); S.error = ''; }, function (e) { S.error = errText(e); })
       .then(function () { S.busy = false; render(); });
@@ -142,6 +199,7 @@
   }
   function onAuth(user) {
     S.user = user; S.error = '';
+    waiters.splice(0).forEach(function (w) { if (user) w.ok(user); else w.no(); });
     if (!user) { S.profile = null; cached = null; clearIdentity(); A.setForeign([]); render(); return; }
     if (cached && cached.uid === user.uid) S.profile = cached.profile;
     render();
@@ -157,35 +215,28 @@
       else if (hasSession()) boot().then(null, function () { /* offline: stays queued */ });
     },
     // may this person send a proforma to account management? (signed in and approved; the account manager does not send to themself)
-    canSend: function () {
+    // 'ok' (may send), 'signin' (nobody is signed in) or 'self' (an account manager does not send to themself)
+    sendState: function () {
       var p = activeProfile();
-      if (p) return approved() && (window.MSRoles ? window.MSRoles.norm(p.role) : p.role) !== 'account_manager';
-      return hasSession();   // signed in but the profile has not arrived yet: sending waits for it
+      if (p && (window.MSRoles ? window.MSRoles.norm(p.role) : p.role) === 'account_manager') return 'self';
+      return approved() || hasSession() ? 'ok' : 'signin';
     },
-    // opens a ticket addressed to the account manager role; the proforma itself is pushed to the cloud first (best effort)
+    canSend: function () { return this.sendState() === 'ok'; },
+    role: function () { var p = activeProfile(); return p && window.MSRoles ? window.MSRoles.norm(p.role) : ''; },
+    roleCode: function () { var p = activeProfile(); return p && window.MSRoles ? window.MSRoles.codeOf(p.role) : 'XX'; },
+    openAccount: function () { open(); if (!bootPromise) boot().then(null, function () { /* shown in the sheet */ }); },
+    // the proforma must reach the cloud first (the reviewer opens it from there), then a ticket is opened for the account manager
     sendProforma: function (doc, text) {
       if (!approved() && !hasSession()) return Promise.reject({ code: 'not-signed-in' });
-      var ready = live() ? Promise.resolve() : boot();
+      var ready = live() ? Promise.resolve() : boot().then(function () { return whenUser(); });
       return ready.then(function () {
         if (!live()) throw { code: 'unavailable' };
-        return S.profile || cached ? Promise.resolve() : loadProfile();
+        return S.profile || cached ? null : loadProfile();
       }).then(function () {
         if (!approved()) throw { code: 'no-profile' };
-        return pushPending().then(null, function () { /* the ticket still goes; the copy follows on the next sync */ });
-      }).then(function () {
-        var p = activeProfile(), me = S.user.uid, now = Date.now(), name = p.name || S.user.email || '';
-        var role = window.MSRoles ? window.MSRoles.norm(p.role) : p.role, ref = db.collection('tickets').doc();
-        var head = {
-          title: ('پیش‌فاکتور ' + doc.docNo + (doc.customer ? ' · ' + doc.customer : '')).slice(0, 120),
-          fromUid: me, fromName: name, fromRole: role, toRole: 'account_manager', toUid: '', toName: '',
-          kind: 'proforma', docNo: doc.docNo, status: 'open', createdAt: now, updatedAt: now,
-          lastText: String(text).slice(0, 140), lastBy: me, lastByName: name, audience: ['uid:' + me, 'role:account_manager']
-        };
-        var b = db.batch();
-        b.set(ref, head);
-        b.set(ref.collection('messages').doc(), { uid: me, name: name, role: role, text: text, at: now });
-        return withTimeout(b.commit());
-      });
+        doc.synced = false;
+        return pushPending();
+      }).then(function () { return createProformaTicket(doc, text); });
     },
     remove: function (docNo) { if (live() && approved() && docNo) db.collection('invoices').doc(S.user.uid + '_' + docNo).delete().catch(function () { /* local copy removed; cloud copy remains */ }); }
   };
