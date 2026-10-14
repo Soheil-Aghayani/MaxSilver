@@ -141,7 +141,7 @@
       });
       parts.ticket = n ? [{ kind: 'ticket', n: n, text: fa.format(n) + ' گفت‌وگو منتظر پاسخ شماست', target: 'tickets' }] : [];
       commit();
-      fresher.forEach(function (x) { announce(x.lastByName || 'پیام تازه', x.lastText || x.title || '', './panel.html#tickets', 'tk-' + x.id); });
+      fresher.forEach(function (x) { announce(x.kind === 'proforma' ? 'پیش‌فاکتور تازه · ' + (x.fromName || '') : (x.lastByName || 'پیام تازه'), x.kind === 'proforma' ? (x.title || '') : (x.lastText || x.title || ''), './panel.html#tickets', 'tk-' + x.id); });
     }
     qs.forEach(function (q) {
       unsubs.push(q.onSnapshot(function (snap) {

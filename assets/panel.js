@@ -817,6 +817,43 @@
       (P.msg ? '<p class="pn-ok" role="status">' + esc(P.msg) + '</p>' : '') + '</section>';
   }
 
+  // ---- national id: ten digits with the official check digit; leading zeros are part of the number
+  var FA10 = '۰۱۲۳۴۵۶۷۸۹';
+  function faDigitsStr(s) { return String(s).replace(/\d/g, function (d) { return FA10.charAt(d); }); }
+  function latinDigits(s) { return String(s).replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); }).replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 1632); }); }
+  function validNid(s) {
+    if (!/^\d{10}$/.test(s) || /^(\d)\1{9}$/.test(s)) return false;
+    var sum = 0, i;
+    for (i = 0; i < 9; i++) sum += Number(s.charAt(i)) * (10 - i);
+    var r = sum % 11, c = Number(s.charAt(9));
+    return r < 2 ? c === r : c === 11 - r;
+  }
+  function nidHint(inp) {
+    var h = inp.parentNode.querySelector('[data-nid-hint]');
+    if (!h) return;
+    var d = latinDigits(inp.value).replace(/\D/g, ''), cls = '', txt = '۱۰ رقم؛ صفرهای ابتدایی هم نوشته شود';
+    if (d.length === 10) { if (validNid(d)) { cls = 'ok'; txt = 'کد ملی معتبر است'; } else { cls = 'bad'; txt = 'کد ملی درست نیست؛ ارقام را دوباره بررسی کنید'; } }
+    else if (d.length) txt = faInt.format(d.length) + ' از ۱۰ رقم';
+    h.className = 'pn-fh ' + cls; h.textContent = txt;
+    inp.classList.toggle('bad', cls === 'bad'); inp.classList.toggle('ok', cls === 'ok');
+  }
+  function nidInput(inp) {
+    var pos = inp.selectionStart, d = latinDigits(inp.value).replace(/\D/g, '').slice(0, 10), shown = faDigitsStr(d);
+    if (inp.value !== shown) {
+      inp.value = shown;
+      try { var p = Math.min(pos == null ? shown.length : pos, shown.length); inp.setSelectionRange(p, p); } catch (x) { /* ignore */ }
+    }
+    nidHint(inp);
+  }
+  function formErr(f, msg) {
+    var p = f.querySelector('[data-form-err]');
+    if (!p) {
+      p = document.createElement('p'); p.className = 'pn-err'; p.setAttribute('data-form-err', ''); p.setAttribute('role', 'alert');
+      f.insertBefore(p, f.querySelector('button[type=submit]'));
+    }
+    p.textContent = msg; p.hidden = !msg;
+  }
+
   // ---- private card: national id, written by hr or management only
   S.nid = ''; S.bday = ''; S.tab = 'home';
   function loadPersonal() {
@@ -927,18 +964,22 @@
       '<button type="button" class="pn-x" data-close aria-label="بستن">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div></div>' +
       '<p class="pn-del-note" id="delNote" hidden></p>' +
-      '<form id="editForm" class="pn-edit" data-id="' + esc(u.id) + '">' +
-      '<label>نام و نام خانوادگی<input type="text" name="name" value="' + esc(u.name || '') + '" maxlength="60" required' + (can('people') ? '' : ' disabled') + '></label>' +
-      '<label>تلفن<input type="tel" name="phone" dir="ltr" value="' + esc(u.phone || '') + '" maxlength="30"' + (can('people') ? '' : ' disabled') + '></label>' +
-      (can('people') ? '<label>کد ملی (۱۰ رقم)<input type="text" name="nationalId" dir="ltr" inputmode="numeric" maxlength="10" autocomplete="off" disabled></label>' : '') +
-      (can('people') ? '<label>تاریخ تولد (شمسی، مثل ۱۳۷۰/۰۵/۱۲)<input type="text" name="birthday" dir="ltr" inputmode="numeric" maxlength="10" placeholder="۱۳۷۰/۰۵/۱۲" autocomplete="off" disabled></label>' : '') +
-      (can('roleAdmin') && !self ? dropdown('role', 'نقش', [{ label: '', options: MSRoles.ORDER.map(function (r) { return { v: r, t: MSRoles.label(r) }; }) }], MSRoles.norm(u.role))
-        : '<p class="pn-note">نقش: ' + esc(MSRoles.label(u.role)) + (can('roleAdmin') ? '' : ' (تغییر نقش فقط با مدیرعامل یا تکنولوژی سازمانی است)') + '</p>') +
-      // fields that belong to one kind of role only; the block follows the chosen role
-      (can('roleAdmin') ? '<div data-field="code"' + (MSRoles.hasField(u.role, 'code') ? '' : ' hidden') + '><label>کد برای شمارهٔ سند (حروف و عدد لاتین)<input type="text" name="code" dir="ltr" value="' + esc(u.code || '') + '" maxlength="6" pattern="[A-Za-z0-9]*"></label></div>' : '') +
-      (can('people') ? '<label class="pn-check"><input type="checkbox" name="active"' + (u.active === false ? '' : ' checked') + (self ? ' disabled' : '') + '><span>حساب فعال است</span></label>' : '') +
-      (can('territory') ? '<div data-field="territory"' + (MSRoles.hasField(u.role, 'territory') ? '' : ' hidden') + '><h3>استان‌های منطقهٔ فعالیت</h3>' + regs +
-      '<label>شهرها و توضیحات منطقه<textarea name="cities" rows="3" maxlength="400" placeholder="مثلاً: تبریز، مراغه، اهر">' + esc(u.cities || '') + '</textarea></label></div>' : '') +
+      '<form id="editForm" class="pn-edit" data-id="' + esc(u.id) + '" novalidate>' +
+      '<section class="pn-sec"><h3>اطلاعات شخصی</h3><div class="pn-grid">' +
+        '<label class="full">نام و نام خانوادگی<input type="text" name="name" value="' + esc(u.name || '') + '" maxlength="60" required' + (can('people') ? '' : ' disabled') + '></label>' +
+        '<label>تلفن<input type="tel" name="phone" dir="ltr" inputmode="numeric" value="' + esc(u.phone || '') + '" maxlength="30"' + (can('people') ? '' : ' disabled') + '></label>' +
+        (can('people') ? '<label>کد ملی<input type="text" name="nationalId" dir="ltr" inputmode="numeric" maxlength="10" autocomplete="off" disabled><small class="pn-fh" data-nid-hint>۱۰ رقم؛ صفرهای ابتدایی هم نوشته شود</small></label>' : '') +
+        (can('people') ? '<label class="full">تاریخ تولد<input type="text" name="birthday" data-jdate data-jstart="1370" data-jclear data-jmax="today" readonly inputmode="none" placeholder="انتخاب تاریخ" disabled></label>' : '') +
+      '</div></section>' +
+      '<section class="pn-sec"><h3>حساب</h3><div class="pn-grid">' +
+        (can('roleAdmin') && !self ? '<div class="full">' + dropdown('role', 'نقش', [{ label: '', options: MSRoles.ORDER.map(function (r) { return { v: r, t: MSRoles.label(r) }; }) }], MSRoles.norm(u.role)) + '</div>'
+          : '<p class="pn-note full">نقش: ' + esc(MSRoles.label(u.role)) + (can('roleAdmin') ? '' : ' (تغییر نقش فقط با مدیرعامل یا تکنولوژی سازمانی است)') + '</p>') +
+        // fields that belong to one kind of role only; the block follows the chosen role
+        (can('roleAdmin') ? '<div class="full" data-field="code"' + (MSRoles.hasField(u.role, 'code') ? '' : ' hidden') + '><label>کد برای شمارهٔ سند (حروف و عدد لاتین)<input type="text" name="code" dir="ltr" value="' + esc(u.code || '') + '" maxlength="6" pattern="[A-Za-z0-9]*"></label></div>' : '') +
+        (can('people') ? '<label class="pn-check full"><input type="checkbox" name="active"' + (u.active === false ? '' : ' checked') + (self ? ' disabled' : '') + '><span>حساب فعال است</span></label>' : '') +
+      '</div></section>' +
+      (can('territory') ? '<section class="pn-sec" data-field="territory"' + (MSRoles.hasField(u.role, 'territory') ? '' : ' hidden') + '><h3>استان‌های منطقهٔ فعالیت</h3>' + regs +
+        '<label>شهرها و توضیحات منطقه<textarea name="cities" rows="3" maxlength="400" placeholder="مثلاً: تبریز، مراغه، اهر">' + esc(u.cities || '') + '</textarea></label></section>' : '') +
       (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<button type="submit" class="pn-primary">ذخیره</button></form>';
   }
@@ -1020,7 +1061,12 @@
       if (u) {
         S.error = ''; dlg.innerHTML = editForm(u); dlg.showModal();
         var nf = dlg.querySelector('input[name=nationalId]'), bf = dlg.querySelector('input[name=birthday]');
-        if (nf) db.collection('personal').doc(u.id).get().then(function (s) { nf.value = s.exists ? String(s.data().nationalId || '') : ''; if (bf) bf.value = s.exists ? String(s.data().birthday || '') : ''; nf.disabled = false; if (bf) bf.disabled = false; }, function () { nf.disabled = false; if (bf) bf.disabled = false; });
+        var unlock = function () { nf.disabled = false; if (bf) bf.disabled = false; };
+        if (nf) db.collection('personal').doc(u.id).get().then(function (s) {
+          nf.value = s.exists ? faDigitsStr(String(s.data().nationalId || '')) : '';
+          if (bf) bf.value = s.exists ? faDigitsStr(String(s.data().birthday || '')) : '';
+          nidHint(nf); unlock();
+        }, unlock);
       }
       return;
     }
@@ -1034,6 +1080,7 @@
       if (ta.value.trim()) signalTyping(ta.form.getAttribute('data-id'));
     }
     if (ta && ta.tagName === 'INPUT' && ta.name === 'phone') { var cp = cleanPhone(ta.value); if (cp !== ta.value) ta.value = cp; }
+    if (ta && ta.tagName === 'INPUT' && ta.name === 'nationalId') nidInput(ta);
   });
   document.addEventListener('keydown', function (e) {
     var ta = e.target;
@@ -1114,14 +1161,15 @@
         nid = lat(nidIn.value).replace(/\D/g, '');
         bd = bdIn ? lat(bdIn.value).replace(/[^\d]/g, '') : '';
         var bad = '';
-        if (nid && !/^\d{10}$/.test(nid)) bad = 'کد ملی باید ۱۰ رقم باشد.';
-        else if (bd && !(/^\d{8}$/.test(bd) && +bd.slice(0, 4) >= 1250 && +bd.slice(0, 4) <= 1420 && +bd.slice(4, 6) >= 1 && +bd.slice(4, 6) <= 12 && +bd.slice(6) >= 1 && +bd.slice(6) <= 31)) bad = 'تاریخ تولد را مثل ۱۳۷۰/۰۵/۱۲ بنویسید.';
-        if (bad) { S.error = bad; dlg.innerHTML = editForm(Object.assign({ id: id }, known, data)); return; }
+        if (nid && !validNid(nid)) bad = 'کد ملی معتبر نیست؛ ارقام را دوباره بررسی کنید.';
+        else if (bd && !(/^\d{8}$/.test(bd) && +bd.slice(0, 4) >= 1250 && +bd.slice(0, 4) <= 1420 && +bd.slice(4, 6) >= 1 && +bd.slice(4, 6) <= 12 && +bd.slice(6) >= 1 && +bd.slice(6) <= 31)) bad = 'تاریخ تولد معتبر نیست؛ از تقویم انتخاب کنید.';
+        if (bad) { formErr(f, bad); return; }
+        formErr(f, '');
         if (bd) bd = bd.slice(0, 4) + '/' + bd.slice(4, 6) + '/' + bd.slice(6);
       }
       db.collection('users').doc(id).set(data, { merge: true }).then(function () {
         return (nidIn && !nidIn.disabled && can('people')) ? db.collection('personal').doc(id).set({ nationalId: nid, birthday: bd, updatedAt: Date.now() }) : null;
-      }).then(function () { dlg.close(); load(); }, function (err) { S.error = errText(err); dlg.innerHTML = editForm(Object.assign({ id: id }, S.team.filter(function (x) { return x.id === id; })[0] || {}, data)); });
+      }).then(function () { dlg.close(); load(); }, function (err) { formErr(f, errText(err)); });
     }
   });
   render();

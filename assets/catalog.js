@@ -11,6 +11,7 @@
     info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
     compare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 2v20"/></svg>',
+    send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m0 0L8 7m4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
     print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></svg>',
@@ -316,18 +317,18 @@
     var foot = has ? '<div class="inv-foot"><p class="inv-msg" id="invMsg" role="status" hidden></p><div class="inv-pay"><span>مبلغ قابل پرداخت</span><b data-t="total"></b></div>' +
       '<div class="inv-actions"><button type="button" class="inv-clear" data-inv-clear aria-label="پاک‌کردن پیش‌فاکتور" title="پاک‌کردن پیش‌فاکتور">' + ICON.trash + '</button>' +
       '<button type="button" class="inv-pdf alt" data-inv-print>' + ICON.print + '<span>دریافت PDF</span></button>' +
-      '<button type="button" class="inv-pdf" data-inv-share>' + ICON.share + '<span>ارسال</span></button></div></div>' : '';
+      '<button type="button" class="inv-pdf" data-inv-share>' + ICON.share + '<span>ارسال</span></button></div>' + amButton() + '</div>' : '';
     openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتور</h2><button type="button" class="dlg-link" data-arc-open>سوابق</button><button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
       '<div class="inv-body"><div class="inv-meta">' +
         '<label class="wide">صادرکننده (ویزیتور)<input type="text" data-f="issuer" value="' + esc(inv.issuer) + '" autocomplete="name" placeholder="نام و نام خانوادگی"></label>' +
-        '<label class="wide">مشتری<input type="text" data-f="customer" list="custList" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
-        '<label>شهر<input type="text" data-f="custCity" value="' + esc(inv.custCity) + '" autocomplete="address-level2" placeholder="شهر گیرنده"></label>' +
-        '<label>تلفن گیرنده<input type="tel" inputmode="numeric" dir="ltr" data-f="custPhone" value="' + esc(inv.custPhone) + '" maxlength="11" pattern="[0-9]*" autocomplete="tel-national" placeholder="09120000000"><small class="inv-hint" data-phone-hint>فقط عدد، ۱۱ رقم، بدون کد کشور</small></label>' +
-        '<label class="wide">نشانی گیرنده<input type="text" data-f="custAddr" value="' + esc(inv.custAddr) + '" autocomplete="street-address" placeholder="نشانی کامل"></label>' +
-        '<datalist id="custList">' + customerNames().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>' +
-        '<label>شماره سند<input type="text" inputmode="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="خودکار" autocomplete="off"></label>' +
         '<label>تاریخ<input type="text" data-f="date" data-jdate readonly inputmode="none" value="' + esc(invDate) + '"></label>' +
-        '<label>واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label></div>' + body + '</div>' + foot, 'inv-sheet');
+        '<label>شمارهٔ سند<input type="text" inputmode="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="خودکار" autocomplete="off"></label>' +
+        '<label class="wide">مشتری<input type="text" data-f="customer" list="custList" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
+        '<label>تلفن گیرنده<input type="tel" inputmode="numeric" dir="ltr" data-f="custPhone" value="' + esc(inv.custPhone) + '" maxlength="11" pattern="[0-9]*" autocomplete="tel-national" placeholder="۰۹…"><small class="inv-hint bad" data-phone-hint hidden>شماره باید ۱۱ رقم و با صفر شروع شود</small></label>' +
+        '<label>شهر<input type="text" data-f="custCity" value="' + esc(inv.custCity) + '" autocomplete="address-level2" placeholder="شهر گیرنده"></label>' +
+        '<label class="wide addr">نشانی گیرنده<input type="text" data-f="custAddr" value="' + esc(inv.custAddr) + '" autocomplete="street-address" placeholder="نشانی کامل"></label>' +
+        '<label class="wide">واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label>' +
+        '<datalist id="custList">' + customerNames().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist></div>' + body + '</div>' + foot, 'inv-sheet');
     invTotalsRender();
     if (has) loadH2C().then(null, function () { /* offline: share falls back to print */ });
   }
@@ -458,6 +459,52 @@
     return doc;
   }
   function invPrint(btn) { if (!receiverOk()) return; printDoc(commitDoc(), btn); }
+
+  // ----- send the proforma to account management as a ticket (they are notified about the sale)
+  function amButton() {
+    if (!window.MSSync || !window.MSSync.canSend || !window.MSSync.canSend()) return '';
+    var d = archive.filter(function (x) { return x.docNo && x.docNo === inv.docNo; })[0], sent = d && d.sentAt;
+    return '<button type="button" class="inv-am" data-inv-send>' + ICON.send + '<span>' + (sent ? 'ارسال دوباره به اکانت منیجر' : 'ارسال به اکانت منیجر') + '</span></button>' +
+      (sent ? '<p class="inv-sent">برای اکانت منیجر ارسال شده است · ' + esc(faTimeShort(sent)) + '</p>' : '');
+  }
+  function faTimeShort(ms) { try { return new Intl.DateTimeFormat('fa-IR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; } }
+  function amText(doc) {
+    var t = window.MSMath ? window.MSMath.totals(doc) : { total: 0 }, p = doc.pay || {}, rows = (doc.lines || []).length;
+    var pay = p.mode === 'cheque' ? 'چکی (' + faInt.format(p.count || 1) + ' فقره)' : p.mode === 'mixed' ? 'نقد و چک (' + faInt.format(p.count || 1) + ' فقره)' : 'نقدی';
+    var lines = ['پیش‌فاکتور ' + doc.docNo + ' برای بررسی و پیگیری ارسال شد.',
+      'مشتری: ' + (doc.customer || '—') + (doc.customerCity ? ' · ' + doc.customerCity : ''),
+      doc.customerPhone ? 'تلفن گیرنده: ' + fa0(doc.customerPhone) : '',
+      doc.customerAddress ? 'نشانی: ' + doc.customerAddress : '',
+      'اقلام: ' + faInt.format(rows) + ' ردیف',
+      'مبلغ قابل پرداخت: ' + faInt.format(Math.round(t.total || 0)) + ' ' + (doc.unit || ''),
+      'شرایط پرداخت: ' + pay,
+      'صادرکننده: ' + (doc.issuer || '—'),
+      'نسخهٔ کامل در سوابق پیش‌فاکتور (بخش «پیش‌فاکتورهای سایر ویزیتورها») قابل مشاهده است.'];
+    return lines.filter(Boolean).join('\n').slice(0, 1900);
+  }
+  function fa0(s) { return String(s).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); }
+  function sendToAM(btn) {
+    if (!receiverOk()) return;
+    if (!String(inv.customer || '').trim()) {
+      shareMsg('نام مشتری را بنویسید تا اکانت منیجر بداند پیش‌فاکتور برای کیست.', true);
+      var cf = dialog.querySelector('[data-f=customer]'); if (cf) { try { cf.focus(); } catch (e) { /* ignore */ } }
+      return;
+    }
+    var doc = commitDoc(), label = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<span>در حال ارسال…</span>';
+    shareMsg('');
+    window.MSSync.sendProforma(doc, amText(doc)).then(function () {
+      doc.sentAt = Date.now(); doc.synced = false;
+      saveJson(ARCH_KEY, archive);
+      if (window.MSSync) window.MSSync.push();
+      shareMsg('پیش‌فاکتور برای اکانت منیجر ارسال شد و به او اطلاع داده می‌شود.');
+      btn.innerHTML = '<span>ارسال شد ✓</span>';
+    }, function (err) {
+      var code = err && err.code || '';
+      shareMsg(/permission/.test(code) ? 'اجازهٔ ارسال برای این حساب فعال نیست.' : 'ارسال انجام نشد (اینترنت یا VPN). پیش‌فاکتور روی دستگاه ذخیره است؛ دوباره امتحان کنید.', true);
+      btn.innerHTML = label;
+    }).then(function () { btn.disabled = false; });
+  }
 
   // ----- share / save the proforma as a real PDF file (one JPEG per A4 page inside a minimal PDF container)
   var H2C = './assets/vendor/html2canvas-1.4.1.min.js', PAGE_W = 794, PAGE_H = 1123, MARGIN = 45, SCALE = 2;
@@ -692,7 +739,7 @@
       if (e.target.value !== cl) e.target.value = cl;
       inv.custPhone = cl;
       var hint = dialog.querySelector('[data-phone-hint]');
-      if (hint) { var ok = !cl || /^0\d{10}$/.test(cl); hint.textContent = ok ? 'فقط عدد، ۱۱ رقم، بدون کد کشور' : 'شماره باید ۱۱ رقم و با صفر شروع شود'; hint.classList.toggle('bad', !ok); }
+      if (hint) { var ok = !cl || /^0\d{10}$/.test(cl); hint.hidden = ok; }
     }
     else if (f === 'custCity' || f === 'custAddr') inv[f] = e.target.value;
     else if (f === 'docNo' || f === 'issuer' || f === 'customer' || f === 'unit' || f === 'discMode') inv[f] = e.target.value;
@@ -728,7 +775,7 @@
   });
 
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-share],[data-arc-fshare],[data-inv-share],[data-arc-backup],[data-pay-count],[data-pay-equal],[data-close],[data-src]');
+    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-share],[data-arc-fshare],[data-inv-share],[data-inv-send],[data-arc-backup],[data-pay-count],[data-pay-equal],[data-close],[data-src]');
     if (e.target === dialog) { dialog.close(); return; }
     if (!t) return;
     if (t.hasAttribute('data-open')) detail(t.getAttribute('data-open'));
@@ -740,6 +787,7 @@
     else if (t.hasAttribute('data-pay-count')) { var pq = ensurePay(); pq.count = Math.max(1, Math.min(12, (pq.count || 1) + Number(t.getAttribute('data-pay-count')))); pq.custom = false; payNormalize(); invSave(); payRender(); }
     else if (t.hasAttribute('data-pay-equal')) { ensurePay().custom = false; payNormalize(); invSave(); payRender(); }
     else if (t.hasAttribute('data-inv-share')) { if (receiverOk()) shareDoc(commitDoc(), t); }
+    else if (t.hasAttribute('data-inv-send')) sendToAM(t);
     else if (t.hasAttribute('data-arc-share')) shareDoc(archive[Number(t.getAttribute('data-arc-share'))], t);
     else if (t.hasAttribute('data-arc-fshare')) shareDoc(foreign[Number(t.getAttribute('data-arc-fshare'))], t);
     else if (t.hasAttribute('data-inv-print')) invPrint(t);
@@ -877,7 +925,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261226', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261228', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();

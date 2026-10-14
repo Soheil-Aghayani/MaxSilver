@@ -294,7 +294,7 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 }
 
 /* receiver details on the proforma and the open-PDF bar (iPhone) */
-.inv-hint{display:block;margin-top:2px;color:var(--ms-muted);font-size:11px;font-weight:600}
+.inv-hint{display:block;margin-top:2px;color:var(--ms-muted);font-size:11px;font-weight:600}.inv-hint[hidden]{display:none}
 .inv-hint.bad{color:#b42318}
 .ip-recv{display:flex;gap:28px}
 .inv-openbar{position:sticky;bottom:0;z-index:5;display:flex;align-items:center;gap:10px;margin:0;padding:12px 14px;background:#ecfdf3;border-top:1px solid #b7e4c7}
@@ -313,3 +313,12 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 @keyframes cs-sheet{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes cs-fade{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.cat-select .cs-list,body.cs-open::after{animation:none}}
+
+/* proforma header: three even columns on wide screens, two on phones; the address spans two columns beside the currency */
+.inv-meta{align-items:start}
+@media(min-width:721px){.inv-meta .addr{grid-column:span 2}}
+.inv-meta label{min-width:0}
+.inv-am{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;border:1px solid var(--ms-navy);border-radius:14px;background:#fff;color:var(--ms-navy);font:800 15px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+.inv-am svg{width:20px;height:20px;color:var(--ms-blue)}
+.inv-am:disabled{opacity:.6}
+.inv-sent{margin:0;color:#0c6b3d;font-size:12.5px;font-weight:700;text-align:center}

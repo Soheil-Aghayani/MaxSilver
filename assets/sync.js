@@ -156,6 +156,33 @@
       if (live()) pushPending().then(function () { S.last = Date.now(); S.error = ''; }, function (e) { S.error = errText(e); }).then(render);
       else if (hasSession()) boot().then(null, function () { /* offline: stays queued */ });
     },
+    // may this person send a proforma to account management? (signed in and approved; the account manager does not send to themself)
+    canSend: function () {
+      var p = activeProfile();
+      return approved() && !!p && (window.MSRoles ? window.MSRoles.norm(p.role) : p.role) !== 'account_manager';
+    },
+    // opens a ticket addressed to the account manager role; the proforma itself is pushed to the cloud first (best effort)
+    sendProforma: function (doc, text) {
+      if (!approved()) return Promise.reject({ code: 'not-signed-in' });
+      var ready = live() ? Promise.resolve() : boot();
+      return ready.then(function () {
+        if (!live()) throw { code: 'unavailable' };
+        return pushPending().then(null, function () { /* the ticket still goes; the copy follows on the next sync */ });
+      }).then(function () {
+        var p = activeProfile(), me = S.user.uid, now = Date.now(), name = p.name || S.user.email || '';
+        var role = window.MSRoles ? window.MSRoles.norm(p.role) : p.role, ref = db.collection('tickets').doc();
+        var head = {
+          title: ('پیش‌فاکتور ' + doc.docNo + (doc.customer ? ' · ' + doc.customer : '')).slice(0, 120),
+          fromUid: me, fromName: name, fromRole: role, toRole: 'account_manager', toUid: '', toName: '',
+          kind: 'proforma', docNo: doc.docNo, status: 'open', createdAt: now, updatedAt: now,
+          lastText: String(text).slice(0, 140), lastBy: me, lastByName: name, audience: ['uid:' + me, 'role:account_manager']
+        };
+        var b = db.batch();
+        b.set(ref, head);
+        b.set(ref.collection('messages').doc(), { uid: me, name: name, role: role, text: text, at: now });
+        return withTimeout(b.commit());
+      });
+    },
     remove: function (docNo) { if (live() && approved() && docNo) db.collection('invoices').doc(S.user.uid + '_' + docNo).delete().catch(function () { /* local copy removed; cloud copy remains */ }); }
   };
 

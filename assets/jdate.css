@@ -17,3 +17,14 @@ input[data-jdate]{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg
 .jd-foot button{flex:1;min-height:46px;border:0;border-radius:12px;background:#071b36;color:#fff;font:800 14px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
 .jd-foot .ghost{border:1px solid #d7dfeb;background:#fff;color:#071b36}
 .jd-dialog button:focus-visible{outline:3px solid #90adff;outline-offset:2px}
+.jd-head.three{grid-template-columns:44px 1fr 44px}
+.jd-head.two{grid-template-columns:1fr}
+.jd-title{display:flex!important;align-items:center;justify-content:center;gap:6px;width:auto!important;padding:0 10px;color:#071b36;font:800 15px/1 Estedad,Tahoma,sans-serif!important;background:#f3f6fb!important;border-color:transparent!important}
+.jd-title svg{flex:none;color:#5b6a80}
+.jd-cells{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.jd-cell{height:52px;border:1px solid #e3e9f2;border-radius:14px;background:#fff;color:#17263d;font:700 15px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+.jd-cell:hover{background:#edf3ff}
+.jd-cell.today{box-shadow:inset 0 0 0 2px #ffcc2a}
+.jd-cell.sel{background:#071b36;color:#fff;border-color:#071b36}
+.jd-cell:disabled,.jd-day:disabled{opacity:.3;cursor:default}
+.jd-cell:disabled:hover,.jd-day:disabled:hover{background:#fff}

@@ -278,3 +278,20 @@
 .pn-hero>div{flex:1;min-width:0}
 .pn-hero>.pn-ico{flex:none;margin-inline-start:auto}
 .pn-fact dd[dir=ltr]{text-align:right}
+
+/* edit dialog: sections with an even two-column grid, one label style, soft locked fields */
+.pn-edit{gap:14px;padding:16px}
+.pn-edit .pn-sec{display:grid;gap:12px;padding:14px;border:1px solid var(--ms-line);border-radius:18px;background:#fafbfd}
+.pn-edit .pn-sec>h3{margin:0;color:var(--ms-navy);font-size:14px}
+.pn-edit .pn-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.pn-edit .pn-grid>.full{grid-column:1/-1}
+.pn-edit .pn-grid>.pn-note{margin:0}
+.pn-edit input[dir=ltr]{text-align:right}
+.pn-edit input[disabled]{background:#f1f4f8;color:#8795aa}
+.pn-edit input.bad{border-color:#d92d20;background:#fff8f7}
+.pn-edit input.ok{border-color:#12b76a}
+.pn-fh{display:block;margin-top:2px;color:var(--ms-muted);font-size:11.5px;font-weight:600;line-height:1.7}
+.pn-fh.ok{color:#0c6b3d}.pn-fh.bad{color:#b42318}
+.pn-edit .pn-dd{margin:0}
+.pn-edit [data-field][hidden]{display:none}
+@media(max-width:520px){.pn-edit .pn-grid{grid-template-columns:1fr}}
