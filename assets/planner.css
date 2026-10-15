@@ -75,3 +75,16 @@
 .pl-specs{display:grid;gap:6px;margin:8px 0}
 .pl-specs div{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:10px;background:#f6f8fb;font-size:13px}
 .pl-specs dt{color:var(--ms-muted)}.pl-specs dd{margin:0;color:var(--ms-navy);font-weight:800}
+
+/* pop-up cards: three real products float at different depths over a tinted card and lean toward the pointer */
+.pl-cards{perspective:900px}
+.pl-card{position:relative;overflow:visible;background:linear-gradient(180deg,var(--tint,#f3f5f8),#fff 70%);transform-style:preserve-3d;transition:transform .18s ease,box-shadow .18s,border-color .15s;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}
+.pl-card:hover,.pl-card:focus-visible{box-shadow:0 22px 44px rgba(7,27,54,.18);border-color:#90adff}
+.pl-card:active{transform:scale(.98)}
+.pl-stage{position:relative;display:block;width:100%;height:112px;margin-bottom:4px;transform-style:preserve-3d}
+.pl-pop{position:absolute;bottom:0;left:var(--l);width:40%;aspect-ratio:1;transform:translateZ(var(--z)) rotate(var(--r));transition:transform .18s ease;animation:pl-float 4.2s ease-in-out infinite;animation-delay:var(--d)}
+.pl-pop img{position:relative;z-index:1;display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.pl-pop i{position:absolute;left:12%;right:12%;bottom:-4px;height:12px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(7,27,54,.35),transparent 70%);filter:blur(2px)}
+.pl-card:hover .pl-pop{transform:translateZ(calc(var(--z) + 22px)) translateY(-8px) rotate(var(--r))}
+@keyframes pl-float{0%,100%{translate:0 0}50%{translate:0 -5px}}
+@media(prefers-reduced-motion:reduce){.pl-pop{animation:none}.pl-card{transition:none}}

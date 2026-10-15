@@ -75,7 +75,9 @@
     juice: '<path d="M7 4h10l-1 16H8zM8 9h8M14 4l2-2"/>'
   };
 
-  var S = { step: 0, concept: '', size: 1, serve: [], pick: {}, removed: [], qty: {} };
+  var S = { step: 0, concept: '', size: 1, budget: 'mid', serve: [], pick: {}, removed: [], qty: {} };
+  var TIERS = {}, TIERS_ON = false;   // product id -> 'eco' | 'mid' | 'pro' (assets/product-tiers.json, optional)
+  var TIER_RANK = { eco: 0, mid: 1, pro: 2 }, TIER_WORD = { 'اقتصادی': 'eco', 'متعادل': 'mid', 'حرفه‌ای': 'pro', 'حرفه ای': 'pro', eco: 'eco', mid: 'mid', pro: 'pro' };
   try { var saved = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); if (saved && saved.concept) S = Object.assign(S, saved); } catch (e) { /* ignore */ }
   function save() { try { localStorage.setItem(STATE_KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } }
 
@@ -99,27 +101,34 @@
     add('wash', 'gap');
     return out;
   }
-  function candidates(job) {
-    var cats = JOBS[job].cats.map(nz), c = conceptOf(S.concept), secs = c.sectors;
+  function tierDist(it) {
+    if (!TIERS_ON) return 0;
+    var r = TIER_RANK[TIERS[it.id]];
+    return r == null ? 1 : Math.abs(r - TIER_RANK[S.budget]);
+  }
+  function sectorHit(it, secs) { return (it.sec || []).some(function (x) { return secs.indexOf(x) >= 0; }); }
+  function candidates(job, cid) {
+    var cats = JOBS[job].cats.map(nz), secs = conceptOf(cid || S.concept).sectors;
     var list = CAT.items.filter(function (it) { return cats.indexOf(nz(it.cat)) >= 0; });
     var fp = function (it) { return it.dims ? (it.dims.l || 0) * (it.dims.w || 0) : 0; };
     list.sort(function (a, b) {
       var ia = cats.indexOf(nz(a.cat)) - cats.indexOf(nz(b.cat));
       if (ia) return ia;
-      var sa = (a.sec || []).some(function (x) { return secs.indexOf(x) >= 0; }) ? 0 : 1, sb = (b.sec || []).some(function (x) { return secs.indexOf(x) >= 0; }) ? 0 : 1;
-      return sa - sb || fp(a) - fp(b);
+      return (sectorHit(a, secs) ? 0 : 1) - (sectorHit(b, secs) ? 0 : 1) || tierDist(a) - tierDist(b) || fp(a) - fp(b);
     });
     return list;
   }
-  function pickFor(job) {
-    var cands = candidates(job);
+  // neutral between brands: category first, then the business sector, then the budget level, then the size
+  function pickFor(job, cid) {
+    var cands = candidates(job, cid);
     if (!cands.length) return null;
-    if (S.pick[job] && BY[S.pick[job]]) return BY[S.pick[job]];
-    // the best-matching group first (same category and sector), then the size: small, medium or large inside it
-    var top = cands.filter(function (it) { return nz(it.cat) === nz(cands[0].cat) && ((it.sec || []).some(function (x) { return conceptOf(S.concept).sectors.indexOf(x) >= 0; }) === ((cands[0].sec || []).some(function (x) { return conceptOf(S.concept).sectors.indexOf(x) >= 0; }))); });
-    if (top.length < 3) top = cands.filter(function (it) { return nz(it.cat) === nz(cands[0].cat); });
-    var i = Math.min(top.length - 1, Math.floor(top.length * [0.15, 0.5, 0.85][S.size]));
-    return top[i];
+    if (!cid && S.pick[job] && BY[S.pick[job]]) return BY[S.pick[job]];
+    var secs = conceptOf(cid || S.concept).sectors, f = cands[0];
+    var group = cands.filter(function (it) { return nz(it.cat) === nz(f.cat) && sectorHit(it, secs) === sectorHit(f, secs) && tierDist(it) === tierDist(f); });
+    if (group.length < 3) group = cands.filter(function (it) { return nz(it.cat) === nz(f.cat) && tierDist(it) === tierDist(f); });
+    if (!group.length) group = cands;
+    var i = Math.min(group.length - 1, Math.floor(group.length * [0.15, 0.5, 0.85][cid ? 1 : S.size]));
+    return group[i];
   }
   function qtyFor(job) { return S.qty[job] != null ? S.qty[job] : JOBS[job].qty[S.size]; }
 
@@ -129,10 +138,22 @@
       return '<li class="' + (i === S.step ? 'on' : (i < S.step ? 'done' : '')) + '"><span>' + faInt.format(i + 1) + '</span>' + t + '</li>';
     }).join('') + '</ol>';
   }
+  var HERO = { cafe: ['cake', 'coffee', 'blend'], fastfood: ['fry', 'grill', 'burger'], restaurant: ['bain', 'stove', 'doner'],
+    pizza: ['dough', 'pizza', 'topping'], bakery: ['oven', 'cake', 'dough'], juice: ['ice', 'juice', 'blend'] };
+  var TINT = { cafe: '#fde8c8', fastfood: '#fddad3', restaurant: '#e1ecfb', pizza: '#fcd9cf', bakery: '#fdf0c4', juice: '#d9f3e4' };
+  function stage(id) {
+    var imgs = (HERO[id] || []).map(function (j) { var p = CAT ? pickFor(j, id) : null; return p && p.img ? p.img : ''; }).filter(Boolean);
+    if (!imgs.length) return '<span class="pl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CONCEPT_ICON[id] + '</svg></span>';
+    var pos = [['0', '4%', '-7deg', '34px'], ['1', '30%', '0deg', '64px'], ['2', '58%', '7deg', '30px']];
+    return '<span class="pl-stage" aria-hidden="true">' + imgs.slice(0, 3).map(function (src, i) {
+      var q = pos[imgs.length === 3 ? i : (imgs.length === 2 ? [1, 2][i] : 1)];
+      return '<span class="pl-pop" style="--l:' + q[1] + ';--r:' + q[2] + ';--z:' + q[3] + ';--d:' + (i * 0.4) + 's"><i></i><img src="' + esc(src) + '" alt=""></span>';
+    }).join('') + '</span>';
+  }
   function stepConcept() {
     return dots() + '<h1>چه کسب‌وکاری می‌خواهید راه بیندازید؟</h1><p class="pl-lead">فقط یک انتخاب. لازم نیست جزئیات فنی بدانید؛ ما قدم‌به‌قدم کمک می‌کنیم.</p>' +
       '<div class="pl-cards">' + CONCEPTS.map(function (c) {
-        return '<button type="button" class="pl-card" data-concept="' + c.id + '"><span class="pl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CONCEPT_ICON[c.id] + '</svg></span><b>' + c.t + '</b><small>' + c.d + '</small></button>';
+        return '<button type="button" class="pl-card" data-concept="' + c.id + '" style="--tint:' + TINT[c.id] + '">' + stage(c.id) + '<b>' + c.t + '</b><small>' + c.d + '</small></button>';
       }).join('') + '</div>';
   }
   function stepQuestions() {
@@ -141,6 +162,9 @@
       '<h2 class="pl-q">اندازهٔ کار شما؟</h2><div class="pl-seg" role="radiogroup" aria-label="اندازه">' + SIZES.map(function (z) {
         return '<button type="button" role="radio" class="pl-opt" data-size="' + z.id + '" aria-checked="' + (S.size === z.id) + '"><b>' + z.t + '</b><small>' + z.d + '</small></button>';
       }).join('') + '</div>' +
+      (TIERS_ON ? '<h2 class="pl-q">سطح بودجه؟</h2><div class="pl-seg" role="radiogroup" aria-label="سطح بودجه">' + [['eco', 'اقتصادی', 'ساده و مقرون‌به‌صرفه'], ['mid', 'متعادل', 'تعادل قیمت و کیفیت'], ['pro', 'حرفه‌ای', 'بالاترین دوام و ظرفیت']].map(function (b) {
+        return '<button type="button" role="radio" class="pl-opt" data-budget="' + b[0] + '" aria-checked="' + (S.budget === b[0]) + '"><b>' + b[1] + '</b><small>' + b[2] + '</small></button>';
+      }).join('') + '</div>' : '') +
       '<h2 class="pl-q">چه چیزهایی سرو می‌کنید؟ <small>هر چند تا که می‌خواهید</small></h2><div class="pl-chips">' + c.serve.map(function (s) {
         return '<button type="button" class="pl-chip" data-serve="' + s.id + '" aria-pressed="' + (S.serve.indexOf(s.id) >= 0) + '">' + s.t + '</button>';
       }).join('') + '</div>' +
@@ -231,6 +255,7 @@
   document.addEventListener('click', function (e) {
     var t;
     if ((t = e.target.closest('[data-concept]'))) { S.concept = t.getAttribute('data-concept'); S.serve = []; S.pick = {}; S.removed = []; S.qty = {}; S.step = 1; save(); render(); window.scrollTo(0, 0); return; }
+    if ((t = e.target.closest('[data-budget]'))) { S.budget = t.getAttribute('data-budget'); S.pick = {}; save(); render(); return; }
     if ((t = e.target.closest('[data-size]'))) { S.size = Number(t.getAttribute('data-size')); S.qty = {}; S.pick = {}; save(); render(); return; }
     if ((t = e.target.closest('[data-serve]'))) { var id = t.getAttribute('data-serve'), i = S.serve.indexOf(id); if (i >= 0) S.serve.splice(i, 1); else S.serve.push(id); save(); render(); return; }
     if (e.target.closest('[data-plan]')) { S.step = 2; save(); render(); window.scrollTo(0, 0); return; }
@@ -245,8 +270,27 @@
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
   });
 
-  fetch('./assets/catalog.json' + (VER ? '?v=' + VER : '')).then(function (r) { return r.json(); }).then(function (j) {
-    CAT = j; j.items.forEach(function (it) { BY[it.id] = it; }); ready = true; render();
+  // the business cards lean toward the pointer (or the finger) so the products seem to stand out of the card
+  root.addEventListener('pointermove', function (e) {
+    var c = e.target.closest && e.target.closest('.pl-card');
+    if (!c) return;
+    var r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+    c.style.setProperty('--ry', (x * 12).toFixed(1) + 'deg'); c.style.setProperty('--rx', (-y * 9).toFixed(1) + 'deg');
+  });
+  root.addEventListener('pointerout', function (e) {
+    var c = e.target.closest && e.target.closest('.pl-card');
+    if (c && !c.contains(e.relatedTarget)) { c.style.removeProperty('--ry'); c.style.removeProperty('--rx'); }
+  });
+  var q = VER ? '?v=' + VER : '';
+  Promise.all([
+    fetch('./assets/catalog.json' + q).then(function (r) { return r.json(); }),
+    fetch('./assets/product-tiers.json' + q).then(function (r) { return r.ok ? r.json() : {}; }).then(null, function () { return {}; })
+  ]).then(function (res) {
+    CAT = res[0]; CAT.items.forEach(function (it) { BY[it.id] = it; });
+    var tj = res[1] || {}, map = tj.tiers || tj;
+    Object.keys(map).forEach(function (id) { var w = TIER_WORD[map[id]]; if (BY[id] && w) TIERS[id] = w; });
+    TIERS_ON = Object.keys(TIERS).length >= 20;   // a budget question only makes sense once enough products carry a level
+    ready = true; render();
   }).then(null, function () { failed = true; render(); });
   render();
 })();
