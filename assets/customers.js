@@ -95,9 +95,10 @@
       c._key = norm([c.name, c.code, c.city, c.group].join(' '));
       c._nameKey = norm(c.name);
       c._status = statusOf(c, S.latest);
-      c._latest = (c.sales || {})[S.latest] || 0;
-      c._prev = (c.sales || {})[S.latest - 1] || 0;
-      c._total = Object.keys(c.sales || {}).reduce(function (a, k) { return a + (c.sales[k] || 0); }, 0);
+      // the accounting reports are in rial; every figure shown here is in toman
+      c._latest = ((c.sales || {})[S.latest] || 0) / 10;
+      c._prev = ((c.sales || {})[S.latest - 1] || 0) / 10;
+      c._total = Object.keys(c.sales || {}).reduce(function (a, k) { return a + (c.sales[k] || 0); }, 0) / 10;
       Object.keys(c.sales || {}).forEach(function (k) { tot[k] = (tot[k] || 0) + (c.sales[k] || 0); });
     });
     S.yearTotals = tot;
@@ -174,7 +175,7 @@
     return '<li><a class="cu-card" href="#/c/' + encodeURIComponent(c.code) + '">' +
       '<div class="cu-card-top"><b>' + esc(c.name) + '</b><span class="cu-chip st-' + c._status + '">' + STATUS[c._status] + '</span></div>' +
       '<div class="cu-card-meta"><span dir="ltr">' + esc(c.code) + '</span>' + (c.city ? '<span>' + esc(c.city) + '</span>' : '') + (c.group ? '<span>' + esc(c.group) + '</span>' : '') + '</div>' +
-      '<div class="cu-card-sales">' + bars(c) + '<span><small>فروش ' + faDigits(S.latest) + '</small><b>' + compact(c._latest) + '</b></span>' +
+      '<div class="cu-card-sales">' + bars(c) + '<span><small>فروش ' + faDigits(S.latest) + ' · تومان</small><b>' + compact(c._latest) + '</b></span>' +
       (chg === null ? '' : '<em class="' + (chg >= 0 ? 'up' : 'down') + '">' + (chg >= 0 ? '▲' : '▼') + ' ' + faPct.format(Math.abs(chg)) + '٪</em>') + '</div></a></li>';
   }
   function listHtml() {
@@ -199,7 +200,7 @@
     var cnt = function (s) { return s === 'all' ? S.list.length : S.list.filter(function (c) { return c._status === s; }).length; };
     var kpi = '<div class="cu-kpis">' +
       '<div><span>مشتری فعال ' + faDigits(S.latest || '') + '</span><b>' + faInt.format(act.length) + '</b></div>' +
-      '<div><span>فروش ' + faDigits(S.latest || '') + '</span><b>' + compact((S.yearTotals || {})[S.latest] || 0) + '</b></div>' +
+      '<div><span>فروش ' + faDigits(S.latest || '') + ' (تومان)</span><b>' + compact(((S.yearTotals || {})[S.latest] || 0) / 10) + '</b></div>' +
       '<div><span>مشتری جدید</span><b>' + faInt.format(cnt('new')) + '</b></div>' +
       '<div><span>در معرض ریزش</span><b>' + faInt.format(cnt('atrisk')) + '</b></div></div>';
     var statusChips = statuses.map(function (s) {
@@ -236,7 +237,7 @@
       '<ul class="cu-glist">' + names.map(function (g) {
         var sum = S.list.filter(function (c) { return c.group === g; }).reduce(function (a, c) { return a + c._latest; }, 0);
         var info = S.groups[gkey(g)] || {};
-        return '<li><div><b>' + esc(g) + '</b><span>' + faInt.format(gn[g]) + ' مشتری · فروش ' + faDigits(S.latest) + ': ' + compact(sum) + '</span></div>' +
+        return '<li><div><b>' + esc(g) + '</b><span>' + faInt.format(gn[g]) + ' مشتری · فروش ' + faDigits(S.latest) + ': ' + compact(sum) + ' تومان</span></div>' +
           '<div class="cu-owner">' + (info.ownerName ? '<span class="cu-chip ok">' + esc(info.ownerName) + '</span>' : '<span class="cu-chip">مسئول تعیین نشده</span>') +
           '<button type="button" class="cu-btn small" data-owner-group="' + esc(g) + '">تعیین مسئول</button></div></li>';
       }).join('') + '</ul></section>';
@@ -288,7 +289,7 @@
       var v = (c.sales || {})[y] || 0, pv = i ? (c.sales || {})[S.years[i - 1]] || 0 : 0;
       var chg = i && pv > 0 ? (v - pv) / pv * 100 : null, r = (S.rank[c.code] || {})[y], tot = (S.yearTotals || {})[y] || 0;
       return '<div class="cu-year"><div class="cu-bar"><i style="height:' + Math.max(3, Math.round(v / max * 100)) + '%"></i></div>' +
-        '<b>' + compact(v) + '</b><span>' + faDigits(y) + (y === S.latest ? ' (تا امروز)' : '') + '</span>' +
+        '<b>' + compact(v / 10) + '</b><span>' + faDigits(y) + (y === S.latest ? ' (تا امروز)' : '') + '</span>' +
         (chg === null ? '' : '<em class="' + (chg >= 0 ? 'up' : 'down') + '">' + (chg >= 0 ? '▲' : '▼') + ' ' + faPct.format(Math.abs(chg)) + '٪</em>') +
         (v > 0 && tot ? '<small>سهم ' + faInt.format(Math.round(v / tot * 1000) / 10) + '٪' + (r ? ' · رتبهٔ ' + faInt.format(r.n) + ' از ' + faInt.format(r.of) : '') + '</small>' : '') + '</div>';
     }).join('') + '</div>';
@@ -305,10 +306,10 @@
       (c.ownerName ? '<span class="cu-chip ok">مسئول: ' + esc(c.ownerName) + '</span>' : '') + '</div>' +
       '<dl class="cu-facts">' + fact('گروه (همکار مسئول)', c.group) + fact('شهر', c.city) + fact('استان', prov) + fact('منطقه فروش', reg) +
       fact('آخرین سال خرید', (function () { var ys = S.years.filter(function (y) { return (c.sales || {})[y] > 0; }); return ys.length ? faDigits(ys[ys.length - 1]) : ''; })()) +
-      fact('مجموع فروش ثبت‌شده', c._total ? amount(c._total) : '') + '</dl>' +
+      fact('مجموع فروش ثبت‌شده', c._total ? amount(c._total) + ' تومان' : '') + '</dl>' +
       (can('customerAssign') ? '<button type="button" class="cu-btn small" data-owner-customer="' + esc(c.code) + '">تغییر مسئول این مشتری</button>' : '') + '</section>' +
       '<section class="cu-card-box"><h2>خرید در سال‌ها</h2>' + yearBars(c) +
-      '<p class="cu-note">مبلغ‌ها همان عددهای گزارش حسابداری هستند؛ واحد پول در گزارش مشخص نشده است. سال ' + faDigits(S.latest) + ' هنوز تمام نشده است.</p></section>' +
+      '<p class="cu-note">مبلغ‌ها به تومان است (گزارش حسابداری به ریال است و اینجا تبدیل شده). سال ' + faDigits(S.latest) + ' هنوز تمام نشده است.</p></section>' +
       '<section class="cu-card-box"><div class="cu-boxhead"><h2>اطلاعات تماس</h2>' + (edit ? '<button type="submit" form="cuForm" class="cu-ico" title="ذخیره" aria-label="ذخیرهٔ اطلاعات تماس"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l4 4v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 3v5h7V3M8 21v-7h8v7"/></svg></button>' : '') + '</div><form id="cuForm" data-code="' + esc(c.code) + '"><div class="cu-grid">' +
       '<label>تلفن<input type="tel" name="phone" dir="ltr" inputmode="numeric" maxlength="15" value="' + esc(faDigits(c.phone || '')) + '"' + (edit ? '' : ' disabled') + '></label>' +
       '<label>شخص تماس<input type="text" name="contact" maxlength="80" value="' + esc(c.contact || '') + '"' + (edit ? '' : ' disabled') + '></label>' +
@@ -372,7 +373,7 @@
       row.forEach(function (h, i) {
         var k = norm(h); if (!k) return;
         if (k === norm('کد مشتری')) { cols.code = i; found = true; return; }
-        var m = /^فروش\s*(\d{4})$/.exec(k);
+        var m = /^فروش\s*(\d{4})\s*(?:\(.*\))?$/.exec(k);
         if (m) { sales[m[1]] = i; return; }
         Object.keys(TPL_ALIASES).forEach(function (f) { if (f !== 'code' && cols[f] === undefined && TPL_ALIASES[f].map(norm).indexOf(k) >= 0) cols[f] = i; });
       });
@@ -383,7 +384,7 @@
         if (!code || /^نمونه/.test(code)) { if (rw.some(function (x) { return x != null && String(x).trim(); })) skipped++; continue; }
         var rec = { code: code, sales: {} };
         Object.keys(cols).forEach(function (f) { if (f !== 'code') rec[f] = f === 'phone' ? latinDigits(val(rw, cols[f])).replace(/\D/g, '') : fixLetters(val(rw, cols[f])); });
-        Object.keys(sales).forEach(function (y) { var n = Number(latinDigits(val(rw, sales[y])).replace(/[٬,\s]/g, '')); if (isFinite(n) && val(rw, sales[y]) !== '') rec.sales[y] = Math.round(n); });
+        Object.keys(sales).forEach(function (y) { var n = Number(latinDigits(val(rw, sales[y])).replace(/[٬,\s]/g, '')); if (isFinite(n) && val(rw, sales[y]) !== '') rec.sales[y] = Math.round(n * 10); });
         out.push(rec);
       }
       return { rows: out, skipped: skipped };
@@ -403,11 +404,11 @@
   }
   function sheetRows(list) {
     var years = S.years.length ? S.years : [1403, 1404, 1405];
-    var head = TPL_HEAD.map(function (h) { return h[1]; }).concat(years.map(function (y) { return 'فروش ' + y; }));
+    var head = TPL_HEAD.map(function (h) { return h[1]; }).concat(years.map(function (y) { return 'فروش ' + y + ' (تومان)'; }));
     var rows = [head];
     list.forEach(function (c) {
       rows.push([c.code, c.name || '', c.group || '', c.city || '', c.province || provinceOf(c.city), c.phone || '', c.contact || '', c.address || '', c.notes || '']
-        .concat(years.map(function (y) { var v = (c.sales || {})[y]; return v == null ? '' : v; })));
+        .concat(years.map(function (y) { var v = (c.sales || {})[y]; return v == null ? '' : Math.round(v / 10); })));
     });
     return rows;
   }
@@ -489,7 +490,7 @@
       ['۲. «نام مشتری» و «کد مشتری» اجباری‌اند؛ بقیهٔ ستون‌ها اختیاری هستند.'],
       ['۳. «گروه (همکار مسئول)» همان گروه مشتری در حسابداری است؛ مسئول هر گروه بعداً در برنامه تعیین می‌شود.'],
       ['۴. تلفن را فقط عدد بنویسید (مثلاً 09121234567).'],
-      ['۵. ستون‌های «فروش 1403» و مانند آن اختیاری‌اند؛ سال را در عنوان ستون بنویسید.'],
+      ['۵. ستون‌های «فروش 1403 (تومان)» و مانند آن اختیاری‌اند؛ سال را در عنوان ستون بنویسید و مبلغ را به تومان وارد کنید.'],
       ['۶. خانهٔ خالی، مقدار فعلی را پاک نمی‌کند؛ فقط خانه‌های پر شده جایگزین می‌شوند.'],
       ['۷. ردیف‌هایی که کدشان با «نمونه» شروع شود نادیده گرفته می‌شوند.'],
       ['۸. فایل را در برنامه از «مشتریان ← ورود اطلاعات» بارگذاری کنید و پیش از ذخیره، پیش‌نمایش را ببینید.']];

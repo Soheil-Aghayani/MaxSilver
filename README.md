@@ -154,7 +154,7 @@ Planned, unranked directions: an Iranian VPS with Firebase as fallback, multiple
 
 ## Limitations
 
-- Sales reports carry no currency unit and no customer-to-product link, so the portal shows the figures as given and builds customers' item lists only from proformas made in the app.
+- The accounting sales reports are in rial and have no customer-to-product link, so the portal converts the figures to toman for display and builds customers' item lists only from proformas made in the app.
 - Push notifications reach a device while the app is open or in the background; delivering to a closed phone needs a server.
 - Firebase is a foreign service; an offline-capable mode is built in, and a domestic backend is a planned option.
 

@@ -968,12 +968,20 @@
   (function () {
     var b = $('catNote'), p = $('catNoteText');
     if (!b || !p) return;
-    b.addEventListener('click', function (e) { e.stopPropagation(); var on = p.hidden; p.hidden = !on; b.setAttribute('aria-expanded', String(on)); });
+    // the note is placed under its own button (fixed, kept inside the screen), not at the edge of the header
+    function place() {
+      var r = b.getBoundingClientRect(), w = Math.min(320, window.innerWidth - 16);
+      var left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+      p.style.position = 'fixed'; p.style.width = w + 'px'; p.style.left = left + 'px'; p.style.right = 'auto'; p.style.insetInlineEnd = 'auto'; p.style.top = (r.bottom + 8) + 'px';
+    }
+    window.addEventListener('resize', function () { if (!p.hidden) place(); });
+    window.addEventListener('scroll', function () { if (!p.hidden) place(); }, { passive: true });
+    b.addEventListener('click', function (e) { e.stopPropagation(); var on = p.hidden; p.hidden = !on; b.setAttribute('aria-expanded', String(on)); if (on) place(); });
     document.addEventListener('click', function (e) { if (!p.hidden && !p.contains(e.target)) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); } });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261239', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261240', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();
