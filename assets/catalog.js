@@ -742,7 +742,43 @@
     };
     r.readAsText(file);
   }
+  // ----- rial -> toman. A proforma made in rial is converted once (every amount divided by ten, unit set to toman).
+  function r2(n) { return Math.round(n * 100) / 100; }
+  function convertAmounts(d, k) {
+    (d.lines || []).forEach(function (l) { if (l.price) l.price = r2(l.price * k); });
+    if (d.discMode === 'amt' && d.discount) d.discount = r2(d.discount * k);
+    var p = d.pay;
+    if (p && typeof p === 'object') {
+      if (p.cashUnit === 'amt' && p.cashVal) p.cashVal = r2(p.cashVal * k);
+      (p.cheques || []).forEach(function (c) { if (c.amount) c.amount = r2(c.amount * k); });
+    }
+  }
+  var RIAL_CUTOFF = Date.UTC(2026, 9, 16);   // proformas created before this day were made in rial by habit; later ones keep the unit they were given
+  function migrateUnits() {
+    var n = 0, now = Date.now();
+    archive.forEach(function (d) {
+      if (d.unit !== 'ریال' || d.unitMigrated || (d.createdAt || 0) >= RIAL_CUTOFF) return;
+      var old = {};
+      (d.lines || []).forEach(function (l) { old[l.id] = l.price; });
+      convertAmounts(d, 0.1);
+      (d.lines || []).forEach(function (l) { if (prices[l.id] && prices[l.id] === old[l.id]) prices[l.id] = l.price; });
+      d.unit = 'تومان'; d.unitMigrated = true; d.updatedAt = now; d.synced = false;
+      n++;
+    });
+    var draftDone = false;
+    try { draftDone = localStorage.getItem('ms-unit-draft-v1') === '1'; } catch (e) { /* ignore */ }
+    if (!draftDone) {
+      if (inv.unit === 'ریال') { convertAmounts(inv, 0.1); inv.unit = 'تومان'; invSave(); }
+      try { localStorage.setItem('ms-unit-draft-v1', '1'); } catch (e) { /* ignore */ }
+    }
+    if (n) {
+      saveJson(ARCH_KEY, archive); saveJson(PRICE_KEY, prices);
+      if (window.MSSync && window.MSSync.push) window.MSSync.push();
+    }
+    return n;
+  }
   window.MSArchive = {
+    migrateUnits: migrateUnits,
     list: function () { return archive; },
     prices: function () { return prices; },
     replace: function (docs, priceMap) { archive = docs.slice(0, 500); prices = priceMap || prices; saveJson(ARCH_KEY, archive); saveJson(PRICE_KEY, prices); },
@@ -754,6 +790,7 @@
       if (name && (!inv.issuer || inv.issuer === last) && inv.issuer !== name) { inv.issuer = name; invSave(); }
     }
   };
+  migrateUnits();
   window.addEventListener('afterprint', function () { document.body.classList.remove('inv-print'); });
   // live Persian digits + thousands separators while typing; the caret stays after the same digit
   function liveFormat(input) {
@@ -789,7 +826,7 @@
       if (hint) { var ok = !cl || /^0\d{10}$/.test(cl); hint.hidden = ok; }
     }
     else if (f === 'custCity' || f === 'custAddr') inv[f] = e.target.value;
-    else if (f === 'docNo' || f === 'issuer' || f === 'customer' || f === 'unit' || f === 'discMode') inv[f] = e.target.value;
+    else if (f === 'docNo' || f === 'issuer' || f === 'customer' || f === 'discMode') inv[f] = e.target.value;
     else if (f === 'date') invDate = e.target.value;
     else if (f === 'discount' || f === 'tax') inv[f] = parseNum(e.target.value);
     else if (f === 'cashVal') ensurePay().cashVal = parseNum(e.target.value);
@@ -807,7 +844,17 @@
     if (e.target.hasAttribute('data-arc-restore') && e.target.files[0]) { restoreBackup(e.target.files[0]); return; }
     var f = e.target.getAttribute('data-f');
     if (f === 'price' || f === 'qty') { var v = parseNum(e.target.value); e.target.value = v ? faInt.format(v) : ''; }
-    if (f === 'unit' || f === 'discMode') { inv[f] = e.target.value; invSave(); invTotalsRender(); }
+    if (f === 'discMode') { inv[f] = e.target.value; invSave(); invTotalsRender(); }
+    if (f === 'unit') {
+      var from = inv.unit, to = e.target.value, k = from === 'ریال' && to === 'تومان' ? 0.1 : (from === 'تومان' && to === 'ریال' ? 10 : 1);
+      if (k !== 1) {
+        convertAmounts(inv, k);
+        inv.lines.forEach(function (l) { if (l.price > 0) prices[l.id] = l.price; });
+        saveJson(PRICE_KEY, prices);
+      }
+      inv.unit = to; invSave(); invoiceView();
+      if (k !== 1) shareMsg(k === 0.1 ? 'مبلغ‌ها از ریال به تومان تبدیل شد.' : 'مبلغ‌ها از تومان به ریال تبدیل شد.');
+    }
     var pp = ensurePay();
     if (e.target.hasAttribute('data-pay-mode')) {
       pp.mode = e.target.value;
@@ -981,7 +1028,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261240', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261241', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();

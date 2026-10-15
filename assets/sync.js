@@ -165,6 +165,7 @@
         var merged = Object.keys(byNo).map(function (k) { return byNo[k]; }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
         var remotePrices = res[1].exists && res[1].data().map || {};
         A.replace(merged, Object.assign({}, remotePrices, A.prices()));
+        if (A.migrateUnits) A.migrateUnits();
         A.setForeign(others.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }));
         return pushPending().then(flushSends);
       });
