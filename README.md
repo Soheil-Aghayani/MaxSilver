@@ -51,7 +51,7 @@ Signed-out visitors see only the home page, the sign-in panel and the contact fo
 | **Panel** | [`panel.html`](panel.html) | Personal profile and look, proformas, conversations, commission, team and role administration. |
 | **Contact** | [`contact.html`](contact.html) | The only way in for people without an account: sales, after-sales or management. |
 
-Navigation is a short dock plus a grouped "all sections" sheet. Each person can pin up to five sections on a wide screen and two on a phone; the rest stay one tap away. On the sheet, sections are round icons without boxes, and their names appear only when asked for.
+Navigation is a short dock: home, the sections you pinned, and your account. Every section lives on the home page, where a star on each card adds or removes it from the dock (up to three on a phone, six on a wide screen). A bell on the home banner and a "what is new" section list the changes shipped to the app; a glowing red dot means something is unread.
 
 ## How a proforma travels
 

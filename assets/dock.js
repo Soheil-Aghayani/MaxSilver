@@ -1,5 +1,6 @@
-// The navigation dock: a short fixed bar (home, up to three pinned sections, «همه», account) and a grouped sheet with every
-// section the signed-in role may open. Pins are per device. Which sections exist for a role comes from roles.js.
+// The navigation dock: home, the sections a person pinned, and account. Nothing else sits in it.
+// All sections live on the home page, where every card has a star that pins it to the dock (up to 3 on a phone, 6 on a wide
+// screen). Which sections exist for a role comes from roles.js. Pins are kept per device.
 (function () {
   'use strict';
   var nav = document.querySelector('.ms-sitebar .ms-nav-links');
@@ -18,36 +19,32 @@
     tickets: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/>'),
     panel: svg('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>'),
     contact: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.7A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/>'),
-    all: svg('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
-    close: svg('<path d="m6 6 12 12M18 6 6 18"/>'),
-    names: svg('<path d="M4 7h16M4 12h10M4 17h13"/>'),
-    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>'
+    star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>'
   };
-  // g: group of the sheet. area: roles.js area required (none: any signed-in person). page: file name that makes it «current».
+  // area: roles.js area required (none: any signed-in person). page: file name that makes it «current».
   var ITEMS = [
-    { id: 'home', href: './index.html', label: 'درگاه مدیریت', g: 'start', page: 'index.html' },
-    { id: 'customers', href: './customers.html', label: 'مشتریان', g: 'sales', area: 'customers', page: 'customers.html' },
-    { id: 'catalog', href: './product-catalog.html', label: 'کاتالوگ محصولات', g: 'sales', page: 'product-catalog.html' },
-    { id: 'invoices', href: './panel.html#invoices', label: 'پیش‌فاکتورها', g: 'sales', area: 'invoices' },
-    { id: 'process', href: './sales-process.html', label: 'نقشهٔ فروش', g: 'sales', page: 'sales-process.html' },
-    { id: 'dashboard', href: './ceo-dashboard.html', label: 'داشبورد مدیریتی', g: 'mgmt', area: 'dashboard', page: 'ceo-dashboard.html' },
-    { id: 'analysis', href: './sales-analysis.html', label: 'تحلیل جزئیات فروش', g: 'mgmt', area: 'analysis', page: 'sales-analysis.html' },
-    { id: 'advertising', href: './advertising.html', label: 'استراتژی تبلیغات', g: 'brand', area: 'advertising', page: 'advertising.html' },
-    { id: 'brand', href: './brand-books.html', label: 'برندبوک', g: 'brand', area: 'brand', page: 'brand-books.html' },
-    { id: 'tickets', href: './panel.html#tickets', label: 'گفت‌وگوها', g: 'account' },
-    { id: 'panel', href: './panel.html', label: 'حساب من', g: 'account', page: 'panel.html' },
-    { id: 'contact', href: './contact.html', label: 'تماس با ما', g: 'account', anon: true, page: 'contact.html' }
+    { id: 'home', href: './index.html', label: 'درگاه مدیریت', page: 'index.html' },
+    { id: 'customers', href: './customers.html', label: 'مشتریان', area: 'customers', page: 'customers.html' },
+    { id: 'catalog', href: './product-catalog.html', label: 'کاتالوگ محصولات', page: 'product-catalog.html' },
+    { id: 'invoices', href: './panel.html#invoices', label: 'پیش‌فاکتورها', area: 'invoices' },
+    { id: 'process', href: './sales-process.html', label: 'نقشهٔ فروش', page: 'sales-process.html' },
+    { id: 'dashboard', href: './ceo-dashboard.html', label: 'داشبورد CEO', area: 'dashboard', page: 'ceo-dashboard.html' },
+    { id: 'analysis', href: './sales-analysis.html', label: 'تحلیل جزئیات فروش', area: 'analysis', page: 'sales-analysis.html' },
+    { id: 'advertising', href: './advertising.html', label: 'استراتژی تبلیغات', area: 'advertising', page: 'advertising.html' },
+    { id: 'brand', href: './brand-books.html', label: 'برندبوک‌ها', area: 'brand', page: 'brand-books.html' },
+    { id: 'tickets', href: './panel.html#tickets', label: 'گفت‌وگوها' },
+    { id: 'panel', href: './panel.html', label: 'حساب من', page: 'panel.html' },
+    { id: 'contact', href: './contact.html', label: 'تماس با ما', anon: true, page: 'contact.html' }
   ];
-  var GROUPS = [['sales', 'فروش و مشتری'], ['mgmt', 'تحلیل و مدیریت'], ['brand', 'بازاریابی و برند'], ['account', 'حساب و ارتباط']];
   var DEFAULT_PINS = {
     visitor: ['catalog', 'customers', 'process'], sales_manager: ['customers', 'catalog', 'invoices'], account_manager: ['invoices', 'customers', 'catalog'],
     finance: ['dashboard', 'customers', 'invoices'], ceo: ['dashboard', 'customers', 'catalog'], manager: ['dashboard', 'customers', 'catalog'],
     marketing: ['advertising', 'brand', 'catalog']
   };
-  var KEY = 'ms-dock-pins-v1', LABELS = 'ms-all-labels-v1';
-  // the bottom bar (up to 1100 px wide) is short, so it takes fewer pins than the top bar of a wide screen
+  var KEY = 'ms-dock-pins-v1';
+  // the bottom bar (up to 1100 px wide) is short, so it holds fewer pins than the top bar of a wide screen
   var mqDock = window.matchMedia ? window.matchMedia('(max-width:1100px)') : { matches: false };
-  function maxPins() { return mqDock.matches ? 2 : 5; }
+  function maxPins() { return mqDock.matches ? 3 : 6; }
   var faN = function (n) { return String(n).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); };
 
   function role() { try { return localStorage.getItem('ms-role') || ''; } catch (e) { return ''; } }
@@ -62,15 +59,19 @@
       if (!on) return it.id === 'home' || it.id === 'panel' || it.id === 'contact';
       if (it.anon) return false;
       if (!it.area) return true;
-      if (!r) return false;                       // a session exists but the role has not arrived yet: only the open sections
+      if (!r) return false;
       return R ? R.can(r, it.area) : false;
     });
   }
-  function pinsFor(list) {
-    var ids = list.map(function (i) { return i.id; }), saved = null;
+  function savedPins() {
+    var saved = null;
     try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { /* ignore */ }
-    var base = Array.isArray(saved) ? saved : (DEFAULT_PINS[(window.MSRoles ? window.MSRoles.norm(role()) : role())] || ['catalog', 'customers']);
-    return base.filter(function (id, i) { return ids.indexOf(id) >= 0 && id !== 'home' && id !== 'panel' && base.indexOf(id) === i; }).slice(0, maxPins());
+    return Array.isArray(saved) ? saved : null;
+  }
+  function pinsFor(list) {
+    var ids = list.map(function (i) { return i.id; });
+    var base = savedPins() || (DEFAULT_PINS[(window.MSRoles ? window.MSRoles.norm(role()) : role())] || ['catalog', 'customers']);
+    return base.filter(function (id, i) { return ids.indexOf(id) >= 0 && id !== 'home' && id !== 'panel' && base.indexOf(id) === i; });
   }
   function savePins(p) { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) { /* ignore */ } }
 
@@ -84,91 +85,82 @@
     return '<li><a href="' + it.href + '"' + (cur ? ' aria-current="page"' : '') + ' aria-label="' + it.label + '" data-tip="' + it.label + '" data-dock="' + it.id + '">' + ICON[it.id] + '<span>' + it.label + '</span></a></li>';
   }
 
-  var sheet = null, lastFocus = null;
   function render() {
     var list = allowed(), byId = {};
     list.forEach(function (i) { byId[i.id] = i; });
-    var on = signed(), html = '', cur = null;
+    var cur = null, html = '';
     list.forEach(function (i) { if (isCurrent(i)) cur = i.id; });
-    if (!on) {
+    if (!signed()) {
       html = ['home', 'contact', 'panel'].map(function (id) { return link(byId[id], cur === id); }).join('');
-      nav.innerHTML = html; paintBadge(); return;
+    } else {
+      html = link(byId.home, cur === 'home');
+      pinsFor(list).slice(0, maxPins()).forEach(function (id) { html += link(byId[id], cur === id); });
+      html += link(byId.panel, cur === 'panel');
     }
-    var pins = pinsFor(list), shown = ['home'].concat(pins, ['panel']);
-    html += link(byId.home, cur === 'home');
-    pins.forEach(function (id) { html += link(byId[id], cur === id); });
-    var inDock = shown.indexOf(cur) >= 0;
-    html += '<li><a href="#all" role="button" aria-haspopup="dialog" aria-label="همهٔ بخش‌ها" data-tip="همهٔ بخش‌ها" data-dock="all"' + (!inDock && cur ? ' class="ms-parent"' : '') + '>' + ICON.all + '<span>همه</span></a></li>';
-    html += link(byId.panel, cur === 'panel');
     nav.innerHTML = html;
-    paintBadge();
+    if (window.MSNotify && window.MSNotify.paint) { try { window.MSNotify.paint(); } catch (e) { /* ignore */ } }
+    if (window.MSUpdates && window.MSUpdates.paintDot) { try { window.MSUpdates.paintDot(); } catch (e) { /* ignore */ } }
+    decorateHome();
   }
-  function paintBadge() { if (window.MSNotify && window.MSNotify.paint) { try { window.MSNotify.paint(); } catch (e) { /* ignore */ } } }
 
-  // ---- the sheet
-  function build() {
-    sheet = document.createElement('div');
-    sheet.className = 'ms-all';
-    sheet.hidden = true;
-    sheet.innerHTML = '<div class="ms-all-back" data-all-close></div><div class="ms-all-sheet" role="dialog" aria-modal="true" aria-label="همهٔ بخش‌ها"></div>';
-    document.body.appendChild(sheet);
-    sheet.addEventListener('click', function (e) {
-      var pin = e.target.closest('[data-pin]');
-      if (pin) {
-        var id = pin.getAttribute('data-pin'), list = allowed(), pins = pinsFor(list), i = pins.indexOf(id);
-        if (i >= 0) pins.splice(i, 1);
-        else if (pins.length < maxPins()) pins.push(id);
-        else { var hint = sheet.querySelector('.ms-all-hint'); if (hint) { hint.textContent = 'در این نوار حداکثر ' + faN(maxPins()) + ' بخش جا می‌شود؛ ابتدا یکی را بردارید.'; hint.classList.add('warn'); } return; }
-        savePins(pins); render(); fill();
-        return;
+  // ---- the home page: every card carries a star that adds or removes the section from the dock
+  function idByHref(href) {
+    var h = String(href || '');
+    for (var i = 0; i < ITEMS.length; i++) if (ITEMS[i].href === h) return ITEMS[i].id;
+    return null;
+  }
+  function decorateHome() {
+    if (page !== 'index.html') return;
+    var grid = document.querySelector('main .portal-grid:not(.anon)');
+    if (!grid) return;
+    var on = signed(), list = allowed(), ids = list.map(function (i) { return i.id; }), pins = pinsFor(list).slice(0, maxPins());
+    var hint = document.getElementById('dockHint');
+    if (!hint) {
+      hint = document.createElement('p'); hint.id = 'dockHint'; hint.className = 'dock-hint';
+      grid.parentNode.insertBefore(hint, grid);
+    }
+    hint.hidden = !on;
+    if (!hint.classList.contains('warn')) hint.innerHTML = ICON.star + '<span>با ستارهٔ هر بخش، آن را در نوار پایین نگه دارید؛ حداکثر ' + faN(maxPins()) + ' بخش.</span>';
+    Array.prototype.forEach.call(grid.querySelectorAll('a.portal-card'), function (a) {
+      var id = idByHref(a.getAttribute('href')), wrap = a.parentNode;
+      if (!wrap.classList || !wrap.classList.contains('pc-wrap')) {
+        wrap = document.createElement('div'); wrap.className = 'pc-wrap';
+        a.parentNode.insertBefore(wrap, a); wrap.appendChild(a);
       }
-      if (e.target.closest('[data-all-labels]')) {
-        var on = !sheet.querySelector('.ms-all-sheet').classList.contains('labels');
-        try { localStorage.setItem(LABELS, on ? '1' : '0'); } catch (x) { /* ignore */ }
-        fill();
-        return;
+      wrap.style.display = a.hidden || a.style.display === 'none' ? 'none' : '';
+      var star = wrap.querySelector('.pc-star');
+      var pinnable = on && id && id !== 'home' && id !== 'panel' && ids.indexOf(id) >= 0;
+      if (!pinnable) { if (star) star.remove(); return; }
+      if (!star) {
+        star = document.createElement('button'); star.type = 'button'; star.className = 'pc-star'; star.innerHTML = ICON.star;
+        wrap.appendChild(star);
       }
-      if (e.target.closest('[data-all-close]')) close();
-      else if (e.target.closest('a.ms-tile')) close();
+      var pinned = pins.indexOf(id) >= 0, label = a.querySelector('h2') ? a.querySelector('h2').textContent.trim() : id;
+      star.setAttribute('data-pin', id);
+      star.setAttribute('aria-pressed', String(pinned));
+      star.setAttribute('aria-label', (pinned ? 'برداشتن از نوار: ' : 'افزودن به نوار: ') + label);
+      star.title = pinned ? 'برداشتن از نوار پایین' : 'افزودن به نوار پایین';
     });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sheet.hidden) close(); });
   }
-  function fill() {
-    var list = allowed(), pins = pinsFor(list), body = '', labels = false;
-    try { labels = localStorage.getItem(LABELS) === '1'; } catch (e) { /* ignore */ }
-    GROUPS.forEach(function (g) {
-      var items = list.filter(function (i) { return i.g === g[0]; });
-      if (!items.length) return;
-      body += '<section><h3>' + g[1] + '</h3><div class="ms-all-grid">' + items.map(function (i) {
-        var pinned = pins.indexOf(i.id) >= 0, pinnable = i.id !== 'panel' && i.id !== 'home';
-        return '<div class="ms-tile-wrap"><a class="ms-tile' + (isCurrent(i) ? ' cur' : '') + '" href="' + i.href + '" aria-label="' + i.label + '" title="' + i.label + '"><span class="ms-tile-ico">' + ICON[i.id] + '</span><span class="ms-tile-t">' + i.label + '</span></a>' +
-          (pinnable ? '<button type="button" class="ms-pin" data-pin="' + i.id + '" aria-pressed="' + pinned + '" aria-label="' + (pinned ? 'برداشتن از نوار' : 'سنجاق به نوار') + ' ' + i.label + '" title="' + (pinned ? 'برداشتن از نوار' : 'سنجاق به نوار') + '">' + ICON.pin + '</button>' : '') + '</div>';
-      }).join('') + '</div></section>';
-    });
-    var box = sheet.querySelector('.ms-all-sheet');
-    box.classList.toggle('labels', labels);
-    box.innerHTML = '<div class="ms-all-head"><b>همهٔ بخش‌ها</b><span class="ms-all-tools">' +
-      '<button type="button" class="ms-all-x" data-all-labels aria-pressed="' + labels + '" aria-label="نمایش نام بخش‌ها" title="نمایش نام بخش‌ها">' + ICON.names + '</button>' +
-      '<button type="button" class="ms-all-x" data-all-close aria-label="بستن">' + ICON.close + '</button></span></div>' + body +
-      '<p class="ms-all-hint">' + (labels ? 'ستاره: تا ' + faN(maxPins()) + ' بخش را در نوار سنجاق کنید.' : 'برای دیدن نام بخش‌ها، دکمهٔ بالا را بزنید.') + '</p>';
-  }
-  function open() {
-    if (!sheet) build();
-    lastFocus = document.activeElement;
-    fill();
-    sheet.hidden = false;
-    document.documentElement.classList.add('ms-all-open');
-    var first = sheet.querySelector('.ms-tile'); if (first) { try { first.focus(); } catch (e) { /* ignore */ } }
-  }
-  function close() {
-    if (!sheet || sheet.hidden) return;
-    sheet.hidden = true;
-    document.documentElement.classList.remove('ms-all-open');
-    if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) { /* ignore */ } }
-  }
-  nav.addEventListener('click', function (e) {
-    var a = e.target.closest('a[data-dock=all]');
-    if (a) { e.preventDefault(); open(); }
+  var warnTimer = 0;
+  document.addEventListener('click', function (e) {
+    var star = e.target.closest && e.target.closest('.pc-star');
+    if (!star) return;
+    e.preventDefault();
+    var id = star.getAttribute('data-pin'), list = allowed(), pins = pinsFor(list), i = pins.indexOf(id);
+    if (i >= 0) pins.splice(i, 1);
+    else if (pins.slice(0, maxPins()).length < maxPins()) pins = pins.slice(0, maxPins()).concat(id);
+    else {
+      var hint = document.getElementById('dockHint');
+      if (hint) {
+        hint.classList.add('warn');
+        hint.innerHTML = ICON.star + '<span>نوار پایین جای بیشتر از ' + faN(maxPins()) + ' بخش ندارد؛ ابتدا ستارهٔ یکی را بردارید.</span>';
+        clearTimeout(warnTimer);
+        warnTimer = setTimeout(function () { hint.classList.remove('warn'); decorateHome(); }, 3500);
+      }
+      return;
+    }
+    savePins(pins); render();
   });
 
   // the dock follows sign-in and sign-out (MSGate.apply runs on both) and the panel's own hash links
@@ -182,7 +174,7 @@
   hook();
   render();
   window.addEventListener('hashchange', render);
-  if (mqDock.addEventListener) mqDock.addEventListener('change', function () { render(); if (sheet && !sheet.hidden) fill(); });
   window.addEventListener('storage', function (e) { if (e.key === 'ms-role' || e.key === KEY) render(); });
-  window.MSDock = { render: render, open: open, close: close };
+  if (mqDock.addEventListener) mqDock.addEventListener('change', render);
+  window.MSDock = { render: render, maxPins: maxPins };
 })();

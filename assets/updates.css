@@ -1,0 +1,56 @@
+/* home page: what's new, the bell on the banner, and the dock stars */
+.upd{margin-top:16px}
+.upd-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 4px 8px}
+.upd-head h2{margin:0;color:var(--ms-navy);font-size:17px}
+.upd-allbtn{padding:0 4px;border:0;background:none;color:#1746b5;font:800 13px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+.upd-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.upd-card{display:grid;gap:6px;align-content:start;padding:14px 16px;border:1px solid var(--ms-line);border-radius:18px;background:#fff;box-shadow:var(--ms-shadow)}
+.upd-card.fresh{border-color:#f4b9b5;box-shadow:0 0 0 3px rgba(255,59,48,.08),var(--ms-shadow)}
+.upd-card h3{margin:0;color:var(--ms-navy);font-size:15px;line-height:1.6}
+.upd-sum{margin:0;color:var(--ms-muted);font-size:13px;line-height:1.85;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.upd-more{justify-self:start;padding:0;border:0;background:none;color:#1746b5;font:800 13px/1.6 Estedad,Tahoma,sans-serif;cursor:pointer}
+.upd-meta{display:flex;align-items:center;gap:8px;color:var(--ms-muted);font-size:12px;font-weight:700}
+.upd-tag{padding:2px 9px;border-radius:999px;background:#eff6ff;color:#1746b5}
+.upd-new{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff3b30;box-shadow:0 0 8px 2px rgba(255,59,48,.65)}
+@media(max-width:900px){.upd-list{grid-template-columns:1fr}.upd-card:nth-child(n+3){display:none}}
+
+/* the bell: top-right of the banner; a glowing red dot means something unread */
+.hero .upd-bell{position:absolute;top:14px;right:14px;z-index:3;display:grid;place-items:center;width:46px;height:46px;padding:0;border:1px solid rgba(255,255,255,.28);border-radius:50%;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;transition:background .15s}
+.hero .upd-bell:hover{background:rgba(255,255,255,.22)}
+.hero .upd-bell:focus-visible{outline:3px solid #90adff;outline-offset:2px}
+.hero .upd-bell svg{width:22px;height:22px}
+.hero .upd-bell[hidden]{display:none}
+.hero .upd-bell.lit::after{content:"";position:absolute;top:7px;right:8px;width:11px;height:11px;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 0 rgba(255,59,48,.75);animation:upd-pulse 1.8s ease-out infinite}
+@media(max-width:760px){.hero.has-bell h1{padding-inline-start:54px}}
+@keyframes upd-pulse{0%{box-shadow:0 0 0 0 rgba(255,59,48,.75)}70%{box-shadow:0 0 0 12px rgba(255,59,48,0)}100%{box-shadow:0 0 0 0 rgba(255,59,48,0)}}
+@media(prefers-reduced-motion:reduce){.hero .upd-bell.lit::after{animation:none;box-shadow:0 0 10px 3px rgba(255,59,48,.8)}}
+
+/* the popup */
+.upd-dialog{width:min(560px,calc(100vw - 20px));max-height:calc(100dvh - 24px);margin:auto;padding:0;overflow:auto;border:1px solid #d0d5dd;border-radius:22px;background:#fff;color:var(--ms-ink);box-shadow:0 28px 80px rgba(5,25,52,.32)}
+.upd-dialog::backdrop{background:rgba(5,25,52,.55)}
+.upd-dbar{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:rgba(255,255,255,.96);border-bottom:1px solid #eef1f6}
+.upd-dbar h2{margin:0;color:var(--ms-navy);font-size:17px;line-height:1.6}
+.upd-x{display:grid;place-items:center;flex:none;width:40px;height:40px;padding:0;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);cursor:pointer}
+.upd-x svg{width:20px;height:20px}
+ul.upd-all{margin:0;padding:6px 16px 16px;display:grid;gap:4px}
+ul.upd-all li{padding:14px 0;border-bottom:1px solid #eef1f6}
+ul.upd-all li:last-child{border-bottom:0}
+ul.upd-all h3{margin:8px 0 6px;color:var(--ms-navy);font-size:16px;line-height:1.6}
+ul.upd-all p,.upd-one p{margin:0 0 8px;color:#35465e;font-size:14px;line-height:1.95}
+.upd-one{padding:8px 16px 18px}
+.upd-dialog>.upd-meta{padding:12px 16px 0}
+.upd-empty{padding:28px 16px;color:var(--ms-muted);text-align:center}
+
+/* home cards: a star pins the section to the dock */
+.dock-hint{display:flex;align-items:center;gap:8px;margin:14px 4px 0;color:var(--ms-muted);font-size:13px;font-weight:700}
+.dock-hint[hidden]{display:none}
+.dock-hint svg{width:18px;height:18px;color:#c98a00;flex:none}
+.dock-hint.warn{color:#b42318}
+.pc-wrap{position:relative;min-width:0}
+.pc-wrap>.portal-card{height:100%}
+.pc-star{position:absolute;top:6px;left:6px;z-index:2;display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:50%;background:transparent;color:#a9b5c7;cursor:pointer}
+.pc-star svg{width:18px;height:18px}
+.pc-star:hover{background:#f1f4f8;color:#c98a00}
+.pc-star[aria-pressed=true]{background:#ffcc2a;color:#071b36}
+.pc-star[aria-pressed=true] svg{fill:currentColor}
+.pc-star:focus-visible{outline:3px solid #90adff;outline-offset:2px}
