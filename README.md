@@ -1,111 +1,163 @@
-# درگاه مدیریتی مکث‌سیلور
+<div align="center">
+  <img src="docs/readme-hero.svg" alt="Max Silver management portal" width="100%">
+  <h1>MAX SILVER PORTAL</h1>
+  <p><strong>One installable workspace for sales, customers, proformas and teams.</strong></p>
+  <p>
+    <a href="https://soheil-aghayani.github.io/MaxSilver/"><strong>Open the portal →</strong></a>
+    ·
+    <a href="docs/ADMIN_GUIDE_FA.md"><strong>راهنمای مدیر (فارسی) →</strong></a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/Static%20PWA-no%20build%20step-071b36?style=for-the-badge" alt="Static PWA with no build step">
+    <img src="https://img.shields.io/badge/Firebase-Auth%20%2B%20Firestore-ffca28?style=for-the-badge&logo=firebase&logoColor=white" alt="Firebase Auth and Firestore">
+    <img src="https://img.shields.io/badge/Persian-RTL-ffcc2a?style=for-the-badge" alt="Persian, right to left">
+    <img src="https://img.shields.io/github/last-commit/Soheil-Aghayani/MaxSilver?style=for-the-badge&label=Updated" alt="Last commit">
+  </p>
+</div>
 
-وب‌سایت استاتیک مدیریتی مکث‌سیلور: داشبورد CEO، تحلیل جزئیات فروش و نقشهٔ فروش منطقه‌ای.
+The Max Silver portal is the internal workspace of **Max Silver**, an Iranian manufacturer of commercial kitchen equipment. It brings the CEO dashboard, the customer database, the product catalog with proforma invoices, the sales process, the brand books and the team's conversations into one Persian, right-to-left app that works in a browser and installs on a phone like a native app.
 
-- **سایت:** [soheil-aghayani.github.io/MaxSilver](https://soheil-aghayani.github.io/MaxSilver/)
-- **مخزن:** [Soheil-Aghayani/MaxSilver](https://github.com/Soheil-Aghayani/MaxSilver)
+It is a static site: plain HTML, CSS and JavaScript with no build step, hosted on GitHub Pages. Firebase (Authentication and Firestore, Spark plan) adds sign-in, roles, shared data and live notifications. Everything that can work without a connection does.
 
-## صفحه‌ها
+<details>
+<summary><strong>خلاصهٔ فارسی</strong></summary>
 
-| صفحه | فایل | کاربرد |
-|---|---|---|
-| درگاه مدیریت | [`index.html`](index.html) | ورودی و معرفی بخش‌ها |
-| داشبورد CEO | [`ceo-dashboard.html`](ceo-dashboard.html) | نقشهٔ تعاملی ۳۱ استان، شش منطقه، مقایسهٔ سال‌ها، اشتراک QR و نصب PWA |
-| مشتریان | [`customers.html`](customers.html) | پایگاه مشتریان: فهرست، صفحهٔ هر مشتری، فروش سال‌ها، گروه و مسئول، ورود از گزارش حسابداری |
-| تحلیل جزئیات فروش | [`sales-analysis.html`](sales-analysis.html) | فیلتر، نمودار، جدول و خروجی گزارش‌های مشتری و کالا |
-| کاتالوگ محصولات | [`product-catalog.html`](product-catalog.html) | ۳۴۳ ردیف از سه برند؛ جست‌وجو، فیلتر و مقایسهٔ چهار محصول (داده: `assets/catalog.json` ساخته‌شده با `tools/build_catalog.py`، بدون قیمت) |
-| پنل کاربری | [`panel.html`](panel.html) | اطلاعات من (نام روی پیش‌فاکتور، تلفن)، منطقهٔ فعالیت، آمار پیش‌فاکتورها؛ برای مدیر: مدیریت تیم، نقش، کد و استان‌های هر ویزیتور |
-| نقشهٔ فروش | [`sales-process.html`](sales-process.html) | دوازده مرحلهٔ فروش با مسئول هر مرحله و نقاط کنترل و قاعدهٔ پورسانت (بدون عدد) |
-| برندبوک‌ها | [`brand-books.html`](brand-books.html) | هویت چهار برند گروه (مکث‌سیلور، وینتورا، شف‌مارکت، توربومکس): لوگو، رنگ، فونت، لحن؛ خروجی PDF با قالب سند مکث‌سیلور |
+درگاه مکث‌سیلور یک برنامهٔ وب نصب‌پذیر (PWA) برای مدیریت فروش است: داشبورد مدیرعامل، پایگاه مشتریان، کاتالوگ و پیش‌فاکتور، نقشهٔ فروش، برندبوک و گفت‌وگوی تیم. هر نقش فقط بخش‌های خودش را می‌بیند و اجرای واقعی دسترسی با قوانین Firestore است. جزئیات تنظیمات در [راهنمای مدیر](docs/ADMIN_GUIDE_FA.md) آمده است.
 
-هر صفحه سربرگ و پانویس مشترک را مستقیماً در HTML دارد؛ ظاهر مشترک از `assets/site-shell.2.css` می‌آید و هر صفحه فقط یک فایل CSS و یک فایل JS اختصاصی دارد.
+</details>
 
-## داده و حریم خصوصی
+## Choose your way in
 
-- **گزارش‌های خام فروش در سایت منتشر نمی‌شوند.** کاربر در صفحهٔ تحلیل فایل XLS/XLSX/CSV را انتخاب می‌کند؛ پردازش فقط در مرورگر انجام می‌شود و نتیجه در IndexedDB همان دستگاه نگه‌داری می‌شود (با دکمهٔ حذف).
-- پوشهٔ `data/local/` برای فایل‌های خصوصی است و در `.gitignore` قرار دارد. هرگز آن را commit نکنید.
-- صفحه‌ها `noindex` هستند و فایل‌های توسعه (`README.md`، `validate_*.mjs`، `data/transaction-schema.json`) با `_config.yml` از سایت حذف می‌شوند.
-- قالب و شِمای تراکنش: [`data/transaction-schema.json`](data/transaction-schema.json) و [`data/transaction-template.csv`](data/transaction-template.csv).
-- واحد مبلغ در منبع مشخص نیست؛ برچسب واحد در رابط فقط برچسب است و تبدیلی انجام نمی‌دهد.
-- ستون «آخرین قیمت خرید» خوانده نمی‌شود و وارد مدل تحلیل نمی‌شود.
+| Way | Best for | What it needs |
+| :--- | :--- | :--- |
+| **Web** | A desktop or phone browser | Nothing to install. Open the [live portal](https://soheil-aghayani.github.io/MaxSilver/) and sign in with the account the administrator created. |
+| **Installed app (PWA)** | Daily use on a phone or desktop | Use the install prompt or the browser's "Add to home screen". The app opens full screen, with its own icon, and starts offline. |
+| **QR code** | Sharing the portal in a meeting | The QR button on any page always encodes the main page, never an inner address. |
 
-## ورود و همگام‌سازی (Firebase، اختیاری)
+Signed-out visitors see only the home page, the sign-in panel and the contact form. Everything else is hidden by role and enforced by the database rules.
 
-- پیش‌فاکتورها، مشتری‌ها و قیمت‌ها همیشه ابتدا روی دستگاه ذخیره می‌شوند؛ با ورود به حساب (دکمهٔ کاربر در کاتالوگ) بین دستگاه‌ها همگام می‌شوند. بدون ورود یا بدون اینترنت همه‌چیز کار می‌کند.
-- پروژهٔ Firebase: `maxsilver-portal` (پلن Spark). مقادیر عمومی در [`assets/firebase-config.js`](assets/firebase-config.js) است؛ امنیت را قوانین [`firestore.rules`](firestore.rules) تأمین می‌کند.
-- **ورود فقط با دعوت:** ثبت‌نام عمومی در Authentication بسته است. برای افزودن ویزیتور:
-  1. Authentication ← Users ← Add user (ایمیل و رمز).
-  2. Firestore ← مجموعهٔ `users` ← سندی با شناسهٔ همان UID و فیلدها: `role` = `visitor` (یا `manager`)، `name` = نام نمایشی، و اختیاری `code` = کد کوتاه حروف/عدد لاتین برای شمارهٔ سند (مثلاً `SA` ← `PF-050721-SA-001`).
-- تا وقتی سند `users/<UID>` ساخته نشود، حساب هیچ دسترسی ندارد (برنامه UID را نشان می‌دهد تا به مدیر بدهید).
-- مدیر همهٔ پیش‌فاکتورها را می‌بیند؛ ویزیتور فقط پیش‌فاکتورهای خودش را.
-- قوانین را از Firestore ← Rules منتشر کنید (محتوای `firestore.rules`).
+## What is inside
 
-## تصویر محصولات
+| Section | File | What it does |
+| :--- | :--- | :--- |
+| **Home** | [`index.html`](index.html) | Entry point with a card for every section the role may open. |
+| **CEO dashboard** | [`ceo-dashboard.html`](ceo-dashboard.html) | Interactive map of 31 provinces and six sales regions, year comparison, sharing by QR. |
+| **Customers** | [`customers.html`](customers.html) | Customer database keyed by accounting code: list, a page per customer, sales per year, group and owner, contact details, import from the accounting reports and branded Excel template. |
+| **Sales analysis** | [`sales-analysis.html`](sales-analysis.html) | Filters, charts and tables for customer and product reports, processed only in the browser. |
+| **Product catalog** | [`product-catalog.html`](product-catalog.html) | 343 products from three brands with search, filters, comparison and the proforma sheet. |
+| **Sales process** | [`sales-process.html`](sales-process.html) | The nine-stage sales map with owners, the settlement process, controls, reports and required documents. |
+| **Advertising strategy** | [`advertising.html`](advertising.html) | The advertising tree (print, promotional gifts, online) with search and the reference map. |
+| **Brand books** | [`brand-books.html`](brand-books.html) | Logo, colours, fonts and voice of the four group brands, with PDF export. |
+| **Panel** | [`panel.html`](panel.html) | Personal profile and look, proformas, conversations, commission, team and role administration. |
+| **Contact** | [`contact.html`](contact.html) | The only way in for people without an account: sales, after-sales or management. |
 
-- تصویر همهٔ محصولات داخل مخزن و با اندازهٔ وب (WebP، بیشینه ۶۴۰ پیکسل) در `assets/products/` نگه‌داری می‌شود؛ آدرس اصلی در فیلد `imgOrig` هر ردیف کاتالوگ است.
-- پس از هر بار ساخت دوبارهٔ کاتالوگ با `tools/build_catalog.py`، این دستور تصویرهای جدید را دانلود و کوچک می‌کند (تصویرهای قبلی دوباره دانلود نمی‌شوند):
+Navigation is a short dock plus a grouped "all sections" sheet. Each person can pin up to five sections on a wide screen and two on a phone; the rest stay one tap away. On the sheet, sections are round icons without boxes, and their names appear only when asked for.
 
-```powershell
-python tools/localize_images.py
-```
+## How a proforma travels
 
-## نقش‌ها و دسترسی
+| Step | What happens | Why it matters |
+| :--- | :--- | :--- |
+| **01 · Create** | A salesperson builds the proforma in the catalog. The number is assigned automatically, for example `SE-051018-AB-003`. | The first two letters show who issued it, before anyone reads the name. |
+| **02 · Send** | One tap sends it to the account manager as a conversation, with the customer, amount and terms. | The account manager is notified at once and can open the proforma from the cloud. |
+| **03 · Review** | The account manager approves it, or refuses it by writing a reason. A refusal goes as a letter to the sales manager. | Prices and terms are checked by someone independent of the seller. |
+| **04 · Decide** | The sales manager accepts the refusal (the proforma leaves the app and stays in the archive) or declines it (the proforma stays valid). | Nothing is deleted without a second person agreeing, and the record is kept. |
 
-- هر حساب یک `role` در `users/{uid}` دارد: `visitor` (کارشناس فروش و توسعه بازار)، `sales_manager`، `account_manager` (اکانت منیجر)، `finance` (مالی و حسابداری)، `operations`، `production`، `service`، `marketing`، `hr`، `ceo` (مدیریت) و `manager` (تکنولوژی سازمانی). مقدارهای قدیمی `accounting` و `it` همان `finance` و `manager` حساب می‌شوند.
-- هر نقش فیلدهای خودش را دارد (`assets/roles.js` ← `FIELDS`): کد سند و استان‌های منطقه فقط برای کارشناس فروش؛ کد برای مدیر فروش هم هست؛ نقش‌های دیگر استان ندارند.
-- جدول دسترسی یک‌جا در [`assets/roles.js`](assets/roles.js) و همان در [`firestore.rules`](firestore.rules) است؛ هر تغییر باید در هر دو انجام شود. پنهان‌کردن در صفحه فقط ناوبری است و اجرای واقعی با قوانین Firestore است.
-- فناوری (`it`) همه‌چیز را می‌خواند و فقط تأییدی ندارد؛ نقش و کد را فقط `manager`، `ceo` و `it` تغییر می‌دهند.
-- **پورسانت:** نرخ هر منطقه در سال را مالی (پیش‌نویس) وارد می‌کند، مدیر فروش بررسی و مدیرعامل تأیید می‌کند (`commission_rates`)؛ با تأیید، نتیجهٔ هر منطقه منتشر می‌شود (`commission_results`) و کارشناس فقط منطقهٔ خودش را می‌بیند. عددها در صفحهٔ عمومی نیستند.
-- **پایهٔ ماهانه:** مالی و حسابداری فروش تأییدشدهٔ هر منطقه در هر ماه و نرخ همان ماه را وارد می‌کند (`commission_months`؛ نرخ پیش‌فرض از جدول سالانه)، مدیر فروش بررسی و مدیرعامل تأیید می‌کند؛ با تأیید، نتیجهٔ هر منطقه در `commission_month_results` منتشر می‌شود.
-- حذف کاربر: تکنولوژی سازمانی، مدیرعامل و منابع انسانی (منابع انسانی هرگز حساب مدیریت یا مدیرعامل را حذف نمی‌کند و هیچ‌کس حساب خودش را). حذف فقط سند `users/{uid}` را برمی‌دارد؛ حساب ورود را از Firebase ← Authentication هم حذف کنید.
-- **درخواست‌ها (گفت‌وگو):** هر کاربر می‌تواند به یک واحد یا یک نفر درخواست بدهد (`tickets` و زیرمجموعهٔ `messages`؛ پیام‌ها تغییرناپذیرند). هر درخواست فهرست مخاطب دارد؛ فرستنده، گیرنده یا نقش گیرنده و تکنولوژی سازمانی آن را می‌بینند. حذف کاربر خودکار یک درخواست برای مدیریت می‌سازد تا حساب ورود هم در Firebase حذف شود. آمار پیش‌فاکتور (`proformas`) فقط برای کارشناسان فروش است. ایمیل کاربر در `users/{uid}` نگه‌داری می‌شود. اعلان ایمیلی نیازمند Cloud Functions (پلن Blaze) است و اعلان فعلی داخل پنل است.
-- **بدون ورود:** کسی که حساب ندارد فقط صفحهٔ اصلی و پنل (ورود و تماس با ما) را می‌بیند و بقیه به صفحهٔ اصلی برمی‌گردند (`assets/role-gate.js`). فرم «تماس با ما» سه مقصد دارد: فروش، خدمات پس از فروش و مدیریت؛ پیام‌ها در `public_requests` می‌ماند و فقط نقش مخاطب می‌خواند.
-- **نصب برنامه:** آیکن‌ها از لوگوی برداری ساخته شده‌اند (۱۹۲ و ۵۱۲ برای `any` و ۵۱۲ جدا برای `maskable`). دکمهٔ نصب در صفحهٔ اصلی و پنل است (`assets/install.js`).
-- **اعلان‌ها:** عدد قرمز روی آیکن «حساب من» در نوار ناوبری همهٔ صفحه‌ها و فهرست کامل آن بالای پنل است (`assets/notify.js`). فقط چیزهایی شمرده می‌شود که منتظر خود فرد است: درخواست‌های بی‌پاسخ، پیام‌های بیرونی نقش او و مراحل پورسانتی که باید بررسی یا تأیید کند. شمارش در دستگاه ذخیره و هر ده دقیقه یا پس از هر اقدام در پنل تازه می‌شود؛ اعلان فشاری بدون Cloud Functions ممکن نیست.
-- نصب برنامه فقط بار اول در یک پنجره پیشنهاد می‌شود و بعد از آن از پنل «حساب من» است؛ آیکن و راهنما بر اساس سیستم‌عامل (ویندوز، مک، لینوکس، اندروید، iOS، SteamOS، ChromeOS) است. دکمهٔ حساب در صفحهٔ کاتالوگ پنهان است و همگام‌سازی پیش‌فاکتور بدون تغییر ادامه دارد.
-- **همه‌چیز در جهت افقی و عمودی:** در گوشی افقی نوار پایین حذف می‌شود و ناوبری به نوار بالا برمی‌گردد تا ارتفاع کافی برای محتوا بماند (`assets/site-shell.2.css`). ناوبری بلافاصله پس از ورود یا خروج به‌روز می‌شود (`MSGate.apply()` در `assets/role-gate.js`).
-- **نصب:** هنگام نصب پیشرفت و نتیجه (نصب شد / لغو شد / نشد) با انیمیشن نمایش داده می‌شود. اگر لینک داخل پیام‌رسان باز شده باشد، نصب ممکن نیست و صفحه راهنمای باز کردن در مرورگر می‌دهد.
-- **پیش‌فاکتور ارسال‌نشده:** در اعلان‌ها شمرده می‌شود (فقط برای کارشناسان فروش، از روی داده‌های همین دستگاه، پس از ۳ دقیقه یا بلافاصله در حالت آفلاین).
-- **بررسی و رد پیش‌فاکتور:** اکانت منیجر پیش‌فاکتور را تأیید می‌کند یا با نوشتن دلیل رد می‌کند؛ رد به‌صورت نامه برای مدیر فروش می‌رود. اگر مدیر فروش (یا مدیریت) رد را بپذیرد، پیش‌فاکتور از `invoices` و از دستگاه‌ها برداشته و در `invoice_archive` نگه داشته می‌شود؛ اگر نپذیرد، پیش‌فاکتور معتبر می‌ماند (فیلد `review`).
-- **شمارهٔ سند:** `نقش-تاریخ شمسی-کد نفر-شماره` مثل `SM-051018-AB-003` (SM مدیر فروش، SE کارشناس فروش، AM اکانت منیجر، FN مالی، CE مدیریت، IT تکنولوژی سازمانی). شماره خودکار است و در همگام‌سازی اگر شمارهٔ دیگری آن را گرفته باشد، خودکار به شمارهٔ آزاد بعدی می‌رود؛ کد هر نفر یکتاست.
-- **ارسال پیش‌فاکتور به اکانت منیجر:** در برگهٔ پیش‌فاکتور دکمهٔ «ارسال به اکانت منیجر» یک گفت‌وگو (تیکت) با نوع `proforma` برای نقش اکانت منیجر باز می‌کند؛ او در پنل و اعلان‌ها مطلع می‌شود (`MSSync.sendProforma`).
-- **کد ملی و تاریخ تولد:** در سند خصوصی `personal/{uid}` نگه‌داری می‌شوند (فقط خود فرد، منابع انسانی و مدیریت). کد ملی با رقم کنترل رسمی بررسی می‌شود و صفرهای ابتدایی حفظ می‌شود؛ تاریخ تولد از تقویم شمسی انتخاب می‌شود.
-- **ظاهر پروفایل:** هر نفر یک رنگ و یک عکس کوچک (۱۹۲ پیکسل، ذخیره در `profiles/{uid}`) انتخاب می‌کند که روی آواتار و حباب پیام‌ها دیده می‌شود.
-- **استراتژی تبلیغات:** صفحهٔ `advertising.html` درخت اهداف، چاپی، هدایای تبلیغاتی و آنلاین را از نمودار مرجع نسخهٔ ۳ نشان می‌دهد؛ تصویر و PDF همان نمودار کنارش است. داده در `tools/build_advertising.py` است و صفحه از آن ساخته می‌شود.
-- **ملاحظهٔ آینده:** اگر قطع اینترنت بین‌المللی هدف شد، پایگاه دادهٔ داخلی (مثلاً PocketBase روی سرور ایرانی) می‌تواند جای Firebase را بگیرد؛ لایهٔ داده را در یک مکان نگه دارید تا این جابه‌جایی ساده بماند.
-- **تماس با ما** صفحهٔ جدا است (`contact.html`) و فقط برای کسی که وارد نشده در ناوبری می‌آید؛ مقصد یک فهرست کشویی با سه گزینه است. کسی که حساب دارد گفت‌وگو را از پنل انجام می‌دهد.
-- **گفت‌وگو** مثل یک پیام‌رسان است: حباب پیام، آواتار هر فرد، پیام‌های هم‌فرستنده کنار هم، جداکنندهٔ روز و پیام‌دهندهٔ زنده (`onSnapshot`).
-- **اعلان زنده:** با باز بودن هر صفحه، شنونده‌های پایگاه داده شمارش و پیام‌های تازه را همان لحظه می‌آورند (`assets/notify.js`). هر نفر در پنل یکی از دو حالت را انتخاب می‌کند: «اعلان» (پیش‌فرض) یا «بدون اعلان» (`notify_prefs`). اعلان سیستمی فقط وقتی نمایش داده می‌شود که برنامه باز یا در پس‌زمینهٔ دستگاه باشد؛ برای دستگاهِ بسته سروری لازم است که اعلان را بفرستد.
-- **دیده‌شدن پیام:** مثل تلگرام، یک تیک ارسال‌شد، دو تیک خاکستری دریافت‌شد و دو تیک آبی دیده‌شد. گیرنده هنگام دریافت `recv_<uid>` و هنگام باز کردن `read_<uid>` را روی گفت‌وگو ثبت می‌کند.
-- **پیش‌فاکتور:** شهر، نشانی و تلفن گیرنده روی برگهٔ چاپی می‌آید. هر شمارهٔ تلفن فقط عدد، ۱۱ رقم و بدون کد کشور است؛ ارقام فارسی و `+98` خودکار اصلاح می‌شود. روی iPhone و iPad چاپ مستقیم پذیرفته نمی‌شود؛ ابتدا PDF ساخته و با یک ضربهٔ دیگر باز می‌شود تا سیستم آن را بپذیرد.
-- **حضور و تایپ:** هر صفحهٔ باز، هر دقیقه یک ضربان در `presence/{uid}` می‌نویسد؛ در گفت‌وگوی دو نفره، آنلاین‌بودن، آخرین بازدید و «در حال تایپ…» دیده می‌شود.
-- پس از تغییر `firestore.rules` آن را در Firebase ← Firestore ← Rules منتشر کنید؛ پوش‌کردن مخزن قوانین را عوض نمی‌کند.
-## اجرای محلی
+Document numbers follow `ROLE-yymmdd-OWNER-NNN`. The sequence continues from the highest number already used and is moved to the next free one if another device took it first.
 
-```powershell
+## People and roles
+
+Access follows least privilege. The table is kept in [`assets/roles.js`](assets/roles.js) and mirrored in [`firestore.rules`](firestore.rules); the rules are the real enforcement, hiding things on the page is only navigation.
+
+| Role | Key | Doc code | Typical access |
+| :--- | :--- | :---: | :--- |
+| Organizational technology | `manager` | IT | Everything, plus accounts, roles and codes. |
+| Management (CEO and board) | `ceo` | CE | Everything, approves rates and results. |
+| Sales manager | `sales_manager` | SM | All proformas and customers, team and territories, refusal decisions. |
+| Sales specialist | `visitor` | SE | Own proformas and own customers, own regional commission. |
+| Account manager | `account_manager` | AM | All proformas and customers, reviews and refuses with a reason. |
+| Finance and accounting | `finance` | FN | Commission rates and monthly basis, all proformas. |
+| Operations | `operations` | OP | Brand books, conversations. |
+| Production | `production` | PR | Brand books, conversations. |
+| After-sales service | `service` | SV | External service requests, conversations. |
+| Marketing and brand | `marketing` | MK | Advertising strategy, brand books. |
+| Human resources | `hr` | HR | Names, phones, national ID and birth date of staff; account removal. |
+
+## Highlights
+
+- **Offline-first.** Proformas, prices and the catalog are stored on the device first. A queue sends them when the connection returns.
+- **Installable.** Real app icons, a short install offer, and guidance when the link was opened inside a messenger's in-app browser.
+- **Live messaging.** A small messenger with delivery and seen ticks, online status and typing indication, plus a notification badge on the account icon.
+- **Customer database.** One record per accounting code, with sales per year, group, owner and contact details; salespeople only ever receive their own customers.
+- **Branded Excel.** The customer template and export follow the brand book: gold header, navy text, zebra rows, right-to-left sheet.
+- **Persian by design.** Estedad font, Persian digits, Jalali calendar pickers, national ID check-digit validation.
+- **Private by default.** Raw sales reports are never published; imports are read in the browser, and personal data lives in separate private documents.
+
+## Run locally
+
+Prerequisite: any static file server. Python is enough.
+
+```bash
+git clone https://github.com/Soheil-Aghayani/MaxSilver.git
+cd MaxSilver
 python -m http.server 8769
 ```
 
-سپس `http://127.0.0.1:8769/` را باز کنید. به CDN یا سرور برنامه‌ای نیازی نیست.
+Open `http://127.0.0.1:8769/`. No CDN or application server is required.
 
-## اعتبارسنجی
+Validate the static contracts (needs Node.js 20 or newer):
 
-```powershell
+```bash
 node validate_dashboard.mjs
 node validate_portal.mjs
 node validate_pwa.mjs
 ```
 
-این بررسی‌ها ساختار نقشه و مناطق، منطق تحلیل، سربرگ مشترک، نبودن فایل بی‌مصرف در `assets/` و قابلیت‌های PWA را می‌سنجند. اگر فایل‌های خصوصی در `data/local/` باشند، مجموع هر فایل با ردیف جمع آن تطبیق داده می‌شود.
+## Connect your own Firebase project
 
-## انتشار
+1. Create a Firebase project on the Spark plan with Authentication (email and password) and Firestore.
+2. Put the public web config in [`assets/firebase-config.js`](assets/firebase-config.js).
+3. Publish [`firestore.rules`](firestore.rules) from Firestore → Rules. Pushing to git does not change the rules.
+4. Create users in Authentication, then add a `users/{uid}` document with a `role`, `name` and optional `code`. Until that document exists, a signed-in account has no access.
 
-هر تغییر در یک صفحه یا asset را با افزایش `V` در `service-worker.js` و پارامتر `?v=` صفحه‌ها همراه کنید تا کش قدیمی جایگزین شود.
+The full administrator procedure, role details and operating notes are in the Persian [administrator guide](docs/ADMIN_GUIDE_FA.md).
 
-## مجوزها
+## Release checklist
 
-فونت Estedad، `qrcode-generator` و SheetJS در [`LICENSES.md`](LICENSES.md) آمده‌اند.
+Every change to a page or asset bumps the `?v=` stamp in the HTML files and `VERSION` in [`service-worker.js`](service-worker.js), so a stale cache can never mix with new pages.
 
----
+## Project structure
 
-**تهیه‌کنندگان: محمود قربانی و سهیل آقایانی**
+```text
+MaxSilver/
+├── index.html … customers.html     # Pages; each carries the shared header
+├── assets/
+│   ├── site-shell.2.css            # Shared header, dock and sheet styles
+│   ├── roles.js                    # Role table and document codes
+│   ├── role-gate.js                # Hides what a role cannot use
+│   ├── dock.js                     # Dock, grouped sheet and pins
+│   ├── sync.js                     # Cloud sync and sending proformas
+│   ├── notify.js                   # Live counts and notifications
+│   ├── catalog.js / catalog.json   # Catalog and proforma sheet
+│   ├── customers.js                # Customer database and import
+│   ├── panel.js                    # Panel, messenger, review and team
+│   └── vendor/                     # Firebase SDK, SheetJS, QR, html2canvas
+├── firestore.rules                 # Database rules (the real access control)
+├── service-worker.js               # Offline shell and versioned assets
+├── tools/                          # Builders for catalog, customers, advertising
+├── docs/                           # Hero image and the Persian administrator guide
+└── validate_*.mjs                  # Static validators
+```
+
+## Roadmap
+
+Planned, unranked directions: an Iranian VPS with Firebase as fallback, multiple companies and branch invoice formats, a customer panel and online shop with SMS sign-in, warehouse and logistics, richer chat with media, a 3D product view and a floor-design planner with real dimensions and safety rules.
+
+## Limitations
+
+- Sales reports carry no currency unit and no customer-to-product link, so the portal shows the figures as given and builds customers' item lists only from proformas made in the app.
+- Push notifications reach a device while the app is open or in the background; delivering to a closed phone needs a server.
+- Firebase is a foreign service; an offline-capable mode is built in, and a domestic backend is a planned option.
+
+## Credits
+
+Prepared by **Mahmoud Ghorbani** and **Soheil Aghayani**. Third-party licences (Estedad font, qrcode-generator, SheetJS and others) are listed in [`LICENSES.md`](LICENSES.md).

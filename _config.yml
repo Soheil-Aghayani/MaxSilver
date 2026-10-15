@@ -8,3 +8,4 @@ exclude:
   - data/local
   - tools
   - firestore.rules
+  - docs

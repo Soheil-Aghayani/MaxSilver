@@ -20,6 +20,7 @@
     contact: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.7A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/>'),
     all: svg('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
     close: svg('<path d="m6 6 12 12M18 6 6 18"/>'),
+    names: svg('<path d="M4 7h16M4 12h10M4 17h13"/>'),
     pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>'
   };
   // g: group of the sheet. area: roles.js area required (none: any signed-in person). page: file name that makes it «current».
@@ -43,7 +44,11 @@
     finance: ['dashboard', 'customers', 'invoices'], ceo: ['dashboard', 'customers', 'catalog'], manager: ['dashboard', 'customers', 'catalog'],
     marketing: ['advertising', 'brand', 'catalog']
   };
-  var KEY = 'ms-dock-pins-v1', MAX_PINS = 3;
+  var KEY = 'ms-dock-pins-v1', LABELS = 'ms-all-labels-v1';
+  // the bottom bar (up to 1100 px wide) is short, so it takes fewer pins than the top bar of a wide screen
+  var mqDock = window.matchMedia ? window.matchMedia('(max-width:1100px)') : { matches: false };
+  function maxPins() { return mqDock.matches ? 2 : 5; }
+  var faN = function (n) { return String(n).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); };
 
   function role() { try { return localStorage.getItem('ms-role') || ''; } catch (e) { return ''; } }
   function signed() {
@@ -65,7 +70,7 @@
     var ids = list.map(function (i) { return i.id; }), saved = null;
     try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { /* ignore */ }
     var base = Array.isArray(saved) ? saved : (DEFAULT_PINS[(window.MSRoles ? window.MSRoles.norm(role()) : role())] || ['catalog', 'customers']);
-    return base.filter(function (id, i) { return ids.indexOf(id) >= 0 && id !== 'home' && id !== 'panel' && base.indexOf(id) === i; }).slice(0, MAX_PINS);
+    return base.filter(function (id, i) { return ids.indexOf(id) >= 0 && id !== 'home' && id !== 'panel' && base.indexOf(id) === i; }).slice(0, maxPins());
   }
   function savePins(p) { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) { /* ignore */ } }
 
@@ -112,9 +117,15 @@
       if (pin) {
         var id = pin.getAttribute('data-pin'), list = allowed(), pins = pinsFor(list), i = pins.indexOf(id);
         if (i >= 0) pins.splice(i, 1);
-        else if (pins.length < MAX_PINS) pins.push(id);
-        else { var hint = sheet.querySelector('.ms-all-hint'); if (hint) { hint.textContent = 'حداکثر سه بخش را می‌شود سنجاق کرد؛ ابتدا یکی را بردارید.'; hint.classList.add('warn'); } return; }
+        else if (pins.length < maxPins()) pins.push(id);
+        else { var hint = sheet.querySelector('.ms-all-hint'); if (hint) { hint.textContent = 'در این نوار حداکثر ' + faN(maxPins()) + ' بخش جا می‌شود؛ ابتدا یکی را بردارید.'; hint.classList.add('warn'); } return; }
         savePins(pins); render(); fill();
+        return;
+      }
+      if (e.target.closest('[data-all-labels]')) {
+        var on = !sheet.querySelector('.ms-all-sheet').classList.contains('labels');
+        try { localStorage.setItem(LABELS, on ? '1' : '0'); } catch (x) { /* ignore */ }
+        fill();
         return;
       }
       if (e.target.closest('[data-all-close]')) close();
@@ -123,19 +134,23 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sheet.hidden) close(); });
   }
   function fill() {
-    var list = allowed(), pins = pinsFor(list), body = '';
+    var list = allowed(), pins = pinsFor(list), body = '', labels = false;
+    try { labels = localStorage.getItem(LABELS) === '1'; } catch (e) { /* ignore */ }
     GROUPS.forEach(function (g) {
       var items = list.filter(function (i) { return i.g === g[0]; });
       if (!items.length) return;
       body += '<section><h3>' + g[1] + '</h3><div class="ms-all-grid">' + items.map(function (i) {
         var pinned = pins.indexOf(i.id) >= 0, pinnable = i.id !== 'panel' && i.id !== 'home';
-        return '<div class="ms-tile-wrap"><a class="ms-tile' + (isCurrent(i) ? ' cur' : '') + '" href="' + i.href + '"><span class="ms-tile-ico">' + ICON[i.id] + '</span><span class="ms-tile-t">' + i.label + '</span></a>' +
-          (pinnable ? '<button type="button" class="ms-pin" data-pin="' + i.id + '" aria-pressed="' + pinned + '" aria-label="' + (pinned ? 'برداشتن از نوار پایین' : 'سنجاق به نوار پایین') + '" title="' + (pinned ? 'برداشتن از نوار' : 'سنجاق به نوار') + '">' + ICON.pin + '</button>' : '') + '</div>';
+        return '<div class="ms-tile-wrap"><a class="ms-tile' + (isCurrent(i) ? ' cur' : '') + '" href="' + i.href + '" aria-label="' + i.label + '" title="' + i.label + '"><span class="ms-tile-ico">' + ICON[i.id] + '</span><span class="ms-tile-t">' + i.label + '</span></a>' +
+          (pinnable ? '<button type="button" class="ms-pin" data-pin="' + i.id + '" aria-pressed="' + pinned + '" aria-label="' + (pinned ? 'برداشتن از نوار' : 'سنجاق به نوار') + ' ' + i.label + '" title="' + (pinned ? 'برداشتن از نوار' : 'سنجاق به نوار') + '">' + ICON.pin + '</button>' : '') + '</div>';
       }).join('') + '</div></section>';
     });
     var box = sheet.querySelector('.ms-all-sheet');
-    box.innerHTML = '<div class="ms-all-head"><b>همهٔ بخش‌ها</b><button type="button" class="ms-all-x" data-all-close aria-label="بستن">' + ICON.close + '</button></div>' + body +
-      '<p class="ms-all-hint">ستاره: تا سه بخش را در نوار پایین سنجاق کنید.</p>';
+    box.classList.toggle('labels', labels);
+    box.innerHTML = '<div class="ms-all-head"><b>همهٔ بخش‌ها</b><span class="ms-all-tools">' +
+      '<button type="button" class="ms-all-x" data-all-labels aria-pressed="' + labels + '" aria-label="نمایش نام بخش‌ها" title="نمایش نام بخش‌ها">' + ICON.names + '</button>' +
+      '<button type="button" class="ms-all-x" data-all-close aria-label="بستن">' + ICON.close + '</button></span></div>' + body +
+      '<p class="ms-all-hint">' + (labels ? 'ستاره: تا ' + faN(maxPins()) + ' بخش را در نوار سنجاق کنید.' : 'برای دیدن نام بخش‌ها، دکمهٔ بالا را بزنید.') + '</p>';
   }
   function open() {
     if (!sheet) build();
@@ -167,6 +182,7 @@
   hook();
   render();
   window.addEventListener('hashchange', render);
+  if (mqDock.addEventListener) mqDock.addEventListener('change', function () { render(); if (sheet && !sheet.hidden) fill(); });
   window.addEventListener('storage', function (e) { if (e.key === 'ms-role' || e.key === KEY) render(); });
   window.MSDock = { render: render, open: open, close: close };
 })();
