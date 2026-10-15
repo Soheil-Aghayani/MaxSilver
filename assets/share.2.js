@@ -13,15 +13,14 @@
   // Only a public HTTPS address is worth encoding; a local copy cannot be opened from another phone.
   function shareUrl() {
     try {
-      var url = new URL(window.location.href);
+      var url = new URL('./', window.location.href);   // always the main page of the site, whichever page the button was pressed on
       if (url.protocol !== 'https:' || /^(localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1\])$/i.test(url.hostname) || url.hostname.slice(-6) === '.local') return null;
       url.username = ''; url.password = ''; url.search = ''; url.hash = '';
       return url.href;
     } catch (error) { return null; }
   }
   function pageName() {
-    var h1 = document.querySelector('h1');
-    return (h1 && h1.textContent.trim()) || document.title.split('|')[0].trim();
+    return 'مکث‌سیلور · صفحهٔ اصلی';
   }
   function loadQrLibrary() {
     if (typeof window.qrcode === 'function') return Promise.resolve();
@@ -93,7 +92,7 @@
     copyBtn.addEventListener('click', async function () {
       if (!currentUrl) return;
       if (navigator.share) {
-        try { await navigator.share({ title: document.title, url: currentUrl }); return; }
+        try { await navigator.share({ title: 'مکث‌سیلور', url: currentUrl }); return; }
         catch (error) { if (error && error.name === 'AbortError') return; }
       }
       try {
@@ -115,7 +114,7 @@
       canvas.toBlob(function (blob) {
         if (!blob) return setStatus('ساخت PNG ناموفق بود.', 'error');
         var a = document.createElement('a'), href = URL.createObjectURL(blob);
-        a.href = href; a.download = 'MaxSilver-' + ((location.pathname.split('/').pop() || 'index').replace(/\.html$/, '')) + '-QR.png';
+        a.href = href; a.download = 'MaxSilver-QR.png';
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(function () { URL.revokeObjectURL(href); }, 1000);
       }, 'image/png');

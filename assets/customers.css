@@ -116,3 +116,7 @@
 .cu-ulist button:hover{border-color:#90adff;background:#f5f8ff}
 .cu-ulist .clear b{color:#b42318}
 .cu-tools{display:flex;flex-wrap:wrap;gap:8px}
+.cu-boxhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cu-ico{display:grid;place-items:center;width:44px;height:44px;border:1px solid var(--ms-navy);border-radius:12px;background:var(--ms-navy);color:var(--ms-gold);cursor:pointer}
+.cu-ico svg{width:21px;height:21px}
+.cu-ico:hover{filter:brightness(1.15)}
