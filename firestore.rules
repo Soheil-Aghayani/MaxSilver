@@ -11,7 +11,7 @@ rules_version = '2';
 //   ceo              CEO and board: approves roles, rates and results; sees every proforma
 //   sales_manager    sees every proforma and the team; edits provinces and cities of specialists; reviews commission
 //   visitor          regional sales specialist: own proformas, own profile and own region's approved commission only
-//   account_manager  sees every proforma (order and settlement control)
+//   account_manager  sees every proforma and customer (order and settlement control); reviews proformas
 //   finance          finance and accounting (the legacy value 'accounting' is the same role): enters commission rates, sees every proforma
 //   operations, production, service, marketing, hr
 //                    no proforma access; hr edits name, phone and the active flag
@@ -93,6 +93,24 @@ service cloud.firestore {
           && request.resource.data.review.status == 'kept'));
       allow delete: if approved() && (resource.data.ownerUid == request.auth.uid || isManager()
         || (hasRole(['sales_manager']) && resource.data.get('review', {}).get('status', '') == 'refusal'));
+    }
+
+    // Customers: one record per accounting code. People who manage customers read all of them; everyone else reads only the
+    // customers whose ownerUid is theirs. The import and the owner assignment belong to management and the sales manager.
+    function seesAllCustomers() { return hasRole(['manager', 'ceo', 'sales_manager', 'account_manager', 'finance']); }
+    function ownsCustomer() { return approved() && resource.data.get('ownerUid', '') == request.auth.uid; }
+    match /customers/{code} {
+      allow read: if seesAllCustomers() || ownsCustomer();
+      allow create, delete: if hasRole(['manager', 'ceo', 'sales_manager']);
+      allow update: if hasRole(['manager', 'ceo', 'sales_manager'])
+        || ((hasRole(['account_manager']) || ownsCustomer())
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone', 'address', 'contact', 'notes', 'updatedAt']));
+    }
+    // A customer group is a responsible partner or person; the owner is applied to the group's customers.
+    match /customer_groups/{id} {
+      allow read: if seesAllCustomers();
+      allow create, update: if hasRole(['manager', 'ceo', 'sales_manager']);
+      allow delete: if false;
     }
 
     // Refused proformas kept for the record (written when the sales manager accepts a refusal). Nobody edits or deletes them.

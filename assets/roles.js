@@ -36,6 +36,11 @@
     commissionEdit: ['finance'],                                                        // enters the rate table (draft)
     commissionReview: ['sales_manager'],                                                // confirms regions and attribution
     commissionApprove: ['manager', 'ceo'],                                              // approves rates and publishes the results
+    customers: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'visitor'],   // the customer database page (visitors see only their own)
+    customerAll: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],            // every customer, not only one's own
+    customerEdit: ['manager', 'ceo', 'sales_manager', 'account_manager'],                     // contact details and notes of any customer
+    customerAssign: ['manager', 'ceo', 'sales_manager'],                                      // group and customer owners, and the import
+    customerImport: ['manager', 'ceo', 'sales_manager'],
     invoiceReview: ['account_manager'],                                                 // approves a proforma or refuses it with a written reason
     invoiceDecide: ['manager', 'ceo', 'sales_manager']                                  // accepts or declines a refusal (accepting archives the proforma)
   };
