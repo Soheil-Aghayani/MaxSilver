@@ -336,3 +336,21 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .inv-pdf.ico{flex:0 0 50px;width:50px;padding:0}
 .inv-pdf.ico span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .inv-actions{justify-content:flex-start}
+/* proforma footer: wide = total, then one line [send | PDF | share]; narrow = [total | PDF | share], then send full width */
+.inv-foot.pf{grid-template-columns:minmax(0,1fr) 50px 50px;column-gap:8px;row-gap:10px;align-items:center}
+.inv-foot.pf .inv-msg{grid-column:1/-1;grid-row:1}
+.inv-foot.pf .inv-pay{grid-column:1/-1;grid-row:2}
+.inv-foot.pf .inv-actions{display:contents}
+.inv-foot.pf .inv-am{grid-column:1;grid-row:3;width:auto}
+.inv-foot.pf [data-inv-print]{grid-column:2;grid-row:3}
+.inv-foot.pf [data-inv-share]{grid-column:3;grid-row:3}
+.inv-foot.pf .arc-review,.inv-foot.pf .inv-sent{grid-column:1/-1;grid-row:4}
+.inv-foot.pf .inv-pdf.ico{width:50px;height:50px;min-height:50px}
+@media(max-width:599px){
+  .inv-foot.pf .inv-pay{grid-column:1;grid-row:2;display:grid;gap:0;justify-content:start}
+  .inv-foot.pf [data-inv-print]{grid-row:2}
+  .inv-foot.pf [data-inv-share]{grid-row:2}
+  .inv-foot.pf .inv-am{grid-column:1/-1;grid-row:3}
+}
+.dlg-trash{margin-inline-start:0;border-color:#f1c7c2;color:var(--ms-red);background:#fff}
+.dlg-trash svg{width:20px;height:20px}
