@@ -332,19 +332,25 @@
   // ---------- import of the accounting reports
   function importView() {
     var im = S.imp, body = '';
-    if (!S.impOpen) return '<section class="cu-card-box"><h2>ورود اطلاعات از گزارش حسابداری</h2><p class="cu-note">گزارش‌های «فروش ۱۴۰۳ / ۱۴۰۴ / ۱۴۰۵» را وارد کنید تا مشتریان ساخته یا به‌روز شوند. فایل‌ها فقط در مرورگر شما خوانده می‌شوند.</p><button type="button" class="cu-btn" data-imp-open>شروع ورود اطلاعات</button></section>';
-    body += '<label class="cu-file"><input type="file" id="cuFiles" accept=".xls,.xlsx" multiple><span>انتخاب فایل‌های فروش مشتریان (نام فایل باید سال داشته باشد)</span></label>';
+    var tools = '<div class="cu-tools"><button type="button" class="cu-btn small" data-tpl-sample>دریافت فایل نمونه (Excel)</button>' +
+      '<button type="button" class="cu-btn small" data-tpl-export' + (S.list.length ? '' : ' disabled') + '>خروجی مشتریان فعلی (Excel)</button></div>';
+    if (!S.impOpen) return '<section class="cu-card-box" id="import"><h2>ورود اطلاعات</h2>' +
+      '<p class="cu-note">دو راه دارد: گزارش‌های «فروش ۱۴۰۳ / ۱۴۰۴ / ۱۴۰۵» حسابداری، یا فایل Excel نمونهٔ خود برنامه که تلفن، نشانی، شخص تماس و گروه را هم دارد. «فایل نمونه» را بگیرید، پر کنید و همین‌جا بارگذاری کنید. فایل‌ها فقط در مرورگر شما خوانده می‌شوند.</p>' +
+      tools + '<button type="button" class="cu-btn primary" data-imp-open>شروع ورود اطلاعات</button></section>';
+    body += tools + '<label class="cu-file"><input type="file" id="cuFiles" accept=".xls,.xlsx" multiple><span>انتخاب فایل‌ها: گزارش‌های فروش حسابداری (سال در نام فایل) یا فایل نمونهٔ برنامه</span></label>';
     if (S.busy && !im) body += '<p class="cu-note">در حال خواندن…</p>';
     if (im && im.error) body += '<p class="cu-err">' + esc(im.error) + '</p>';
     if (im && im.rows) {
       body += '<div class="cu-kpis"><div><span>مشتری در فایل‌ها</span><b>' + faInt.format(im.rows.length) + '</b></div><div><span>جدید</span><b>' + faInt.format(im.fresh) + '</b></div>' +
         '<div><span>موجود (به‌روزرسانی)</span><b>' + faInt.format(im.rows.length - im.fresh) + '</b></div><div><span>بدون گروه</span><b>' + faInt.format(im.blank) + '</b></div></div>' +
-        '<ul class="cu-imp">' + im.files.map(function (f) { return '<li><b>' + esc(f.name) + '</b><span>سال ' + faDigits(f.year) + ' · ' + faInt.format(f.rows) + ' ردیف · ردیف جمع حذف شد: ' + faInt.format(f.skipped) + '</span></li>'; }).join('') + '</ul>' +
-        (im.renamed.length ? '<p class="cu-note">نام این کدها در سال‌ها متفاوت است؛ نام سال جدیدتر نگه داشته می‌شود: ' + esc(im.renamed.slice(0, 6).join('، ')) + '</p>' : '') +
+        (im.withPhone ? '<p class="cu-note">دارای تلفن: ' + faInt.format(im.withPhone) + ' · دارای نشانی: ' + faInt.format(im.withAddress) + '</p>' : '') +
+        '<ul class="cu-imp">' + im.files.map(function (f) { return '<li><b>' + esc(f.name) + '</b><span>' + esc(f.label) + '</span></li>'; }).join('') + '</ul>' +
+        (im.skipped ? '<p class="cu-note">ردیف‌های نمونه یا بدون کد نادیده گرفته شد: ' + faInt.format(im.skipped) + '</p>' : '') +
+        (im.renamed.length ? '<p class="cu-note">نام این کدها در سال‌ها متفاوت است؛ نام جدیدتر نگه داشته می‌شود: ' + esc(im.renamed.slice(0, 6).join('، ')) + '</p>' : '') +
         '<button type="button" class="cu-btn primary" data-imp-save' + (S.busy ? ' disabled' : '') + '>ذخیره در پایگاه مشتریان</button>';
     }
     if (im && im.done) body += '<p class="cu-ok" role="status">' + esc(im.done) + '</p>';
-    return '<section class="cu-card-box" id="import"><h2>ورود اطلاعات از گزارش حسابداری</h2>' + body + '</section>';
+    return '<section class="cu-card-box" id="import"><h2>ورود اطلاعات</h2>' + body + '</section>';
   }
   function ensureXlsx() {
     if (window.XLSX) return Promise.resolve(window.XLSX);
@@ -354,20 +360,116 @@
       document.head.appendChild(s);
     });
   }
+  // The program's own Excel template: one row per customer, optional sales columns named «فروش 1403».
+  var TPL_ALIASES = {
+    code: ['کد مشتری'], name: ['نام مشتری', 'نام', 'عنوان'], group: ['گروه (همکار مسئول)', 'گروه', 'گروه مشتری', 'همکار مسئول'], city: ['شهر'], province: ['استان'],
+    phone: ['تلفن', 'موبایل', 'شماره تماس'], contact: ['شخص تماس', 'نام تماس'], address: ['نشانی', 'آدرس'], notes: ['یادداشت', 'توضیحات']
+  };
+  var TPL_HEAD = [['code', 'کد مشتری'], ['name', 'نام مشتری'], ['group', 'گروه (همکار مسئول)'], ['city', 'شهر'], ['province', 'استان'], ['phone', 'تلفن'], ['contact', 'شخص تماس'], ['address', 'نشانی'], ['notes', 'یادداشت']];
+  function parseTemplate(matrix) {
+    for (var r = 0; r < Math.min(matrix.length, 10); r++) {
+      var row = matrix[r] || [], cols = {}, sales = {}, found = false;
+      row.forEach(function (h, i) {
+        var k = norm(h); if (!k) return;
+        if (k === norm('کد مشتری')) { cols.code = i; found = true; return; }
+        var m = /^فروش\s*(\d{4})$/.exec(k);
+        if (m) { sales[m[1]] = i; return; }
+        Object.keys(TPL_ALIASES).forEach(function (f) { if (f !== 'code' && cols[f] === undefined && TPL_ALIASES[f].map(norm).indexOf(k) >= 0) cols[f] = i; });
+      });
+      if (!found || cols.name === undefined) continue;
+      var out = [], skipped = 0, val = function (rw, i) { var v = rw[i]; return v == null ? '' : String(v).trim(); };
+      for (var i = r + 1; i < matrix.length; i++) {
+        var rw = matrix[i] || [], code = latinDigits(val(rw, cols.code)).replace(/\.0+$/, '');
+        if (!code || /^نمونه/.test(code)) { if (rw.some(function (x) { return x != null && String(x).trim(); })) skipped++; continue; }
+        var rec = { code: code, sales: {} };
+        Object.keys(cols).forEach(function (f) { if (f !== 'code') rec[f] = f === 'phone' ? latinDigits(val(rw, cols[f])).replace(/\D/g, '') : fixLetters(val(rw, cols[f])); });
+        Object.keys(sales).forEach(function (y) { var n = Number(latinDigits(val(rw, sales[y])).replace(/[٬,\s]/g, '')); if (isFinite(n) && val(rw, sales[y]) !== '') rec.sales[y] = Math.round(n); });
+        out.push(rec);
+      }
+      return { rows: out, skipped: skipped };
+    }
+    return null;
+  }
+  function readOne(f, XLSX) {
+    return f.arrayBuffer().then(function (buf) {
+      var wb = XLSX.read(buf, { type: 'array', cellDates: true, codepage: 65001 });
+      var sheet = wb.SheetNames.indexOf('مشتریان') >= 0 ? 'مشتریان' : wb.SheetNames[0];
+      var matrix = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1, raw: true, defval: null, blankrows: false });
+      var tpl = parseTemplate(matrix);
+      if (tpl) return { f: f, tpl: tpl };
+      var p = W.parseMatrix(matrix, f.name);
+      return { f: f, p: p };
+    });
+  }
+  function sheetRows(list) {
+    var years = S.years.length ? S.years : [1403, 1404, 1405];
+    var head = TPL_HEAD.map(function (h) { return h[1]; }).concat(years.map(function (y) { return 'فروش ' + y; }));
+    var rows = [head];
+    list.forEach(function (c) {
+      rows.push([c.code, c.name || '', c.group || '', c.city || '', c.province || provinceOf(c.city), c.phone || '', c.contact || '', c.address || '', c.notes || '']
+        .concat(years.map(function (y) { var v = (c.sales || {})[y]; return v == null ? '' : v; })));
+    });
+    return rows;
+  }
+  function workbookFor(X, rows, withGuide) {
+    var ws = X.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 12 }, { wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 18 }, { wch: 16 }, { wch: 20 }, { wch: 40 }, { wch: 30 }].concat(rows[0].slice(9).map(function () { return { wch: 18 }; }));
+    var wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, ws, 'مشتریان');
+    if (withGuide) {
+      var g = [['راهنمای پر کردن'],
+        ['۱. هر مشتری یک ردیف است. «کد مشتری» همان کد نرم‌افزار حسابداری است و باید یکتا باشد.'],
+        ['۲. «نام مشتری» و «کد مشتری» اجباری‌اند؛ بقیهٔ ستون‌ها اختیاری هستند.'],
+        ['۳. «گروه (همکار مسئول)» همان گروه مشتری در حسابداری است؛ مسئول هر گروه بعداً در برنامه تعیین می‌شود.'],
+        ['۴. تلفن را فقط عدد بنویسید (مثلاً 09121234567).'],
+        ['۵. ستون‌های «فروش 1403» و مانند آن اختیاری‌اند؛ سال را در عنوان ستون بنویسید. خانهٔ خالی یعنی تغییری نمی‌کند.'],
+        ['۶. خانهٔ خالی، مقدار فعلی را پاک نمی‌کند؛ فقط خانه‌های پر شده جایگزین می‌شوند.'],
+        ['۷. ردیف‌هایی که کدشان با «نمونه» شروع شود نادیده گرفته می‌شوند.'],
+        ['۸. فایل را در برنامه از «مشتریان ← ورود اطلاعات» بارگذاری کنید و پیش از ذخیره، پیش‌نمایش را ببینید.']];
+      var gs = X.utils.aoa_to_sheet(g); gs['!cols'] = [{ wch: 110 }];
+      X.utils.book_append_sheet(wb, gs, 'راهنما');
+    }
+    wb.Workbook = { Views: [{ RTL: true }] };
+    return wb;
+  }
+  function downloadSample() {
+    ensureXlsx().then(function (X) {
+      var rows = sheetRows([]);
+      rows.push(['نمونه-۱', 'نمونه: فروشگاه آزمایشی', 'نام همکار مسئول', 'تهران', 'تهران', '09120000000', 'نام شخص تماس', 'نشانی کامل مشتری', 'هر توضیح لازم']);
+      rows.push(['نمونه-۲', 'نمونه: شرکت دوم', 'نام همکار مسئول', 'مشهد', 'خراسان رضوی', '', '', '', '']);
+      X.writeFile(workbookFor(X, rows, true), 'customers-template.xlsx');
+    }, function (e) { S.error = e.message; render(); });
+  }
+  function downloadExport() {
+    ensureXlsx().then(function (X) {
+      var list = S.list.slice().sort(function (a, b) { return String(a.code).localeCompare(String(b.code), 'en', { numeric: true }); });
+      X.writeFile(workbookFor(X, sheetRows(list), true), 'customers-export.xlsx');
+    }, function (e) { S.error = e.message; render(); });
+  }
   function readFiles(files) {
     S.busy = true; S.imp = null; render();
     return ensureXlsx().then(function (XLSX) {
-      return Promise.all(Array.prototype.map.call(files, function (f) {
-        return W.parseFile(f, XLSX).then(function (p) { return { f: f, p: p }; });
-      }));
+      return Promise.all(Array.prototype.map.call(files, function (f) { return readOne(f, XLSX); }));
     }).then(function (res) {
-      var by = {}, info = [], names = {}, renamed = {};
+      var by = {}, info = [], names = {}, renamed = {}, skipped = 0;
+      var slot = function (code) { return by[code] = by[code] || { code: code, sales: {}, _y: 0, tpl: {} }; };
       res.forEach(function (r) {
+        if (r.tpl) {
+          skipped += r.tpl.skipped;
+          info.push({ name: r.f.name, label: 'فایل نمونهٔ برنامه · ' + faInt.format(r.tpl.rows.length) + ' ردیف' });
+          r.tpl.rows.forEach(function (rec) {
+            var o = slot(rec.code);
+            Object.keys(rec.sales).forEach(function (y) { o.sales[y] = rec.sales[y]; });
+            ['name', 'group', 'city', 'province', 'phone', 'contact', 'address', 'notes'].forEach(function (k) { if (rec[k]) o.tpl[k] = rec[k]; });
+          });
+          return;
+        }
         if (r.p.kind !== 'customers') throw new Error(r.f.name + ': این فایل گزارش فروش مشتریان نیست.');
+        skipped += r.p.skippedNoCode;
         var yr = r.p.records[0] && r.p.records[0].year;
-        info.push({ name: r.f.name, year: yr, rows: r.p.records.length, skipped: r.p.skippedNoCode });
+        info.push({ name: r.f.name, label: 'گزارش حسابداری · سال ' + faDigits(yr) + ' · ' + faInt.format(r.p.records.length) + ' ردیف · ردیف جمع حذف شد: ' + faInt.format(r.p.skippedNoCode) });
         r.p.records.forEach(function (rec) {
-          var code = String(rec.customerCode).trim(), o = by[code] = by[code] || { code: code, sales: {}, _y: 0 };
+          var code = String(rec.customerCode).trim(), o = slot(code);
           o.sales[rec.year] = Math.round(rec.amount || 0);
           var nm = fixLetters(rec.customerName);
           if (names[code] && names[code] !== nm && rec.year >= (o._y || 0)) renamed[code] = nm;
@@ -378,10 +480,12 @@
       });
       var have = {}; S.list.forEach(function (c) { have[c.code] = 1; });
       var rows = Object.keys(by).map(function (k) {
-        var o = by[k], t = parseTitle(o._name || ''), prov = provinceOf(t.city);
-        return { code: k, name: t.name, city: t.city, province: prov, region: regionOf(prov), group: o._group || '', sales: o.sales };
+        var o = by[k], t = parseTitle(o._name || o.tpl.name || ''), city = o.tpl.city || t.city, prov = o.tpl.province || provinceOf(city);
+        return { code: k, name: o.tpl.name || t.name, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales,
+          phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: o.tpl.address || '', notes: o.tpl.notes || '' };
       });
-      S.imp = { rows: rows, files: info, fresh: rows.filter(function (r) { return !have[r.code]; }).length, blank: rows.filter(function (r) { return !r.group; }).length,
+      S.imp = { rows: rows, files: info, skipped: skipped, fresh: rows.filter(function (r) { return !have[r.code]; }).length, blank: rows.filter(function (r) { return !r.group; }).length,
+        withPhone: rows.filter(function (r) { return r.phone; }).length, withAddress: rows.filter(function (r) { return r.address; }).length,
         renamed: Object.keys(renamed).map(function (k) { return k + ': ' + renamed[k]; }) };
     }).then(null, function (e) { S.imp = { error: e && e.message || 'خواندن فایل انجام نشد.' }; })
       .then(function () { S.busy = false; render(); });
@@ -394,6 +498,7 @@
     var ops = [];
     im.rows.forEach(function (r) {
       var doc = { code: r.code, name: r.name, city: r.city, province: r.province, region: r.region, group: r.group, sales: r.sales, importedAt: now, updatedAt: now };
+      ['phone', 'contact', 'address', 'notes'].forEach(function (k) { if (r[k]) doc[k] = r[k]; });
       var go = groupOwner[r.group];
       if (go) { doc.ownerUid = go.ownerUid; doc.ownerName = go.ownerName; }
       ops.push([db.collection('customers').doc(r.code), doc]);
@@ -440,6 +545,8 @@
     if ((t = e.target.closest('[data-owner-customer]'))) { var cc = S.list.filter(function (x) { return x.code === t.getAttribute('data-owner-customer'); })[0]; if (cc) ownerDialog({ code: cc.code, label: cc.name }); return; }
     if ((t = e.target.closest('[data-pick-owner]'))) { assignOwner(t.getAttribute('data-pick-owner')); return; }
     if (e.target.closest('[data-imp-open]')) { S.impOpen = true; render(); return; }
+    if (e.target.closest('[data-tpl-sample]')) { downloadSample(); return; }
+    if (e.target.closest('[data-tpl-export]')) { downloadExport(); return; }
     if (e.target.closest('[data-imp-save]')) { saveImport(); return; }
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
   });
