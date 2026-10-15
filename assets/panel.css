@@ -324,3 +324,16 @@
 .pn-rv-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:520px){.pn-rv-actions{grid-template-columns:1fr}}
 .pn-secondary.danger{border-color:#f1c7c2;color:#b42318}
+
+/* icon buttons and phone tabs that show the label of the open tab only */
+.pn-ibtn{display:grid;place-items:center;width:42px;height:42px;padding:0;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);cursor:pointer}
+.pn-ibtn svg{width:20px;height:20px}
+.pn-ibtn:hover{border-color:#90adff;background:#f5f8ff}
+@media(max-width:560px){
+  .pn-tabs{grid-auto-columns:minmax(0,1fr)}
+  .pn-tab span{display:none}
+  .pn-tab[aria-selected=true]{flex-direction:row;gap:6px}
+  .pn-tab[aria-selected=true] span{display:inline}
+  .pn-tabs{grid-template-columns:none}
+  .pn-tab{min-width:0}
+}

@@ -11,6 +11,8 @@
     info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
     compare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 2v20"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m0 0L8 7m4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
@@ -319,8 +321,8 @@
       : '<p class="inv-empty">پیش‌فاکتور خالی است. با دکمهٔ + روی هر محصول، آن را اضافه کنید.</p>';
     var foot = has ? '<div class="inv-foot"><p class="inv-msg" id="invMsg" role="status" hidden></p><div class="inv-pay"><span>مبلغ قابل پرداخت</span><b data-t="total"></b></div>' +
       amButton() + '<div class="inv-actions"><button type="button" class="inv-clear" data-inv-clear aria-label="پاک‌کردن پیش‌فاکتور" title="پاک‌کردن پیش‌فاکتور">' + ICON.trash + '</button>' +
-      '<button type="button" class="inv-pdf alt" data-inv-print>' + ICON.print + '<span>دریافت PDF</span></button>' +
-      '<button type="button" class="inv-pdf alt" data-inv-share>' + ICON.share + '<span>اشتراک‌گذاری</span></button></div></div>' : '';
+      '<button type="button" class="inv-pdf alt ico" data-inv-print aria-label="دریافت PDF" title="دریافت PDF">' + ICON.print + '<span>دریافت PDF</span></button>' +
+      '<button type="button" class="inv-pdf alt ico" data-inv-share aria-label="اشتراک‌گذاری" title="اشتراک‌گذاری">' + ICON.share + '<span>اشتراک‌گذاری</span></button></div></div>' : '';
     openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتور</h2><button type="button" class="dlg-link" data-arc-open>سوابق</button><button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
       '<div class="inv-body"><div class="inv-meta">' +
         '<label class="wide">صادرکننده (ویزیتور)<input type="text" data-f="issuer" value="' + esc(inv.issuer) + '" autocomplete="name" placeholder="نام و نام خانوادگی"></label>' +
@@ -673,6 +675,8 @@
     archive.forEach(function (d) { var n = (d.customer || '').trim(); if (n && !seen[n] && !(me && d.ownerUid && d.ownerUid !== me)) { seen[n] = 1; out.push(n); } });
     return out;
   }
+  // an icon-only action: the name lives in aria-label and the tooltip
+  function ab(attr, i, icon, label, cls) { return '<button type="button"' + (cls ? ' class="' + cls + '"' : '') + ' ' + attr + '="' + i + '" aria-label="' + label + '" title="' + label + '">' + icon + '</button>'; }
   function archiveView() {
     var me = window.MSSync ? window.MSSync.uid() : '';
     var cards = archive.map(function (d, i) {
@@ -682,8 +686,9 @@
         '<div class="arc-head"><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.date) + '</span></div>' +
         '<div class="arc-cust">' + esc(d.customer || 'بدون نام مشتری') + (d.issuer ? ' <small>· ' + esc(d.issuer) + '</small>' : '') + '</div>' +
         '<div class="arc-meta"><span>' + faInt.format(d.lines.length) + ' ردیف</span><b>' + money(t.total, d.unit) + '</b></div>' + reviewLine(d) +
-        '<div class="arc-actions"><button type="button" data-arc-edit="' + i + '">ویرایش</button><button type="button" data-arc-copy="' + i + '">کپی</button>' +
-        '<button type="button" data-arc-pdf="' + i + '">PDF</button><button type="button" data-arc-share="' + i + '">اشتراک</button>' + (window.MSSync && window.MSSync.sendState && window.MSSync.sendState() === 'ok' ? '<button type="button" class="am" data-arc-send="' + i + '">به اکانت منیجر</button>' : '') + '<button type="button" class="danger" data-arc-del="' + i + '" aria-label="حذف">' + ICON.trash + '</button></div></li>';
+        '<div class="arc-actions icons">' + ab('data-arc-edit', i, ICON.edit, 'ویرایش') + ab('data-arc-copy', i, ICON.copy, 'کپی') +
+        ab('data-arc-pdf', i, ICON.print, 'دریافت PDF') + ab('data-arc-share', i, ICON.share, 'اشتراک‌گذاری') +
+        (window.MSSync && window.MSSync.sendState && window.MSSync.sendState() === 'ok' ? ab('data-arc-send', i, ICON.send, 'ارسال به اکانت منیجر', 'am') : '') + ab('data-arc-del', i, ICON.trash, 'حذف', 'danger') + '</div></li>';
     }).join('');
     var fcards = foreign.map(function (d, i) {
       var t = totalsOf(d);
@@ -691,7 +696,7 @@
         '<div class="arc-head"><b dir="ltr">' + esc(d.docNo) + '</b><span>' + esc(d.date) + '</span></div>' +
         '<div class="arc-cust">' + esc(d.customer || 'بدون نام مشتری') + ' <small>· ' + esc(d.ownerName || d.issuer || '') + '</small></div>' +
         '<div class="arc-meta"><span>' + faInt.format(d.lines.length) + ' ردیف</span><b>' + money(t.total, d.unit) + '</b></div>' +
-        '<div class="arc-actions two"><button type="button" data-arc-fcopy="' + i + '">کپی</button><button type="button" data-arc-fpdf="' + i + '">PDF</button><button type="button" data-arc-fshare="' + i + '">اشتراک</button></div></li>';
+        '<div class="arc-actions icons">' + ab('data-arc-fcopy', i, ICON.copy, 'کپی') + ab('data-arc-fpdf', i, ICON.print, 'دریافت PDF') + ab('data-arc-fshare', i, ICON.share, 'اشتراک‌گذاری') + '</div></li>';
     }).join('');
     openDialog('<div class="dlg-bar"><h2 id="dlgName">پیش‌فاکتورهای ذخیره‌شده</h2><button type="button" class="dlg-link" data-inv-open>پیش‌نویس</button>' +
       '<button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
@@ -967,7 +972,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261236', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261237', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();

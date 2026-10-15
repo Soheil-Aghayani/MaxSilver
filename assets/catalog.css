@@ -329,3 +329,10 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .arc-actions .am{background:var(--ms-navy);color:#fff}
 .arc-actions{flex-wrap:wrap}
 .inv-body input[readonly][data-f=docNo]{background:#f3f5f9;color:#41536b}
+/* icon-only actions */
+.arc-actions.icons{display:flex;flex-wrap:wrap;gap:8px}
+.arc-actions.icons button{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;padding:0}
+.arc-actions.icons svg{width:20px;height:20px}
+.inv-pdf.ico{flex:0 0 50px;width:50px;padding:0}
+.inv-pdf.ico span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.inv-actions{justify-content:flex-start}

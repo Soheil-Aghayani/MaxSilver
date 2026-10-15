@@ -225,7 +225,7 @@
   function head(title, back) {
     return '<header class="cu-head"><div>' + (back ? '<a class="cu-back" href="#/" aria-label="بازگشت به فهرست">‹ مشتریان</a>' : '') + '<h1>' + esc(title) + '</h1>' +
       (back ? '' : '<p>پایگاه مشتریان؛ هر مشتری صفحهٔ خودش را دارد.' + (can('customerAll') ? '' : ' فقط مشتریان خودتان نمایش داده می‌شود.') + '</p>') + '</div>' +
-      (back ? '' : '<a class="cu-btn ghost" href="./sales-analysis.html" data-manager-only="analysis">تحلیل مجموعهٔ فروش</a>') + '</header>';
+      (back ? '' : '<a class="cu-ico ghost" href="./sales-analysis.html" data-manager-only="analysis" title="تحلیل مجموعهٔ فروش" aria-label="تحلیل مجموعهٔ فروش"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 3v18h18M7 14l4-4 4 3 6-7\"/></svg></a>') + '</header>';
   }
 
   // ---------- groups and owners
@@ -332,8 +332,8 @@
   // ---------- import of the accounting reports
   function importView() {
     var im = S.imp, body = '';
-    var tools = '<div class="cu-tools"><button type="button" class="cu-btn small" data-tpl-sample>دریافت فایل نمونه (Excel)</button>' +
-      '<button type="button" class="cu-btn small" data-tpl-export' + (S.list.length ? '' : ' disabled') + '>خروجی مشتریان فعلی (Excel)</button></div>';
+    var tools = '<div class="cu-tools"><button type="button" class="cu-ico ghost" data-tpl-sample title="دریافت فایل نمونه (Excel)" aria-label="دریافت فایل نمونه (Excel)"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6\"/></svg></button>' +
+      '<button type="button" class="cu-ico ghost" data-tpl-export' + (S.list.length ? '' : ' disabled') + ' title="خروجی مشتریان فعلی (Excel)" aria-label="خروجی مشتریان فعلی (Excel)"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 4v11m0 0-4-4m4 4 4-4M5 20h14\"/></svg></button><span class="cu-tools-t">نمونه و خروجی Excel</span></div>';
     if (!S.impOpen) return '<section class="cu-card-box" id="import"><h2>ورود اطلاعات</h2>' +
       '<p class="cu-note">دو راه دارد: گزارش‌های «فروش ۱۴۰۳ / ۱۴۰۴ / ۱۴۰۵» حسابداری، یا فایل Excel نمونهٔ خود برنامه که تلفن، نشانی، شخص تماس و گروه را هم دارد. «فایل نمونه» را بگیرید، پر کنید و همین‌جا بارگذاری کنید. فایل‌ها فقط در مرورگر شما خوانده می‌شوند.</p>' +
       tools + '<button type="button" class="cu-btn primary" data-imp-open>شروع ورود اطلاعات</button></section>';

@@ -120,3 +120,8 @@
 .cu-ico{display:grid;place-items:center;width:44px;height:44px;border:1px solid var(--ms-navy);border-radius:12px;background:var(--ms-navy);color:var(--ms-gold);cursor:pointer}
 .cu-ico svg{width:21px;height:21px}
 .cu-ico:hover{filter:brightness(1.15)}
+.cu-ico.ghost{background:#fff;color:var(--ms-navy);border-color:var(--ms-line);text-decoration:none}
+.cu-ico.ghost:hover{border-color:#90adff;filter:none}
+.cu-ico:disabled{opacity:.5;cursor:default}
+.cu-tools{align-items:center}
+.cu-tools-t{color:var(--ms-muted);font-size:12px;font-weight:700}

@@ -923,8 +923,8 @@
       '<div class="pn-inv-mid"><strong>' + esc(d.customer || 'بدون نام مشتری') + '</strong>' + (d.customerCity ? '<span class="pn-note"> · ' + esc(d.customerCity) + '</span>' : '') + '</div>' +
       '<div class="pn-inv-meta"><span>' + esc(who) + '</span><b>' + money(t.total, d.unit) + '</b></div>' +
       '<div class="pn-inv-foot">' + reviewChip(d) +
-      '<span class="pn-inv-act"><button type="button" class="pn-secondary" data-inv-view="' + esc(invKey(d)) + '">جزئیات</button>' +
-      (tk ? '<button type="button" class="pn-secondary" data-tk-open="' + esc(tk.id) + '">گفت‌وگو</button>' : '') + '</span></div></li>';
+      '<span class="pn-inv-act"><button type="button" class="pn-ibtn" data-inv-view="' + esc(invKey(d)) + '" title="جزئیات" aria-label="جزئیات"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></button>' +
+      (tk ? '<button type="button" class="pn-ibtn" data-tk-open="' + esc(tk.id) + '" title="گفت‌وگو" aria-label="گفت‌وگو"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z\"/></svg></button>' : '') + '</span></div></li>';
   }
   function invListHtml() {
     var list = invSource().filter(invMatches);
@@ -1142,7 +1142,7 @@
         (can('people') && u.email ? '<p class="pn-note" dir="ltr">' + esc(u.email) + '</p>' : '') +
         (MSRoles.hasField(u.role, 'territory') ? '<div class="pn-chips">' + (u.regions || []).map(function (r) { return '<span class="pn-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
           (u.cities ? '<p class="pn-note">' + esc(u.cities) + '</p>' : '') : '') + '</div>' +
-        '<button type="button" class="pn-secondary" data-edit="' + esc(u.id) + '">ویرایش</button></li>';
+        '<button type="button" class="pn-ibtn" data-edit="' + esc(u.id) + '" title="ویرایش" aria-label="ویرایش ' + esc(u.name || '') + '"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z\"/></svg></button></li>';
     }).join('');
     return '<section class="pn-card"><h2>تیم</h2><ul class="pn-users">' + rows + '</ul>' +
       (can('roleAdmin') ? '<form id="addForm" class="pn-add"><h3>افزودن کاربر</h3>' +
