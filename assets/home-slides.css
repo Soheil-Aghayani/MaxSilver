@@ -4,27 +4,18 @@
 .hs-slide{grid-area:1/1;position:relative;display:grid;align-items:center;gap:30px;padding:clamp(26px,5vw,56px);opacity:0;visibility:hidden;transform:translateX(-18px);transition:opacity .55s ease,transform .55s ease,visibility 0s .55s}
 .hs-slide.on{opacity:1;visibility:visible;transform:none;transition:opacity .55s ease,transform .55s ease}
 .hs-slide.title{grid-template-columns:minmax(0,1.2fr) minmax(220px,.8fr)}
-.hs-slide.pic{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);color:var(--ms-navy)}
+.hs-slide.pic{grid-template-columns:1fr;color:var(--ms-navy);overflow:hidden}
 .hero.hs[data-slide=pic]{background:linear-gradient(116deg,#fff8e1 0%,#fff3d0 55%,#ffe9a8 100%);border-color:rgba(5,25,52,.08)}
 .hero.hs[data-slide=pic]:before,.hero.hs[data-slide=pic]:after{opacity:.35}
 .hs-slide.title h1{position:relative;max-width:620px}
-.hs-copy{position:relative;z-index:1;display:grid;gap:10px;justify-items:start}
+.hs-copy{position:relative;z-index:1;display:grid;gap:10px;justify-items:start;max-width:min(52%,520px)}
 .hs-copy h2{margin:0;color:var(--ms-navy);font-size:clamp(24px,3.4vw,38px);line-height:1.45;letter-spacing:-.02em}
 .hs-copy p{margin:0;max-width:44ch;color:#4a4330;font-size:clamp(14px,1.5vw,16px);line-height:1.9}
 .hs-cta{display:inline-flex;align-items:center;gap:8px;min-height:46px;margin-top:6px;padding:0 20px;border-radius:14px;background:var(--ms-navy);color:#fff;font:800 15px/1 Estedad,Tahoma,sans-serif;text-decoration:none;box-shadow:0 10px 24px rgba(5,25,52,.22);transition:transform .15s}
 .hs-cta:hover{transform:translateY(-2px)}
 .hs-cta svg{width:18px;height:18px}
-.hs-pics{position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:center;gap:clamp(4px,1.6vw,16px);min-height:170px}
-.hs-pic{position:relative;flex:1 1 0;max-width:190px;aspect-ratio:1;animation:hs-float 5s ease-in-out infinite;animation-delay:var(--d,0s)}
-.hs-pic:nth-child(2n){margin-bottom:22px}
-/* catalog photos come on a white background, so each sits on its own white tile instead of pretending to be a cut-out */
-.hs-pic{overflow:hidden;border-radius:18px;background:#fff;box-shadow:0 14px 30px rgba(5,25,52,.16)}
-.hs-pic img{display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
-.hs-pic:nth-child(n+5){display:none}
-.hs-logos{position:relative;z-index:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.hs-logo{display:grid;place-items:center;min-height:78px;padding:14px;border-radius:16px;background:#fff;box-shadow:0 12px 28px rgba(5,25,52,.12)}
-.hs-logo img{max-width:100%;max-height:46px;object-fit:contain}
-@keyframes hs-float{0%,100%{translate:0 0}50%{translate:0 -6px}}
+.hs-art{position:absolute;inset:0;z-index:0;display:block}
+.hs-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:left center}
 
 .hs-dots{position:absolute;z-index:3;left:50%;bottom:12px;translate:-50% 0;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:rgba(5,25,52,.35);backdrop-filter:blur(6px)}
 .hs-dot{width:9px;height:9px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;transition:width .2s,background .2s}
@@ -43,11 +34,9 @@
   .hero.hs{min-height:0}
   .hs-slide{padding:24px 18px 46px}
   .hs-slide.title{grid-template-columns:1fr}
-  .hs-slide.pic{grid-template-columns:1fr;gap:16px}
-  .hs-pics{min-height:120px}
-  .hs-pic{max-width:110px}
-  .hs-pic:nth-child(n+4){display:none}
-  .hs-pic:nth-child(2n){margin-bottom:12px}
-  .hs-logo{min-height:62px}
+  .hs-slide.pic{min-height:390px;align-items:start}
+  .hs-copy{max-width:none}
+  .hs-copy p{display:none}
+  .hs-art img{object-position:center bottom}
 }
-@media(prefers-reduced-motion:reduce){.hs-slide,.hs-slide.on{transition:none;transform:none}.hs-pic{animation:none}}
+@media(prefers-reduced-motion:reduce){.hs-slide,.hs-slide.on{transition:none;transform:none}}

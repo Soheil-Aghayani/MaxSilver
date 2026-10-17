@@ -138,16 +138,23 @@
       return '<li class="' + (i === S.step ? 'on' : (i < S.step ? 'done' : '')) + '"><span>' + faInt.format(i + 1) + '</span>' + t + '</li>';
     }).join('') + '</ol>';
   }
-  var HERO = { cafe: ['cake', 'coffee', 'blend'], fastfood: ['fry', 'grill', 'burger'], restaurant: ['bain', 'stove', 'doner'],
-    pizza: ['dough', 'pizza', 'topping'], bakery: ['oven', 'cake', 'dough'], juice: ['ice', 'juice', 'blend'] };
+  // 3D illustrations with transparent backgrounds (assets/art): the business icon in front, two typical machines behind it
+  var ART = {
+    cafe: ['cafe_category', 'espresso_machine', 'burr_grinder'],
+    fastfood: ['fast_food_shawerma_category', 'vertical_shawarma_rotisserie', 'flatbread_griddle'],
+    restaurant: ['restaurant_category', 'commercial_range', 'combi_oven'],
+    pizza: ['pizza_category', 'pizza_oven', 'spiral_dough_mixer'],
+    bakery: ['bakery_cakes_category', 'deck_oven', 'planetary_mixer'],
+    juice: ['soft_drinks_cocktails_category', 'ice_machine', 'bar_blender']
+  };
   var TINT = { cafe: '#fde8c8', fastfood: '#fddad3', restaurant: '#e1ecfb', pizza: '#fcd9cf', bakery: '#fdf0c4', juice: '#d9f3e4' };
   function stage(id) {
-    var imgs = (HERO[id] || []).map(function (j) { var p = CAT ? pickFor(j, id) : null; return p && p.img ? p.img : ''; }).filter(Boolean);
-    if (!imgs.length) return '<span class="pl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CONCEPT_ICON[id] + '</svg></span>';
-    var pos = [['0', '4%', '-7deg', '34px'], ['1', '30%', '0deg', '64px'], ['2', '58%', '7deg', '30px']];
-    return '<span class="pl-stage" aria-hidden="true">' + imgs.slice(0, 3).map(function (src, i) {
-      var q = pos[imgs.length === 3 ? i : (imgs.length === 2 ? [1, 2][i] : 1)];
-      return '<span class="pl-pop" style="--l:' + q[1] + ';--r:' + q[2] + ';--z:' + q[3] + ';--d:' + (i * 0.4) + 's"><i></i><img src="' + esc(src) + '" alt=""></span>';
+    var a = ART[id];
+    if (!a) return '<span class="pl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CONCEPT_ICON[id] + '</svg></span>';
+    // [image, left, width, rotation, depth]
+    var pos = [[a[1], '0%', '36%', '-6deg', '20px'], [a[2], '64%', '36%', '6deg', '26px'], [a[0], '27%', '46%', '0deg', '72px']];
+    return '<span class="pl-stage" aria-hidden="true">' + pos.map(function (q, i) {
+      return '<span class="pl-pop' + (i === 2 ? ' main' : '') + '" style="--l:' + q[1] + ';--w:' + q[2] + ';--r:' + q[3] + ';--z:' + q[4] + ';--d:' + (i * 0.5) + 's"><i></i><img src="./assets/art/' + q[0] + '.webp" alt="" loading="lazy" decoding="async"></span>';
     }).join('') + '</span>';
   }
   function stepConcept() {
