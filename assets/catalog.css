@@ -360,3 +360,5 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .pc-price[data-s=i],.pc-price[data-s=r]{display:inline-flex;align-self:flex-start;padding:2px 10px;border-radius:999px;font-size:12px}
 .pc-price[data-s=i]{background:#eff6ff;color:#1746b5}
 .pc-price[data-s=r]{background:#fff4d1;color:#9a6a00}
+.pc.retired{opacity:.7}.pc.retired .pc-img img{filter:grayscale(1)}.pc-ret{margin-top:6px;padding:4px 10px;border-radius:10px;background:#f3f5f8;color:#667085;font-size:12px;font-weight:700;line-height:1.7}.dlg-ret{margin:0 0 10px;padding:8px 12px;border-radius:12px;background:#fff6d6;color:#7a5b00;font-size:13px;font-weight:700;line-height:1.8}.inv-ret{display:block;color:#b54708;font-size:12px;font-weight:700;margin-top:2px}
+.dlg-actions button:disabled,.pc-btn:disabled{opacity:.4;cursor:not-allowed}

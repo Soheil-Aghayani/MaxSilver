@@ -150,6 +150,15 @@
       window.MSPrices.setEdits(m);
     }, function () { /* offline, or the rules are not published yet: the prices read last time stay */ });
   }
+  // product codes retired by sales management and management (item_status) leave the catalog for sales
+  function loadItemStatus() {
+    if (!live() || !approved() || !window.MSStatus) return Promise.resolve();
+    return withTimeout(db.collection('item_status').get()).then(function (snap) {
+      var m = {};
+      snap.forEach(function (s) { var d = s.data(); m[s.id] = { rep: d.rep || '', note: d.note || '', at: d.at || 0, by: d.byName || '' }; });
+      window.MSStatus.setAll(m);
+    }, function () { /* offline, or the rules are not published yet: the status read last time stays */ });
+  }
   function sync() {
     if (!live() || S.busy) return Promise.resolve();
     S.busy = true; render();
@@ -178,7 +187,7 @@
         A.setForeign(others.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }));
         return pushPending().then(flushSends);
       });
-    }).then(function () { return loadListPrices(); }).then(function () { S.last = Date.now(); S.error = ''; }, function (e) { S.error = errText(e); })
+    }).then(function () { return loadListPrices(); }).then(function () { return loadItemStatus(); }).then(function () { S.last = Date.now(); S.error = ''; }, function (e) { S.error = errText(e); })
       .then(function () { S.busy = false; render(); });
   }
   function trySync() {

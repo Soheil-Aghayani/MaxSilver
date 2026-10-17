@@ -11,7 +11,7 @@
   function row(x) {
     return '<li class="ev-row" data-tone="' + x.tone + '"><div class="ev-ic" aria-hidden="true">' + esc(x.art[0]) + '</div><div class="ev-main"><div class="ev-t"><b>' + esc(x.title) + '</b>' +
       (x.important ? '<span class="ev-imp">مهم</span>' : '') + '<span class="ev-g">' + esc(x.group) + '</span></div>' +
-      '<div class="ev-d">' + x.weekday + ' ' + x.jalali + ' ' + E.fa(x.jy) + ' · ' + x.gregorian + '</div>' +
+      '<div class="ev-d">' + x.weekday + ' ' + x.jalali + ' ' + E.fa(x.jy) + ' · ' + x.gregorian + (x.approx ? ' · <em class="ev-ap" title="تاریخ با ماه قمری محاسبه شده؛ پس از انتشار تقویم رسمی تأیید می‌شود">تقریبی</em>' : '') + '</div>' +
       (x.idea ? '<p class="ev-idea">' + esc(x.idea) + '</p>' : '') + '</div><span class="ev-left' + (x.days <= 7 ? ' soon' : '') + '">' + x.when + '</span></li>';
   }
   function render() {

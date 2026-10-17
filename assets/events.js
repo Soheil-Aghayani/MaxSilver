@@ -62,13 +62,14 @@
   function fa(s) { return String(s).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); }
 
   // k: 'j' fixed Jalali date, 'g' fixed Gregorian date, 'y' Jalali date given per Jalali year (lunar or computed occasions).
+  // ap: Jalali years whose date is calculated (lunar months) and not yet in the official calendar; shown as approximate. Replace the entry when the official calendar is out.
   // every occasion has banner artwork (assets/art/events/<id>-pc|tablet|mobile.webp) and shows a greeting slide `lead` days
   // before the day (default 2). imp: also a bell reminder `rem` days before.
   // grp: ایرانی، مذهبی، جهانی، آشپزی. idea: a suggestion for marketing, not a company fact.
   var EVENTS = [
     { id: 'nowruz', t: 'نوروز', k: 'j', d: [1, 1], grp: 'ایرانی', imp: true, lead: 7, rem: 21, tone: 'mint', art: ['🌱', '🥚', '🌸'],
       hello: 'نوروزتان پیروز؛ سالی پر از رونق و کار نو برای شما و همکارانتان آرزو می‌کنیم.', idea: 'بزرگ‌ترین مناسبت سال: پیام تبریک به مشتریان و همکاران، و آماده‌سازی محتوای افتتاحیه‌های بهاری.' },
-    { id: 'chaharshanbe', t: 'چهارشنبه‌سوری', k: 'y', y: { 1405: [12, 25] }, grp: 'ایرانی', tone: 'sun', art: ['🔥', '✨', '🎆'],
+    { id: 'chaharshanbe', t: 'چهارشنبه‌سوری', k: 'y', y: { 1405: [12, 25], 1406: [12, 24] }, ap: [1406], grp: 'ایرانی', tone: 'sun', art: ['🔥', '✨', '🎆'],
       hello: 'چهارشنبه‌سوری امسال شاد و ایمن باشد.', idea: 'محتوای ایمنی و تبریک؛ بدون تبلیغ مستقیم.' },
     { id: 'yalda', t: 'شب یلدا', k: 'j', d: [9, 30], grp: 'ایرانی', imp: true, lead: 5, rem: 14, tone: 'rose', art: ['🍉', '🌙', '✨'],
       hello: 'شب یلدا مبارک؛ بلندترین شب سال را با گرمی دور هم بگذرانید.', idea: 'پیام تبریک و محتوای ویژهٔ کافه و رستوران‌ها برای شب‌های پرمشتری.' },
@@ -78,12 +79,12 @@
     { id: 'engineer', t: 'روز مهندس', k: 'j', d: [12, 5], grp: 'ایرانی', tone: 'sky', art: ['⚙️', '🛠️', '📐'], hello: 'روز مهندس بر همهٔ مهندسان و همکاران فنی ما مبارک.', idea: 'تبریک به تیم فنی و تولید.' },
     { id: 'accountant', t: 'روز حسابدار', k: 'j', d: [9, 15], grp: 'ایرانی', tone: 'sky', art: ['🧮', '📊', '✨'], hello: 'روز حسابدار مبارک.', idea: 'تبریک داخلی به تیم مالی.' },
     { id: 'quality', t: 'روز ملی کیفیت', k: 'j', d: [8, 18], grp: 'ایرانی', tone: 'gold', art: ['🏅', '✅', '⭐'], hello: 'روز ملی کیفیت؛ تعهد ما، کیفیت هر دستگاه است.', idea: 'محتوای کنترل کیفیت در کارخانه.' },
-    { id: 'mother', t: 'روز مادر و زن (ولادت حضرت فاطمه)', k: 'y', y: { 1405: [9, 9] }, grp: 'مذهبی', imp: true, lead: 3, rem: 10, tone: 'rose', art: ['🌷', '💐', '❤️'],
+    { id: 'mother', t: 'روز مادر و زن (ولادت حضرت فاطمه)', k: 'y', y: { 1405: [9, 9], 1406: [8, 29] }, ap: [1406], grp: 'مذهبی', imp: true, lead: 3, rem: 10, tone: 'rose', art: ['🌷', '💐', '❤️'],
       hello: 'روز مادر و روز زن مبارک.', idea: 'پیام تبریک؛ کمپین هدیه برای کافه‌داران و آشپزهای بانو.' },
-    { id: 'father', t: 'روز پدر (ولادت امام علی)', k: 'y', y: { 1405: [10, 2] }, grp: 'مذهبی', imp: true, lead: 3, rem: 10, tone: 'sky', art: ['👔', '🎁', '⭐'],
+    { id: 'father', t: 'روز پدر (ولادت امام علی)', k: 'y', y: { 1405: [10, 2], 1406: [9, 21] }, ap: [1406], grp: 'مذهبی', imp: true, lead: 3, rem: 10, tone: 'sky', art: ['👔', '🎁', '⭐'],
       hello: 'روز پدر مبارک.', idea: 'پیام تبریک به مشتریان و همکاران.' },
-    { id: 'shaban', t: 'جشن نیمه شعبان', k: 'y', y: { 1405: [11, 4] }, grp: 'مذهبی', tone: 'sun', art: ['🌟', '🎉', '✨'], hello: 'جشن نیمه شعبان مبارک.', idea: '' },
-    { id: 'fitr', t: 'عید فطر', k: 'y', y: { 1405: [12, 19] }, grp: 'مذهبی', imp: true, lead: 2, rem: 10, tone: 'sky', art: ['🌙', '⭐', '✨'],
+    { id: 'shaban', t: 'جشن نیمه شعبان', k: 'y', y: { 1405: [11, 4], 1406: [10, 23] }, ap: [1406], grp: 'مذهبی', tone: 'sun', art: ['🌟', '🎉', '✨'], hello: 'جشن نیمه شعبان مبارک.', idea: '' },
+    { id: 'fitr', t: 'عید فطر', k: 'y', y: { 1405: [12, 19], 1406: [12, 8] }, ap: [1406], grp: 'مذهبی', imp: true, lead: 2, rem: 10, tone: 'sky', art: ['🌙', '⭐', '✨'],
       hello: 'عید فطر مبارک.', idea: 'اعلام تعطیلی یا ساعت کاری؛ پیام تبریک.' },
     { id: 'coffee', t: 'روز جهانی قهوه', k: 'g', d: [10, 1], grp: 'آشپزی', imp: true, lead: 2, rem: 7, tone: 'gold', art: ['☕', '🥐', '🫘'],
       hello: 'روز جهانی قهوه مبارک؛ به پاس همهٔ کافه‌داران.', idea: 'محتوای ویژهٔ دستگاه‌های کافه: اسپرسوساز، آسیاب و دم‌آور.' },
@@ -121,7 +122,7 @@
       date: o.date, days: n, year: j.jy,
       jalali: fa(j.jd) + ' ' + MONTHS[j.jm - 1], weekday: WEEK[o.date.getDay()],
       gregorian: fa(o.date.getDate()) + ' ' + GMONTHS[o.date.getMonth()] + ' ' + fa(o.date.getFullYear()),
-      jmonth: j.jm, jy: j.jy,
+      jmonth: j.jm, jy: j.jy, approx: !!(o.e.ap && o.e.ap.indexOf(j.jy) >= 0),
       when: n === 0 ? 'امروز' : n === 1 ? 'فردا' : n > 0 ? fa(n) + ' روز دیگر' : fa(-n) + ' روز پیش'
     };
   }

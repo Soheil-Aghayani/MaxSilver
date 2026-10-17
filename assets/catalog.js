@@ -75,9 +75,18 @@
     $('catSector').innerHTML = '<option value="">همه صنف‌ها</option>' + data.sectors.map(function (g) { return '<option>' + esc(g) + '</option>'; }).join('');
   }
 
+  // product codes taken out of use (assets/item-status.js): hidden from sales, shown tagged to the people who maintain them
+  function retiredSeen() { var r = window.MSSync && window.MSSync.role ? window.MSSync.role() : ''; return !!(r && window.MSRoles && window.MSRoles.can(r, 'pricesEdit')); }
+  function isRetired(id) { return !!(window.MSStatus && window.MSStatus.retired(id)); }
+  function retText(id) {
+    var s = window.MSStatus && window.MSStatus.get(id); if (!s) return '';
+    var r = s.rep && byId[s.rep];
+    return 'این کد کنار گذاشته شده است' + (r ? ' · جایگزین: ' + r.name + (r.code ? ' (' + r.code + ')' : '') : '');
+  }
   function apply() {
-    var q = norm(state.q), words = q ? q.split(' ') : [];
+    var q = norm(state.q), words = q ? q.split(' ') : [], seeRet = retiredSeen();
     filtered = items.filter(function (it) {
+      if (!seeRet && isRetired(it.id)) return false;
       if (state.src && it.src !== state.src) return false;
       if (state.grp && it.grp !== state.grp) return false;
       if (state.sec && it.sec.indexOf(state.sec) < 0) return false;
@@ -110,14 +119,15 @@
   function card(it) {
     var d = dimsText(it), p = power(it), inCmp = compare.indexOf(it.id) >= 0, inInv = !!invLine(it.id);
     var specs = (d ? '<span>' + ICON.ruler + esc(d) + '</span>' : '') + (it.wt ? '<span>' + ICON.weight + esc(fa.format(it.wt)) + ' kg</span>' : '') + (p ? '<span>' + ICON.bolt + esc(p) + '</span>' : '');
-    return '<article class="pc" data-id="' + esc(it.id) + '">' +
+    var ret = isRetired(it.id);
+    return '<article class="pc' + (ret ? ' retired' : '') + '" data-id="' + esc(it.id) + '">' +
       '<button type="button" class="pc-img' + (it.img ? '' : ' noimg') + '" data-open="' + esc(it.id) + '" aria-label="جزئیات ' + esc(it.name) + '">' +
         (it.img ? '<img src="' + esc(it.img) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">' : '') + ICON.cube +
         '<span class="pc-brand" data-brand="' + esc(it.src) + '"><i></i>' + esc(srcLabel(it.src)) + '</span></button>' +
       '<div class="pc-body"><h2 class="pc-name">' + esc(it.name) + '</h2>' +
         '<div class="pc-meta">' + (it.code ? '<span class="pc-code">' + esc(it.code) + '</span>' : '') + (it.cat ? '<span class="pc-chip">' + esc(it.cat) + '</span>' : '') + '</div>' +
-        (specs ? '<div class="pc-spec">' + specs + '</div>' : '') + priceTag(it.id) + '</div>' +
-      '<div class="pc-foot"><button type="button" class="pc-btn" data-inv="' + esc(it.id) + '" aria-pressed="' + inInv + '" aria-label="افزودن به پیش‌فاکتور" title="افزودن به پیش‌فاکتور">' + (inInv ? ICON.check : ICON.plus) + '</button>' +
+        (specs ? '<div class="pc-spec">' + specs + '</div>' : '') + (ret ? '<div class="pc-ret">' + esc(retText(it.id)) + '</div>' : priceTag(it.id)) + '</div>' +
+      '<div class="pc-foot"><button type="button" class="pc-btn" data-inv="' + esc(it.id) + '" aria-pressed="' + inInv + '" aria-label="افزودن به پیش‌فاکتور" title="افزودن به پیش‌فاکتور"' + (ret && !inInv ? ' disabled' : '') + '>' + (inInv ? ICON.check : ICON.plus) + '</button>' +
         '<button type="button" class="pc-btn" data-cmp="' + esc(it.id) + '" aria-pressed="' + inCmp + '" aria-label="مقایسه" title="مقایسه">' + ICON.compare + '</button>' +
         '<button type="button" class="pc-btn" data-open="' + esc(it.id) + '" aria-label="جزئیات">' + ICON.open + '</button></div></article>';
   }
@@ -185,14 +195,14 @@
     var d = dimsText(it); if (d) rows.push(['ابعاد (طول × عرض × ارتفاع)', '<span dir="ltr">' + esc(d) + '</span>']);
     if (it.wt) rows.push(['وزن', '<span dir="ltr">' + esc(fa.format(it.wt)) + ' kg</span>']);
     it.specs.forEach(function (s) { rows.push([esc(s[0]), esc(s[1])]); });
-    var on = compare.indexOf(it.id) >= 0;
+    var on = compare.indexOf(it.id) >= 0, ret = isRetired(it.id), repIt = ret && window.MSStatus.get(it.id).rep ? byId[window.MSStatus.get(it.id).rep] : null;
     openDialog(
       '<div class="dlg-bar"><h2 id="dlgName">' + esc(it.name) + '</h2><button type="button" class="dlg-x" data-close aria-label="بستن">' + ICON.close + '</button></div>' +
       '<div class="dlg-body"><div><div class="dlg-img">' + (it.img ? '<img src="' + esc(it.img) + '" alt="" referrerpolicy="no-referrer">' : ICON.cube) + '</div></div>' +
       '<div><div class="dlg-tags"><span class="pc-brand" data-brand="' + esc(it.src) + '" style="position:static"><i></i>' + esc(srcLabel(it.src)) + '</span>' + it.sec.map(function (s) { return '<span class="pc-chip">' + esc(s) + '</span>'; }).join('') + '</div>' +
-      '<table class="dlg-specs"><tbody>' + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; }).join('') + '</tbody></table>' +
+      (ret ? '<p class="dlg-ret" role="status">' + esc(retText(it.id).split(' · ')[0]) + (repIt ? ' · جایگزین: <button type="button" class="dlg-link" data-open="' + esc(repIt.id) + '">' + esc(repIt.name) + (repIt.code ? ' (' + esc(repIt.code) + ')' : '') + '</button>' : '') + '</p>' : '') + '<table class="dlg-specs"><tbody>' + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; }).join('') + '</tbody></table>' +
       (it.desc ? '<p class="dlg-desc">' + esc(it.desc) + '</p>' : '') +
-      '<div class="dlg-actions"><button type="button" data-inv-dlg="' + esc(it.id) + '" aria-pressed="' + !!invLine(it.id) + '">' + (invLine(it.id) ? ICON.check : ICON.plus) + '<span>' + (invLine(it.id) ? 'در پیش‌فاکتور' : 'افزودن به پیش‌فاکتور') + '</span></button>' +
+      '<div class="dlg-actions"><button type="button" data-inv-dlg="' + esc(it.id) + '" aria-pressed="' + !!invLine(it.id) + '"' + (ret && !invLine(it.id) ? ' disabled' : '') + '>' + (invLine(it.id) ? ICON.check : ICON.plus) + '<span>' + (invLine(it.id) ? 'در پیش‌فاکتور' : 'افزودن به پیش‌فاکتور') + '</span></button>' +
       '<button type="button" data-cmp-dlg="' + esc(it.id) + '" class="alt" aria-label="مقایسه" aria-pressed="' + on + '">' + ICON.compare + '</button>' +
       (it.url ? '<a href="' + esc(it.url) + '" target="_blank" rel="noopener" aria-label="صفحه محصول در سایت">' + ICON.open + '</a>' : '') + '</div></div></div>');
   }
@@ -317,7 +327,7 @@
     if (!invDate) invDate = today();
     var rows = inv.lines.map(function (l, i) {
       var it = byId[l.id];
-      return '<li class="inv-row" data-i="' + i + '"><div class="inv-item"><b>' + esc(it.name) + '</b>' + (it.code ? '<small dir="ltr">' + esc(it.code) + '</small>' : '') + '</div>' +
+      return '<li class="inv-row" data-i="' + i + '"><div class="inv-item"><b>' + esc(it.name) + '</b>' + (it.code ? '<small dir="ltr">' + esc(it.code) + '</small>' : '') + (isRetired(l.id) ? '<small class="inv-ret">' + esc(retText(l.id)) + '</small>' : '') + '</div>' +
         '<button type="button" class="dlg-x" data-inv-rm="' + i + '" aria-label="حذف از پیش‌فاکتور">' + ICON.trash + '</button>' +
         '<label>تعداد<input type="text" inputmode="numeric" data-f="qty" value="' + esc(faInt.format(l.qty || 0)) + '"></label>' +
         '<label>قیمت واحد<input type="text" inputmode="numeric" data-f="price" placeholder="۰" value="' + (l.price ? esc(faInt.format(l.price)) : '') + '"></label>' +
@@ -1040,8 +1050,9 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261254', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261255', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
+    if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();

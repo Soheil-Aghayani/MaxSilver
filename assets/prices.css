@@ -45,3 +45,4 @@
   .pr-in{width:100%}
   .pr-act{grid-column:1/-1;justify-content:flex-end}
 }
+.pr-row.retired{background:#f6f7f9}.pr-row.retired .pr-img img{filter:grayscale(1);opacity:.7}.pr-retline{color:#b54708;font-weight:700}.pr-retform{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:10px;border-top:1px dashed var(--ms-line)}.pr-retform label{display:grid;gap:4px;color:var(--ms-muted);font-size:12px}.pr-retform input{min-height:42px;padding:0 12px;border:1px solid var(--ms-line);border-radius:12px;font:700 14px/1 Estedad,Tahoma,sans-serif;color:var(--ms-navy);background:#fff}.pr-retbtn{grid-column:1/-1;display:flex;gap:8px}.pr-retbtn .pr-more{padding:0 16px}@media(max-width:760px){.pr-retform{grid-template-columns:1fr}}

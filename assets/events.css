@@ -47,3 +47,4 @@
   .ev-left{order:3;margin-inline-start:64px}
 }
 @media(prefers-reduced-motion:reduce){.ev-nart span{animation:none}}
+.ev-ap{font-style:normal;padding:1px 8px;border-radius:999px;background:#fff6d6;color:#7a5b00;font-size:11.5px;font-weight:800}
