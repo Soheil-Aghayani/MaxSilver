@@ -1,33 +1,71 @@
-// Home banner slideshow: the portal title first, then picture slides. It pauses on hover, focus and touch, has a
-// pause button, dots, swipe and arrow keys, and does not autoplay for people who asked for less motion.
+// Home banner slideshow: the portal title first, then picture slides, and a greeting slide near an important occasion
+// (assets/events.js). It pauses on hover, focus and touch, has a pause button, dots, swipe and arrow keys, and does not
+// autoplay for people who asked for less motion.
 (function () {
   'use strict';
   var hero = document.querySelector('.hero.hs');
   if (!hero) return;
-  var slides = Array.prototype.slice.call(hero.querySelectorAll('.hs-slide')), dotsBox = hero.querySelector('.hs-dots');
+  var track = hero.querySelector('.hs-track'), dotsBox = hero.querySelector('.hs-dots'), pauseBtn = hero.querySelector('.hs-pause');
   var i = 0, timer = 0, paused = false, held = false;
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var DELAY = 6500;
 
+  function anon() { return document.documentElement.hasAttribute('data-anon'); }
+  function slides() { return Array.prototype.slice.call(hero.querySelectorAll('.hs-slide')); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  // the greeting slide of the nearest important occasion, for signed-in people only; it sits right after the title slide
+  function syncEvent() {
+    var old = hero.querySelector('.hs-slide.event'), ev = null;
+    try { ev = !anon() && window.MSEvents ? window.MSEvents.active() : null; } catch (e) { ev = null; }
+    if (!ev) { if (old) old.remove(); return; }
+    if (old && old.getAttribute('data-ev') === ev.id) return;
+    if (old) old.remove();
+    var s = document.createElement('div');
+    s.className = 'hs-slide pic event';
+    s.setAttribute('data-ev', ev.id);
+    s.setAttribute('data-tone', ev.tone);
+    s.innerHTML = '<div class="hs-copy"><h2>' + esc(ev.title + (ev.days === 0 ? ' مبارک' : '')) + '</h2><p>' + esc(ev.hello) + '</p>' +
+      '<a class="hs-cta" href="./events.html">مناسبت‌ها<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg></a></div>' +
+      '<div class="hs-evart" aria-hidden="true"><span>' + esc(ev.art[0]) + '</span><span>' + esc(ev.art[1]) + '</span><span>' + esc(ev.art[2]) + '</span></div>';
+    var first = track.querySelector('.hs-slide');
+    track.insertBefore(s, first.nextSibling);
+  }
+
   // people without an account only see the first slide; the others lead into sections they cannot open.
   // role-gate.js marks the page data-anon and hides slides the role may not open (data-manager-only)
   function active() {
-    if (document.documentElement.hasAttribute('data-anon')) return slides.slice(0, 1);
-    var l = slides.filter(function (s) { return !s.hidden && s.style.display !== 'none'; });
-    return l.length ? l : slides.slice(0, 1);
+    var all = slides();
+    if (anon()) return all.slice(0, 1);
+    var l = all.filter(function (s) { return !s.hidden && s.style.display !== 'none'; });
+    return l.length ? l : all.slice(0, 1);
+  }
+  function renderDots(n) {
+    if (!dotsBox) return;
+    Array.prototype.forEach.call(dotsBox.querySelectorAll('.hs-dot'), function (d) { d.remove(); });
+    for (var k = 0; k < n; k++) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'hs-dot'; b.setAttribute('role', 'tab'); b.setAttribute('data-i', String(k)); b.setAttribute('aria-label', 'اسلاید ' + (k + 1));
+      dotsBox.insertBefore(b, pauseBtn);
+    }
   }
   function show(n) {
+    syncEvent();
     var list = active();
     i = (n + list.length) % list.length;
-    slides.forEach(function (s) {
+    slides().forEach(function (s) {
       var on = s === list[i];
       s.classList.toggle('on', on);
       s.setAttribute('aria-hidden', String(!on));
       Array.prototype.forEach.call(s.querySelectorAll('a,button'), function (el) { el.tabIndex = on ? 0 : -1; });
     });
-    hero.setAttribute('data-slide', list[i].classList.contains('pic') ? 'pic' : 'title');
-    Array.prototype.forEach.call(hero.querySelectorAll('.hs-dot'), function (d, k) { d.setAttribute('aria-selected', String(k === i)); d.hidden = k >= list.length; });
-    if (dotsBox) dotsBox.hidden = list.length < 2;
+    var cur = list[i];
+    hero.setAttribute('data-slide', cur.classList.contains('pic') ? 'pic' : 'title');
+    if (cur.getAttribute('data-tone')) hero.setAttribute('data-tone', cur.getAttribute('data-tone')); else hero.removeAttribute('data-tone');
+    if (!dotsBox) return;
+    if (dotsBox.querySelectorAll('.hs-dot').length !== list.length) renderDots(list.length);
+    Array.prototype.forEach.call(dotsBox.querySelectorAll('.hs-dot'), function (d, k) { d.setAttribute('aria-selected', String(k === i)); });
+    dotsBox.hidden = list.length < 2;
   }
   function schedule() {
     clearTimeout(timer);

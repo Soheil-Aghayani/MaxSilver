@@ -30,6 +30,22 @@
 .hero.hs[data-slide=pic] .upd-bell{background:rgba(5,25,52,.08);border-color:rgba(5,25,52,.15);color:var(--ms-navy)}
 .hero.hs.has-bell .hs-slide.pic .hs-copy h2{padding-inline-start:54px}
 
+/* greeting slide of an occasion: the tone of the occasion tints the whole banner */
+.hero.hs[data-tone=mint]{background:linear-gradient(116deg,#f1fbf4 0%,#dff5e7 55%,#c4ebd2 100%)}
+.hero.hs[data-tone=rose]{background:linear-gradient(116deg,#fff3f6 0%,#ffe3ea 55%,#ffcbd8 100%)}
+.hero.hs[data-tone=sky]{background:linear-gradient(116deg,#f2f8ff 0%,#dfeafc 55%,#c5dcf8 100%)}
+.hero.hs[data-tone=sun]{background:linear-gradient(116deg,#fff8e8 0%,#ffeac2 55%,#ffd28f 100%)}
+.hero.hs[data-tone=plum]{background:linear-gradient(116deg,#241031 0%,#3b1a4d 55%,#5a2468 100%);border-color:rgba(255,255,255,.1)}
+.hs-slide.event[data-tone=plum] .hs-copy h2,.hs-slide.event[data-tone=plum] .hs-copy p{color:#fff}
+.hs-slide.event[data-tone=plum] .hs-cta{background:#ffcc2a;color:#051934}
+.hero.hs[data-slide=pic][data-tone=plum] .upd-bell{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff}
+.hs-slide.event{min-height:inherit}
+.hs-evart{position:absolute;inset-block:0;left:0;width:48%;z-index:0;display:flex;align-items:center;justify-content:center;gap:clamp(6px,2vw,22px);font-size:clamp(54px,9vw,104px);line-height:1;pointer-events:none}
+.hs-evart span{filter:drop-shadow(0 12px 14px rgba(5,25,52,.22));animation:hs-ev 5s ease-in-out infinite}
+.hs-evart span:nth-child(1){font-size:1.5em}
+.hs-evart span:nth-child(2){animation-delay:.7s}.hs-evart span:nth-child(3){animation-delay:1.4s;align-self:flex-end;margin-bottom:12%}
+@keyframes hs-ev{0%,100%{translate:0 0}50%{translate:0 -7px}}
+
 @media(max-width:760px){
   .hero.hs{min-height:0}
   .hs-slide{padding:24px 18px 46px}
@@ -38,5 +54,6 @@
   .hs-copy{max-width:none}
   .hs-copy p{display:none}
   .hs-art img{object-position:center bottom}
+  .hs-evart{inset-block:auto 34px;inset-inline:0;left:0;width:100%;height:150px;font-size:64px}
 }
-@media(prefers-reduced-motion:reduce){.hs-slide,.hs-slide.on{transition:none;transform:none}}
+@media(prefers-reduced-motion:reduce){.hs-slide,.hs-slide.on{transition:none;transform:none}.hs-evart span{animation:none}}

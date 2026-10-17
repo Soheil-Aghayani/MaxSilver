@@ -18,6 +18,7 @@
     invoices: svg('<path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6"/>'),
     tickets: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/>'),
     panel: svg('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>'),
+    events: svg('<rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4m8-4v4"/>'),
     planner: svg('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M9 21V9"/>'),
     contact: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.7A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/>'),
     star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>'
@@ -30,6 +31,7 @@
     { id: 'invoices', href: './panel.html#invoices', label: 'پیش‌فاکتورها', area: 'invoices' },
     { id: 'process', href: './sales-process.html', label: 'نقشهٔ فروش', page: 'sales-process.html' },
     { id: 'planner', href: './planner.html', label: 'طراح کافه و رستوران', page: 'planner.html' },
+    { id: 'events', href: './events.html', label: 'مناسبت‌ها', area: 'events', page: 'events.html' },
     { id: 'dashboard', href: './ceo-dashboard.html', label: 'داشبورد CEO', area: 'dashboard', page: 'ceo-dashboard.html' },
     { id: 'analysis', href: './sales-analysis.html', label: 'تحلیل جزئیات فروش', area: 'analysis', page: 'sales-analysis.html' },
     { id: 'advertising', href: './advertising.html', label: 'استراتژی تبلیغات', area: 'advertising', page: 'advertising.html' },

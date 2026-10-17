@@ -6,6 +6,12 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'events', date: '1405/07/25', tag: 'جدید', title: 'مناسبت‌ها: یلدا، نوروز، هالووین و…',
+      summary: 'تقویم مناسبت‌ها با بنر تبریک در صفحهٔ اصلی و یادآور در زنگ برای تیم بازاریابی و مدیران.',
+      details: ['صفحهٔ «مناسبت‌ها» مناسبت‌های ایرانی، مذهبی، جهانی و آشپزی یک سال آینده را با شمارش معکوس نشان می‌دهد؛ مثل نوروز، شب یلدا، روز مادر، هالووین، کریسمس، روز جهانی قهوه و روز سرآشپز.',
+        'چند روز پیش از هر مناسبت مهم، یک اسلاید تبریک با تصویر و رنگ همان مناسبت به بنر صفحهٔ اصلی اضافه می‌شود (فقط برای کسانی که وارد شده‌اند).',
+        'برای بازاریابی، مدیر فروش، مدیریت و تکنولوژی سازمانی، چند روز پیش از مناسبت‌های مهم در زنگ یادآوری می‌آید تا پیام و کمپین آماده شود.',
+        'تاریخ مناسبت‌های قمری هر سال عوض می‌شود و فعلاً برای سال ۱۴۰۵ ثبت شده است؛ بقیه خودکار محاسبه می‌شوند.'] },
     { id: 'art-3d', date: '1405/07/25', tag: 'بهبود', title: 'تصویرهای سه‌بعدی برای طراح و بنر',
       summary: 'کارت‌های «چه کسب‌وکاری می‌خواهید راه بیندازید؟» و اسلایدهای بنر حالا تصویر سه‌بعدی با زمینهٔ شفاف دارند.',
       details: ['هر کسب‌وکار (کافه، فست‌فود، رستوران، پیتزا، نانوایی، نوشیدنی) یک آیکون سه‌بعدی و دو دستگاه شاخص دارد که با حرکت موس یا انگشت کمی می‌چرخند.',
@@ -76,10 +82,16 @@
     try { for (var i = 0; i < localStorage.length; i++) if (/^firebase:authUser:/.test(localStorage.key(i))) return true; } catch (e) { /* ignore */ }
     return false;
   }
+  // the occasions calendar adds reminders for marketing a few days before an important occasion
+  function all() {
+    var extra = [];
+    try { extra = window.MSEvents ? window.MSEvents.reminders() : []; } catch (e) { extra = []; }
+    return extra.concat(UPDATES);
+  }
   function visible() {
     if (!signed()) return [];
     var r = role(), nr = window.MSRoles && r ? window.MSRoles.norm(r) : r;
-    return UPDATES.filter(function (u) { return !u.roles || (nr && u.roles.indexOf(nr) >= 0); });
+    return all().filter(function (u) { return !u.roles || (nr && u.roles.indexOf(nr) >= 0); });
   }
   function seen() { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || '[]') || []; } catch (e) { return []; } }
   function mark(ids) {
@@ -119,7 +131,7 @@
     paintSection();
   }
   function openOne(id) {
-    var u = UPDATES.filter(function (x) { return x.id === id; })[0], d = ensureDialog();
+    var u = all().filter(function (x) { return x.id === id; })[0], d = ensureDialog();
     if (!u) return;
     d.setAttribute('aria-label', u.title);
     d.innerHTML = '<div class="upd-dbar"><h2>' + esc(u.title) + '</h2><button type="button" class="upd-x" data-upd-close aria-label="بستن">' + CLOSE + '</button></div>' +
