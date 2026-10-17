@@ -52,25 +52,35 @@
   var CONCEPTS = [
     { id: 'cafe', t: 'کافه', d: 'قهوه، نوشیدنی، شیرینی و صبحانهٔ سبک', sectors: ['کافه', 'قهوه و شکلات', 'صبحانه و میان‌وعده', 'شیرینی'],
       core: ['coffee', 'cake', 'fridge', 'table'],
-      serve: [{ id: 'cold', t: 'نوشیدنی سرد و اسموتی', jobs: ['blend'] }, { id: 'juice', t: 'آبمیوهٔ تازه', jobs: ['juice'] },
-        { id: 'breakfast', t: 'صبحانه و ساندویچ', jobs: ['toast'] }, { id: 'waffle', t: 'وافل و دسر', jobs: ['waffle'] }] },
+      serve: [{ id: 'cold', t: 'اسموتی و شیک', jobs: ['blend', 'ice'] }, { id: 'iced', t: 'قهوه و نوشیدنی سرد', jobs: ['ice'] }, { id: 'juice', t: 'آبمیوهٔ تازه', jobs: ['juice'] },
+        { id: 'breakfast', t: 'صبحانه و ساندویچ گرم', jobs: ['toast'] }, { id: 'cold-sand', t: 'ساندویچ و پنینی', jobs: ['toast', 'slicer'] }, { id: 'waffle', t: 'وافل و دسر', jobs: ['waffle'] },
+        { id: 'bake', t: 'کیک و شیرینی پخت خودتان', jobs: ['oven', 'dough'] }, { id: 'pizza', t: 'پیتزای تک‌نفره', jobs: ['pizza', 'dough'] }] },
     { id: 'fastfood', t: 'فست‌فود', d: 'برگر، مرغ سوخاری، ساندویچ و سیب‌زمینی', sectors: ['فست‌فود'],
       core: ['fridge', 'table'],
-      serve: [{ id: 'burger', t: 'همبرگر', jobs: ['grill', 'burger', 'warm'] }, { id: 'chicken', t: 'مرغ سوخاری', jobs: ['marinate', 'fry', 'warm'] },
-        { id: 'fries', t: 'سیب‌زمینی سرخ‌کرده', jobs: ['fry', 'potato'] }, { id: 'sandwich', t: 'ساندویچ', jobs: ['toast'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['blend', 'ice'] }, { id: 'deli', t: 'سوسیس و کالباس', jobs: ['sausage', 'slicer'] }, { id: 'meat', t: 'آماده‌سازی گوشت', jobs: ['meatprep'] }] },
+      serve: [{ id: 'burger', t: 'همبرگر', jobs: ['grill', 'burger', 'warm'] }, { id: 'chicken', t: 'مرغ سوخاری', jobs: ['marinate', 'fry', 'warm'] }, { id: 'fries', t: 'سیب‌زمینی سرخ‌کرده', jobs: ['fry', 'potato'] },
+        { id: 'sandwich', t: 'ساندویچ گرم', jobs: ['toast'] }, { id: 'deli', t: 'سوسیس و کالباس', jobs: ['sausage', 'slicer'] }, { id: 'doner', t: 'کباب ترکی و شاورما', jobs: ['doner'] },
+        { id: 'pizza', t: 'پیتزا', jobs: ['pizza', 'dough'] }, { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'waffle', t: 'وافل و دسر', jobs: ['waffle'] },
+        { id: 'meat', t: 'آماده‌سازی گوشت و مرغ', jobs: ['meatprep', 'marinate'] }, { id: 'drinks', t: 'نوشیدنی و آبمیوه', jobs: ['blend', 'ice', 'juice'] }] },
     { id: 'restaurant', t: 'رستوران', d: 'غذای گرم، کباب و منوی متنوع', sectors: ['رستوران', 'کباب', 'ایرانی', 'بین‌الملل'],
       core: ['fridge', 'table', 'chop'],
-      serve: [{ id: 'grill', t: 'کباب و گریل', jobs: ['grill', 'doner'] }, { id: 'hot', t: 'غذای گرم و خورشت', jobs: ['stove', 'bain'] },
-        { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'fry', t: 'سرخ‌کردنی', jobs: ['fry'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['ice', 'blend'] }, { id: 'meat', t: 'آماده‌سازی گوشت و مرغ', jobs: ['marinate', 'meatprep'] }, { id: 'sandwich', t: 'ساندویچ و برگر', jobs: ['burger', 'toast', 'slicer'] }, { id: 'warm', t: 'گرم‌نگهداری و نمایش غذا', jobs: ['warm'] }] },
+      serve: [{ id: 'grill', t: 'کباب و گریل', jobs: ['grill', 'doner'] }, { id: 'hot', t: 'غذای گرم و خورشت', jobs: ['stove', 'bain'] }, { id: 'rice', t: 'پلو و غذای سرو روزانه', jobs: ['bain', 'warm'] },
+        { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'pizza', t: 'پیتزا', jobs: ['pizza', 'dough'] }, { id: 'fry', t: 'سرخ‌کردنی و پیش‌غذا', jobs: ['fry'] },
+        { id: 'meat', t: 'آماده‌سازی گوشت و مرغ', jobs: ['marinate', 'meatprep'] }, { id: 'sandwich', t: 'ساندویچ و برگر', jobs: ['burger', 'toast', 'slicer'] },
+        { id: 'bake', t: 'نان و شیرینی', jobs: ['oven', 'dough'] }, { id: 'dessert', t: 'کیک و دسر', jobs: ['cake', 'waffle'] }, { id: 'coffee', t: 'قهوه و چای', jobs: ['coffee'] },
+        { id: 'drinks', t: 'نوشیدنی و آبمیوه', jobs: ['ice', 'blend', 'juice'] }] },
     { id: 'pizza', t: 'پیتزا', d: 'پیتزا با فر مخصوص و خمیر تازه', sectors: ['فست‌فود', 'رستوران'],
       core: ['pizza', 'dough', 'topping', 'fridge'],
-      serve: [{ id: 'sheet', t: 'خمیر هم‌اندازه و سریع', jobs: ['sheeter'] }, { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'fry', t: 'پیش‌غذای سرخ‌شده', jobs: ['fry'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['ice', 'blend'] }] },
+      serve: [{ id: 'sheet', t: 'خمیر هم‌اندازه و سریع', jobs: ['sheeter'] }, { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'fry', t: 'پیش‌غذای سرخ‌شده', jobs: ['fry'] },
+        { id: 'sandwich', t: 'ساندویچ و برگر', jobs: ['burger', 'grill', 'toast'] }, { id: 'deli', t: 'سوسیس و کالباس رویهٔ پیتزا', jobs: ['sausage', 'slicer'] }, { id: 'veg', t: 'سالاد و سبزی تازه', jobs: ['chop'] },
+        { id: 'warm', t: 'گرم‌نگهداری و نمایش', jobs: ['warm'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['ice', 'blend'] }] },
     { id: 'bakery', t: 'شیرینی و نانوایی', d: 'خمیر، پخت و ویترین', sectors: ['نانوایی', 'شیرینی'],
       core: ['oven', 'dough', 'cake', 'table'],
-      serve: [{ id: 'sheet', t: 'نان و خمیر پهن', jobs: ['sheeter'] }, { id: 'breakfast', t: 'صبحانه', jobs: ['toast'] }, { id: 'coffee', t: 'قهوه و چای', jobs: ['coffee'] }] },
+      serve: [{ id: 'sheet', t: 'نان و خمیر پهن', jobs: ['sheeter'] }, { id: 'breakfast', t: 'صبحانه و ساندویچ', jobs: ['toast'] }, { id: 'coffee', t: 'قهوه و چای', jobs: ['coffee'] },
+        { id: 'waffle', t: 'وافل و دسر', jobs: ['waffle'] }, { id: 'cold', t: 'نوشیدنی سرد', jobs: ['blend', 'ice'] }, { id: 'pizza', t: 'پیتزا و نان‌های پرشده', jobs: ['pizza'] }] },
     { id: 'juice', t: 'آبمیوه و نوشیدنی', d: 'آبمیوه، اسموتی و نوشیدنی سرد', sectors: ['آبمیوه سنتی', 'کافه'],
       core: ['blend', 'ice', 'fridge'],
-      serve: [{ id: 'fresh', t: 'آبمیوهٔ طبیعی', jobs: ['juice'] }, { id: 'coffee', t: 'قهوه و چای', jobs: ['coffee'] }, { id: 'cake', t: 'کیک و شیرینی', jobs: ['cake'] }] }
+      serve: [{ id: 'fresh', t: 'آبمیوهٔ طبیعی', jobs: ['juice'] }, { id: 'coffee', t: 'قهوه و چای', jobs: ['coffee'] }, { id: 'cake', t: 'کیک و شیرینی', jobs: ['cake'] },
+        { id: 'breakfast', t: 'صبحانه و ساندویچ', jobs: ['toast'] }, { id: 'waffle', t: 'وافل و دسر', jobs: ['waffle'] }, { id: 'veg', t: 'سالاد میوه و خردکردن', jobs: ['chop'] }] }
   ];
   var CONCEPT_ICON = {
     cafe: '<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 10h1.5a2.5 2.5 0 0 1 0 5H17M7 3v2M11 3v2"/>',
@@ -81,7 +91,7 @@
     juice: '<path d="M7 4h10l-1 16H8zM8 9h8M14 4l2-2"/>'
   };
 
-  var S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', energy: 'any', brand: 'any', serve: [], pick: {}, removed: [], qty: {} };   // q: the question on screen; ans: which questions the visitor has answered
+  var S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', space: 1, serve: [], pick: {}, removed: [], qty: {} };   // q: the question on screen; ans: which questions the visitor has answered
   var TIERS = {}, TIERS_ON = false;   // product id -> 'eco' | 'mid' | 'pro' (assets/product-tiers.json, optional)
   var TIER_RANK = { eco: 0, mid: 1, pro: 2 }, TIER_WORD = { 'اقتصادی': 'eco', 'متعادل': 'mid', 'حرفه‌ای': 'pro', 'حرفه ای': 'pro', eco: 'eco', mid: 'mid', pro: 'pro' };
   try { var saved = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); if (saved && saved.concept) S = Object.assign(S, saved); } catch (e) { /* ignore */ }
@@ -114,18 +124,10 @@
     return r == null ? 1 : Math.abs(r - TIER_RANK[S.budget]);
   }
   function sectorHit(it, secs) { return (it.sec || []).some(function (x) { return secs.indexOf(x) >= 0; }); }
-  // energy the product runs on, from its specs: 'gas', 'electric', 'both', or '' when the catalog does not say
-  function energyOf(it) {
-    var t = (it.specs || []).filter(function (s) { return s[0] === 'نوع سوخت' || s[0] === 'نوع انرژی'; }).map(function (s) { return s[1]; }).join(' ');
-    var g = /گاز/.test(t), e = /برق/.test(t);
-    return g && e ? 'both' : g ? 'gas' : e ? 'electric' : '';
-  }
-  // a preference, not a filter: the wanted energy and brand come first, unknown next, the others last, so no job is left empty
-  function energyRank(it) {
-    if (S.energy === 'any') return 0;
-    var e = energyOf(it); return e === 'both' || e === S.energy ? 0 : e ? 2 : 1;
-  }
-  function brandRank(it) { return S.brand === 'any' || it.src === S.brand ? 0 : 1; }
+  // the space a machine needs on the floor (length x width, cm2); a machine too big for the room is chosen only when nothing smaller exists
+  var SPACES = [{ id: 0, t: 'کوچک', d: 'تا حدود ۱۵ متر مربع', cap: 6000, area: 15 }, { id: 1, t: 'متوسط', d: 'حدود ۱۵ تا ۴۰ متر مربع', cap: 10000, area: 40 }, { id: 2, t: 'بزرگ', d: 'بیش از ۴۰ متر مربع', cap: 1e9, area: 80 }];
+  function footprint(it) { return it.dims ? (it.dims.l || 0) * (it.dims.w || 0) : 0; }
+  function spaceRank(it) { var f = footprint(it); return f && f > SPACES[S.space].cap ? 1 : 0; }
   function candidates(job, cid) {
     var cats = JOBS[job].cats.map(nz), secs = conceptOf(cid || S.concept).sectors;
     var list = CAT.items.filter(function (it) { return cats.indexOf(nz(it.cat)) >= 0 && !(window.MSStatus && window.MSStatus.retired(it.id)) && !PUBRET[it.id]; });
@@ -133,7 +135,7 @@
     list.sort(function (a, b) {
       var ia = cats.indexOf(nz(a.cat)) - cats.indexOf(nz(b.cat));
       if (ia) return ia;
-      return brandRank(a) - brandRank(b) || energyRank(a) - energyRank(b) || (sectorHit(a, secs) ? 0 : 1) - (sectorHit(b, secs) ? 0 : 1) || tierDist(a) - tierDist(b) || fp(a) - fp(b);
+      return spaceRank(a) - spaceRank(b) || (sectorHit(a, secs) ? 0 : 1) - (sectorHit(b, secs) ? 0 : 1) || tierDist(a) - tierDist(b) || fp(a) - fp(b);
     });
     return list;
   }
@@ -143,7 +145,7 @@
     if (!cands.length) return null;
     if (!cid && S.pick[job] && BY[S.pick[job]]) return BY[S.pick[job]];
     var secs = conceptOf(cid || S.concept).sectors, f = cands[0];
-    var same = function (it) { return nz(it.cat) === nz(f.cat) && brandRank(it) === brandRank(f) && energyRank(it) === energyRank(f) && tierDist(it) === tierDist(f); };
+    var same = function (it) { return nz(it.cat) === nz(f.cat) && spaceRank(it) === spaceRank(f) && tierDist(it) === tierDist(f); };
     var group = cands.filter(function (it) { return same(it) && sectorHit(it, secs) === sectorHit(f, secs); });
     if (group.length < 3) group = cands.filter(same);
     if (!group.length) group = cands;
@@ -154,7 +156,7 @@
 
   // ---- views
   // the questions come one at a time; the plan is built only after all of them are answered
-  function qList() { return ['size'].concat(TIERS_ON ? ['budget'] : [], ['energy', 'brand', 'serve']); }
+  function qList() { return ['size'].concat(TIERS_ON ? ['budget'] : [], ['space', 'serve']); }
   function answered(k) { return k === 'serve' ? S.serve.length > 0 : !!(S.ans && S.ans[k]); }
   function firstOpen() { var l = qList(); for (var i = 0; i < l.length; i++) if (!answered(l[i])) return i; return -1; }
   var IC_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>';
@@ -162,7 +164,7 @@
   var IC_TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
   // pos: how many steps are behind the visitor; the bar never reaches the end until the request is sent
   function progress(pos, label) {
-    var total = qList().length + 2 + (PUBLIC ? 1 : 0), pct = Math.round(pos / total * 100);
+    var total = qList().length + 2 + 1, pct = Math.round(pos / total * 100);
     return '<div class="pl-top">' + (pos > 0 ? '<button type="button" class="pl-ic back" data-back aria-label="بازگشت" title="بازگشت">' + IC_BACK + '</button>' : '') +
       '<div class="pl-prog" role="progressbar" aria-label="پیشرفت" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div><span class="pl-pl">' + label + '</span></div>';
   }
@@ -194,21 +196,17 @@
   function stepQuestions() {
     var c = conceptOf(S.concept), l = qList(), n = l.length, k = l[S.q] || l[0], body = '';
     if (k === 'size') {
-      body = '<h2 class="pl-q">اندازهٔ کار شما؟</h2><div class="pl-seg" role="radiogroup" aria-label="اندازه">' + SIZES.map(function (z) {
+      body = '<h2 class="pl-q">چند مشتری را هم‌زمان پذیرایی می‌کنید؟</h2><div class="pl-seg" role="radiogroup" aria-label="اندازه">' + SIZES.map(function (z) {
         return '<button type="button" role="radio" class="pl-opt" data-size="' + z.id + '" aria-checked="' + (!!S.ans.size && S.size === z.id) + '"><b>' + z.t + '</b><small>' + z.d + '</small></button>';
       }).join('') + '</div>';
     } else if (k === 'budget') {
       body = '<h2 class="pl-q">سطح بودجه؟</h2><div class="pl-seg" role="radiogroup" aria-label="سطح بودجه">' + [['eco', 'اقتصادی', 'ساده و مقرون‌به‌صرفه'], ['mid', 'متعادل', 'تعادل قیمت و کیفیت'], ['pro', 'حرفه‌ای', 'بالاترین دوام و ظرفیت']].map(function (b) {
         return '<button type="button" role="radio" class="pl-opt" data-budget="' + b[0] + '" aria-checked="' + (!!S.ans.budget && S.budget === b[0]) + '"><b>' + b[1] + '</b><small>' + b[2] + '</small></button>';
       }).join('') + '</div>';
-    } else if (k === 'energy') {
-      body = '<h2 class="pl-q">دستگاه‌های پخت با چه انرژی کار کنند؟</h2><div class="pl-seg" role="radiogroup" aria-label="انرژی">' + [['any', 'فرقی نمی‌کند', 'بهترین گزینه را پیشنهاد دهید'], ['gas', 'گازی', 'گاز شهری یا گاز مایع'], ['electric', 'برقی', 'بدون نیاز به لولهٔ گاز']].map(function (b) {
-        return '<button type="button" role="radio" class="pl-opt" data-energy="' + b[0] + '" aria-checked="' + (!!S.ans.energy && S.energy === b[0]) + '"><b>' + b[1] + '</b><small>' + b[2] + '</small></button>';
-      }).join('') + '</div><p class="pl-note">برای همهٔ دستگاه‌ها انرژی در کاتالوگ ثبت نشده؛ کارشناس فروش در تماس آن را با شما نهایی می‌کند.</p>';
-    } else if (k === 'brand') {
-      body = '<h2 class="pl-q">برند ترجیحی دارید؟</h2><div class="pl-seg" role="radiogroup" aria-label="برند">' + [['any', 'فرقی نمی‌کند', 'از همهٔ برندها'], ['max-silver', BRAND['max-silver'], 'محصولات مکث‌سیلور'], ['wintora', BRAND.wintora, 'محصولات وینتورا'], ['torbo-max', BRAND['torbo-max'], 'محصولات توربومکس']].map(function (b) {
-        return '<button type="button" role="radio" class="pl-opt" data-brand="' + b[0] + '" aria-checked="' + (!!S.ans.brand && S.brand === b[0]) + '"><b>' + b[1] + '</b><small>' + b[2] + '</small></button>';
-      }).join('') + '</div>';
+    } else if (k === 'space') {
+      body = '<h2 class="pl-q">فضای کار شما چقدر است؟</h2><div class="pl-seg" role="radiogroup" aria-label="فضا">' + SPACES.map(function (z) {
+        return '<button type="button" role="radio" class="pl-opt" data-space="' + z.id + '" aria-checked="' + (!!S.ans.space && S.space === z.id) + '"><b>' + z.t + '</b><small>' + z.d + '</small></button>';
+      }).join('') + '</div><p class="pl-note">فضای آشپزخانه و محل کار، بدون سالن. برای فضای کم، دستگاه‌های کوچک‌تر ترجیح داده می‌شوند.</p>';
     } else {
       body = '<h2 class="pl-q">چه چیزهایی سرو می‌کنید؟ <small>هر چند تا که می‌خواهید</small></h2><div class="pl-chips">' + c.serve.map(function (s) {
         return '<button type="button" class="pl-chip" data-serve="' + s.id + '" aria-pressed="' + (S.serve.indexOf(s.id) >= 0) + '">' + s.t + '</button>';
@@ -238,15 +236,16 @@
   function stepPlan() {
     var c = conceptOf(S.concept), jobs = plan(), live = jobs.filter(function (j) { return S.removed.indexOf(j.id) < 0 && pickFor(j.id); });
     var machines = live.reduce(function (a, j) { return a + qtyFor(j.id); }, 0);
+    var area = live.reduce(function (a, j) { var p = pickFor(j.id); return a + (p ? footprint(p) * qtyFor(j.id) : 0); }, 0) / 10000, room = SPACES[S.space].area, tight = area > room * 0.4;
     var zones = ZONES.map(function (z) {
       var list = jobs.filter(function (j) { return JOBS[j.id].zone === z[0]; });
       return list.length ? '<section class="pl-zone"><h3>' + z[1] + '</h3><ul class="pl-jobs">' + list.map(jobCard).join('') + '</ul></section>' : '';
     }).join('');
     return progress(1 + qList().length, 'بررسی طرح') + '<h1>طرح پیشنهادی برای ' + c.t + ' ' + SIZES[S.size].t + '</h1>' +
       '<p class="pl-lead">برای هر کار یک دستگاه پیشنهاد شده. هرکدام را می‌توانید با نمونهٔ مشابه عوض یا حذف کنید. موارد «تکمیل‌کننده» چیزهایی است که معمولاً فراموش می‌شود.</p>' +
-      '<div class="pl-sum"><span><b>' + faInt.format(live.length) + '</b> کار</span><span><b>' + faInt.format(machines) + '</b> دستگاه</span></div>' + zones +
-      '<div class="pl-bar"><button type="button" class="pl-btn primary" ' + (PUBLIC ? 'data-request' : 'data-toinv') + (live.length ? '' : ' disabled') + '>' + (PUBLIC ? 'ارسال درخواست به کارشناس' : 'افزودن به پیش‌فاکتور') + '</button></div>' +
-      '<p class="pl-note">' + (PUBLIC ? 'این طرح قیمت ندارد. پس از ثبت درخواست، کارشناس فروش با شما تماس می‌گیرد و قیمت و شرایط را اعلام می‌کند.' : 'قیمت و مشخصات فنی را بعد از نهایی‌شدن طرح، کارشناس فروش با شما مرور می‌کند.') + '</p>';
+      '<div class="pl-sum"><span><b>' + faInt.format(live.length) + '</b> کار</span><span><b>' + faInt.format(machines) + '</b> دستگاه</span><span><b>' + faInt.format(Math.round(area * 10) / 10) + '</b> متر مربع زیر دستگاه‌ها</span></div>' + (tight ? '<p class="pl-warn">دستگاه‌های این طرح برای فضای انتخابی شما کمی زیاد است؛ بدون رفت‌وآمد و تهویه جا نمی‌ماند. چند مورد را حذف یا با نمونهٔ کوچک‌تر عوض کنید.</p>' : '<p class="pl-note">فضای رفت‌وآمد، تهویه و فاصلهٔ ایمنی را جدا از این مقدار در نظر بگیرید.</p>') + zones +
+      '<div class="pl-bar"><button type="button" class="pl-btn primary" ' + (PUBLIC ? 'data-request' : 'data-toinv') + (live.length ? '' : ' disabled') + '>' + (PUBLIC ? 'ارسال درخواست به کارشناس' : 'ادامه و ارسال پیش‌فاکتور') + '</button></div>' +
+      '<p class="pl-note">' + (PUBLIC ? 'این طرح قیمت ندارد. پس از ثبت درخواست، کارشناس فروش با شما تماس می‌گیرد و قیمت و شرایط را اعلام می‌کند.' : 'در مرحلهٔ بعد مشخصات مشتری را می‌نویسید و پیش‌فاکتور برای اکانت منیجر ارسال می‌شود.') + '</p>';
   }
   // ---- public side: the request form and, after sending, the Chef Market sheet
   var F = { self: true }, DONE = null, SENT = '', FORM_AT = 0, REQ_BUSY = false, ERR = {}, ERR_ALL = '';
@@ -296,6 +295,24 @@
       '<p class="pl-note">اطلاعات شما فقط برای تماس و پیگیری خرید در اختیار کارشناس فروش قرار می‌گیرد.</p>' +
       '<div class="pl-bar"><button type="button" class="pl-btn primary" data-send' + (REQ_BUSY ? ' disabled' : '') + '>' + (REQ_BUSY ? 'در حال ارسال…' : 'ارسال درخواست') + '</button></div></form>';
   }
+  // signed-in side: who the proforma is for, then it goes to the catalog's proforma sheet to be sent to the account manager
+  function stepSend() {
+    var lines = requestLines(), c = conceptOf(S.concept);
+    return progress(2 + qList().length, 'مشتری و ارسال') + '<h1>پیش‌فاکتور برای اکانت منیجر</h1><p class="pl-lead">مشخصات مشتری را بنویسید. طرح به پیش‌فاکتور تبدیل می‌شود و با یک ضربه برای اکانت منیجر ارسال می‌شود.</p>' +
+      '<section class="pl-req"><h3>طرح: ' + esc(c.t) + ' ' + SIZES[S.size].t + '</h3><ul class="pl-rl">' + lines.map(function (l) { return '<li><b>' + esc(l.name) + '</b><span>' + (l.brand ? esc(l.brand) + SEP : '') + faInt.format(l.qty) + ' عدد</span></li>'; }).join('') + '</ul></section>' +
+      '<form class="pl-form" novalidate>' + (ERR_ALL ? '<p class="pl-err" role="alert">' + esc(ERR_ALL) + '</p>' : '') + '<div class="pl-grid">' +
+      field('cName', 'نام مشتری', { wide: true, max: 80 }) + field('cPhone', 'موبایل مشتری', { mode: 'numeric', dir: 'ltr', max: 14 }) + field('cCity', 'شهر', { max: 40 }) + field('cAddr', 'نشانی (اختیاری)', { wide: true, max: 300 }) + '</div>' +
+      '<div class="pl-bar"><button type="button" class="pl-btn primary" data-sendinv>ساخت پیش‌فاکتور و ادامه</button></div></form>';
+  }
+  function sendInv() {
+    readForm();
+    var name = String(F.cName || '').replace(/s+/g, ' ').trim(), e = {};
+    if (name.length < 3) e.cName = 'نام مشتری را کامل بنویسید.';
+    if (F.cPhone && !window.MSRequests.validPhone(F.cPhone)) e.cPhone = 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد.';
+    ERR = e; ERR_ALL = Object.keys(e).length ? 'چند مورد را اصلاح کنید.' : '';
+    if (ERR_ALL) { render(); var bad = root.querySelector('.pl-f.bad input'); if (bad) bad.focus(); return; }
+    toProforma({ customer: name, custPhone: F.cPhone ? window.MSRequests.phone(F.cPhone) : '', custCity: String(F.cCity || '').trim(), custAddr: String(F.cAddr || '').trim() });
+  }
   function sheetHelpers() { var f = new Intl.NumberFormat('fa-IR'); return { esc: esc, faInt: f, fa: f, fa0: function (s) { return s; }, money: function () { return ''; }, numWords: function () { return ''; }, totals: function () { return {}; }, payPrint: function () { return ''; } }; }
   function stepDone() {
     var d = DONE, j = window.MSEvents ? window.MSEvents.toJ(new Date()) : null, date = j ? j.jy + '/' + (j.jm < 10 ? '0' : '') + j.jm + '/' + (j.jd < 10 ? '0' : '') + j.jd : '';
@@ -324,9 +341,14 @@
   function fixErr(e) { if (F.city === OTHER && e.city) { e.cityOther = 'نام شهر را بنویسید.'; delete e.city; } return e; }
   // checks one field when the visitor leaves it, and updates only that field so what is being typed elsewhere is not disturbed
   function checkField(name) {
-    if (!/^(name|phone|nid|province|city|cityOther|zip|address|rName|rNid|rPhone)$/.test(name)) return;
+    if (!/^(name|phone|nid|province|city|cityOther|zip|address|rName|rNid|rPhone|cName|cPhone)$/.test(name)) return;
     readForm();
-    var r = window.MSRequests.check(formData()), e = fixErr(r.errors), lab = root.querySelector('[name="' + name + '"]');
+    var e, lab = root.querySelector('[name="' + name + '"]');
+    if (name === 'cName' || name === 'cPhone') {
+      e = {};
+      if (name === 'cName' && String(F.cName || '').trim().length < 3) e.cName = 'نام مشتری را کامل بنویسید.';
+      if (name === 'cPhone' && F.cPhone && !window.MSRequests.validPhone(F.cPhone)) e.cPhone = 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد.';
+    } else e = fixErr(window.MSRequests.check(formData()).errors);
     lab = lab && lab.closest('label'); if (!lab) return;
     if (e[name]) ERR[name] = e[name]; else delete ERR[name];
     var old = lab.querySelector('.pl-fe'); if (old) old.remove();
@@ -381,6 +403,7 @@
     if (S.step === 1 && S.q >= qList().length) S.q = qList().length - 1;
     if (PUBLIC && DONE) root.innerHTML = stepDone();
     else if (PUBLIC && S.step === 3 && S.concept) root.innerHTML = stepRequest();
+    else if (!PUBLIC && S.step === 4 && S.concept) root.innerHTML = stepSend();
     else if (S.step === 2 && S.concept) root.innerHTML = stepPlan();
     else if (S.step === 1 && S.concept) root.innerHTML = stepQuestions();
     else root.innerHTML = stepConcept();
@@ -415,18 +438,19 @@
   }
 
   // ---- put the plan into the proforma draft and open the catalog
-  function toProforma() {
+  function toProforma(cust) {
     var jobs = plan().filter(function (j) { return S.removed.indexOf(j.id) < 0 && pickFor(j.id); });
     var key = 'ms-proforma-v1', inv = null;
     try { inv = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { /* ignore */ }
     if (!inv || typeof inv !== 'object') inv = { lines: [], unit: 'تومان', docNo: '', issuer: '', customer: '', custCity: '', custPhone: '', custAddr: '', discount: 0, discMode: 'pct', tax: 10, pay: { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false } };
     inv.lines = inv.lines || [];
+    if (cust) Object.keys(cust).forEach(function (k) { inv[k] = cust[k]; });
     jobs.forEach(function (j) {
       var p = pickFor(j.id), q = qtyFor(j.id), l = inv.lines.filter(function (x) { return x.id === p.id; })[0];
       if (l) l.qty = (l.qty || 0) + q; else inv.lines.push({ id: p.id, qty: q, price: 0 });
     });
     try { localStorage.setItem(key, JSON.stringify(inv)); } catch (e) { /* ignore */ }
-    location.href = './product-catalog.html';
+    location.href = './product-catalog.html' + (cust ? '#proforma' : '');
   }
 
   // a single-choice answer moves on by itself after a short moment, so the visitor sees what was chosen
@@ -437,14 +461,14 @@
     var t;
     if ((t = e.target.closest('[data-concept]'))) { S.concept = t.getAttribute('data-concept'); S.serve = []; S.pick = {}; S.removed = []; S.qty = {}; S.ans = {}; S.q = 0; S.step = 1; save(); render(); window.scrollTo(0, 0); return; }
     if ((t = e.target.closest('[data-budget]'))) { S.budget = t.getAttribute('data-budget'); S.ans.budget = true; S.pick = {}; save(); render(); nextQuestion('budget'); return; }
-    if ((t = e.target.closest('[data-energy]'))) { S.energy = t.getAttribute('data-energy'); S.ans.energy = true; S.pick = {}; save(); render(); nextQuestion('energy'); return; }
-    if ((t = e.target.closest('[data-brand]'))) { S.brand = t.getAttribute('data-brand'); S.ans.brand = true; S.pick = {}; save(); render(); nextQuestion('brand'); return; }
+    if ((t = e.target.closest('[data-space]'))) { S.space = Number(t.getAttribute('data-space')); S.ans.space = true; S.pick = {}; save(); render(); nextQuestion('space'); return; }
     if ((t = e.target.closest('[data-size]'))) { S.size = Number(t.getAttribute('data-size')); S.ans.size = true; S.qty = {}; S.pick = {}; save(); render(); nextQuestion('size'); return; }
     if ((t = e.target.closest('[data-serve]'))) { var id = t.getAttribute('data-serve'), i = S.serve.indexOf(id); if (i >= 0) S.serve.splice(i, 1); else S.serve.push(id); save(); render(); return; }
     if (e.target.closest('[data-plan]')) { S.step = 2; save(); render(); window.scrollTo(0, 0); return; }
     if (e.target.closest('[data-back]')) {
       if (S.step === 1) { if (S.q > 0) S.q--; else S.step = 0; }
       else if (S.step === 2) { S.step = 1; S.q = qList().length - 1; }
+      else if (S.step === 4) S.step = 2;
       else S.step = Math.max(0, S.step - 1);
       save(); render(); window.scrollTo(0, 0); return;
     }
@@ -455,12 +479,13 @@
     if ((t = e.target.closest('[data-swap]'))) { swapDialog(t.getAttribute('data-swap')); return; }
     if ((t = e.target.closest('[data-pickprod]'))) { S.pick[t.getAttribute('data-job')] = t.getAttribute('data-pickprod'); save(); dlg.close(); render(); return; }
     if ((t = e.target.closest('[data-info]'))) { infoDialog(t.getAttribute('data-info')); return; }
-    if (e.target.closest('[data-toinv]')) { toProforma(); return; }
+    if (e.target.closest('[data-toinv]')) { S.step = 4; save(); ERR = {}; ERR_ALL = ''; render(); window.scrollTo(0, 0); return; }
+    if (e.target.closest('[data-sendinv]')) { sendInv(); return; }
     if (e.target.closest('[data-request]')) { S.step = 3; save(); ERR = {}; ERR_ALL = ''; FORM_AT = Date.now(); render(); window.scrollTo(0, 0); return; }
     if ((t = e.target.closest('[data-recv]'))) { readForm(); F.self = t.getAttribute('data-recv') === 'self'; ERR = {}; render(); return; }
     if (e.target.closest('[data-send]')) { sendRequest(); return; }
     if (e.target.closest('[data-print]')) { window.print(); return; }
-    if (e.target.closest('[data-newplan]')) { DONE = null; S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', energy: 'any', brand: 'any', serve: [], pick: {}, removed: [], qty: {} }; save(); render(); window.scrollTo(0, 0); return; }
+    if (e.target.closest('[data-newplan]')) { DONE = null; S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', space: 1, serve: [], pick: {}, removed: [], qty: {} }; save(); render(); window.scrollTo(0, 0); return; }
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
   });
 

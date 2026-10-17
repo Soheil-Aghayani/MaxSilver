@@ -340,3 +340,8 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .bt-n{white-space:nowrap}
 .bt[aria-pressed=true]{border-inline-start-color:var(--c)}
 .bt[aria-pressed=true][data-brand=all]{border-inline-start-color:var(--ms-gold)}
+/* filters: the whole name is always readable (it wraps instead of being cut with «…») */
+.cs-btn{flex:1 1 auto;min-width:170px;max-width:none;height:auto;padding-block:8px;font-family:inherit}
+.cs-label{overflow:visible;text-overflow:clip;white-space:normal;line-height:1.5}
+.cs-list{max-width:min(360px,92vw)}
+.cs-list li{font-family:inherit;white-space:normal}

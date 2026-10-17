@@ -79,7 +79,7 @@
 
   function errText(e) {
     var c = e && e.code || '';
-    if (/operation-not-allowed|admin-restricted/.test(c)) return 'ثبت درخواست هنوز فعال نشده است. لطفاً با فروش تماس بگیرید.';
+    if (/operation-not-allowed|admin-restricted/.test(c)) return 'ثبت درخواست هنوز فعال نشده است. لطفاً با فروش تماس بگیرید. (' + c + ')';
     if (/network|unavailable|timeout/.test(c)) return 'اتصال برقرار نشد. اینترنت (یا VPN) را بررسی و دوباره تلاش کنید.';
     if (/permission-denied/.test(c)) return 'درخواست پذیرفته نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.';
     return 'ثبت درخواست انجام نشد (' + (c || (e && e.message) || 'خطای نامشخص') + ').';

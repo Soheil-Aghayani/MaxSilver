@@ -1031,7 +1031,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261270', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261271', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }
@@ -1039,5 +1039,7 @@
     trayRender();
     ['catGroup', 'catSector', 'catSort'].forEach(function (id) { enhance($(id)); });
     apply();
+    // coming from the business planner: open the proforma sheet that was just filled in, ready to send to the account manager
+    if (location.hash === '#proforma' && inv.lines.length) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ } invoiceView(); }
   }).catch(function () { $('catEmpty').hidden = false; });
 })();

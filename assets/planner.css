@@ -162,3 +162,6 @@
 @keyframes pl-rot{to{transform:rotate(360deg)}}
 @keyframes pl-beat{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 @media(prefers-reduced-motion:reduce){.pl-spin i,.pl-spin img{animation:none}}
+.pl-warn{margin:0;padding:10px 14px;border-radius:14px;background:#fff6e0;color:#7a4b00;font-size:13px;font-weight:700;line-height:1.9}
+.pl-f select,.pl-f select option,.pl-f input,.pl-f textarea{font-family:Estedad,Tahoma,sans-serif}
+.pl-f select{appearance:auto}
