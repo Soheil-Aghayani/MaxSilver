@@ -267,9 +267,18 @@ service cloud.firestore {
     function ten(s) { return s is string && s.matches('[0-9]{10}'); }
     function mobile(s) { return s is string && s.matches('09[0-9]{9}'); }
     function salesLead() { return hasRole(['manager', 'ceo', 'sales_manager']); }
+    // the day's request number, taken by the visitor's browser in the same transaction as the request: CON-TEH-051025-001
+    match /request_counters/{day} {
+      allow read: if signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+      allow create: if signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous' && day.matches('[0-9]{6}')
+        && request.resource.data.keys().hasOnly(['n']) && request.resource.data.n == 1;
+      allow update: if signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.resource.data.keys().hasOnly(['n']) && request.resource.data.n == resource.data.n + 1;
+      allow delete: if false;
+    }
     match /requests/{id} {
       allow create: if signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous'
-        && id.matches('CM-[0-9]{6}-[A-Z0-9]{4}')
+        && id.matches('CON-[A-Z]{3}-[0-9]{6}-[0-9]{3,5}')
         && request.resource.data.keys().hasOnly(['code', 'createdAt', 'status', 'route', 'customer', 'receiver', 'lines', 'plan', 'note', 'src'])
         && request.resource.data.code == id && request.resource.data.createdAt is number
         && request.resource.data.status == 'new' && request.resource.data.route == 'call'

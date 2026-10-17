@@ -22,15 +22,36 @@
   function validZip(s) { return /^\d{10}$/.test(digits(s)); }
   function text(s, max) { return String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); }
 
-  // CM-yymmdd-XXXX (Jalali date, four letters or digits without look-alikes)
-  function newCode() {
-    var j = window.MSEvents ? window.MSEvents.toJ(new Date()) : { jy: 1405, jm: 1, jd: 1 }, p = function (n) { return (n < 10 ? '0' : '') + n; };
-    var abc = '23456789ABCDEFGHJKMNPQRSTUVWXYZ', s = '', buf = new Uint32Array(4), i;
-    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(buf); else for (i = 0; i < 4; i++) buf[i] = Math.floor(Math.random() * 4294967296);
-    for (i = 0; i < 4; i++) s += abc.charAt(buf[i] % abc.length);
-    return 'CM-' + p(j.jy % 100) + p(j.jm) + p(j.jd) + '-' + s;
+  // Request code: CON-<first three letters of the delivery city>-<Jalali yymmdd>-<number of the day>, e.g. CON-TEH-051025-001.
+  // CON = consumer. The number is the day's counter (request_counters/<yymmdd>), taken in the same transaction that writes the request.
+  var CITIES = {
+    'تهران': 'TEH', 'مشهد': 'MAS', 'اصفهان': 'ISF', 'کرج': 'KAR', 'شیراز': 'SHI', 'تبریز': 'TAB', 'قم': 'QOM', 'اهواز': 'AHV', 'کرمانشاه': 'KER', 'ارومیه': 'URM',
+    'رشت': 'RAS', 'زاهدان': 'ZAH', 'کرمان': 'KER', 'همدان': 'HAM', 'یزد': 'YAZ', 'اردبیل': 'ARD', 'بندرعباس': 'BAN', 'اراک': 'ARA', 'زنجان': 'ZAN', 'سنندج': 'SAN',
+    'قزوین': 'QAZ', 'گرگان': 'GOR', 'ساری': 'SAR', 'خرم‌آباد': 'KHO', 'خرم آباد': 'KHO', 'بجنورد': 'BOJ', 'بیرجند': 'BIR', 'بوشهر': 'BUS', 'ایلام': 'ILA', 'شهرکرد': 'SHA',
+    'یاسوج': 'YAS', 'سمنان': 'SEM', 'اسلامشهر': 'ESL', 'قدس': 'QOD', 'ورامین': 'VAR', 'دزفول': 'DEZ', 'آبادان': 'ABA', 'خرمشهر': 'KHO', 'ایرانشهر': 'IRA', 'نیشابور': 'NEY',
+    'سبزوار': 'SAB', 'کاشان': 'KAS', 'قائمشهر': 'QAE', 'بابل': 'BAB', 'آمل': 'AMO', 'سیرجان': 'SIR', 'بروجرد': 'BOR', 'ساوه': 'SAV', 'مرودشت': 'MAR', 'کیش': 'KIS',
+    'قشم': 'QES', 'گنبد': 'GON', 'گنبدکاووس': 'GON', 'مهاباد': 'MAH', 'خوی': 'KHO', 'ملایر': 'MAL', 'شاهرود': 'SHA', 'رفسنجان': 'RAF', 'ماهشهر': 'MAH', 'بوکان': 'BUK',
+    'نجف‌آباد': 'NAJ', 'نجف آباد': 'NAJ', 'شهریار': 'SHA', 'پردیس': 'PAR', 'پاکدشت': 'PAK', 'رباط‌کریم': 'RAB', 'ملارد': 'MAL', 'فردیس': 'FAR', 'لاهیجان': 'LAH', 'انزلی': 'ANZ',
+    'بندرانزلی': 'ANZ', 'چابهار': 'CHA', 'اسفراین': 'ESF', 'دماوند': 'DAM', 'نوشهر': 'NOS', 'چالوس': 'CHA', 'مراغه': 'MAR', 'میانه': 'MIA', 'سقز': 'SAG', 'بانه': 'BAN'
+  };
+  var LETTER = { 'ا': 'A', 'آ': 'A', 'ب': 'B', 'پ': 'P', 'ت': 'T', 'ث': 'S', 'ج': 'J', 'چ': 'C', 'ح': 'H', 'خ': 'K', 'د': 'D', 'ذ': 'Z', 'ر': 'R', 'ز': 'Z', 'ژ': 'J', 'س': 'S', 'ش': 'S', 'ص': 'S', 'ض': 'Z', 'ط': 'T', 'ظ': 'Z', 'ع': 'A', 'غ': 'G', 'ف': 'F', 'ق': 'Q', 'ک': 'K', 'گ': 'G', 'ل': 'L', 'م': 'M', 'ن': 'N', 'و': 'V', 'ه': 'H', 'ی': 'Y', 'ئ': 'Y', 'ء': 'A', 'ة': 'H', 'ؤ': 'V', 'أ': 'A', 'إ': 'A' };
+  function cityKey(s) { return String(s || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[‌‏‎]/g, '').replace(/\s+/g, '').replace(/[^\u0600-\u06FFA-Za-z]/g, ''); }
+  var CITY_MAP = {}; Object.keys(CITIES).forEach(function (k) { CITY_MAP[cityKey(k)] = CITIES[k]; });
+  // three Latin letters for a city name typed in Persian (a known city, or the first three letters transliterated), XXX when there is nothing to use
+  function cityCode(city) {
+    var k = cityKey(city); if (!k) return 'XXX';
+    if (/^[A-Za-z]+$/.test(k)) return (k + 'XXX').slice(0, 3).toUpperCase();
+    if (CITY_MAP[k]) return CITY_MAP[k];
+    var best = ''; Object.keys(CITY_MAP).forEach(function (c) { if (k.indexOf(c) === 0 && c.length > best.length) best = c; });   // «تهران پارس» -> تهران
+    if (best) return CITY_MAP[best];
+    var s = ''; for (var i = 0; i < k.length && s.length < 3; i++) s += LETTER[k.charAt(i)] || '';
+    return (s + 'XXX').slice(0, 3);
   }
-
+  function dayStamp() {
+    var j = window.MSEvents ? window.MSEvents.toJ(new Date()) : { jy: 1405, jm: 1, jd: 1 }, p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return p(j.jy % 100) + p(j.jm) + p(j.jd);
+  }
+  function buildCode(city, day, n) { return 'CON-' + cityCode(city) + '-' + day + '-' + (n < 10 ? '00' : n < 100 ? '0' : '') + n; }
   // checks every field the same way the rules do; returns { ok, errors: { field: message }, data }
   function check(f) {
     var e = {}, c = { name: text(f.name, 80), phone: phone(f.phone), nid: digits(f.nid), address: text(f.address, 300), city: text(f.city, 40), zip: digits(f.zip) };
@@ -58,23 +79,27 @@
     return 'ثبت درخواست انجام نشد (' + (c || (e && e.message) || 'خطای نامشخص') + ').';
   }
 
-  // sign in anonymously only for the send, write the document, sign out again so no other page takes the visitor for a user
-  function submit(payload, tries) {
+  // sign in anonymously only for the send, take the day's next number and write the request in one transaction,
+  // then sign out again so no other page takes the visitor for a user
+  function submit(payload) {
     var fb = window.firebase, cfg = window.MS_FIREBASE;
     if (!fb || !cfg) return Promise.reject({ code: 'unavailable' });
     var app = fb.apps.length ? fb.app() : fb.initializeApp(cfg), auth = fb.auth(app), db = fb.firestore(app);
     var had = auth.currentUser;
     if (had && !had.isAnonymous) return Promise.reject({ code: 'staff-session' });
     var go = had ? Promise.resolve() : auth.signInAnonymously();
+    var day = dayStamp(), counter = db.collection('request_counters').doc(day);
     return go.then(function () {
-      var code = newCode(), doc = Object.assign({ code: code, createdAt: Date.now(), status: 'new', route: 'call' }, payload);
-      return db.collection('requests').doc(code).set(doc).then(function () { return code; }, function (e) {
-        if ((tries || 0) < 2 && /permission-denied/.test(e && e.code || '')) return submit(payload, (tries || 0) + 1);   // the code was taken: draw another
-        throw e;
+      return db.runTransaction(function (tx) {
+        return tx.get(counter).then(function (s) {
+          var n = (s.exists ? (s.data().n || 0) : 0) + 1, code = buildCode(payload.customer.city, day, n);
+          tx.set(counter, { n: n });
+          tx.set(db.collection('requests').doc(code), Object.assign({ code: code, createdAt: Date.now(), status: 'new', route: 'call' }, payload));
+          return code;
+        });
       });
     }).then(function (code) { return auth.signOut().then(function () { return code; }, function () { return code; }); },
       function (e) { return auth.signOut().then(function () { throw e; }, function () { throw e; }); });
   }
-
-  window.MSRequests = { STATUS: STATUS, ROUTE: ROUTE, LOGKIND: NEXT_LOG, latin: latin, digits: digits, phone: phone, validPhone: validPhone, validNid: validNid, validZip: validZip, text: text, newCode: newCode, check: check, errText: errText, submit: submit };
+  window.MSRequests = { STATUS: STATUS, ROUTE: ROUTE, LOGKIND: NEXT_LOG, latin: latin, digits: digits, phone: phone, validPhone: validPhone, validNid: validNid, validZip: validZip, text: text, cityCode: cityCode, buildCode: buildCode, check: check, errText: errText, submit: submit };
 })();
