@@ -8,6 +8,9 @@
   var VER = ((document.currentScript && document.currentScript.src.match(/v=(\d+)/)) || [])[1] || '';
   var faInt = new Intl.NumberFormat('fa-IR');
   var STATE_KEY = 'ms-planner-v1';
+  // someone with no staff account sees the public version: no prices, and the result is a purchase request for sales (Chef Market sheet)
+  var PUBLIC = (function () { try { return !localStorage.getItem('ms-role') || /[?&]public=1/.test(location.search); } catch (e) { return true; } })();
+  var PUBRET = {};   // product ids taken out of use, published by sales management (public_config/retired)
 
   // ---- what we know how to plan
   // cats: catalog categories in order of preference. zone: where it sits in the kitchen. qty: [small, medium, large].
@@ -109,7 +112,7 @@
   function sectorHit(it, secs) { return (it.sec || []).some(function (x) { return secs.indexOf(x) >= 0; }); }
   function candidates(job, cid) {
     var cats = JOBS[job].cats.map(nz), secs = conceptOf(cid || S.concept).sectors;
-    var list = CAT.items.filter(function (it) { return cats.indexOf(nz(it.cat)) >= 0 && !(window.MSStatus && window.MSStatus.retired(it.id)); });
+    var list = CAT.items.filter(function (it) { return cats.indexOf(nz(it.cat)) >= 0 && !(window.MSStatus && window.MSStatus.retired(it.id)) && !PUBRET[it.id]; });
     var fp = function (it) { return it.dims ? (it.dims.l || 0) * (it.dims.w || 0) : 0; };
     list.sort(function (a, b) {
       var ia = cats.indexOf(nz(a.cat)) - cats.indexOf(nz(b.cat));
@@ -134,7 +137,7 @@
 
   // ---- views
   function dots() {
-    return '<ol class="pl-steps" aria-label="مراحل">' + ['چه می‌خواهید', 'اندازه و منو', 'طرح پیشنهادی'].map(function (t, i) {
+    return '<ol class="pl-steps" aria-label="مراحل">' + ['چه می‌خواهید', 'اندازه و منو', 'طرح پیشنهادی'].concat(PUBLIC ? ['ثبت درخواست'] : []).map(function (t, i) {
       return '<li class="' + (i === S.step ? 'on' : (i < S.step ? 'done' : '')) + '"><span>' + faInt.format(i + 1) + '</span>' + t + '</li>';
     }).join('') + '</ol>';
   }
@@ -206,12 +209,76 @@
     return dots() + '<h1>طرح پیشنهادی برای ' + c.t + ' ' + SIZES[S.size].t + '</h1>' +
       '<p class="pl-lead">برای هر کار یک دستگاه پیشنهاد شده. هرکدام را می‌توانید با نمونهٔ مشابه عوض یا حذف کنید. موارد «تکمیل‌کننده» چیزهایی است که معمولاً فراموش می‌شود.</p>' +
       '<div class="pl-sum"><span><b>' + faInt.format(live.length) + '</b> کار</span><span><b>' + faInt.format(machines) + '</b> دستگاه</span></div>' + zones +
-      '<div class="pl-bar"><button type="button" class="pl-btn ghost" data-back>تغییر انتخاب‌ها</button><button type="button" class="pl-btn primary" data-toinv' + (live.length ? '' : ' disabled') + '>افزودن به پیش‌فاکتور</button></div>' +
-      '<p class="pl-note">قیمت و مشخصات فنی را بعد از نهایی‌شدن طرح، کارشناس فروش با شما مرور می‌کند.</p>';
+      '<div class="pl-bar"><button type="button" class="pl-btn ghost" data-back>تغییر انتخاب‌ها</button><button type="button" class="pl-btn primary" ' + (PUBLIC ? 'data-request' : 'data-toinv') + (live.length ? '' : ' disabled') + '>' + (PUBLIC ? 'ادامه و ثبت درخواست خرید' : 'افزودن به پیش‌فاکتور') + '</button></div>' +
+      '<p class="pl-note">' + (PUBLIC ? 'این طرح قیمت ندارد. پس از ثبت درخواست، کارشناس فروش با شما تماس می‌گیرد و قیمت و شرایط را اعلام می‌کند.' : 'قیمت و مشخصات فنی را بعد از نهایی‌شدن طرح، کارشناس فروش با شما مرور می‌کند.') + '</p>';
+  }
+  // ---- public side: the request form and, after sending, the Chef Market sheet
+  var F = { self: true }, DONE = null, SENT = '', FORM_AT = 0, REQ_BUSY = false, ERR = {}, ERR_ALL = '';
+  function field(name, label, o) {
+    o = o || {};
+    return '<label class="pl-f' + (o.wide ? ' wide' : '') + (ERR[name] ? ' bad' : '') + '">' + label + '<input type="' + (o.type || 'text') + '" name="' + name + '" value="' + esc(F[name] || '') + '" autocomplete="' + (o.ac || 'off') + '"' +
+      (o.mode ? ' inputmode="' + o.mode + '"' : '') + (o.dir ? ' dir="' + o.dir + '"' : '') + (o.max ? ' maxlength="' + o.max + '"' : '') + '>' + (ERR[name] ? '<small class="pl-fe">' + esc(ERR[name]) + '</small>' : '') + '</label>';
+  }
+  function requestLines() {
+    return plan().filter(function (j) { return S.removed.indexOf(j.id) < 0 && pickFor(j.id); }).map(function (j) {
+      var p = pickFor(j.id);
+      return { id: p.id, code: String(p.code || '').slice(0, 20), name: String(p.name || '').slice(0, 120), brand: BRAND[p.src] || '', qty: qtyFor(j.id) };
+    });
+  }
+  function stepRequest() {
+    var lines = requestLines(), c = conceptOf(S.concept);
+    return dots() + '<h1>ثبت درخواست خرید</h1><p class="pl-lead">اطلاعات خود را بنویسید تا کارشناس فروش مکث‌سیلور با شما تماس بگیرد. در این برگه قیمتی نیست؛ قیمت و شرایط را کارشناس فروش اعلام می‌کند.</p>' +
+      '<section class="pl-req"><h3>طرح شما: ' + esc(c.t) + ' ' + SIZES[S.size].t + '</h3><ul class="pl-rl">' + lines.map(function (l) { return '<li><b>' + esc(l.name) + '</b><span>' + (l.brand ? esc(l.brand) + ' · ' : '') + faInt.format(l.qty) + ' عدد</span></li>'; }).join('') + '</ul></section>' +
+      '<form class="pl-form" novalidate autocomplete="on">' + (ERR_ALL ? '<p class="pl-err" role="alert">' + esc(ERR_ALL) + '</p>' : '') +
+      '<h3>مشخصات خریدار</h3><div class="pl-grid">' +
+      field('name', 'نام و نام خانوادگی', { ac: 'name', wide: true, max: 80 }) + field('phone', 'شمارهٔ موبایل', { ac: 'tel-national', mode: 'numeric', dir: 'ltr', max: 14 }) + field('nid', 'کد ملی', { mode: 'numeric', dir: 'ltr', max: 10 }) +
+      field('city', 'شهر', { ac: 'address-level2', max: 40 }) + field('zip', 'کد پستی', { ac: 'postal-code', mode: 'numeric', dir: 'ltr', max: 10 }) + field('address', 'نشانی کامل', { ac: 'street-address', wide: true, max: 300 }) + '</div>' +
+      '<h3>تحویل‌گیرنده</h3><div class="pl-seg" role="radiogroup" aria-label="تحویل‌گیرنده">' +
+      '<button type="button" role="radio" class="pl-opt" data-recv="self" aria-checked="' + !!F.self + '"><b>خودم تحویل می‌گیرم</b></button>' +
+      '<button type="button" role="radio" class="pl-opt" data-recv="other" aria-checked="' + !F.self + '"><b>شخص دیگری</b><small>مشخصات او را بنویسید</small></button></div>' +
+      (F.self ? '' : '<div class="pl-grid">' + field('rName', 'نام و نام خانوادگی گیرنده', { wide: true, max: 80 }) + field('rNid', 'کد ملی گیرنده', { mode: 'numeric', dir: 'ltr', max: 10 }) + field('rPhone', 'موبایل گیرنده', { mode: 'numeric', dir: 'ltr', max: 14 }) + '</div>') +
+      '<div class="pl-grid"><label class="pl-f wide">توضیح (اختیاری)<input type="text" name="note" value="' + esc(F.note || '') + '" maxlength="500" autocomplete="off"></label></div>' +
+      '<input class="pl-hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">' +
+      '<p class="pl-note">با ثبت درخواست، اطلاعات شما فقط برای تماس و پیگیری خرید در اختیار کارشناس فروش مکث‌سیلور قرار می‌گیرد.</p>' +
+      '<div class="pl-bar"><button type="button" class="pl-btn ghost" data-back>بازگشت به طرح</button><button type="button" class="pl-btn primary" data-send' + (REQ_BUSY ? ' disabled' : '') + '>' + (REQ_BUSY ? 'در حال ثبت…' : 'ثبت درخواست') + '</button></div></form>';
+  }
+  function sheetHelpers() { var f = new Intl.NumberFormat('fa-IR'); return { esc: esc, faInt: f, fa: f, fa0: function (s) { return s; }, money: function () { return ''; }, numWords: function () { return ''; }, totals: function () { return {}; }, payPrint: function () { return ''; } }; }
+  function stepDone() {
+    var d = DONE, j = window.MSEvents ? window.MSEvents.toJ(new Date()) : null, date = j ? j.jy + '/' + (j.jm < 10 ? '0' : '') + j.jm + '/' + (j.jd < 10 ? '0' : '') + j.jd : '';
+    var doc = { template: 'chefmarket', docNo: d.code, date: date, customer: d.customer.name, customerCity: d.customer.city, customerPhone: d.customer.phone, customerAddress: d.customer.address, unit: 'تومان', lines: d.lines };
+    return '<h1>درخواست شما ثبت شد</h1><p class="pl-lead">کد پیگیری شما <b dir="ltr" class="pl-code">' + esc(d.code) + '</b> است؛ آن را نگه دارید. کارشناس فروش به‌زودی با شمارهٔ <b dir="ltr">' + esc(d.customer.phone) + '</b> تماس می‌گیرد.</p>' +
+      '<div class="pl-sheetbox">' + window.MSInvoice.html(doc, sheetHelpers(), 'chefmarket') + '</div>' +
+      '<div class="pl-bar"><button type="button" class="pl-btn ghost" data-newplan>طرح تازه</button><button type="button" class="pl-btn primary" data-print>چاپ یا ذخیرهٔ PDF</button></div>';
+  }
+  function readForm() {
+    var form = root.querySelector('.pl-form'); if (!form) return;
+    Array.prototype.forEach.call(form.querySelectorAll('input[name]'), function (i) { F[i.name] = i.value; });
+  }
+  function sendRequest() {
+    readForm();
+    var hp = root.querySelector('input[name=website]');
+    if (REQ_BUSY) return;
+    if ((hp && hp.value) || Date.now() - FORM_AT < 4000) { ERR_ALL = 'لطفاً چند ثانیه بعد دوباره تلاش کنید.'; ERR = {}; render(); return; }
+    var last = 0; try { last = Number(localStorage.getItem('ms-req-last') || 0); } catch (e) { /* ignore */ }
+    if (Date.now() - last < 120000) { ERR_ALL = 'درخواست قبلی شما تازه ثبت شده است؛ چند دقیقه صبر کنید.'; ERR = {}; render(); return; }
+    var lines = requestLines(); if (!lines.length) { ERR_ALL = 'طرح شما کالایی ندارد.'; render(); return; }
+    var r = window.MSRequests.check({ name: F.name, phone: F.phone, nid: F.nid, address: F.address, city: F.city, zip: F.zip, self: F.self, rName: F.rName, rNid: F.rNid, rPhone: F.rPhone, note: F.note });
+    ERR = r.errors; ERR_ALL = r.ok ? '' : 'چند مورد را اصلاح کنید.';
+    if (!r.ok) { render(); var bad = root.querySelector('.pl-f.bad input'); if (bad) bad.focus(); return; }
+    var c = conceptOf(S.concept), serve = S.serve.map(function (sid) { var s = c.serve.filter(function (x) { return x.id === sid; })[0]; return s ? s.t : ''; }).filter(Boolean).join('، ').slice(0, 160);
+    var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: c.t, size: SIZES[S.size].t, serve: serve }, note: r.note, src: 'planner' };
+    REQ_BUSY = true; render();
+    window.MSRequests.submit(payload).then(function (code) {
+      REQ_BUSY = false; DONE = { code: code, customer: r.customer, lines: lines }; F = { self: true };
+      try { localStorage.setItem('ms-req-last', String(Date.now())); } catch (e) { /* ignore */ }
+      render(); window.scrollTo(0, 0);
+    }, function (e) { REQ_BUSY = false; ERR_ALL = window.MSRequests.errText(e); render(); window.scrollTo(0, 0); });
   }
   function render() {
     if (!ready) { root.innerHTML = failed ? '<p class="pl-note">کاتالوگ بارگذاری نشد؛ اتصال را بررسی و صفحه را دوباره باز کنید.</p>' : '<p class="pl-note">در حال آماده‌سازی…</p>'; return; }
-    if (S.step === 2 && S.concept) root.innerHTML = stepPlan();
+    if (PUBLIC && DONE) root.innerHTML = stepDone();
+    else if (PUBLIC && S.step === 3 && S.concept) root.innerHTML = stepRequest();
+    else if (S.step === 2 && S.concept) root.innerHTML = stepPlan();
     else if (S.step === 1 && S.concept) root.innerHTML = stepQuestions();
     else root.innerHTML = stepConcept();
   }
@@ -274,6 +341,11 @@
     if ((t = e.target.closest('[data-pickprod]'))) { S.pick[t.getAttribute('data-job')] = t.getAttribute('data-pickprod'); save(); dlg.close(); render(); return; }
     if ((t = e.target.closest('[data-info]'))) { infoDialog(t.getAttribute('data-info')); return; }
     if (e.target.closest('[data-toinv]')) { toProforma(); return; }
+    if (e.target.closest('[data-request]')) { S.step = 3; save(); ERR = {}; ERR_ALL = ''; FORM_AT = Date.now(); render(); window.scrollTo(0, 0); return; }
+    if ((t = e.target.closest('[data-recv]'))) { readForm(); F.self = t.getAttribute('data-recv') === 'self'; ERR = {}; render(); return; }
+    if (e.target.closest('[data-send]')) { sendRequest(); return; }
+    if (e.target.closest('[data-print]')) { window.print(); return; }
+    if (e.target.closest('[data-newplan]')) { DONE = null; S = { step: 0, concept: '', size: 1, budget: 'mid', serve: [], pick: {}, removed: [], qty: {} }; save(); render(); window.scrollTo(0, 0); return; }
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
   });
 
@@ -288,11 +360,21 @@
     var c = e.target.closest && e.target.closest('.pl-card');
     if (c && !c.contains(e.relatedTarget)) { c.style.removeProperty('--ry'); c.style.removeProperty('--rx'); }
   });
+  // public: the retired product ids, so the public list never offers a code that is out of use
+  function loadPubRet() {
+    if (!PUBLIC || !window.firebase || !window.MS_FIREBASE) return Promise.resolve();
+    var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(window.MS_FIREBASE);
+    return Promise.race([window.firebase.firestore(app).collection('public_config').doc('retired').get(), new Promise(function (ok) { setTimeout(ok, 4000); })]).then(function (s) {
+      var ids = s && s.exists ? (s.data().ids || []) : []; PUBRET = {}; ids.forEach(function (id) { PUBRET[id] = true; });
+    }, function () { /* offline or not published yet: nothing is hidden */ });
+  }
   var q = VER ? '?v=' + VER : '';
   Promise.all([
+    loadPubRet(),
     fetch('./assets/catalog.json' + q).then(function (r) { return r.json(); }),
     fetch('./assets/product-tiers.json' + q).then(function (r) { return r.ok ? r.json() : {}; }).then(null, function () { return {}; })
   ]).then(function (res) {
+    res.shift();
     CAT = res[0]; CAT.items.forEach(function (it) { BY[it.id] = it; });
     var tj = res[1] || {}, map = tj.tiers || tj;
     Object.keys(map).forEach(function (id) { var w = TIER_WORD[map[id]]; if (BY[id] && w) TIERS[id] = w; });

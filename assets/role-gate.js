@@ -17,7 +17,8 @@
   }
   function role() { try { return localStorage.getItem('ms-role') || ''; } catch (e) { return ''; } }
   function hasSession() {
-    try { for (var i = 0; i < localStorage.length; i++) if (/^firebase:authUser:/.test(localStorage.key(i))) return true; } catch (e) { /* ignore */ }
+    // an anonymous Firebase session (the public request form signs in for a moment to send) is not an account
+    try { for (var i = 0; i < localStorage.length; i++) if (/^firebase:authUser:/.test(localStorage.key(i))) { var u = null; try { u = JSON.parse(localStorage.getItem(localStorage.key(i))); } catch (e2) { /* ignore */ } if (!(u && u.isAnonymous)) return true; } } catch (e) { /* ignore */ }
     return false;
   }
 
@@ -26,11 +27,11 @@
     var r = role(), signed = !!r || hasSession();
     var page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
     if (!signed) {
-      if (page !== 'index.html' && page !== 'panel.html' && page !== 'contact.html') { location.replace('./index.html'); return; }
+      if (page !== 'index.html' && page !== 'panel.html' && page !== 'contact.html' && page !== 'planner.html') { location.replace('./index.html'); return; }
       document.documentElement.setAttribute('data-anon', '');
       Array.prototype.forEach.call(document.querySelectorAll('.ms-nav-links li'), function (li) {
         var a = li.querySelector('a'), href = a ? a.getAttribute('href') : '';
-        if (href !== './index.html' && href !== './panel.html' && href !== './contact.html') hide(li);
+        if (href !== './index.html' && href !== './panel.html' && href !== './contact.html' && href !== './planner.html') hide(li);
       });
       var box = document.getElementById('anonBox');
       if (box) {

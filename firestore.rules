@@ -261,6 +261,63 @@ service cloud.firestore {
       allow delete: if hasRole(['manager', 'ceo', 'sales_manager']);
     }
 
+    // Purchase requests from the public planner (Chef Market sheet). A visitor with no account signs in anonymously for the
+    // moment of sending and may only CREATE the document; nobody but sales reads it. status: new | contacted | quoted | won | lost.
+    // route: call (needs a call first) | warehouse | production (sales says the request may go on). assignee = the salesperson's uid.
+    function ten(s) { return s is string && s.matches('[0-9]{10}'); }
+    function mobile(s) { return s is string && s.matches('09[0-9]{9}'); }
+    function salesLead() { return hasRole(['manager', 'ceo', 'sales_manager']); }
+    match /requests/{id} {
+      allow create: if signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && id.matches('CM-[0-9]{6}-[A-Z0-9]{4}')
+        && request.resource.data.keys().hasOnly(['code', 'createdAt', 'status', 'route', 'customer', 'receiver', 'lines', 'plan', 'note', 'src'])
+        && request.resource.data.code == id && request.resource.data.createdAt is number
+        && request.resource.data.status == 'new' && request.resource.data.route == 'call'
+        && request.resource.data.customer is map
+        && request.resource.data.customer.keys().hasOnly(['name', 'phone', 'nid', 'address', 'city', 'zip'])
+        && request.resource.data.customer.name is string && request.resource.data.customer.name.size() >= 3 && request.resource.data.customer.name.size() <= 80
+        && mobile(request.resource.data.customer.phone) && ten(request.resource.data.customer.nid) && ten(request.resource.data.customer.zip)
+        && request.resource.data.customer.address is string && request.resource.data.customer.address.size() >= 5 && request.resource.data.customer.address.size() <= 300
+        && request.resource.data.customer.city is string && request.resource.data.customer.city.size() >= 2 && request.resource.data.customer.city.size() <= 40
+        && request.resource.data.receiver is map
+        && request.resource.data.receiver.keys().hasOnly(['self', 'name', 'nid', 'phone'])
+        && request.resource.data.receiver.self is bool
+        && (request.resource.data.receiver.self == true
+            || (request.resource.data.receiver.get('name', '').size() >= 3 && request.resource.data.receiver.get('name', '').size() <= 80
+                && ten(request.resource.data.receiver.get('nid', '')) && mobile(request.resource.data.receiver.get('phone', ''))))
+        && request.resource.data.lines is list && request.resource.data.lines.size() >= 1 && request.resource.data.lines.size() <= 40
+        && request.resource.data.plan is map
+        && request.resource.data.note is string && request.resource.data.note.size() <= 500
+        && request.resource.data.src == 'planner';
+      allow read: if salesLead() || (hasRole(['visitor']) && resource.data.get('assignee', '') == request.auth.uid);
+      allow update: if request.resource.data.status in ['new', 'contacted', 'quoted', 'won', 'lost']
+        && request.resource.data.route in ['call', 'warehouse', 'production']
+        && ((salesLead()
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'assignee', 'assigneeName', 'updatedAt', 'lastNote']))
+            || (hasRole(['visitor']) && resource.data.get('assignee', '') == request.auth.uid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'updatedAt', 'lastNote'])));
+      allow delete: if isManager();
+      // what was done on a request: calls, notes, decisions. Append only.
+      match /log/{lid} {
+        allow read: if salesLead() || (hasRole(['visitor']) && get(/databases/$(database)/documents/requests/$(id)).data.get('assignee', '') == request.auth.uid);
+        allow create: if (salesLead() || (hasRole(['visitor']) && get(/databases/$(database)/documents/requests/$(id)).data.get('assignee', '') == request.auth.uid))
+          && request.resource.data.keys().hasOnly(['at', 'by', 'byName', 'kind', 'text'])
+          && request.resource.data.by == request.auth.uid
+          && request.resource.data.kind in ['call', 'note', 'status', 'route', 'assign']
+          && request.resource.data.text is string && request.resource.data.text.size() <= 400
+          && request.resource.data.at is number;
+        allow update, delete: if false;
+      }
+    }
+
+    // read by everyone (no sign-in): which products are out of use, so the public planner does not offer them. Written by sales management.
+    match /public_config/{id} {
+      allow read: if true;
+      allow create, update: if hasRole(['manager', 'ceo', 'sales_manager']) && id == 'retired'
+        && request.resource.data.keys().hasOnly(['ids', 'at'])
+        && request.resource.data.ids is list && request.resource.data.ids.size() <= 500;
+      allow delete: if false;
+    }
     // product codes taken out of use (retired). Anyone approved reads; sales management, management and organizational technology write.
     // rep = id of the replacement product (may be empty). Deleting the document puts the product back in use.
     match /item_status/{id} {

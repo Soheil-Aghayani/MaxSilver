@@ -26,6 +26,7 @@
     analysis: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // customer and product sales analysis
     brand: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'],
     pricesEdit: ['manager', 'ceo', 'sales_manager'],                                    // edits the list prices of the catalog (everyone signed in sees them)
+    crm: ['manager', 'ceo', 'sales_manager', 'visitor'],                                // purchase requests from the public planner: follow-up and decisions (a visitor sees the ones given to them)
     events: ['manager', 'ceo', 'sales_manager', 'marketing'],                           // occasions calendar and its bell reminders
     advertising: ['manager', 'ceo', 'sales_manager', 'marketing'],                      // advertising strategy tree
     invoices: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // read every proforma, not only one's own

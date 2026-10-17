@@ -151,6 +151,10 @@
       S.msg = 'قیمت لیست پایه برگشت.';
     }, function (e) { S.error = errText(e); }).then(render);
   }
+  // the ids of the retired products, readable without sign-in, for the public planner
+  function publishRetired() {
+    db.collection('public_config').doc('retired').set({ ids: Object.keys(ST8.all()).slice(0, 500), at: Date.now() }).then(null, function () { /* the staff list still works; the public list updates on the next change */ });
+  }
   function retire(id) {
     var it = itemById(id), code = S.repIn.trim(), rep = '';
     if (code) {
@@ -164,6 +168,7 @@
     S.error = ''; S.msg = '';
     db.collection('item_status').doc(id).set(doc).then(function () {
       ST8.setOne(id, { rep: doc.rep, note: doc.note, at: doc.at, by: doc.byName });
+      publishRetired();
       S.ret = ''; S.repIn = ''; S.noteIn = '';
       S.msg = 'کد کنار گذاشته شد: ' + it.name;
     }, function (e) { S.error = errText(e); }).then(render);
@@ -171,7 +176,7 @@
   function unretire(id) {
     S.error = ''; S.msg = '';
     db.collection('item_status').doc(id).delete().then(function () {
-      ST8.setOne(id, null); S.msg = 'کد دوباره در استفاده است.';
+      ST8.setOne(id, null); publishRetired(); S.msg = 'کد دوباره در استفاده است.';
     }, function (e) { S.error = errText(e); }).then(render);
   }
   function csv() {

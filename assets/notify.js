@@ -108,7 +108,7 @@
   var seenMap = j(SEEN, {});
   function commit() {
     var list = [];
-    ['ticket', 'public', 'commission'].forEach(function (k) { (parts[k] || []).forEach(function (x) { list.push(x); }); });
+    ['ticket', 'public', 'commission', 'requests'].forEach(function (k) { (parts[k] || []).forEach(function (x) { list.push(x); }); });
     put(KEY, { at: Date.now(), role: role(), uid: me, items: list });
     paint();
     try { w.dispatchEvent(new CustomEvent('ms-notify')); } catch (e) { /* ignore */ }
@@ -160,6 +160,18 @@
       parts.public = n ? [{ kind: 'public', n: n, text: fa.format(n) + ' پیام بیرونی بدون پاسخ', target: 'public' }] : [];
       commit();
       fresher.forEach(function (x) { announce('پیام بیرونی تازه', (x.name ? x.name + ': ' : '') + (x.text || ''), './panel.html#public', 'pub'); });
+    }, function () { /* ignore */ }));
+  }
+  // purchase requests from the public planner: management sees the new ones, a salesperson the new ones given to them
+  function watchRequests(r) {
+    var col = db.collection('requests'), lead = r === 'manager' || r === 'ceo' || r === 'sales_manager';
+    var q = lead ? col : col.where('assignee', '==', me);
+    unsubs.push(q.onSnapshot(function (snap) {
+      var n = 0, fresher = [];
+      snap.forEach(function (s) { var x = s.data(); if (x.status === 'new') { n++; if (fresh('req-' + s.id, x.createdAt || 0)) fresher.push(x); } });
+      parts.requests = n ? [{ kind: 'request', n: n, text: fa.format(n) + ' درخواست خرید تازه', href: './crm.html' }] : [];
+      commit();
+      fresher.forEach(function (x) { announce('درخواست خرید تازه', ((x.customer && x.customer.name) || '') + (x.plan ? ' · ' + x.plan.concept : ''), './crm.html', 'req'); });
     }, function () { /* ignore */ }));
   }
   function watchCommission(r) {
@@ -216,6 +228,7 @@
           heartbeat();
           if (r === 'manager' || r === 'ceo' || r === 'sales_manager' || r === 'service') watchPublic(r);
           if (w.MSRoles.can(r, 'commission')) watchCommission(r);
+          if (w.MSRoles.can(r, 'crm')) watchRequests(r);
           // everything that existed before this visit is the baseline: only later changes pop up
           setTimeout(function () { baseline.done = true; }, 4000);
         });
