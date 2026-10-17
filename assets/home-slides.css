@@ -51,3 +51,4 @@
   .hs-art img{object-position:center bottom}
 }
 @media(prefers-reduced-motion:reduce){.hs-slide,.hs-slide.on{transition:none;transform:none}}
+.hs-dots[hidden]{display:none}

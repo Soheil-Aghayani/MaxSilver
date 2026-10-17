@@ -109,5 +109,9 @@
   var G = window.MSGate;
   if (G && !G.__hs) { var orig = G.apply; G.apply = function () { orig.apply(G, arguments); show(0); schedule(); }; G.__hs = true; }
   window.addEventListener('storage', function (e) { if (e.key === 'ms-role') { show(0); schedule(); } });
+  // role-gate.js marks the page data-anon after this script has first run (it waits for DOMContentLoaded): start over when it does,
+  // so a visitor with no account gets the one title slide with no dots instead of the four slides of a signed-in person
+  if (window.MutationObserver) new MutationObserver(function () { show(0); schedule(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-anon'] });
+  document.addEventListener('DOMContentLoaded', function () { show(0); schedule(); });
   show(0); schedule();
 })();

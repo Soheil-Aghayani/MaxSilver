@@ -53,6 +53,7 @@ Signed-out visitors see only the home page, the sign-in panel and the contact fo
 | **Advertising strategy** | [`advertising.html`](advertising.html) | The advertising tree (print, promotional gifts, online) with search and the reference map. |
 | **Brand books** | [`brand-books.html`](brand-books.html) | Logo, colours, fonts and voice of the four group brands, with PDF export. |
 | **Panel** | [`panel.html`](panel.html) | Personal profile and look, proformas, conversations, commission, team and role administration. |
+| **Legal pages** | [`legal.html`](legal.html) | Public drafts for visitors with no account: terms, privacy (with the cookie and storage notice), shipping, returns and cancellations, limitation of liability and business information. Texts live in `assets/legal.js`; every fact only the owner can give is marked «[نیاز به تأیید]» and set `DRAFT = false` after approval. The request form stores the accepted version (`TERMS` in `assets/request-lib.js`). |
 | **Contact** | [`contact.html`](contact.html) | The only way in for people without an account: sales, after-sales or management. |
 
 Navigation is a short dock: home, the sections you pinned, and your account. Every section lives on the home page, where a star on each card adds or removes it from the dock (up to three on a phone, six on a wide screen). A bell on the home banner and a "what is new" section list the changes shipped to the app; a glowing red dot means something is unread.

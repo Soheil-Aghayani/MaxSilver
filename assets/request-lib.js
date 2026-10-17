@@ -3,6 +3,8 @@
 // for the send; the person can never read it back. Sales roles read and work on it (firestore.rules).
 (function () {
   'use strict';
+  // the version of the legal texts (assets/legal.js) the visitor accepted; stored with every request
+  var TERMS = '1405-07-25';
   var STATUS = { new: 'جدید', contacted: 'تماس گرفته شد', quoted: 'پیش‌فاکتور فرستاده شد', won: 'خرید انجام شد', lost: 'منصرف شد' };
   var ROUTE = { call: 'نیاز به تماس', warehouse: 'ارسال به انبار', production: 'ارسال به تولید' };
   var NEXT_LOG = { call: 'تماس', note: 'یادداشت', status: 'تغییر وضعیت', route: 'تصمیم ارسال', assign: 'ارجاع' };
@@ -61,6 +63,7 @@
     if (c.address.length < 5) e.address = 'نشانی را بنویسید.';
     if (c.city.length < 2) e.city = 'شهر را بنویسید.';
     if (!validZip(c.zip)) e.zip = 'کد پستی ۱۰ رقمی است.';
+    if (!f.agree) e.agree = 'برای ارسال، باید شرایط و ضوابط و سیاست حریم خصوصی را بپذیرید.';
     var r = { self: !!f.self };
     if (!r.self) {
       r.name = text(f.rName, 80); r.nid = digits(f.rNid); r.phone = phone(f.rPhone);
@@ -68,7 +71,7 @@
       if (!validNid(r.nid)) e.rNid = 'کد ملی گیرنده درست نیست.';
       if (!validPhone(r.phone)) e.rPhone = 'موبایل گیرنده درست نیست.';
     }
-    return { ok: !Object.keys(e).length, errors: e, customer: c, receiver: r, note: text(f.note, 500) };
+    return { ok: !Object.keys(e).length, errors: e, customer: c, receiver: r, note: text(f.note, 500), terms: TERMS };
   }
 
   function errText(e) {
@@ -101,5 +104,5 @@
     }).then(function (code) { return auth.signOut().then(function () { return code; }, function () { return code; }); },
       function (e) { return auth.signOut().then(function () { throw e; }, function () { throw e; }); });
   }
-  window.MSRequests = { STATUS: STATUS, ROUTE: ROUTE, LOGKIND: NEXT_LOG, latin: latin, digits: digits, phone: phone, validPhone: validPhone, validNid: validNid, validZip: validZip, text: text, cityCode: cityCode, buildCode: buildCode, check: check, errText: errText, submit: submit };
+  window.MSRequests = { TERMS: TERMS, STATUS: STATUS, ROUTE: ROUTE, LOGKIND: NEXT_LOG, latin: latin, digits: digits, phone: phone, validPhone: validPhone, validNid: validNid, validZip: validZip, text: text, cityCode: cityCode, buildCode: buildCode, check: check, errText: errText, submit: submit };
 })();

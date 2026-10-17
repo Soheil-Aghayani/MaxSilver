@@ -165,3 +165,4 @@ a.ms-install-go{border:0;background:var(--ms-navy);color:#fff}
 .ms-sep{display:inline-block;width:3px;height:.95em;margin:0 .6em;border-radius:2px;background:#e0a800;vertical-align:-.14em}
 /* the open section shows only its name (no icon), and the name is never cut off */
 @media(min-width:1101px){.ms-nav-links a[aria-current=page]{gap:0;padding:0 18px}.ms-nav-links a[aria-current=page] svg{display:none}.ms-nav-links a[aria-current=page] span{max-width:240px}.ms-nav-links li{flex:0 0 auto}.ms-sitebar nav{min-width:0}}
+.ms-legal{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center;margin:0 0 6px}.ms-legal a{color:var(--ms-muted,#5b6a80);font-size:12.5px;font-weight:700;text-decoration:none}.ms-legal a:hover{color:var(--ms-navy,#071b36);text-decoration:underline}

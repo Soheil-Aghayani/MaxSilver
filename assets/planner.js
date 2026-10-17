@@ -251,7 +251,8 @@
       (F.self ? '' : '<div class="pl-grid">' + field('rName', 'نام و نام خانوادگی گیرنده', { wide: true, max: 80 }) + field('rNid', 'کد ملی گیرنده', { mode: 'numeric', dir: 'ltr', max: 10 }) + field('rPhone', 'موبایل گیرنده', { mode: 'numeric', dir: 'ltr', max: 14 }) + '</div>') +
       '<div class="pl-grid"><label class="pl-f wide">توضیح (اختیاری)<input type="text" name="note" value="' + esc(F.note || '') + '" maxlength="500" autocomplete="off"></label></div>' +
       '<input class="pl-hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">' +
-      '<p class="pl-note">با ثبت درخواست، اطلاعات شما فقط برای تماس و پیگیری خرید در اختیار کارشناس فروش مکث‌سیلور قرار می‌گیرد.</p>' +
+      '<label class="pl-agree' + (ERR.agree ? ' bad' : '') + '"><input type="checkbox" name="agree"' + (F.agree ? ' checked' : '') + '><span>' + 'شرایط و ضوابط و سیاست حریم خصوصی را خوانده‌ام و می‌پذیرم. ' + '<a href="./legal.html#terms" target="_blank" rel="noopener">شرایط و ضوابط</a>' + SEP + '<a href="./legal.html#privacy" target="_blank" rel="noopener">حریم خصوصی</a>' + '</span></label>' + (ERR.agree ? '<small class="pl-fe">' + esc(ERR.agree) + '</small>' : '') +
+      '<p class="pl-note">اطلاعات شما فقط برای تماس و پیگیری خرید در اختیار کارشناس فروش قرار می‌گیرد.</p>' +
       '<div class="pl-bar"><button type="button" class="pl-btn primary" data-send' + (REQ_BUSY ? ' disabled' : '') + '>' + (REQ_BUSY ? 'در حال ارسال…' : 'ارسال درخواست') + '</button></div></form>';
   }
   function sheetHelpers() { var f = new Intl.NumberFormat('fa-IR'); return { esc: esc, faInt: f, fa: f, fa0: function (s) { return s; }, money: function () { return ''; }, numWords: function () { return ''; }, totals: function () { return {}; }, payPrint: function () { return ''; } }; }
@@ -276,7 +277,7 @@
     }
   }  function readForm() {
     var form = root.querySelector('.pl-form'); if (!form) return;
-    Array.prototype.forEach.call(form.querySelectorAll('input[name]'), function (i) { F[i.name] = i.value; });
+    Array.prototype.forEach.call(form.querySelectorAll('input[name]'), function (i) { F[i.name] = i.type === 'checkbox' ? i.checked : i.value; });
   }
   function sendRequest() {
     readForm();
@@ -286,11 +287,11 @@
     var last = 0; try { last = Number(localStorage.getItem('ms-req-last') || 0); } catch (e) { /* ignore */ }
     if (Date.now() - last < 120000) { ERR_ALL = 'درخواست قبلی شما تازه ثبت شده است؛ چند دقیقه صبر کنید.'; ERR = {}; render(); return; }
     var lines = requestLines(); if (!lines.length) { ERR_ALL = 'طرح شما کالایی ندارد.'; render(); return; }
-    var r = window.MSRequests.check({ name: F.name, phone: F.phone, nid: F.nid, address: F.address, city: F.city, zip: F.zip, self: F.self, rName: F.rName, rNid: F.rNid, rPhone: F.rPhone, note: F.note });
+    var r = window.MSRequests.check({ name: F.name, phone: F.phone, nid: F.nid, address: F.address, city: F.city, zip: F.zip, self: F.self, rName: F.rName, rNid: F.rNid, rPhone: F.rPhone, note: F.note, agree: F.agree });
     ERR = r.errors; ERR_ALL = r.ok ? '' : 'چند مورد را اصلاح کنید.';
     if (!r.ok) { render(); var bad = root.querySelector('.pl-f.bad input'); if (bad) bad.focus(); return; }
     var c = conceptOf(S.concept), serve = S.serve.map(function (sid) { var s = c.serve.filter(function (x) { return x.id === sid; })[0]; return s ? s.t : ''; }).filter(Boolean).join('، ').slice(0, 160);
-    var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: c.t, size: SIZES[S.size].t, serve: serve }, note: r.note, src: 'planner' };
+    var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: c.t, size: SIZES[S.size].t, serve: serve }, note: r.note, terms: r.terms, src: 'planner' };
     REQ_BUSY = true; render();
     window.MSRequests.submit(payload).then(function (code) {
       REQ_BUSY = false; DONE = { code: code, customer: r.customer, lines: lines }; F = { self: true };
