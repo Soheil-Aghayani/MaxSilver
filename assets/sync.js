@@ -141,6 +141,15 @@
       if (S.profile) A.setIssuer(S.profile.name);
     });
   }
+  // prices edited by sales management and management (list_prices) win over the price list file
+  function loadListPrices() {
+    if (!live() || !approved() || !window.MSPrices) return Promise.resolve();
+    return withTimeout(db.collection('list_prices').get()).then(function (snap) {
+      var m = {};
+      snap.forEach(function (s) { var d = s.data(); m[s.id] = { p: d.p || 0, s: d.s || 'p', at: d.at || 0, by: d.byName || '' }; });
+      window.MSPrices.setEdits(m);
+    }, function () { /* offline, or the rules are not published yet: the prices read last time stay */ });
+  }
   function sync() {
     if (!live() || S.busy) return Promise.resolve();
     S.busy = true; render();
@@ -169,7 +178,7 @@
         A.setForeign(others.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }));
         return pushPending().then(flushSends);
       });
-    }).then(function () { S.last = Date.now(); S.error = ''; }, function (e) { S.error = errText(e); })
+    }).then(function () { return loadListPrices(); }).then(function () { S.last = Date.now(); S.error = ''; }, function (e) { S.error = errText(e); })
       .then(function () { S.busy = false; render(); });
   }
   function trySync() {

@@ -97,6 +97,16 @@
     shown = PAGE; render();
   }
 
+  // list price of the product (assets/price-list.json, edited prices from Firestore on top); nothing is shown when there is none
+  function priceTag(id) {
+    var v = window.MSPrices ? window.MSPrices.get(id) : null, t = v ? window.MSPrices.label(v) : '';
+    return t ? '<div class="pc-price" data-s="' + v.s + '">' + esc(t) + '</div>' : '';
+  }
+  // starting price of a proforma line in the proforma's own unit (the list is in toman)
+  function listPrice(id) {
+    var v = window.MSPrices ? window.MSPrices.get(id) : null;
+    return v && v.s === 'p' && v.p > 0 ? v.p * (inv.unit === 'ریال' ? 10 : 1) : 0;
+  }
   function card(it) {
     var d = dimsText(it), p = power(it), inCmp = compare.indexOf(it.id) >= 0, inInv = !!invLine(it.id);
     var specs = (d ? '<span>' + ICON.ruler + esc(d) + '</span>' : '') + (it.wt ? '<span>' + ICON.weight + esc(fa.format(it.wt)) + ' kg</span>' : '') + (p ? '<span>' + ICON.bolt + esc(p) + '</span>' : '');
@@ -106,7 +116,7 @@
         '<span class="pc-brand" data-brand="' + esc(it.src) + '"><i></i>' + esc(srcLabel(it.src)) + '</span></button>' +
       '<div class="pc-body"><h2 class="pc-name">' + esc(it.name) + '</h2>' +
         '<div class="pc-meta">' + (it.code ? '<span class="pc-code">' + esc(it.code) + '</span>' : '') + (it.cat ? '<span class="pc-chip">' + esc(it.cat) + '</span>' : '') + '</div>' +
-        (specs ? '<div class="pc-spec">' + specs + '</div>' : '') + '</div>' +
+        (specs ? '<div class="pc-spec">' + specs + '</div>' : '') + priceTag(it.id) + '</div>' +
       '<div class="pc-foot"><button type="button" class="pc-btn" data-inv="' + esc(it.id) + '" aria-pressed="' + inInv + '" aria-label="افزودن به پیش‌فاکتور" title="افزودن به پیش‌فاکتور">' + (inInv ? ICON.check : ICON.plus) + '</button>' +
         '<button type="button" class="pc-btn" data-cmp="' + esc(it.id) + '" aria-pressed="' + inCmp + '" aria-label="مقایسه" title="مقایسه">' + ICON.compare + '</button>' +
         '<button type="button" class="pc-btn" data-open="' + esc(it.id) + '" aria-label="جزئیات">' + ICON.open + '</button></div></article>';
@@ -147,7 +157,7 @@
   }
   function toggleInvoice(id) {
     var l = invLine(id);
-    if (l) inv.lines.splice(inv.lines.indexOf(l), 1); else inv.lines.push({ id: id, qty: 1, price: prices[id] || 0 });
+    if (l) inv.lines.splice(inv.lines.indexOf(l), 1); else inv.lines.push({ id: id, qty: 1, price: prices[id] || listPrice(id) });
     invSave(); trayRender(); invButtons();
   }
   function invButtons() {
@@ -170,6 +180,8 @@
     if (it.code) rows.push(['کد', '<span dir="ltr">' + esc(it.code) + '</span>']);
     if (it.grp) rows.push(['گروه', esc(it.grp)]);
     if (it.cat) rows.push(['دسته', esc(it.cat)]);
+    var pv = window.MSPrices ? window.MSPrices.get(it.id) : null;
+    if (pv && window.MSPrices.label(pv)) rows.push(['قیمت لیست', esc(window.MSPrices.label(pv)) + (pv.edited ? ' <small>(ویرایش‌شده)</small>' : (window.MSPrices.date() ? ' <small>(لیست ' + esc(window.MSPrices.date()) + ')</small>' : ''))]);
     var d = dimsText(it); if (d) rows.push(['ابعاد (طول × عرض × ارتفاع)', '<span dir="ltr">' + esc(d) + '</span>']);
     if (it.wt) rows.push(['وزن', '<span dir="ltr">' + esc(fa.format(it.wt)) + ' kg</span>']);
     it.specs.forEach(function (s) { rows.push([esc(s[0]), esc(s[1])]); });
@@ -1028,8 +1040,9 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261253', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261254', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
+    if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }
     inv.lines = inv.lines.filter(function (l) { return byId[l.id]; });
     trayRender();
     ['catGroup', 'catSector', 'catSort'].forEach(function (id) { enhance($(id)); });
