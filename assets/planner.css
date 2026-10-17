@@ -152,3 +152,13 @@
 .pl-f select{min-height:46px;padding:0 14px;border:1px solid var(--ms-line);border-radius:14px;background:#fff;color:var(--ms-navy);font:700 14px/1 Estedad,Tahoma,sans-serif;width:100%}
 .pl-f select:disabled{background:#f3f4f8;color:var(--ms-muted)}
 .pl-f.bad select{border-color:#e5484d;background:#fff8f8}
+.pl-load{display:grid;justify-items:center;gap:14px;padding:48px 16px;text-align:center}
+.pl-load b{color:var(--ms-navy);font-size:16px}
+.pl-spin{position:relative;display:grid;place-items:center;width:96px;height:96px}
+.pl-spin i{position:absolute;inset:0;border-radius:50%;border:4px solid #e4e9f2;border-top-color:var(--ms-gold);animation:pl-rot 1s linear infinite}
+.pl-spin img{width:64px;height:64px;border-radius:16px;animation:pl-beat 1.6s ease-in-out infinite}
+.pl-tip{margin:0;max-width:340px;min-height:3.6em;color:var(--ms-muted);font-size:13px;line-height:1.9;transition:opacity .3s}
+.pl-tip.out{opacity:0}
+@keyframes pl-rot{to{transform:rotate(360deg)}}
+@keyframes pl-beat{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@media(prefers-reduced-motion:reduce){.pl-spin i,.pl-spin img{animation:none}}

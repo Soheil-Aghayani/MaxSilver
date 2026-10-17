@@ -58,11 +58,11 @@
       core: ['fridge', 'table'],
       serve: [{ id: 'burger', t: 'همبرگر', jobs: ['grill', 'burger', 'warm'] }, { id: 'chicken', t: 'مرغ سوخاری', jobs: ['marinate', 'fry', 'warm'] },
         { id: 'fries', t: 'سیب‌زمینی سرخ‌کرده', jobs: ['fry', 'potato'] }, { id: 'sandwich', t: 'ساندویچ', jobs: ['toast'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['blend', 'ice'] }, { id: 'deli', t: 'سوسیس و کالباس', jobs: ['sausage', 'slicer'] }, { id: 'meat', t: 'آماده‌سازی گوشت', jobs: ['meatprep'] }] },
-    { id: 'restaurant, t: 'رستوران', d: 'غذای گرم، کباب و منوی متنوع', sectors: ['رستوران', 'کباب', 'ایرانی', 'بین‌الملل'],
+    { id: 'restaurant', t: 'رستوران', d: 'غذای گرم، کباب و منوی متنوع', sectors: ['رستوران', 'کباب', 'ایرانی', 'بین‌الملل'],
       core: ['fridge', 'table', 'chop'],
       serve: [{ id: 'grill', t: 'کباب و گریل', jobs: ['grill', 'doner'] }, { id: 'hot', t: 'غذای گرم و خورشت', jobs: ['stove', 'bain'] },
         { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'fry', t: 'سرخ‌کردنی', jobs: ['fry'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['ice', 'blend'] }, { id: 'meat', t: 'آماده‌سازی گوشت و مرغ', jobs: ['marinate', 'meatprep'] }, { id: 'sandwich', t: 'ساندویچ و برگر', jobs: ['burger', 'toast', 'slicer'] }, { id: 'warm', t: 'گرم‌نگهداری و نمایش غذا', jobs: ['warm'] }] },
-    { id: 'pizza, t: 'پیتزا', d: 'پیتزا با فر مخصوص و خمیر تازه', sectors: ['فست‌فود', 'رستوران'],
+    { id: 'pizza', t: 'پیتزا', d: 'پیتزا با فر مخصوص و خمیر تازه', sectors: ['فست‌فود', 'رستوران'],
       core: ['pizza', 'dough', 'topping', 'fridge'],
       serve: [{ id: 'sheet', t: 'خمیر هم‌اندازه و سریع', jobs: ['sheeter'] }, { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'fry', t: 'پیش‌غذای سرخ‌شده', jobs: ['fry'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['ice', 'blend'] }] },
     { id: 'bakery', t: 'شیرینی و نانوایی', d: 'خمیر، پخت و ویترین', sectors: ['نانوایی', 'شیرینی'],
@@ -354,8 +354,28 @@
       render(); window.scrollTo(0, 0);
     }, function (e) { REQ_BUSY = false; ERR_ALL = window.MSRequests.errText(e); render(); window.scrollTo(0, 0); });
   }
+  // while the catalog loads: the logo turns inside a ring and a short safety tip changes every few seconds, so nobody feels stuck
+  var TIPS = [
+    'ما هرگز رمز عبور، رمز کارت یا اطلاعات بانکی شما را نمی‌خواهیم؛ آنها را در هیچ فرمی وارد نکنید.',
+    'در این برگه قیمتی نیست؛ قیمت و شرایط را فقط کارشناس فروش مکث‌سیلور در تماس به شما اعلام می‌کند.',
+    'پیش از واریز هر مبلغ، حتماً از راه تماس تلفنی با شمارهٔ رسمی مکث‌سیلور مطمئن شوید.',
+    'کد پیگیری را بعد از ثبت درخواست نگه دارید و هنگام تماس با فروش بگویید.',
+    'اگر بارگذاری طول کشید، اینترنت (یا VPN) را بررسی کنید؛ همین صفحه خودش ادامه می‌دهد.'
+  ], tipTimer = 0;
+  function loaderHtml() {
+    return '<div class="pl-load" role="status" aria-live="polite"><span class="pl-spin" aria-hidden="true"><i></i><img src="./assets/branding/maxsilver-pwa-192.png" alt="" width="64" height="64"></span>' +
+      '<b>در حال آماده‌سازی…</b><p class="pl-tip" id="plTip">' + esc(TIPS[0]) + '</p></div>';
+  }
+  function startTips() {
+    clearInterval(tipTimer); var n = 0;
+    tipTimer = setInterval(function () {
+      var el = document.getElementById('plTip'); if (!el) { clearInterval(tipTimer); return; }
+      n = (n + 1) % TIPS.length; el.classList.add('out');
+      setTimeout(function () { el.textContent = TIPS[n]; el.classList.remove('out'); }, 300);
+    }, 4500);
+  }
   function render() {
-    if (!ready) { root.innerHTML = failed ? '<p class="pl-note">کاتالوگ بارگذاری نشد؛ اتصال را بررسی و صفحه را دوباره باز کنید.</p>' : '<p class="pl-note">در حال آماده‌سازی…</p>'; return; }
+    if (!ready) { root.innerHTML = failed ? '<p class="pl-note">کاتالوگ بارگذاری نشد؛ اتصال را بررسی و صفحه را دوباره باز کنید.</p>' : loaderHtml(); if (!failed) startTips(); return; }
     var open = firstOpen();
     if (S.concept && S.step >= 2 && open >= 0) { S.step = 1; S.q = open; }     // the plan waits until every question has an answer
     if (S.step === 1 && S.q >= qList().length) S.q = qList().length - 1;
