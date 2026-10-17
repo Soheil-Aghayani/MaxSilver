@@ -62,7 +62,10 @@
     if (c.name.length < 3) e.name = 'نام و نام خانوادگی را کامل بنویسید.';
     if (!validPhone(c.phone)) e.phone = 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد.';
     if (!validNid(c.nid)) e.nid = 'کد ملی ۱۰ رقمی و درست وارد کنید.';
+    c.address = c.address.replace(/ي/g, 'ی').replace(/ك/g, 'ک');
     if (c.address.length < 5) e.address = 'نشانی را بنویسید.';
+    else if (/[A-Za-z]/.test(c.address) || !/[؀-ۿ]/.test(c.address)) e.address = 'نشانی را به فارسی بنویسید.';
+    c.address = fa(c.address);
     var province = text(f.province, 40);
     if (!province) e.province = 'استان را انتخاب کنید.';
     if (c.city.length < 2) e.city = province ? 'شهر را انتخاب کنید.' : 'ابتدا استان را انتخاب کنید.';

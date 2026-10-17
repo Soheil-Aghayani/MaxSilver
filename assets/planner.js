@@ -370,7 +370,7 @@
     if (!r.ok) { render(); var bad = root.querySelector('.pl-f.bad input, .pl-f.bad select'); if (bad) bad.focus(); return; }
     var c = conceptOf(S.concept), serve = S.serve.map(function (sid) { var s = c.serve.filter(function (x) { return x.id === sid; })[0]; return s ? s.t : ''; }).filter(Boolean).join('، ').slice(0, 160);
     r.customer.address = ('استان ' + r.province + '، ' + r.customer.address).slice(0, 300);
-    var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: c.t, size: SIZES[S.size].t, serve: serve }, note: r.note, terms: r.terms, src: 'planner' };
+    var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: c.t, size: SIZES[S.size].t, serve: serve, province: r.province }, note: r.note, terms: r.terms, src: 'planner' };
     REQ_BUSY = true; render();
     window.MSRequests.submit(payload).then(function (code) {
       REQ_BUSY = false; OK = {}; DONE = { code: code, customer: r.customer, lines: lines }; F = { self: true };

@@ -16,6 +16,8 @@
   var I = {
     phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.500 4.500 4.500L19 7.500"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
     doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6"/></svg>'
   };
 
@@ -41,9 +43,9 @@
   function openStates(x) { return x.status !== 'won' && x.status !== 'lost'; }
 
   // ---------- filters
-  var FILTERS = [['all', 'همه'], ['new', 'جدید'], ['call', 'نیاز به تماس'], ['warehouse', 'ارسال به انبار'], ['production', 'ارسال به تولید'], ['quoted', 'پیش‌فاکتور فرستاده شد'], ['won', 'خرید شد'], ['lost', 'منصرف شد'], ['free', 'بدون مسئول']];
+  var FILTERS = [['all', 'در جریان'], ['new', 'جدید'], ['call', 'نیاز به تماس'], ['warehouse', 'ارسال به انبار'], ['production', 'ارسال به تولید'], ['quoted', 'پیش‌فاکتور فرستاده شد'], ['won', 'خرید شد'], ['lost', 'منصرف شد'], ['free', 'بدون مسئول']];
   function match(x, f) {
-    if (f === 'all') return true;
+    if (f === 'all') return openStates(x);
     if (f === 'new') return x.status === 'new';
     if (f === 'call') return x.route === 'call' && openStates(x);
     if (f === 'warehouse' || f === 'production') return x.route === f && openStates(x);
@@ -65,14 +67,15 @@
     return '<span class="cr-b st-' + esc(x.status) + '">' + esc(STATUS[x.status] || x.status) + '</span><span class="cr-b rt-' + esc(x.route) + '">' + esc(ROUTE[x.route] || x.route) + '</span>';
   }
   function card(x) {
-    var c = x.customer || {}, p = x.plan || {};
-    return '<article class="cr-card' + (x.status === 'new' ? ' fresh' : '') + '" data-id="' + esc(x.id) + '"><button type="button" class="cr-open" data-open aria-label="باز کردن ' + esc(x.code) + '">' +
+    var c = x.customer || {}, p = x.plan || {}, done = !openStates(x);
+    return '<article class="cr-card' + (x.status === 'new' ? ' fresh' : '') + (done ? ' done' : '') + '" data-id="' + esc(x.id) + '"><button type="button" class="cr-open" data-open aria-label="باز کردن ' + esc(x.code) + '">' +
       '<div class="cr-top"><b dir="ltr">' + esc(x.code) + '</b><span class="cr-time">' + esc(when(x.createdAt)) + '</span></div>' +
       '<div class="cr-who"><b>' + esc(c.name || '—') + '</b><span>' + esc(c.city || '') + '</span></div>' +
-      '<div class="cr-meta"><span>' + esc(p.concept || '') + (p.size ? ' ' + esc(p.size) : '') + '</span><span>' + faInt.format((x.lines || []).length) + ' قلم کالا</span>' +
-      '<span class="' + (x.assignee ? '' : 'cr-free') + '">' + (x.assignee ? 'مسئول: ' + esc(x.assigneeName || '') : 'بدون مسئول') + '</span></div>' +
+      '<div class="cr-meta"><span>' + esc(p.concept || '') + (p.size ? ' ' + esc(p.size) : '') + '</span><span>' + faInt.format((x.lines || []).length) + ' قلم کالا</span></div>' +
       '<div class="cr-bs">' + badges(x) + '</div></button>' +
-      (c.phone ? '<a class="cr-call" href="tel:' + esc(c.phone) + '" aria-label="تماس با ' + esc(c.name || '') + '" title="تماس">' + I.phone + '<span dir="ltr">' + esc(c.phone) + '</span></a>' : '') + '</article>';
+      '<div class="cr-foot"><span class="cr-who2' + (x.assignee ? '' : ' free') + '">' + (x.assignee ? 'مسئول پیگیری: <b>' + esc(x.assigneeName || '') + '</b>' : 'بدون مسئول') + '</span>' +
+      '<span class="cr-fa">' + (c.phone ? '<a class="cr-call" href="tel:' + esc(c.phone) + '" aria-label="تماس با ' + esc(c.name || '') + '" title="تماس">' + I.phone + '<span dir="ltr">' + esc(RQ.fa(c.phone)) + '</span></a>' : '') +
+      (done ? '' : '<button type="button" class="cr-fin" data-fin title="پایان خرید؛ کارت از فهرست بیرون می‌رود">' + I.check + 'خرید انجام شد</button>') + '</span></div></article>';
   }
   function listHtml() {
     var list = filtered(), n = counts();
@@ -111,17 +114,17 @@
     return '<div class="cr-dbar"><div><h2 dir="ltr">' + esc(x.code) + '</h2><div class="cr-bs">' + badges(x) + '</div></div><button type="button" class="cr-ic" data-close aria-label="بستن">' + I.close + '</button></div>' +
       '<div class="cr-dbody" data-id="' + esc(x.id) + '">' +
       (S.error ? '<p class="cr-err" role="alert">' + esc(S.error) + '</p>' : '') +
-      '<section><h3>خریدار</h3><dl class="cr-facts">' + row('نام', c.name) + '<div><dt>موبایل</dt><dd>' + (c.phone ? '<a class="cr-tel" href="tel:' + esc(c.phone) + '" dir="ltr">' + I.phone + esc(c.phone) + '</a>' : '—') + '</dd></div>' + row('کد ملی', c.nid, true) + row('شهر', c.city) + row('کد پستی', c.zip === '1111111111' ? 'ندارد' : c.zip, c.zip !== '1111111111') + row('نشانی', c.address) + '</dl></section>' +
-      '<section><h3>تحویل‌گیرنده</h3>' + (r.self ? '<p class="cr-self">خود خریدار تحویل می‌گیرد.</p>' : '<dl class="cr-facts">' + row('نام', r.name) + row('کد ملی', r.nid, true) + '<div><dt>موبایل</dt><dd>' + (r.phone ? '<a class="cr-tel" href="tel:' + esc(r.phone) + '" dir="ltr">' + I.phone + esc(r.phone) + '</a>' : '—') + '</dd></div></dl>') + '</section>' +
+      '<section><h3>خریدار</h3><dl class="cr-facts">' + row('نام', c.name) + '<div><dt>موبایل</dt><dd>' + (c.phone ? '<a class="cr-tel" href="tel:' + esc(c.phone) + '" dir="ltr">' + I.phone + esc(RQ.fa(c.phone)) + '</a>' : '—') + '</dd></div>' + row('کد ملی', RQ.fa(c.nid), true) + row('شهر', c.city) + row('کد پستی', c.zip === '1111111111' ? 'ندارد' : RQ.fa(c.zip), c.zip !== '1111111111') + row('نشانی', c.address) + '</dl></section>' +
+      '<section><h3>تحویل‌گیرنده</h3>' + (r.self ? '<p class="cr-self">خود خریدار تحویل می‌گیرد.</p>' : '<dl class="cr-facts">' + row('نام', r.name) + row('کد ملی', RQ.fa(r.nid), true) + '<div><dt>موبایل</dt><dd>' + (r.phone ? '<a class="cr-tel" href="tel:' + esc(r.phone) + '" dir="ltr">' + I.phone + esc(RQ.fa(r.phone)) + '</a>' : '—') + '</dd></div></dl>') + '</section>' +
       '<section><h3>کالاها <small>' + esc(p.concept || '') + (p.size ? ' ' + esc(p.size) : '') + (p.serve ? SEP + esc(p.serve) : '') + '</small></h3><div class="cr-tw"><table class="cr-lines"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th></tr></thead><tbody>' + lines + '</tbody></table></div>' + (x.note ? '<p class="cr-self">توضیح مشتری: ' + esc(x.note) + '</p>' : '') + '</section>' +
       '<section><h3>تصمیم</h3><p class="cr-hint">«نیاز به تماس» یعنی هنوز با مشتری صحبت نشده. پس از تماس و اطمینان از خریدار، مشخص کنید درخواست به انبار برود یا به تولید.</p>' +
       '<div class="cr-seg" role="radiogroup" aria-label="تصمیم ارسال">' + Object.keys(ROUTE).map(function (k) { return '<button type="button" role="radio" data-route="' + k + '" aria-checked="' + (x.route === k) + '">' + ROUTE[k] + '</button>'; }).join('') + '</div>' +
       '<h3 class="cr-h2">وضعیت</h3><div class="cr-seg" role="radiogroup" aria-label="وضعیت">' + Object.keys(STATUS).map(function (k) { return '<button type="button" role="radio" data-status="' + k + '" aria-checked="' + (x.status === k) + '">' + STATUS[k] + '</button>'; }).join('') + '</div>' +
-      '<h3 class="cr-h2">مسئول پیگیری</h3>' + (lead() ? (team ? '<div class="cr-seg" role="radiogroup" aria-label="مسئول پیگیری">' + team + '</div>' : '<p class="cr-hint">کارشناس فروش فعالی پیدا نشد.</p>') : '<p class="cr-self">' + esc(x.assigneeName || '—') + '</p>') + '</section>' +
+      '<h3 class="cr-h2">مسئول پیگیری</h3>' + (lead() ? (team ? '<div class="cr-seg" role="radiogroup" aria-label="مسئول پیگیری">' + team + '</div>' : '<p class="cr-hint">هیچ کارشناس فروش فعالی پیدا نشد.</p>') : '<p class="cr-self">' + esc(x.assigneeName || '—') + '</p>') + '</section>' +
       '<section><h3>ثبت تماس یا یادداشت</h3><textarea data-text rows="3" maxlength="400" placeholder="نتیجهٔ تماس، قول‌وقرار یا یادداشت…"></textarea>' +
       '<div class="cr-acts"><button type="button" class="cr-btn" data-logcall>ثبت نتیجهٔ تماس</button><button type="button" class="cr-btn alt" data-lognote>فقط یادداشت</button>' +
       '<button type="button" class="cr-btn alt" data-proforma>' + I.doc + 'ساخت پیش‌فاکتور مکث‌سیلور</button></div></section>' +
-      '<section><h3>سابقه</h3>' + (log ? '<ul class="cr-log">' + log + '</ul>' : '<p class="cr-hint">هنوز چیزی ثبت نشده است.</p>') + '</section></div>';
+      '<section><h3>سابقه</h3>' + (log ? '<ul class="cr-log">' + log + '</ul>' : '<p class="cr-hint">هنوز چیزی ثبت نشده است.</p>') + '</section>' + (lead() ? '<section class="cr-danger"><h3>حذف</h3><p class="cr-hint">حذف کامل درخواست از پایگاه داده؛ برگشت ندارد.</p><button type="button" class="cr-btn danger" data-delete>' + I.trash + 'حذف این درخواست</button></section>' : '') + '</div>';
   }
   function showDetail() { var x = byId(S.sel); if (!x) { if (dlg.open) dlg.close(); return; } dlg.innerHTML = detailHtml(x); if (!dlg.open) dlg.showModal(); }
   function openReq(id) {
@@ -154,11 +157,38 @@
     change(x.id, x.status === 'new' || x.status === 'contacted' ? { status: 'quoted' } : {}, 'status', 'ساخت پیش‌فاکتور مکث‌سیلور از این درخواست').then(function () { location.href = './product-catalog.html'; });
   }
 
+  function removeReq(x) {
+    if (!lead() || !window.confirm('درخواست ' + x.code + ' برای همیشه حذف شود؟')) return;
+    S.busy = true; S.error = '';
+    db.collection('requests').doc(x.id).delete().then(function () { S.msg = 'درخواست ' + x.code + ' حذف شد.'; closeReq(); }, function (e) { S.error = errText(e); }).then(function () { S.busy = false; render(); if (S.sel) showDetail(); });
+  }
+  // the regional salesperson is given every free request automatically: the one whose provinces include the customer's province (the one with fewest open requests when several do)
+  var tried = {};
+  function pk(s) { return String(s || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[200cs]/g, ''); }
+  function provinceOf(x) {
+    var p = x.plan && x.plan.province; if (p) return p;
+    var m = /^استانs+([^،]+)،/.exec((x.customer && x.customer.address) || ''); return m ? m[1].trim() : '';
+  }
+  function autoAssign() {
+    if (!lead() || !S.team.length) return;
+    var load = {}; S.list.forEach(function (x) { if (x.assignee && openStates(x)) load[x.assignee] = (load[x.assignee] || 0) + 1; });
+    S.list.forEach(function (x) {
+      if (x.assignee || !openStates(x) || tried[x.id]) return;
+      var prov = pk(provinceOf(x)); if (!prov) return;
+      var cand = S.team.filter(function (u) { return (u.regions || []).some(function (r) { return pk(r) === prov; }); });
+      if (!cand.length) return;
+      cand.sort(function (a, b) { return (load[a.id] || 0) - (load[b.id] || 0); });
+      var u = cand[0]; tried[x.id] = true; load[u.id] = (load[u.id] || 0) + 1;
+      change(x.id, { assignee: u.id, assigneeName: u.name }, 'assign', u.name + ' (خودکار، استان ' + provinceOf(x) + ')');
+    });
+  }
+
   // ---------- events
   root.addEventListener('click', function (e) {
     var t;
     if ((t = e.target.closest('[data-flt]'))) { S.flt = t.getAttribute('data-flt'); S.shown = 40; render(); return; }
     if (e.target.closest('[data-more]')) { S.shown += 40; render(); return; }
+    if ((t = e.target.closest('[data-fin]'))) { var fx = byId(t.closest('.cr-card').getAttribute('data-id')); if (fx && !S.busy) change(fx.id, { status: 'won' }, 'status', STATUS.won); return; }
     if ((t = e.target.closest('[data-open]'))) { openReq(t.closest('.cr-card').getAttribute('data-id')); }
   });
   root.addEventListener('input', function (e) { if (e.target.id === 'crQ') { S.q = e.target.value; S.shown = 40; render(); } });
@@ -176,6 +206,7 @@
     }
     if (e.target.closest('[data-lognote]')) { if (!txt) { S.error = 'یادداشت را بنویسید.'; showDetail(); return; } change(x.id, {}, 'note', txt); return; }
     if (e.target.closest('[data-proforma]')) toProforma(x);
+    if (e.target.closest('[data-delete]')) removeReq(x);
   });
   dlg.addEventListener('close', function () { S.sel = ''; if (unsubLog) { unsubLog(); unsubLog = null; } });
 
@@ -186,13 +217,13 @@
     unsub = q.onSnapshot(function (snap) {
       S.list = []; snap.forEach(function (s) { var d = s.data(); d.id = s.id; S.list.push(d); });
       S.list.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-      S.loading = false; S.error = ''; render(); if (S.sel) showDetail();
+      S.loading = false; S.error = ''; render(); if (S.sel) showDetail(); autoAssign();
     }, function (e) { S.loading = false; S.error = errText(e); render(); });
   }
   function loadTeam() {
     if (!lead()) return Promise.resolve();
     return db.collection('users').get().then(function (snap) {
-      S.team = []; snap.forEach(function (s) { var d = s.data(); if (window.MSRoles.norm(d.role) === 'visitor' && d.active !== false) S.team.push({ id: s.id, name: d.name || d.email || s.id }); });
+      S.team = []; snap.forEach(function (s) { var d = s.data(); if (window.MSRoles.norm(d.role) === 'visitor' && d.active !== false) S.team.push({ id: s.id, name: d.name || d.email || s.id, regions: d.regions || [] }); });
       S.team.sort(function (a, b) { return a.name.localeCompare(b.name, 'fa'); });
     }, function () { /* the list of salespeople stays empty */ });
   }

@@ -4,7 +4,7 @@
 (function (w) {
   'use strict';
   var LABEL = {
-    manager: 'تکنولوژی سازمانی',
+    manager: 'تکنولوژی ارتباطات سازمانی',
     ceo: 'مدیریت',
     sales_manager: 'مدیر فروش و توسعه بازار',
     visitor: 'کارشناس فروش و توسعه بازار',
@@ -45,6 +45,7 @@
     customerAssign: ['manager', 'ceo', 'sales_manager'],                                      // group and customer owners, and the import
     customerImport: ['manager', 'ceo', 'sales_manager'],
     invoiceReview: ['account_manager'],                                                 // approves a proforma or refuses it with a written reason
+    jobEdit: ['manager', 'ceo', 'hr', 'sales_manager'],                                   // job descriptions: edit those of others (hr, management; the sales manager only salespeople)
     invoiceDecide: ['manager', 'ceo', 'sales_manager']                                  // accepts or declines a refusal (accepting archives the proforma)
   };
   // two letters that open every document number, so the kind of issuer is known before the name is read

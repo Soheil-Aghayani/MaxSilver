@@ -104,7 +104,7 @@
     if (S.loading) return '<p class="pr-note">در حال بارگذاری…</p>';
     if (!S.user) return '<p class="pr-note">برای ویرایش قیمت‌ها ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="pr-note">حساب شما هنوز فعال نشده است.</p>';
-    if (!can('pricesEdit')) return '<p class="pr-note">ویرایش قیمت فقط برای مدیر فروش، مدیریت و تکنولوژی سازمانی است. قیمت‌ها را در کاتالوگ می‌بینید.</p>';
+    if (!can('pricesEdit')) return '<p class="pr-note">ویرایش قیمت فقط برای مدیر فروش، مدیریت و تکنولوژی ارتباطات سازمانی است. قیمت‌ها را در کاتالوگ می‌بینید.</p>';
     return '<h1>قیمت‌ها</h1><p class="pr-lead">قیمت لیست محصولات به تومان. قیمتی که اینجا ذخیره کنید جای قیمت لیست پایه (توربومکس، ' + esc(P.date()) + ') را می‌گیرد و در کاتالوگ و پیش‌فاکتور برای همه دیده می‌شود. کدی را که دیگر استفاده نمی‌شود با دکمهٔ ⊘ کنار بگذارید (کد جایگزین اختیاری است).</p>' +
       (S.error ? '<p class="pr-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.msg ? '<p class="pr-ok" role="status">' + esc(S.msg) + '</p>' : '') + listHtml();
   }

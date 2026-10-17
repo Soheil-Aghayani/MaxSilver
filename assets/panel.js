@@ -879,10 +879,11 @@
     chat: '<path d="M21 12a8 8 0 0 1-11.600 7.100L4 20l1-4.400A8 8 0 1 1 21 12z"/>',
     comm: '<path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/>',
     inv: '<path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6"/>',
+    jobs: '<path d="M9 3h6v3H9zM5 6h14v15H5zM9 12h6M9 16h6"/>',
     team: '<circle cx="9" cy="8" r="3.500"/><path d="M2 20c0-3.300 3-6 7-6s7 2.700 7 6M17 5a3.500 3.500 0 0 1 0 7M22 20c0-2.600-1.800-4.700-4.500-5.600"/>',
     me: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'
   };
-  var TAB_LABEL = { home: 'خانه', inv: 'پیش‌فاکتورها', chat: 'گفت‌وگوها', comm: 'پورسانت', team: 'تیم', me: 'تنظیمات من' };
+  var TAB_LABEL = { home: 'خانه', inv: 'پیش‌فاکتورها', chat: 'گفت‌وگوها', comm: 'پورسانت', team: 'تیم', jobs: 'شرح وظایف', me: 'تنظیمات من' };
   var HASH_TAB = { tickets: 'chat', public: 'chat', commission: 'comm', team: 'team', notify: 'home', invoices: 'inv' };
   function tabFromHash() {
     var h = (location.hash || '').slice(1), k = HASH_TAB[h];
@@ -1121,8 +1122,8 @@
         '<button type="button" class="pn-primary" data-tab="inv">مشاهدهٔ پیش‌فاکتورها</button></section>' + home;
     }
     var secs = { home: home, inv: can('invoices') ? invoicesView() : '', chat: publicView() + ticketsView(), comm: commissionView(), team: can('team') ? teamView() : '',
-      me: lookView() + meView() + prefsView() };
-    var keys = ['home', 'inv', 'chat', 'comm', 'team', 'me'].filter(function (k) { return !!secs[k]; });
+      jobs: jobsView(), me: lookView() + meView() + prefsView() };
+    var keys = ['home', 'inv', 'chat', 'comm', 'team', 'jobs', 'me'].filter(function (k) { return !!secs[k]; });
     if (keys.indexOf(S.tab) < 0) S.tab = 'home';
     out += '<nav class="pn-tabs" role="tablist" aria-label="بخش‌های پنل">' + keys.map(function (k) {
       return '<button type="button" role="tab" class="pn-tab" data-tab="' + k + '" aria-selected="' + (S.tab === k) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICON[k] + '</svg><span>' + TAB_LABEL[k] + '</span></button>';
@@ -1174,7 +1175,7 @@
       '</div></section>' +
       '<section class="pn-sec"><h3>حساب</h3><div class="pn-grid">' +
         (can('roleAdmin') && !self ? '<div class="full">' + dropdown('role', 'نقش', [{ label: '', options: MSRoles.ORDER.map(function (r) { return { v: r, t: MSRoles.label(r) }; }) }], MSRoles.norm(u.role)) + '</div>'
-          : '<p class="pn-note full">نقش: ' + esc(MSRoles.label(u.role)) + (can('roleAdmin') ? '' : ' (تغییر نقش فقط با مدیرعامل یا تکنولوژی سازمانی است)') + '</p>') +
+          : '<p class="pn-note full">نقش: ' + esc(MSRoles.label(u.role)) + (can('roleAdmin') ? '' : ' (تغییر نقش فقط با مدیرعامل یا تکنولوژی ارتباطات سازمانی است)') + '</p>') +
         // fields that belong to one kind of role only; the block follows the chosen role
         (can('roleAdmin') ? '<div class="full" data-field="code"' + (MSRoles.hasField(u.role, 'code') ? '' : ' hidden') + '><label>کد برای شمارهٔ سند (حروف و عدد لاتین)<input type="text" name="code" dir="ltr" value="' + esc(u.code || '') + '" maxlength="6" pattern="[A-Za-z0-9]*"></label></div>' : '') +
         (can('people') ? '<label class="pn-check full"><input type="checkbox" name="active"' + (u.active === false ? '' : ' checked') + (self ? ' disabled' : '') + '><span>حساب فعال است</span></label>' : '') +
@@ -1270,6 +1271,8 @@
     if (cm) { S.comm.month = cm.getAttribute('data-comm-month'); S.comm.mdoc = null; S.comm.msg = ''; S.comm.error = ''; render(); loadComm(); return; }
     var ca = e.target.closest('[data-comm-act]');
     if (ca) { commAct(ca.getAttribute('data-comm-act')); return; }
+    var je = e.target.closest('[data-jd-edit]');
+    if (je) { jdOpen(je.getAttribute('data-jd-edit')); return; }
     var ed = e.target.closest('[data-edit]');
     if (ed) {
       var u = S.team.filter(function (x) { return x.id === ed.getAttribute('data-edit'); })[0];
@@ -1321,6 +1324,7 @@
   document.addEventListener('submit', function (e) {
     e.preventDefault();
     var f = e.target, v = function (n) { return f.elements[n].value.trim(); };
+    if (f.id === 'jdForm') { jdSave(f); return; }
     S.error = ''; S.msg = '';
     if (f.id === 'loginForm') {
       S.busy = true; render();

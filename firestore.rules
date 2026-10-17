@@ -306,7 +306,7 @@ service cloud.firestore {
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'assignee', 'assigneeName', 'updatedAt', 'lastNote']))
             || (hasRole(['visitor']) && resource.data.get('assignee', '') == request.auth.uid
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'updatedAt', 'lastNote'])));
-      allow delete: if isManager();
+      allow delete: if salesLead();   // management, the CEO and the sales manager
       // what was done on a request: calls, notes, decisions. Append only.
       match /log/{lid} {
         allow read: if salesLead() || (hasRole(['visitor']) && get(/databases/$(database)/documents/requests/$(id)).data.get('assignee', '') == request.auth.uid);
@@ -338,6 +338,33 @@ service cloud.firestore {
         && request.resource.data.note is string && request.resource.data.note.size() <= 200
         && request.resource.data.by == request.auth.uid;
       allow delete: if hasRole(['manager', 'ceo', 'sales_manager']);
+    }
+
+    // Job descriptions (شرح وظایف): one document per person. The person reads their own; hr, management and the CEO read and write
+    // everyone's; the sales manager only those of salespeople. Nobody edits their own. Every edit appends a line to job_description_log
+    // (the app also opens a ticket that carries the changes to the employee and to hr).
+    function jdEditor(uid) {
+      return hasRole(['manager', 'ceo', 'hr'])
+        || (hasRole(['sales_manager']) && get(/databases/$(database)/documents/users/$(uid)).data.get('role', 'visitor') == 'visitor');
+    }
+    match /job_descriptions/{uid} {
+      allow read: if approved() && (request.auth.uid == uid || jdEditor(uid));
+      allow create, update: if approved() && request.auth.uid != uid && jdEditor(uid)
+        && request.resource.data.keys().hasOnly(['title', 'summary', 'duties', 'updatedAt', 'updatedBy', 'updatedByName'])
+        && request.resource.data.title is string && request.resource.data.title.size() <= 80
+        && request.resource.data.summary is string && request.resource.data.summary.size() <= 600
+        && request.resource.data.duties is list && request.resource.data.duties.size() <= 40
+        && request.resource.data.updatedBy == request.auth.uid;
+      allow delete: if false;
+    }
+    match /job_description_log/{id} {
+      allow read: if approved() && (resource.data.uid == request.auth.uid || jdEditor(resource.data.uid));
+      allow create: if approved() && request.resource.data.uid != request.auth.uid && jdEditor(request.resource.data.uid)
+        && request.resource.data.keys().hasOnly(['uid', 'at', 'by', 'byName', 'changes'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.changes is list && request.resource.data.changes.size() >= 1 && request.resource.data.changes.size() <= 60
+        && request.resource.data.at is number;
+      allow update, delete: if false;
     }
 
     match /prices/{uid} {
