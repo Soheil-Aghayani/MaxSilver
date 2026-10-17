@@ -1079,6 +1079,111 @@
     b.commit().then(function () { return reloadInvoices(); }).then(function () { dlg.close(); }, function (err) { rvFail(errText(err)); });
   }
 
+  // ----- job descriptions (شرح وظایف): everyone reads their own; hr and management edit; every edit is copied to the employee and hr
+  var jdFmt = function (ms) { try { return new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(ms)); } catch (e) { return ''; } };
+  function jdCanEdit(u) {
+    if (!u || !S.user || u.id === S.user.uid) return false;
+    var me = MSRoles.norm(S.profile.role);
+    if (me === 'manager' || me === 'ceo' || me === 'hr') return true;
+    return me === 'sales_manager' && MSRoles.norm(u.role) === 'visitor';
+  }
+  function jdLoad(uid) {
+    S.jd = S.jd || {}; S.jdLog = S.jdLog || {}; S.jdBusy = S.jdBusy || {};
+    if (S.jdBusy[uid]) return;
+    S.jdBusy[uid] = true;
+    Promise.all([db.collection('job_descriptions').doc(uid).get(), db.collection('job_description_log').where('uid', '==', uid).get()]).then(function (r) {
+      S.jd[uid] = r[0].exists ? r[0].data() : null;
+      var l = []; r[1].forEach(function (s) { l.push(s.data()); });
+      l.sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+      S.jdLog[uid] = l.slice(0, 20);
+    }, function (e) { S.jd[uid] = null; S.jdLog[uid] = []; S.jdErr = errText(e); }).then(function () {
+      S.jdBusy[uid] = false;
+      if (S.tab === 'jobs') render();
+      var f = dlg.querySelector('#jdForm');
+      if (f && f.getAttribute('data-id') === uid && !f.hasAttribute('data-ready')) jdFill(f, uid);
+    });
+  }
+  function jdBody(d) {
+    if (!d) return '<p class="pn-note">هنوز شرح وظایف ثبت نشده است.</p>';
+    return (d.title ? '<h3 class="pn-sub">' + esc(d.title) + '</h3>' : '') + (d.summary ? '<p class="pn-note">' + esc(d.summary) + '</p>' : '') +
+      ((d.duties || []).length ? '<ol class="pn-jd">' + d.duties.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' : '') +
+      (d.updatedAt ? '<p class="pn-note">آخرین ویرایش: ' + esc(jdFmt(d.updatedAt)) + (d.updatedByName ? ' · ' + esc(d.updatedByName) : '') + '</p>' : '');
+  }
+  function jdLogView(uid) {
+    var l = (S.jdLog || {})[uid] || [];
+    if (!l.length) return '';
+    return '<h3 class="pn-sub">تاریخچهٔ تغییرات</h3><ul class="pn-list">' + l.map(function (g) {
+      return '<li><div><b>' + esc(g.byName || '') + '</b><span>' + esc(jdFmt(g.at)) + '</span></div><div class="pn-jdch">' + (g.changes || []).map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div></li>';
+    }).join('') + '</ul>';
+  }
+  function jobsView() {
+    var uid = S.user.uid; S.jd = S.jd || {};
+    if (S.jd[uid] === undefined) jdLoad(uid);
+    var out = '<section class="pn-card"><h2>شرح وظایف من</h2>' + (S.jd[uid] === undefined ? '<p class="pn-note">در حال بارگذاری…</p>' : jdBody(S.jd[uid]) + jdLogView(uid)) +
+      '<p class="pn-note">شرح وظایف را منابع انسانی و مدیریت بالادستی ویرایش می‌کنند؛ هر تغییر برای شما و منابع انسانی هم فرستاده می‌شود (بخش «گفت‌وگوها»).</p></section>';
+    var edit = S.team.filter(jdCanEdit);
+    if (edit.length) {
+      needProfiles(edit.map(function (u) { return u.id; }));
+      out += '<section class="pn-card"><h2>شرح وظایف همکاران</h2><ul class="pn-users">' + edit.sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'fa'); }).map(function (u) {
+        return '<li class="pn-user' + (u.active === false ? ' off' : '') + '">' + avatar(u.name, 42, u.id) + '<div><b>' + esc(u.name || '—') + '</b><span class="pn-role">' + esc(MSRoles.label(u.role)) + '</span></div>' +
+          '<button type="button" class="pn-ibtn" data-jd-edit="' + esc(u.id) + '" title="ویرایش شرح وظایف" aria-label="ویرایش شرح وظایف ' + esc(u.name || '') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button></li>';
+      }).join('') + '</ul></section>';
+    }
+    return out;
+  }
+  function jdForm(u) {
+    return '<div class="pn-bar"><h2 id="dlgName">شرح وظایف ' + esc(u.name || '') + '</h2><div class="pn-bar-actions"><button type="button" class="pn-x" data-close aria-label="بستن"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div></div>' +
+      '<form id="jdForm" class="pn-edit" data-id="' + esc(u.id) + '" novalidate><p class="pn-note">با ذخیره، یک نسخه از همهٔ تغییرات برای ' + esc(u.name || 'همکار') + ' و منابع انسانی فرستاده می‌شود.</p>' +
+      '<section class="pn-sec"><div class="pn-grid"><label class="full">عنوان شغلی<input type="text" name="title" maxlength="80" disabled></label>' +
+      '<label class="full">شرح کوتاه مأموریت<textarea name="summary" rows="3" maxlength="600" disabled></textarea></label>' +
+      '<label class="full">وظایف (هر خط یک وظیفه)<textarea name="duties" rows="9" maxlength="6000" disabled></textarea></label></div></section>' +
+      (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') + '<button type="submit" class="pn-primary">ذخیره و ارسال نسخه</button></form>';
+  }
+  function jdFill(f, uid) {
+    var d = (S.jd || {})[uid] || { title: '', summary: '', duties: [] };
+    f.elements.title.value = d.title || ''; f.elements.summary.value = d.summary || ''; f.elements.duties.value = (d.duties || []).join('\n');
+    Array.prototype.forEach.call(f.elements, function (el) { el.disabled = false; });
+    f.setAttribute('data-ready', '1');
+  }
+  function jdOpen(uid) {
+    var u = S.team.filter(function (x) { return x.id === uid; })[0]; if (!u || !jdCanEdit(u)) return;
+    S.error = ''; dlg.innerHTML = jdForm(u); dlg.showModal();
+    S.jd = S.jd || {}; delete S.jd[uid]; S.jdBusy = S.jdBusy || {}; S.jdBusy[uid] = false; jdLoad(uid);
+  }
+  // what changed, line by line, in plain words
+  function jdDiff(a, b) {
+    var out = [];
+    if ((a.title || '') !== b.title) out.push('عنوان شغلی: «' + (a.title || '—') + '» ← «' + (b.title || '—') + '»');
+    if ((a.summary || '') !== b.summary) out.push('شرح مأموریت تغییر کرد: «' + (b.summary || '—') + '»');
+    var oldD = a.duties || [];
+    b.duties.filter(function (x) { return oldD.indexOf(x) < 0; }).forEach(function (x) { out.push('وظیفهٔ تازه: ' + x); });
+    oldD.filter(function (x) { return b.duties.indexOf(x) < 0; }).forEach(function (x) { out.push('وظیفهٔ حذف‌شده: ' + x); });
+    return out.map(function (x) { return x.slice(0, 300); }).slice(0, 60);
+  }
+  function jdSave(f) {
+    var uid = f.getAttribute('data-id'), u = S.team.filter(function (x) { return x.id === uid; })[0]; if (!u || !jdCanEdit(u) || S.busy) return;
+    if (!f.hasAttribute('data-ready')) return;   // the current text has not arrived yet; saving now would overwrite it
+    var old = (S.jd || {})[uid] || { title: '', summary: '', duties: [] };
+    var nw = { title: f.elements.title.value.replace(/\s+/g, ' ').trim().slice(0, 80), summary: f.elements.summary.value.trim().slice(0, 600),
+      duties: f.elements.duties.value.split('\n').map(function (x) { return x.replace(/\s+/g, ' ').trim().slice(0, 200); }).filter(Boolean).slice(0, 40) };
+    var ch = jdDiff(old, nw);
+    if (!ch.length) { S.error = 'تغییری وجود ندارد.'; dlg.innerHTML = jdForm(u); jdFill(dlg.querySelector('#jdForm'), uid); return; }
+    var me = S.user.uid, now = Date.now(), name = S.profile.name || S.user.email || '', role = MSRoles.norm(S.profile.role), ref = db.collection('tickets').doc();
+    var text = ('شرح وظایف ' + (u.name || '') + ' توسط ' + name + ' ویرایش شد.\n' + ch.map(function (c) { return '• ' + c; }).join('\n')).slice(0, 1900);
+    var b = db.batch();
+    b.set(db.collection('job_descriptions').doc(uid), { title: nw.title, summary: nw.summary, duties: nw.duties, updatedAt: now, updatedBy: me, updatedByName: name });
+    b.set(db.collection('job_description_log').doc(), { uid: uid, at: now, by: me, byName: name, changes: ch });
+    b.set(ref, { title: ('شرح وظایف ' + (u.name || '')).slice(0, 120), fromUid: me, fromName: name, fromRole: role, toRole: 'hr', toUid: uid, toName: u.name || '', kind: 'jobdesc', status: 'open', createdAt: now, updatedAt: now,
+      lastText: text.slice(0, 140), lastBy: me, lastByName: name, audience: ['uid:' + me, 'uid:' + uid, 'role:hr'] });
+    b.set(ref.collection('messages').doc(), { uid: me, name: name, role: role, text: text, at: now });
+    S.busy = true;
+    b.commit().then(function () {
+      S.jd[uid] = Object.assign({}, nw, { updatedAt: now, updatedByName: name });
+      S.jdLog[uid] = [{ uid: uid, at: now, by: me, byName: name, changes: ch }].concat((S.jdLog || {})[uid] || []);
+      dlg.close(); S.msg = 'شرح وظایف ذخیره شد و نسخهٔ تغییرات برای ' + (u.name || 'همکار') + ' و منابع انسانی فرستاده شد.';
+    }, function (e) { S.error = errText(e); dlg.innerHTML = jdForm(u); jdFill(dlg.querySelector('#jdForm'), uid); }).then(function () { S.busy = false; render(); });
+  }
+
   function view() {
     if (S.loading) return '<p class="pn-note">در حال بارگذاری…</p>';
     if (!S.user) {
