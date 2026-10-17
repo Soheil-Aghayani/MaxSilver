@@ -25,9 +25,11 @@
     s.className = 'hs-slide pic event';
     s.setAttribute('data-ev', ev.id);
     s.setAttribute('data-tone', ev.tone);
+    var base = './assets/art/events/' + ev.id;
     s.innerHTML = '<div class="hs-copy"><h2>' + esc(ev.title + (ev.days === 0 ? ' مبارک' : '')) + '</h2><p>' + esc(ev.hello) + '</p>' +
       '<a class="hs-cta" href="./events.html">مناسبت‌ها<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg></a></div>' +
-      '<div class="hs-evart" aria-hidden="true"><span>' + esc(ev.art[0]) + '</span><span>' + esc(ev.art[1]) + '</span><span>' + esc(ev.art[2]) + '</span></div>';
+      '<picture class="hs-art" aria-hidden="true"><source media="(max-width:760px)" srcset="' + base + '-mobile.webp" width="720" height="900"><source media="(max-width:1100px)" srcset="' + base + '-tablet.webp" width="1024" height="360">' +
+      '<img src="' + base + '-pc.webp" alt="" width="1280" height="360" decoding="async"></picture>';
     var first = track.querySelector('.hs-slide');
     track.insertBefore(s, first.nextSibling);
   }

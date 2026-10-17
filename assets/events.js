@@ -62,7 +62,8 @@
   function fa(s) { return String(s).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); }
 
   // k: 'j' fixed Jalali date, 'g' fixed Gregorian date, 'y' Jalali date given per Jalali year (lunar or computed occasions).
-  // imp: gets a greeting slide and a bell reminder. lead: days the slide shows before the day. rem: days of the bell reminder.
+  // every occasion has banner artwork (assets/art/events/<id>-pc|tablet|mobile.webp) and shows a greeting slide `lead` days
+  // before the day (default 2). imp: also a bell reminder `rem` days before.
   // grp: ایرانی، مذهبی، جهانی، آشپزی. idea: a suggestion for marketing, not a company fact.
   var EVENTS = [
     { id: 'nowruz', t: 'نوروز', k: 'j', d: [1, 1], grp: 'ایرانی', imp: true, lead: 7, rem: 21, tone: 'mint', art: ['🌱', '🥚', '🌸'],
@@ -135,7 +136,7 @@
     now = day0(now || new Date());
     var list = upcoming(30, now).filter(function (x) {
       var e = EVENTS.filter(function (z) { return z.id === x.id; })[0];
-      return e && e.imp && x.days >= 0 && x.days <= (e.lead || 3);
+      return e && x.days >= 0 && x.days <= (e.lead || 2);
     });
     return list[0] || null;
   }

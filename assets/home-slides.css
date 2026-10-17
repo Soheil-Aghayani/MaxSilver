@@ -1,7 +1,7 @@
 /* home banner slideshow: slide 1 is the original portal title, the others carry real product photos */
 .hero.hs{display:block;padding:0;min-height:clamp(250px,34vw,330px)}
 .hs-track{position:relative;z-index:1;display:grid;min-height:inherit}
-.hs-slide{grid-area:1/1;position:relative;display:grid;align-items:center;gap:30px;padding:clamp(26px,5vw,56px);opacity:0;visibility:hidden;transform:translateX(-18px);transition:opacity .55s ease,transform .55s ease,visibility 0s .55s}
+.hs-slide{grid-area:1/1;position:relative;display:grid;align-items:center;gap:30px;padding:clamp(26px,5vw,56px) clamp(26px,5vw,56px) calc(clamp(26px,5vw,56px) + 12px);opacity:0;visibility:hidden;transform:translateX(-18px);transition:opacity .55s ease,transform .55s ease,visibility 0s .55s}
 .hs-slide.on{opacity:1;visibility:visible;transform:none;transition:opacity .55s ease,transform .55s ease}
 .hs-slide.title{grid-template-columns:minmax(0,1.2fr) minmax(220px,.8fr)}
 .hs-slide.pic{grid-template-columns:1fr;color:var(--ms-navy);overflow:hidden}
@@ -14,10 +14,10 @@
 .hs-cta{display:inline-flex;align-items:center;gap:8px;min-height:46px;margin-top:6px;padding:0 20px;border-radius:14px;background:var(--ms-navy);color:#fff;font:800 15px/1 Estedad,Tahoma,sans-serif;text-decoration:none;box-shadow:0 10px 24px rgba(5,25,52,.22);transition:transform .15s}
 .hs-cta:hover{transform:translateY(-2px)}
 .hs-cta svg{width:18px;height:18px}
-.hs-art{position:absolute;inset:0;z-index:0;display:block}
+.hs-art{position:absolute;inset:0 0 34px;z-index:0;display:block}
 .hs-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:left center}
 
-.hs-dots{position:absolute;z-index:3;left:50%;bottom:12px;translate:-50% 0;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:rgba(5,25,52,.35);backdrop-filter:blur(6px)}
+.hs-dots{position:absolute;z-index:3;left:50%;bottom:5px;translate:-50% 0;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:rgba(5,25,52,.35);backdrop-filter:blur(6px)}
 .hs-dot{width:9px;height:9px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;transition:width .2s,background .2s}
 .hs-dot[aria-selected=true]{width:22px;border-radius:999px;background:var(--ms-gold,#ffcc2a)}
 .hs-pause{display:grid;place-items:center;width:22px;height:22px;margin-inline-start:4px;padding:0;border:0;border-radius:50%;background:transparent;color:#fff;cursor:pointer}
@@ -40,11 +40,6 @@
 .hs-slide.event[data-tone=plum] .hs-cta{background:#ffcc2a;color:#051934}
 .hero.hs[data-slide=pic][data-tone=plum] .upd-bell{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff}
 .hs-slide.event{min-height:inherit}
-.hs-evart{position:absolute;inset-block:0;left:0;width:48%;z-index:0;display:flex;align-items:center;justify-content:center;gap:clamp(6px,2vw,22px);font-size:clamp(54px,9vw,104px);line-height:1;pointer-events:none}
-.hs-evart span{filter:drop-shadow(0 12px 14px rgba(5,25,52,.22));animation:hs-ev 5s ease-in-out infinite}
-.hs-evart span:nth-child(1){font-size:1.5em}
-.hs-evart span:nth-child(2){animation-delay:.7s}.hs-evart span:nth-child(3){animation-delay:1.4s;align-self:flex-end;margin-bottom:12%}
-@keyframes hs-ev{0%,100%{translate:0 0}50%{translate:0 -7px}}
 
 @media(max-width:760px){
   .hero.hs{min-height:0}
@@ -54,6 +49,5 @@
   .hs-copy{max-width:none}
   .hs-copy p{display:none}
   .hs-art img{object-position:center bottom}
-  .hs-evart{inset-block:auto 34px;inset-inline:0;left:0;width:100%;height:150px;font-size:64px}
 }
-@media(prefers-reduced-motion:reduce){.hs-slide,.hs-slide.on{transition:none;transform:none}.hs-evart span{animation:none}}
+@media(prefers-reduced-motion:reduce){.hs-slide,.hs-slide.on{transition:none;transform:none}}
