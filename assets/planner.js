@@ -88,6 +88,7 @@
   var nz = function (s) { return String(s || '').replace(/[‌\s]/g, ''); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function conceptOf(id) { return CONCEPTS.filter(function (c) { return c.id === id; })[0]; }
+  var SEP = '<i class="ms-sep" aria-hidden="true"></i>';   // a coloured bar between a word and a number: a dot there reads as a Persian zero
   var BRAND = { 'max-silver': 'مکث‌سیلور', wintora: 'وینتورا', 'torbo-max': 'توربومکس' };
 
   // ---- the plan: jobs for the choices, then the gaps they imply
@@ -189,7 +190,7 @@
     var alts = candidates(j.id).length > 1;
     return '<li class="pl-job"><div class="pl-jt"><b>' + job.t + '</b>' + badge + '</div><p class="pl-why">' + j.why + '</p>' +
       '<div class="pl-prod"><button type="button" class="pl-img" data-info="' + esc(p.id) + '" aria-label="جزئیات ' + esc(p.name) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '</button>' +
-      '<div class="pl-pn"><b>' + esc(p.name) + '</b><span>' + (BRAND[p.src] || '') + (p.dims ? ' · ' + faInt.format(p.dims.l) + '×' + faInt.format(p.dims.w) + ' سانتی‌متر' : '') + '</span></div></div>' +
+      '<div class="pl-pn"><b>' + esc(p.name) + '</b><span>' + (BRAND[p.src] || '') + (p.dims ? SEP + faInt.format(p.dims.l) + '×' + faInt.format(p.dims.w) + ' سانتی‌متر' : '') + '</span></div></div>' +
       '<div class="pl-acts"><span class="pl-qty"><button type="button" data-q="' + j.id + '" data-d="-1" aria-label="کمتر">−</button><b>' + faInt.format(qtyFor(j.id)) + '</b><button type="button" data-q="' + j.id + '" data-d="1" aria-label="بیشتر">+</button></span>' +
       (alts ? '<button type="button" class="pl-ic" data-swap="' + j.id + '" aria-label="جایگزین" title="جایگزین مشابه">' + ICO.swap + '</button>' : '') +
       '<button type="button" class="pl-ic" data-remove="' + j.id + '" aria-label="حذف" title="حذف">' + ICO.trash + '</button></div></li>';
@@ -228,7 +229,7 @@
   function stepRequest() {
     var lines = requestLines(), c = conceptOf(S.concept);
     return dots() + '<h1>ثبت درخواست خرید</h1><p class="pl-lead">اطلاعات خود را بنویسید تا کارشناس فروش مکث‌سیلور با شما تماس بگیرد. در این برگه قیمتی نیست؛ قیمت و شرایط را کارشناس فروش اعلام می‌کند.</p>' +
-      '<section class="pl-req"><h3>طرح شما: ' + esc(c.t) + ' ' + SIZES[S.size].t + '</h3><ul class="pl-rl">' + lines.map(function (l) { return '<li><b>' + esc(l.name) + '</b><span>' + (l.brand ? esc(l.brand) + ' · ' : '') + faInt.format(l.qty) + ' عدد</span></li>'; }).join('') + '</ul></section>' +
+      '<section class="pl-req"><h3>طرح شما: ' + esc(c.t) + ' ' + SIZES[S.size].t + '</h3><ul class="pl-rl">' + lines.map(function (l) { return '<li><b>' + esc(l.name) + '</b><span>' + (l.brand ? esc(l.brand) + SEP : '') + faInt.format(l.qty) + ' عدد</span></li>'; }).join('') + '</ul></section>' +
       '<form class="pl-form" novalidate autocomplete="on">' + (ERR_ALL ? '<p class="pl-err" role="alert">' + esc(ERR_ALL) + '</p>' : '') +
       '<h3>مشخصات خریدار</h3><div class="pl-grid">' +
       field('name', 'نام و نام خانوادگی', { ac: 'name', wide: true, max: 80 }) + field('phone', 'شمارهٔ موبایل', { ac: 'tel-national', mode: 'numeric', dir: 'ltr', max: 14 }) + field('nid', 'کد ملی', { mode: 'numeric', dir: 'ltr', max: 10 }) +
@@ -295,7 +296,7 @@
     dlg.innerHTML = '<div class="pl-dbar"><h2>جایگزین «' + JOBS[job].t + '»</h2><button type="button" class="pl-ic" data-close aria-label="بستن">' + ICO.close + '</button></div>' +
       '<p class="pl-note">نمونه‌های مشابه، نزدیک‌ترین اندازه اول:</p><ul class="pl-alts">' + list.map(function (it) {
         return '<li><button type="button" data-pickprod="' + esc(it.id) + '" data-job="' + job + '"><span class="pl-img">' + (it.img ? '<img src="' + esc(it.img) + '" alt="">' : '') + '</span>' +
-          '<span class="pl-pn"><b>' + esc(it.name) + '</b><span>' + (BRAND[it.src] || '') + (it.dims ? ' · ' + faInt.format(it.dims.l) + '×' + faInt.format(it.dims.w) + ' سانتی‌متر' : '') + '</span></span></button></li>';
+          '<span class="pl-pn"><b>' + esc(it.name) + '</b><span>' + (BRAND[it.src] || '') + (it.dims ? SEP + faInt.format(it.dims.l) + '×' + faInt.format(it.dims.w) + ' سانتی‌متر' : '') + '</span></span></button></li>';
       }).join('') + '</ul>';
     if (!dlg.open) dlg.showModal();
   }

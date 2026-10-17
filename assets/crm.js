@@ -19,6 +19,7 @@
     doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6"/></svg>'
   };
 
+  var SEP = '<i class="ms-sep" aria-hidden="true"></i>';   // a coloured bar instead of a dot between words and numbers
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function norm(s) { return RQ.latin(String(s == null ? '' : s).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[‌‏‎]/g, ' ').replace(/\s+/g, ' ').trim()).toLowerCase(); }
   function errText(e) {
@@ -106,13 +107,13 @@
     var c = x.customer || {}, r = x.receiver || {}, p = x.plan || {};
     var team = S.team.map(function (u) { return '<button type="button" role="radio" data-assign="' + esc(u.id) + '" aria-checked="' + (x.assignee === u.id) + '">' + esc(u.name) + '</button>'; }).join('');
     var lines = (x.lines || []).map(function (l, i) { return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(l.code || '—') + '</td><td class="nm">' + esc(l.name) + '</td><td>' + esc(l.brand || '') + '</td><td>' + faInt.format(l.qty || 0) + '</td></tr>'; }).join('');
-    var log = S.log.map(function (g) { return '<li><b>' + esc(RQ.LOGKIND[g.kind] || g.kind) + '</b> <span>' + esc(g.byName || '') + ' · ' + esc(when(g.at)) + '</span>' + (g.text ? '<p>' + esc(g.text) + '</p>' : '') + '</li>'; }).join('');
+    var log = S.log.map(function (g) { return '<li><b>' + esc(RQ.LOGKIND[g.kind] || g.kind) + '</b> <span>' + esc(g.byName || '') + SEP + esc(when(g.at)) + '</span>' + (g.text ? '<p>' + esc(g.text) + '</p>' : '') + '</li>'; }).join('');
     return '<div class="cr-dbar"><div><h2 dir="ltr">' + esc(x.code) + '</h2><div class="cr-bs">' + badges(x) + '</div></div><button type="button" class="cr-ic" data-close aria-label="بستن">' + I.close + '</button></div>' +
       '<div class="cr-dbody" data-id="' + esc(x.id) + '">' +
       (S.error ? '<p class="cr-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<section><h3>خریدار</h3><dl class="cr-facts">' + row('نام', c.name) + '<div><dt>موبایل</dt><dd>' + (c.phone ? '<a class="cr-tel" href="tel:' + esc(c.phone) + '" dir="ltr">' + I.phone + esc(c.phone) + '</a>' : '—') + '</dd></div>' + row('کد ملی', c.nid, true) + row('شهر', c.city) + row('کد پستی', c.zip, true) + row('نشانی', c.address) + '</dl></section>' +
       '<section><h3>تحویل‌گیرنده</h3>' + (r.self ? '<p class="cr-self">خود خریدار تحویل می‌گیرد.</p>' : '<dl class="cr-facts">' + row('نام', r.name) + row('کد ملی', r.nid, true) + '<div><dt>موبایل</dt><dd>' + (r.phone ? '<a class="cr-tel" href="tel:' + esc(r.phone) + '" dir="ltr">' + I.phone + esc(r.phone) + '</a>' : '—') + '</dd></div></dl>') + '</section>' +
-      '<section><h3>کالاها <small>' + esc(p.concept || '') + (p.size ? ' ' + esc(p.size) : '') + (p.serve ? ' · ' + esc(p.serve) : '') + '</small></h3><div class="cr-tw"><table class="cr-lines"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th></tr></thead><tbody>' + lines + '</tbody></table></div>' + (x.note ? '<p class="cr-self">توضیح مشتری: ' + esc(x.note) + '</p>' : '') + '</section>' +
+      '<section><h3>کالاها <small>' + esc(p.concept || '') + (p.size ? ' ' + esc(p.size) : '') + (p.serve ? SEP + esc(p.serve) : '') + '</small></h3><div class="cr-tw"><table class="cr-lines"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th></tr></thead><tbody>' + lines + '</tbody></table></div>' + (x.note ? '<p class="cr-self">توضیح مشتری: ' + esc(x.note) + '</p>' : '') + '</section>' +
       '<section><h3>تصمیم</h3><p class="cr-hint">«نیاز به تماس» یعنی هنوز با مشتری صحبت نشده. پس از تماس و اطمینان از خریدار، مشخص کنید درخواست به انبار برود یا به تولید.</p>' +
       '<div class="cr-seg" role="radiogroup" aria-label="تصمیم ارسال">' + Object.keys(ROUTE).map(function (k) { return '<button type="button" role="radio" data-route="' + k + '" aria-checked="' + (x.route === k) + '">' + ROUTE[k] + '</button>'; }).join('') + '</div>' +
       '<h3 class="cr-h2">وضعیت</h3><div class="cr-seg" role="radiogroup" aria-label="وضعیت">' + Object.keys(STATUS).map(function (k) { return '<button type="button" role="radio" data-status="' + k + '" aria-checked="' + (x.status === k) + '">' + STATUS[k] + '</button>'; }).join('') + '</div>' +

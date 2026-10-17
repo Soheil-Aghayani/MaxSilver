@@ -4,7 +4,7 @@
   var E = window.MSEvents, root = document.getElementById('ev');
   if (!E || !root) return;
   var FILTERS = [['all', 'همه'], ['imp', 'مهم‌ها'], ['ایرانی', 'ایرانی'], ['مذهبی', 'مذهبی'], ['جهانی', 'جهانی'], ['آشپزی', 'آشپزی']];
-  var f = 'all';
+  var f = 'all', SEP = '<i class="ms-sep" aria-hidden="true"></i>';
   var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 
   function eventPicture(id, eager) {
@@ -18,7 +18,7 @@
   function row(x) {
     return '<li class="ev-row" data-tone="' + x.tone + '"><div class="ev-ic" aria-hidden="true"><img src="./assets/art/events/icons/' + esc(x.id) + '.webp" alt="" width="52" height="52" loading="lazy" decoding="async"></div><div class="ev-main"><div class="ev-t"><b>' + esc(x.title) + '</b>' +
       (x.important ? '<span class="ev-imp">مهم</span>' : '') + '<span class="ev-g">' + esc(x.group) + '</span></div>' +
-      '<div class="ev-d">' + x.weekday + ' ' + x.jalali + ' ' + E.fa(x.jy) + ' · ' + x.gregorian + (x.approx ? ' · <em class="ev-ap" title="تاریخ با ماه قمری محاسبه شده؛ پس از انتشار تقویم رسمی تأیید می‌شود">تقریبی</em>' : '') + '</div>' +
+      '<div class="ev-d">' + x.weekday + ' ' + x.jalali + ' ' + E.fa(x.jy) + SEP + x.gregorian + (x.approx ? SEP + '<em class="ev-ap" title="تاریخ با ماه قمری محاسبه شده؛ پس از انتشار تقویم رسمی تأیید می‌شود">تقریبی</em>' : '') + '</div>' +
       (x.idea ? '<p class="ev-idea">' + esc(x.idea) + '</p>' : '') + '</div><span class="ev-left' + (x.days <= 7 ? ' soon' : '') + '">' + x.when + '</span></li>';
   }
   function render() {
@@ -26,7 +26,7 @@
     var next = all.filter(function (x) { return x.important; })[0] || all[0];
     var h = '<h1>مناسبت‌ها</h1><p class="ev-lead">مناسبت‌های ایرانی، مذهبی، جهانی و آشپزی یک سال آینده؛ برای آماده‌کردن پیام تبریک و کمپین. مناسبت‌های مهم چند روز پیش از موعد در بنر صفحهٔ اصلی و در زنگ دیده می‌شوند.</p>';
     if (next) {
-      h += '<section class="ev-next" data-tone="' + next.tone + '"><div class="ev-nt"><span class="ev-nl">مناسبت مهم بعدی</span><h2>' + esc(next.title) + '</h2><p>' + next.weekday + ' ' + next.jalali + ' · ' + next.gregorian + '</p><span class="ev-left big">' + next.when + '</span></div>' +
+      h += '<section class="ev-next" data-tone="' + next.tone + '"><div class="ev-nt"><span class="ev-nl">مناسبت مهم بعدی</span><h2>' + esc(next.title) + '</h2><p>' + next.weekday + ' ' + next.jalali + SEP + next.gregorian + '</p><span class="ev-left big">' + next.when + '</span></div>' +
         '<div class="ev-nart">' + eventPicture(next.id, true) + '</div></section>';
     }
     h += '<div class="ev-chips" role="group" aria-label="دسته">' + FILTERS.map(function (c) {
@@ -44,7 +44,6 @@
       h += row(x);
     });
     if (open) h += '</ul></section>';
-    h += '<p class="ev-note">تاریخ مناسبت‌های قمری (مثل روز مادر، روز پدر و عید فطر) هر سال عوض می‌شود و فعلاً فقط برای سال ۱۴۰۵ ثبت شده است؛ دیگر مناسبت‌ها خودکار هر سال محاسبه می‌شوند. منبع: time.ir.</p>';
     root.innerHTML = h;
   }
   root.addEventListener('click', function (e) {

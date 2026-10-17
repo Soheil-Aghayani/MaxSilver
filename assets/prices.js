@@ -77,7 +77,7 @@
   }
   function row(it) {
     var c = cur(it.id), d = dval(it), dirty = !!S.draft[it.id], rt = ST8.retired(it.id);
-    var src = c ? (c.edited ? 'ویرایش' + (c.by ? ' ' + esc(c.by) : '') + (c.at ? ' · ' + faDate.format(new Date(c.at)) : '') : 'لیست ' + esc(P.date())) : 'بدون قیمت';
+    var src = c ? (c.edited ? 'ویرایش' + (c.by ? ' ' + esc(c.by) : '') + (c.at ? '<i class="ms-sep" aria-hidden="true"></i>' + faDate.format(new Date(c.at)) : '') : 'لیست ' + esc(P.date())) : 'بدون قیمت';
     return '<article class="pr-row' + (dirty ? ' dirty' : '') + (rt ? ' retired' : '') + '" data-id="' + esc(it.id) + '">' +
       '<div class="pr-img">' + (it.img ? '<img src="' + esc(it.img) + '" alt="" loading="lazy" decoding="async">' : '') + '</div>' +
       '<div class="pr-name"><b>' + esc(it.name) + '</b><span>' + (it.code ? '<code>' + esc(it.code) + '</code>' : '') + '<i class="pr-br" data-b="' + esc(it.src) + '">' + esc(BR[it.src] || '') + '</i></span><small>' + src + '</small>' + retLine(it) + '</div>' +

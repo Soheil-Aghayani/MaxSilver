@@ -1,7 +1,9 @@
 // Occasions calendar: Iranian, religious, global and food-service days that matter for greetings and campaigns.
 // Used by the home banner (a greeting slide near an occasion), the bell (a reminder for marketing before the important ones)
-// and events.html (the full calendar). Dates are computed, not typed per year, except lunar occasions: those move every year
-// and are listed with their Jalali date for the years in `y`. Add the next year's dates there when they are published (time.ir).
+// and events.html (the full calendar). Every date is computed: fixed Jalali and Gregorian days directly, Chaharshanbe Suri from the
+// last Wednesday of the Jalali year, and lunar occasions from the Islamic calendar (tabular algorithm), so no year has to be typed in.
+// A calculated lunar date can differ by one day from the official calendar (moon sighting): such dates are marked approximate (`approx`)
+// until an official date is entered in `y` for that Jalali year, which then wins.
 (function () {
   'use strict';
   var MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
@@ -60,16 +62,26 @@
   function day0(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
   function diff(from, to) { return Math.round((day0(to) - day0(from)) / 86400000); }
   function fa(s) { return String(s).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); }
+  // Islamic (tabular, civil epoch) -> day number of the same scale as g2d / j2d
+  function h2d(hy, hm, hd) { return div(11 * hy + 3, 30) + 354 * hy + 30 * hm - div(hm - 1, 2) + hd + 1948440 - 385; }
+  function hDate(hy, hm, hd) { var g = d2g(h2d(hy, hm, hd)); return new Date(g.gy, g.gm - 1, g.gd); }
+  // the Tuesday before the last Wednesday of Jalali year jy (Chaharshanbe Suri is that evening)
+  function suriDate(jy) {
+    var n = jDate(jy + 1, 1, 1), d = new Date(n.getFullYear(), n.getMonth(), n.getDate() - 1);
+    while (d.getDay() !== 3) d.setDate(d.getDate() - 1);
+    d.setDate(d.getDate() - 1);
+    return d;
+  }
 
-  // k: 'j' fixed Jalali date, 'g' fixed Gregorian date, 'y' Jalali date given per Jalali year (lunar or computed occasions).
-  // ap: Jalali years whose date is calculated (lunar months) and not yet in the official calendar; shown as approximate. Replace the entry when the official calendar is out.
+  // k: 'j' fixed Jalali date d:[month, day]; 'g' fixed Gregorian date d; 'c' Chaharshanbe Suri (computed); 'h' lunar date h:[month, day] of the
+  // Islamic calendar, with y:{ jalaliYear: [month, day] } holding the official date of a year when it is known.
   // every occasion has banner artwork (assets/art/events/<id>-pc|tablet|mobile.webp) and shows a greeting slide `lead` days
   // before the day (default 2). imp: also a bell reminder `rem` days before.
   // grp: ایرانی، مذهبی، جهانی، آشپزی. idea: a suggestion for marketing, not a company fact.
   var EVENTS = [
     { id: 'nowruz', t: 'نوروز', k: 'j', d: [1, 1], grp: 'ایرانی', imp: true, lead: 7, rem: 21, tone: 'mint',
       hello: 'نوروزتان پیروز؛ سالی پر از رونق و کار نو برای شما و همکارانتان آرزو می‌کنیم.', idea: 'بزرگ‌ترین مناسبت سال: پیام تبریک به مشتریان و همکاران، و آماده‌سازی محتوای افتتاحیه‌های بهاری.' },
-    { id: 'chaharshanbe', t: 'چهارشنبه‌سوری', k: 'y', y: { 1405: [12, 25], 1406: [12, 24] }, ap: [1406], grp: 'ایرانی', tone: 'sun',
+    { id: 'chaharshanbe', t: 'چهارشنبه‌سوری', k: 'c', grp: 'ایرانی', tone: 'sun',
       hello: 'چهارشنبه‌سوری امسال شاد و ایمن باشد.', idea: 'محتوای ایمنی و تبریک؛ بدون تبلیغ مستقیم.' },
     { id: 'yalda', t: 'شب یلدا', k: 'j', d: [9, 30], grp: 'ایرانی', imp: true, lead: 5, rem: 14, tone: 'rose',
       hello: 'شب یلدا مبارک؛ بلندترین شب سال را با گرمی دور هم بگذرانید.', idea: 'پیام تبریک و محتوای ویژهٔ کافه و رستوران‌ها برای شب‌های پرمشتری.' },
@@ -79,12 +91,12 @@
     { id: 'engineer', t: 'روز مهندس', k: 'j', d: [12, 5], grp: 'ایرانی', tone: 'sky', hello: 'روز مهندس بر همهٔ مهندسان و همکاران فنی ما مبارک.', idea: 'تبریک به تیم فنی و تولید.' },
     { id: 'accountant', t: 'روز حسابدار', k: 'j', d: [9, 15], grp: 'ایرانی', tone: 'sky', hello: 'روز حسابدار مبارک.', idea: 'تبریک داخلی به تیم مالی.' },
     { id: 'quality', t: 'روز ملی کیفیت', k: 'j', d: [8, 18], grp: 'ایرانی', tone: 'gold', hello: 'روز ملی کیفیت؛ تعهد ما، کیفیت هر دستگاه است.', idea: 'محتوای کنترل کیفیت در کارخانه.' },
-    { id: 'mother', t: 'روز مادر و زن (ولادت حضرت فاطمه)', k: 'y', y: { 1405: [9, 9], 1406: [8, 29] }, ap: [1406], grp: 'مذهبی', imp: true, lead: 3, rem: 10, tone: 'rose',
+    { id: 'mother', t: 'روز مادر و زن (ولادت حضرت فاطمه)', k: 'h', h: [6, 20], y: { 1405: [9, 9] }, grp: 'مذهبی', imp: true, lead: 3, rem: 10, tone: 'rose',
       hello: 'روز مادر و روز زن مبارک.', idea: 'پیام تبریک؛ کمپین هدیه برای کافه‌داران و آشپزهای بانو.' },
-    { id: 'father', t: 'روز پدر (ولادت امام علی)', k: 'y', y: { 1405: [10, 2], 1406: [9, 21] }, ap: [1406], grp: 'مذهبی', imp: true, lead: 3, rem: 10, tone: 'sky',
+    { id: 'father', t: 'روز پدر (ولادت امام علی)', k: 'h', h: [7, 13], y: { 1405: [10, 2] }, grp: 'مذهبی', imp: true, lead: 3, rem: 10, tone: 'sky',
       hello: 'روز پدر مبارک.', idea: 'پیام تبریک به مشتریان و همکاران.' },
-    { id: 'shaban', t: 'جشن نیمه شعبان', k: 'y', y: { 1405: [11, 4], 1406: [10, 23] }, ap: [1406], grp: 'مذهبی', tone: 'sun', hello: 'جشن نیمه شعبان مبارک.', idea: '' },
-    { id: 'fitr', t: 'عید فطر', k: 'y', y: { 1405: [12, 19], 1406: [12, 8] }, ap: [1406], grp: 'مذهبی', imp: true, lead: 2, rem: 10, tone: 'sky',
+    { id: 'shaban', t: 'جشن نیمه شعبان', k: 'h', h: [8, 15], y: { 1405: [11, 4] }, grp: 'مذهبی', tone: 'sun', hello: 'جشن نیمه شعبان مبارک.', idea: '' },
+    { id: 'fitr', t: 'عید فطر', k: 'h', h: [10, 1], y: { 1405: [12, 19] }, grp: 'مذهبی', imp: true, lead: 2, rem: 10, tone: 'sky',
       hello: 'عید فطر مبارک.', idea: 'اعلام تعطیلی یا ساعت کاری؛ پیام تبریک.' },
     { id: 'coffee', t: 'روز جهانی قهوه', k: 'g', d: [10, 1], grp: 'آشپزی', imp: true, lead: 2, rem: 7, tone: 'gold',
       hello: 'روز جهانی قهوه مبارک؛ به پاس همهٔ کافه‌داران.', idea: 'محتوای ویژهٔ دستگاه‌های کافه: اسپرسوساز، آسیاب و دم‌آور.' },
@@ -107,11 +119,16 @@
   function occurrences(from, to) {
     var out = [], gy0 = from.getFullYear(), jy0 = toJ(from).jy;
     EVENTS.forEach(function (e) {
-      var dates = [], y;
-      if (e.k === 'g') for (y = gy0 - 1; y <= to.getFullYear() + 1; y++) dates.push(new Date(y, e.d[0] - 1, e.d[1]));
-      else if (e.k === 'j') for (y = jy0 - 1; y <= toJ(to).jy + 1; y++) dates.push(jDate(y, e.d[0], e.d[1]));
-      else Object.keys(e.y).forEach(function (yy) { dates.push(jDate(+yy, e.y[yy][0], e.y[yy][1])); });
-      dates.forEach(function (d) { if (d >= day0(from) && d <= day0(to)) out.push({ e: e, date: d }); });
+      var dates = [], y, d;
+      if (e.k === 'g') for (y = gy0 - 1; y <= to.getFullYear() + 1; y++) dates.push({ d: new Date(y, e.d[0] - 1, e.d[1]) });
+      else if (e.k === 'j') for (y = jy0 - 1; y <= toJ(to).jy + 1; y++) dates.push({ d: jDate(y, e.d[0], e.d[1]) });
+      else if (e.k === 'c') for (y = jy0 - 1; y <= toJ(to).jy + 1; y++) dates.push({ d: suriDate(y) });
+      else for (y = Math.floor((gy0 - 622) * 1.0307) - 1; y <= Math.floor((to.getFullYear() - 622) * 1.0307) + 2; y++) {
+        d = hDate(y, e.h[0], e.h[1]);
+        var official = e.y && e.y[toJ(d).jy];
+        dates.push(official ? { d: jDate(toJ(d).jy, official[0], official[1]) } : { d: d, approx: true });
+      }
+      dates.forEach(function (x) { if (x.d >= day0(from) && x.d <= day0(to)) out.push({ e: e, date: x.d, approx: !!x.approx }); });
     });
     return out.sort(function (a, b) { return a.date - b.date; });
   }
@@ -122,7 +139,7 @@
       date: o.date, days: n, year: j.jy,
       jalali: fa(j.jd) + ' ' + MONTHS[j.jm - 1], weekday: WEEK[o.date.getDay()],
       gregorian: fa(o.date.getDate()) + ' ' + GMONTHS[o.date.getMonth()] + ' ' + fa(o.date.getFullYear()),
-      jmonth: j.jm, jy: j.jy, approx: !!(o.e.ap && o.e.ap.indexOf(j.jy) >= 0),
+      jmonth: j.jm, jy: j.jy, approx: !!o.approx,
       when: n === 0 ? 'امروز' : n === 1 ? 'فردا' : n > 0 ? fa(n) + ' روز دیگر' : fa(-n) + ' روز پیش'
     };
   }
