@@ -58,6 +58,7 @@
   // checks every field the same way the rules do; returns { ok, errors: { field: message }, data }
   function check(f) {
     var e = {}, c = { name: text(f.name, 80), phone: phone(f.phone), nid: digits(f.nid), address: text(f.address, 300), city: text(f.city, 40), zip: digits(f.zip) };
+    if (!c.zip || /^1+$/.test(c.zip)) c.zip = '1111111111';   // no postal code (or only ones): stored as ten ones so the rules still pass; sales sees it as «ندارد»
     if (c.name.length < 3) e.name = 'نام و نام خانوادگی را کامل بنویسید.';
     if (!validPhone(c.phone)) e.phone = 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد.';
     if (!validNid(c.nid)) e.nid = 'کد ملی ۱۰ رقمی و درست وارد کنید.';
