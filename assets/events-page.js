@@ -7,9 +7,16 @@
   var f = 'all';
   var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 
-  function art(x) { return '<span class="ev-art" aria-hidden="true">' + esc(x.art[0]) + '</span>'; }
+  function eventPicture(id, eager) {
+    var safeId = esc(id);
+    var load = eager ? ' fetchpriority="high"' : ' loading="lazy"';
+    return '<picture class="ev-picture" aria-hidden="true">' +
+      '<source media="(max-width:620px)" srcset="./assets/art/events/' + safeId + '-mobile.webp">' +
+      '<source media="(max-width:1024px)" srcset="./assets/art/events/' + safeId + '-tablet.webp">' +
+      '<img src="./assets/art/events/' + safeId + '-pc.webp" alt="" decoding="async"' + load + '></picture>';
+  }
   function row(x) {
-    return '<li class="ev-row" data-tone="' + x.tone + '"><div class="ev-ic" aria-hidden="true">' + esc(x.art[0]) + '</div><div class="ev-main"><div class="ev-t"><b>' + esc(x.title) + '</b>' +
+    return '<li class="ev-row" data-tone="' + x.tone + '"><div class="ev-ic" aria-hidden="true"><img src="./assets/art/events/icons/' + esc(x.id) + '.webp" alt="" width="52" height="52" loading="lazy" decoding="async"></div><div class="ev-main"><div class="ev-t"><b>' + esc(x.title) + '</b>' +
       (x.important ? '<span class="ev-imp">مهم</span>' : '') + '<span class="ev-g">' + esc(x.group) + '</span></div>' +
       '<div class="ev-d">' + x.weekday + ' ' + x.jalali + ' ' + E.fa(x.jy) + ' · ' + x.gregorian + (x.approx ? ' · <em class="ev-ap" title="تاریخ با ماه قمری محاسبه شده؛ پس از انتشار تقویم رسمی تأیید می‌شود">تقریبی</em>' : '') + '</div>' +
       (x.idea ? '<p class="ev-idea">' + esc(x.idea) + '</p>' : '') + '</div><span class="ev-left' + (x.days <= 7 ? ' soon' : '') + '">' + x.when + '</span></li>';
@@ -20,7 +27,7 @@
     var h = '<h1>مناسبت‌ها</h1><p class="ev-lead">مناسبت‌های ایرانی، مذهبی، جهانی و آشپزی یک سال آینده؛ برای آماده‌کردن پیام تبریک و کمپین. مناسبت‌های مهم چند روز پیش از موعد در بنر صفحهٔ اصلی و در زنگ دیده می‌شوند.</p>';
     if (next) {
       h += '<section class="ev-next" data-tone="' + next.tone + '"><div class="ev-nt"><span class="ev-nl">مناسبت مهم بعدی</span><h2>' + esc(next.title) + '</h2><p>' + next.weekday + ' ' + next.jalali + ' · ' + next.gregorian + '</p><span class="ev-left big">' + next.when + '</span></div>' +
-        '<div class="ev-nart" aria-hidden="true"><span>' + esc(next.art[0]) + '</span><span>' + esc(next.art[1]) + '</span><span>' + esc(next.art[2]) + '</span></div></section>';
+        '<div class="ev-nart">' + eventPicture(next.id, true) + '</div></section>';
     }
     h += '<div class="ev-chips" role="group" aria-label="دسته">' + FILTERS.map(function (c) {
       return '<button type="button" class="ev-chip" data-f="' + c[0] + '" aria-pressed="' + (f === c[0]) + '">' + c[1] + '</button>';
