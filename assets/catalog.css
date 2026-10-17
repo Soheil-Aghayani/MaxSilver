@@ -238,13 +238,13 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 @media(prefers-reduced-motion:reduce){.cat-tools.float{animation:none}}
 /* printed proforma: these rules apply on screen too (the hidden sheet) so the PDF file is drawn from the same layout */
 .ip-frame{width:100%;height:268mm;border-collapse:collapse}.ip-frame>tbody>tr>td{vertical-align:top}.ip-frame>thead>tr>td,.ip-frame>tbody>tr>td,.ip-frame>tfoot>tr>td{padding:0}
-.ip-top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:8px;border-bottom:3px solid #ffcc2a}
+.ip-top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:8px;border-bottom:3px solid var(--ip-a,#ffcc2a)}
 .ip-brand img{display:block;width:46mm;height:auto}
 .ip-ref{margin:0;font-size:11px;line-height:1.7}.ip-ref div{display:flex;gap:6px}.ip-ref dt,.ip-ref dd{margin:0}.ip-ref dd{font-weight:700}
 .ip-frame h1{margin:16px 0 8px;font-size:20px}
 .ip-line{margin:3px 0}
 .ip-items,.ip-totals{width:100%;margin-top:12px;border-collapse:collapse;border:1px solid #d9d9d9}
-.ip-items th{padding:7px 8px;background:#ffcc2a;color:#051934;text-align:center;font-weight:800}
+.ip-items th{padding:7px 8px;background:var(--ip-a,#ffcc2a);color:var(--ip-t,var(--ip-i,#051934));text-align:center;font-weight:800}
 .ip-items td{padding:7px 8px;border-top:1px solid #e3e6ea;text-align:center}
 .ip-items tbody tr:nth-child(even) td{background:#f3f5f7}
 .ip-items tr{break-inside:avoid}
@@ -253,16 +253,16 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .ip-totals td{padding:6px 10px;border-top:1px solid #e3e6ea}.ip-totals td:last-child{font-weight:700;text-align:left;white-space:nowrap}
 .ip-payline{margin-top:12px}
 .ip-pay{width:min(520px,100%);margin-top:6px;border-collapse:collapse;border:1px solid #d9d9d9}
-.ip-pay th{padding:6px 10px;background:#ffcc2a;color:#051934;font-weight:800;text-align:center}
+.ip-pay th{padding:6px 10px;background:var(--ip-a,#ffcc2a);color:var(--ip-t,var(--ip-i,#051934));font-weight:800;text-align:center}
 .ip-pay td{padding:6px 10px;border-top:1px solid #e3e6ea;text-align:center}
 .ip-pay tbody tr:nth-child(even) td{background:#f3f5f7}
 .ip-words{margin:10px 0 0;padding:8px 12px;border:1px solid #d9d9d9;background:#f3f5f7;font-size:12px}
 .ip-totals tr:first-child td{border-top:0}
-.ip-totals .grand td{background:#ffcc2a;font-weight:900}
+.ip-totals .grand td{background:var(--ip-a,#ffcc2a);color:var(--ip-t,inherit);font-weight:900}.ip-frame{color:var(--ip-i,#051934)}
 .ip-sign{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px;break-inside:avoid}
 .ip-sign div{min-height:30mm;padding:8px 12px;border:1px solid #d9d9d9}
-.ip-foot{padding:6px 14px;background:#ffcc2a;color:#051934;font-size:11px;font-weight:700;text-align:right}
-.ip-cap{position:fixed;left:-10000px;top:0;width:794px;box-sizing:border-box;padding:45px;background:#fff;color:#051934;font:12.5px/1.8 Estedad,Tahoma,sans-serif;direction:rtl}
+.ip-foot{padding:6px 14px;background:var(--ip-a,#ffcc2a);color:var(--ip-t,var(--ip-i,#051934));font-size:11px;font-weight:700;text-align:right}
+.ip-cap{position:fixed;left:-10000px;top:0;width:794px;box-sizing:border-box;padding:45px;background:#fff;color:var(--ip-t,var(--ip-i,#051934));font:12.5px/1.8 Estedad,Tahoma,sans-serif;direction:rtl}
 .ip-cap .ip-frame{height:auto}
 .inv-pdf.alt{border:1px solid var(--ms-line);background:#fff;color:var(--ms-navy)}.inv-pdf.alt svg{color:var(--ms-navy)}
 .inv-msg{margin:0;padding:9px 12px;border-radius:12px;background:#eff6ff;color:#1746b5;font-size:13px;line-height:1.8}.inv-msg.bad{background:#fff1f0;color:var(--ms-red)}.inv-msg[hidden]{display:none}

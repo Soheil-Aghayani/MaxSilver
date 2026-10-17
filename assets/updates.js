@@ -6,6 +6,9 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'events-art', date: '1405/07/25', tag: 'بهبود', title: 'تصویر مناسبت‌ها',
+      summary: 'در صفحهٔ مناسبت‌ها به‌جای شکلک، نقاشی سه‌بعدی هر مناسبت دیده می‌شود.',
+      details: ['هر مناسبت آیکن سه‌بعدی خودش را دارد و کارت «مناسبت مهم بعدی» با بنر همان مناسبت نشان داده می‌شود.'], roles: ['manager', 'ceo', 'sales_manager', 'marketing'] },
     { id: 'retired-codes', date: '1405/07/25', tag: 'جدید', title: 'کنار گذاشتن کدهای قدیمی کالا',
       summary: 'کدی که دیگر استفاده نمی‌شود یا کد جایگزین دارد، از جستجو و پیش‌فاکتور کنار می‌رود.',
       details: ['مدیر فروش، مدیریت و تکنولوژی سازمانی در صفحهٔ «قیمت‌ها» با دکمهٔ ⊘ کدی را کنار می‌گذارند و در صورت وجود کد جایگزین را می‌نویسند؛ با دکمهٔ بازگشت دوباره فعال می‌شود.',

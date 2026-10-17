@@ -420,26 +420,7 @@
       '<table class="ip-pay"><thead><tr><th>پرداخت</th><th>مبلغ (' + esc(u) + ')</th><th>تاریخ سررسید</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
   function docHtml(doc) {
-    var t = totalsOf(doc), u = doc.unit;
-    var rows = doc.lines.map(function (l, i) {
-      return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(l.code) + '</td><td class="ip-name">' + esc(l.name) + '</td><td>' + esc(l.brand) + '</td><td>' + faInt.format(l.qty || 0) + '</td><td>' + faInt.format(l.price || 0) + '</td><td>' + faInt.format(Math.round((l.qty || 0) * (l.price || 0))) + '</td></tr>';
-    }).join('');
-    return '<table class="ip-frame"><thead><tr><td>' +
-        '<div class="ip-top"><div class="ip-brand"><img src="./assets/branding/maxsilver-logo.svg" alt="مکث سیلور · MAX SILVER" width="175" height="30"></div>' +
-        '<dl class="ip-ref"><div><dt>شماره سند:</dt><dd dir="ltr">' + esc(doc.docNo) + '</dd></div><div><dt>تاریخ:</dt><dd>' + esc(doc.date) + '</dd></div></dl></div>' +
-      '</td></tr></thead><tbody><tr><td>' +
-        '<h1>پیش‌فاکتور</h1>' +
-        '<p class="ip-line"><strong>مشتری:</strong> ' + esc(doc.customer || '—') + '</p>' +
-        '<div class="ip-recv"><p class="ip-line"><strong>شهر:</strong> ' + esc(doc.customerCity || '—') + '</p>' +
-        '<p class="ip-line"><strong>تلفن:</strong> <span dir="ltr">' + esc(doc.customerPhone ? fa0(doc.customerPhone) : '—') + '</span></p></div>' +
-        '<p class="ip-line"><strong>نشانی:</strong> ' + esc(doc.customerAddress || '—') + '</p>' +
-        '<p class="ip-line"><strong>صادرکننده (ویزیتور):</strong> ' + esc(doc.issuer || '—') + '</p>' +
-        '<table class="ip-items"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th><th>قیمت واحد (' + esc(u) + ')</th><th>قیمت کل (' + esc(u) + ')</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-        '<table class="ip-totals"><tbody><tr><td>جمع کل</td><td>' + money(t.sub, u) + '</td></tr><tr><td>تخفیف</td><td>' + money(t.disc, u) + '</td></tr><tr><td>مبلغ پس از تخفیف</td><td>' + money(t.net, u) + '</td></tr>' +
-        '<tr><td>مالیات بر ارزش افزوده (' + esc(fa.format(doc.tax || 0)) + '٪)</td><td>' + money(t.tax, u) + '</td></tr><tr class="grand"><td>مبلغ قابل پرداخت</td><td>' + money(t.total, u) + '</td></tr></tbody></table>' +
-        '<p class="ip-words"><strong>مبلغ به حروف:</strong> ' + esc(numWords(t.total)) + ' ' + esc(u) + '</p>' + payPrint(doc) +
-        '<div class="ip-sign"><div><b>امضا و تاریخ صادرکننده</b></div><div><b>امضا و تاریخ مشتری</b></div></div>' +
-      '</td></tr></tbody><tfoot><tr><td><div class="ip-foot">پیش‌فاکتور | مکث سیلور' + (doc.docNo ? ' | ' + esc(doc.docNo) : '') + '</div></td></tr></tfoot></table>';
+    return window.MSInvoice.html(doc, { esc: esc, faInt: faInt, fa: fa, fa0: fa0, money: money, numWords: numWords, totals: totalsOf, payPrint: payPrint });
   }
   // phone numbers are digits only, without a country code: Persian/Arabic digits become Latin, +98 / 0098 / 98 is dropped
   function cleanPhone(v) {
@@ -673,7 +654,7 @@
     if (btn) { btn.disabled = true; btn.innerHTML = '<span>در حال ساخت PDF…</span>'; }
     shareMsg('');
     pdfFile(doc).then(function (file) {
-      var data = { files: [file], title: 'پیش‌فاکتور ' + doc.docNo, text: 'پیش‌فاکتور مکث سیلور · ' + doc.docNo };
+      var data = { files: [file], title: 'پیش‌فاکتور ' + doc.docNo, text: window.MSInvoice.get(doc.template).share + doc.docNo };
       if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
         return navigator.share(data).then(null, function (e) {
           if (e && e.name === 'AbortError') return;
@@ -1050,7 +1031,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261255', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261257', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }
