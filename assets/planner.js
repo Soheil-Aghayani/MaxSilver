@@ -248,10 +248,10 @@
       '<p class="pl-note">' + (PUBLIC ? 'این طرح قیمت ندارد. پس از ثبت درخواست، کارشناس فروش با شما تماس می‌گیرد و قیمت و شرایط را اعلام می‌کند.' : 'در مرحلهٔ بعد مشخصات مشتری را می‌نویسید و پیش‌فاکتور برای اکانت منیجر ارسال می‌شود.') + '</p>';
   }
   // ---- public side: the request form and, after sending, the Chef Market sheet
-  var F = { self: true }, DONE = null, SENT = '', FORM_AT = 0, REQ_BUSY = false, ERR = {}, ERR_ALL = '';
+  var F = { self: true }, DONE = null, SENT = '', FORM_AT = 0, REQ_BUSY = false, ERR = {}, OK = {}, ERR_ALL = '';
   function field(name, label, o) {
     o = o || {};
-    return '<label class="pl-f' + (o.wide ? ' wide' : '') + (ERR[name] ? ' bad' : '') + '">' + label + '<input type="' + (o.type || 'text') + '" name="' + name + '" value="' + esc(F[name] || '') + '" autocomplete="' + (o.ac || 'off') + '"' +
+    return '<label class="pl-f' + (o.wide ? ' wide' : '') + (ERR[name] ? ' bad' : OK[name] ? ' ok' : '') + '">' + label + '<input type="' + (o.type || 'text') + '" name="' + name + '" value="' + esc(F[name] || '') + '" autocomplete="' + (o.ac || 'off') + '"' +
       (o.mode ? ' inputmode="' + o.mode + '" data-num="1"' : '') + (o.dir ? ' dir="' + o.dir + '"' : '') + (o.max ? ' maxlength="' + o.max + '"' : '') + '>' + (ERR[name] ? '<small class="pl-fe">' + esc(ERR[name]) + '</small>' : '') + '</label>';
   }
   // a drop-down: province first, then the cities of that province («شهر دیگر» opens a text box for a place that is not listed)
@@ -264,7 +264,7 @@
       var v = Array.isArray(x) ? x[0] : x, t = Array.isArray(x) ? x[1] : x;
       return '<option value="' + esc(v) + '"' + (F[name] === v ? ' selected' : '') + '>' + esc(t) + '</option>';
     }).join('');
-    return '<label class="pl-f' + (ERR[name] ? ' bad' : '') + '">' + label + '<select name="' + name + '" autocomplete="' + (o.ac || 'off') + '"' + (o.disabled ? ' disabled' : '') + '>' + opts + '</select>' + (ERR[name] ? '<small class="pl-fe">' + esc(ERR[name]) + '</small>' : '') + '</label>';
+    return '<label class="pl-f' + (ERR[name] ? ' bad' : OK[name] ? ' ok' : '') + '">' + label + '<select name="' + name + '" autocomplete="' + (o.ac || 'off') + '"' + (o.disabled ? ' disabled' : '') + '>' + opts + '</select>' + (ERR[name] ? '<small class="pl-fe">' + esc(ERR[name]) + '</small>' : '') + '</label>';
   }
   function cityOf() { return F.city === OTHER ? F.cityOther || '' : F.city || ''; }
   function formData() {
@@ -353,6 +353,8 @@
     if (e[name]) ERR[name] = e[name]; else delete ERR[name];
     var old = lab.querySelector('.pl-fe'); if (old) old.remove();
     lab.classList.toggle('bad', !!e[name]);
+    var filled = !!String(F[name] == null ? '' : F[name]).trim();
+    OK[name] = !e[name] && filled; lab.classList.toggle('ok', OK[name]);
     if (e[name]) { var s = document.createElement('small'); s.className = 'pl-fe'; s.textContent = e[name]; lab.appendChild(s); }
   }
   function sendRequest() {
@@ -371,7 +373,7 @@
     var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: c.t, size: SIZES[S.size].t, serve: serve }, note: r.note, terms: r.terms, src: 'planner' };
     REQ_BUSY = true; render();
     window.MSRequests.submit(payload).then(function (code) {
-      REQ_BUSY = false; DONE = { code: code, customer: r.customer, lines: lines }; F = { self: true };
+      REQ_BUSY = false; OK = {}; DONE = { code: code, customer: r.customer, lines: lines }; F = { self: true };
       try { localStorage.setItem('ms-req-last', String(Date.now())); } catch (e) { /* ignore */ }
       render(); window.scrollTo(0, 0);
     }, function (e) { REQ_BUSY = false; ERR_ALL = window.MSRequests.errText(e); render(); window.scrollTo(0, 0); });
@@ -485,7 +487,7 @@
     if ((t = e.target.closest('[data-recv]'))) { readForm(); F.self = t.getAttribute('data-recv') === 'self'; ERR = {}; render(); return; }
     if (e.target.closest('[data-send]')) { sendRequest(); return; }
     if (e.target.closest('[data-print]')) { window.print(); return; }
-    if (e.target.closest('[data-newplan]')) { DONE = null; S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', space: 1, serve: [], pick: {}, removed: [], qty: {} }; save(); render(); window.scrollTo(0, 0); return; }
+    if (e.target.closest('[data-newplan]')) { DONE = null; OK = {}; S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', space: 1, serve: [], pick: {}, removed: [], qty: {} }; save(); render(); window.scrollTo(0, 0); return; }
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
   });
 

@@ -165,3 +165,10 @@
 .pl-warn{margin:0;padding:10px 14px;border-radius:14px;background:#fff6e0;color:#7a4b00;font-size:13px;font-weight:700;line-height:1.9}
 .pl-f select,.pl-f select option,.pl-f input,.pl-f textarea{font-family:Estedad,Tahoma,sans-serif}
 .pl-f select{appearance:auto}
+/* a message under one box never moves its neighbour: the message has its own reserved line */
+.pl-grid{align-items:start}
+.pl-f{position:relative;padding-bottom:20px}
+.pl-fe{position:absolute;inset-inline-start:2px;bottom:0;line-height:1.5}
+.pl-f input,.pl-f select{transition:border-color .15s,box-shadow .15s,background .15s}
+.pl-f.ok input,.pl-f.ok select{border-color:#1fa971;background:#f6fffa;box-shadow:0 0 0 3px rgba(31,169,113,.18),0 0 14px rgba(31,169,113,.25)}
+.pl-f.bad input,.pl-f.bad select{box-shadow:0 0 0 3px rgba(229,72,77,.12)}
