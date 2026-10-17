@@ -172,3 +172,7 @@
 .pl-f input,.pl-f select{transition:border-color .15s,box-shadow .15s,background .15s}
 .pl-f.ok input,.pl-f.ok select{border-color:#1fa971;background:#f6fffa;box-shadow:0 0 0 3px rgba(31,169,113,.18),0 0 14px rgba(31,169,113,.25)}
 .pl-f.bad input,.pl-f.bad select{box-shadow:0 0 0 3px rgba(229,72,77,.12)}
+/* morphing highlight (assets/morph.js): the outline of the chosen option slides to the next one */
+.pl-seg.has-pill{position:relative}
+.pl-seg.has-pill .pl-opt[aria-checked=true]{border-color:var(--ms-line);box-shadow:none;animation:none}
+.ms-pill.opt{z-index:2;box-sizing:border-box;border-radius:16px;border:1px solid var(--ms-navy);box-shadow:inset 0 0 0 1px var(--ms-navy);background:rgba(36,86,216,.04)}

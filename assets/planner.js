@@ -400,6 +400,7 @@
   }
   function render() {
     if (!ready) { root.innerHTML = failed ? '<p class="pl-note">کاتالوگ بارگذاری نشد؛ اتصال را بررسی و صفحه را دوباره باز کنید.</p>' : loaderHtml(); if (!failed) startTips(); return; }
+    var M = window.MSMorph, prevSeg = M ? M.snapAll(root, '.pl-seg', '.pl-opt', '[aria-checked=true]') : null;
     var open = firstOpen();
     if (S.concept && S.step >= 2 && open >= 0) { S.step = 1; S.q = open; }     // the plan waits until every question has an answer
     if (S.step === 1 && S.q >= qList().length) S.q = qList().length - 1;
@@ -409,6 +410,7 @@
     else if (S.step === 2 && S.concept) root.innerHTML = stepPlan();
     else if (S.step === 1 && S.concept) root.innerHTML = stepQuestions();
     else root.innerHTML = stepConcept();
+    if (M) M.playAll(root, '.pl-seg', '.pl-opt', '[aria-checked=true]', prevSeg, { cls: 'opt' });
   }
 
   // ---- dialogs: similar alternatives and the details of one product

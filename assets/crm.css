@@ -70,3 +70,9 @@
 .cr-btn.danger{border-color:#b42318;background:#fff;color:#b42318}
 .cr-danger{padding-top:10px;border-top:1px solid var(--ms-line)}
 @media(max-width:700px){.cr-call{position:static!important;inset:auto!important}.cr-open{padding-bottom:10px!important}.cr-foot{padding:10px 14px 12px}}
+/* morphing highlight (assets/morph.js): chips and buttons are clear, one navy pill slides behind the chosen one */
+.cr-chips.has-pill,.cr-seg.has-pill{position:relative}
+.cr-chips.has-pill .cr-chip,.cr-seg.has-pill button{position:relative;z-index:1;background:transparent}
+.cr-chips.has-pill .cr-chip[aria-pressed=true],.cr-seg.has-pill button[aria-checked=true]{background:transparent;border-color:transparent}
+.ms-pill.chip{z-index:0;border-radius:999px;background:var(--ms-navy)}
+.ms-pill.seg{z-index:0;border-radius:12px;background:var(--ms-navy)}

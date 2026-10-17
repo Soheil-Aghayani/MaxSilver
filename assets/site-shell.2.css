@@ -166,3 +166,11 @@ a.ms-install-go{border:0;background:var(--ms-navy);color:#fff}
 /* the open section shows only its name (no icon), and the name is never cut off */
 @media(min-width:1101px){.ms-nav-links a[aria-current=page]{gap:0;padding:0 18px}.ms-nav-links a[aria-current=page] svg{display:none}.ms-nav-links a[aria-current=page] span{max-width:240px}.ms-nav-links li{flex:0 0 auto}.ms-sitebar nav{min-width:0}}
 .ms-legal{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center;margin:0 0 6px}.ms-legal a{color:var(--ms-muted,#5b6a80);font-size:12.5px;font-weight:700;text-decoration:none}.ms-legal a:hover{color:var(--ms-navy,#071b36);text-decoration:underline}
+/* morphing highlight of the open section (assets/morph.js): the link itself is clear, the pill behind it carries the colour */
+.ms-pill{position:absolute;display:block;margin:0;pointer-events:none;transition:none}
+.ms-nav-links.has-pill{position:relative}
+.ms-nav-links.has-pill a{z-index:1}
+.ms-nav-links.has-pill a[aria-current=page]{background:transparent!important;box-shadow:none!important}
+.ms-pill.dock{z-index:0;background:var(--ms-navy);box-shadow:0 8px 18px rgba(7,27,54,.28)}
+@media(max-width:1100px){.ms-pill.dock{background:var(--ms-gold);box-shadow:none}}
+@media(max-width:1100px) and (orientation:landscape) and (max-height:480px){.ms-pill.dock{background:var(--ms-navy);box-shadow:0 8px 18px rgba(7,27,54,.28)}}

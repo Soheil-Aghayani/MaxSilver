@@ -94,6 +94,24 @@
     return '<li><a href="' + it.href + '"' + (cur ? ' aria-current="page"' : '') + ' aria-label="' + (it.tip || it.label) + '" data-tip="' + (it.tip || it.label) + '" data-dock="' + it.id + '">' + ICON[it.id] + '<span>' + it.label + '</span></a></li>';
   }
 
+  // the open section is a pill behind its link; when the person came from another page it starts where the old page's pill was and slides over
+  function dockMorph() {
+    if (!window.MSMorph) return;
+    var prev = null, raw = null, links = nav.querySelectorAll('a[data-dock]');
+    try { raw = JSON.parse(sessionStorage.getItem('ms-dock-from') || 'null'); sessionStorage.removeItem('ms-dock-from'); } catch (e) { raw = null; }
+    nav.setAttribute('data-morph', 'dock');
+    var key = nav.getAttribute('aria-label') || 'dock';
+    if (raw && Date.now() - raw.t < 6000 && raw.n === links.length && Math.abs(raw.w - nav.offsetWidth) < 3) prev = [{ key: key, idx: raw.idx, box: raw.box }];
+    window.MSMorph.playAll(document, '.ms-sitebar .ms-nav-links', 'a[data-dock]', 'a[aria-current=page]', prev, { cls: 'dock', copyRadius: true });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.ms-nav-links a[data-dock]');
+    if (!a || e.button || e.ctrlKey || e.metaKey || e.shiftKey || a.getAttribute('aria-current') === 'page') return;
+    var cur = nav.querySelector('a[aria-current=page]'), links = Array.prototype.slice.call(nav.querySelectorAll('a[data-dock]'));
+    if (!cur) return;
+    try { sessionStorage.setItem('ms-dock-from', JSON.stringify({ t: Date.now(), idx: links.indexOf(cur), n: links.length, w: nav.offsetWidth, box: { l: cur.offsetLeft, t: cur.offsetTop, w: cur.offsetWidth, h: cur.offsetHeight } })); } catch (x) { /* ignore */ }
+  });
+
   function render() {
     var list = allowed(), byId = {};
     list.forEach(function (i) { byId[i.id] = i; });
@@ -109,6 +127,7 @@
       html += link(byId.panel, cur === 'panel');
     }
     nav.innerHTML = html;
+    dockMorph();
     if (window.MSNotify && window.MSNotify.paint) { try { window.MSNotify.paint(); } catch (e) { /* ignore */ } }
     if (window.MSUpdates && window.MSUpdates.paintDot) { try { window.MSUpdates.paintDot(); } catch (e) { /* ignore */ } }
     decorateHome();

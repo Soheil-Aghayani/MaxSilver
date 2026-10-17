@@ -96,7 +96,9 @@
   }
   function render() {
     var a = document.activeElement, keepQ = a && a.id === 'crQ' ? a.selectionStart : null;
+    var prevChips = window.MSMorph ? window.MSMorph.snapAll(root, '.cr-chips', '.cr-chip', '[aria-pressed=true]') : null;
     root.innerHTML = view();
+    if (window.MSMorph) window.MSMorph.playAll(root, '.cr-chips', '.cr-chip', '[aria-pressed=true]', prevChips, { cls: 'chip' });
     if (window.MSGate) window.MSGate.apply();
     if (keepQ !== null) { var q = document.getElementById('crQ'); if (q) { q.focus(); try { q.setSelectionRange(keepQ, keepQ); } catch (e) { /* ignore */ } } }
   }
@@ -126,9 +128,15 @@
       '<button type="button" class="cr-btn alt" data-proforma>' + I.doc + 'ساخت پیش‌فاکتور مکث‌سیلور</button></div></section>' +
       '<section><h3>سابقه</h3>' + (log ? '<ul class="cr-log">' + log + '</ul>' : '<p class="cr-hint">هنوز چیزی ثبت نشده است.</p>') + '</section>' + (lead() ? '<section class="cr-danger"><h3>حذف</h3><p class="cr-hint">حذف کامل درخواست از پایگاه داده؛ برگشت ندارد.</p><button type="button" class="cr-btn danger" data-delete>' + I.trash + 'حذف این درخواست</button></section>' : '') + '</div>';
   }
-  function showDetail() { var x = byId(S.sel); if (!x) { if (dlg.open) dlg.close(); return; } dlg.innerHTML = detailHtml(x); if (!dlg.open) dlg.showModal(); }
+  function showDetail() {
+    var x = byId(S.sel); if (!x) { if (dlg.open) dlg.close(); return; }
+    var M = window.MSMorph, prev = M ? M.snapAll(dlg, '.cr-seg', 'button', '[aria-checked=true]') : null;
+    dlg.innerHTML = detailHtml(x);
+    if (M) M.playAll(dlg, '.cr-seg', 'button', '[aria-checked=true]', prev, { cls: 'seg' });
+    if (!dlg.open) dlg.showModal();
+  }
   function openReq(id) {
-    S.sel = id; S.log = []; S.error = ''; showDetail();
+    S.sel = id; S.log = []; S.error = ''; dlg.innerHTML = ''; showDetail();
     if (unsubLog) { unsubLog(); unsubLog = null; }
     unsubLog = db.collection('requests').doc(id).collection('log').orderBy('at', 'desc').limit(60).onSnapshot(function (snap) {
       S.log = []; snap.forEach(function (s) { S.log.push(s.data()); });
