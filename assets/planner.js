@@ -42,6 +42,9 @@
     oven:      { t: 'پخت نان و شیرینی', why: 'پخت یکنواخت چند سینی هم‌زمان', cats: ['فر کانوکشن'], zone: 'cook', qty: [1, 1, 2] },
     hood:      { t: 'تهویه و هود', why: 'دود، چربی و بخار پخت باید از فضا بیرون برود', cats: ['هود'], zone: 'safety', qty: [1, 1, 2] },
     oilFilter: { t: 'تصفیهٔ روغن', why: 'عمر روغن را بیشتر و طعم غذا را یکنواخت می‌کند', cats: ['تصفیه روغن'], zone: 'safety', qty: [1, 1, 1] },
+    sausage:   { t: 'سوسیس و کالباس', why: 'پر کردن و آماده‌سازی سوسیس و کالباس خانگی', cats: ['سوسیس‌پرکن'], zone: 'prep', qty: [1, 1, 1] },
+    slicer:    { t: 'برش کالباس و گوشت', why: 'برش یکنواخت و سریع برای ساندویچ و سرو', cats: ['کالباس‌بر'], zone: 'prep', qty: [1, 1, 1] },
+    meatprep:  { t: 'آماده‌سازی گوشت', why: 'چرخ، برش و پرس گوشت پیش از پخت', cats: ['ابزار آماده‌سازی گوشت'], zone: 'prep', qty: [1, 1, 1] },
     wash:      { t: 'سینک و شست‌وشو', why: 'شست‌وشوی دست و ظرف برای بهداشت و مجوز بهداشتی', cats: [], zone: 'safety', qty: [1, 1, 1] }
   };
   var ZONES = [['prep', 'آماده‌سازی'], ['cook', 'پخت'], ['serve', 'نگهداری و سرو'], ['drink', 'نوشیدنی'], ['cold', 'سرمایش'], ['safety', 'ایمنی و بهداشت']];
@@ -54,12 +57,12 @@
     { id: 'fastfood', t: 'فست‌فود', d: 'برگر، مرغ سوخاری، ساندویچ و سیب‌زمینی', sectors: ['فست‌فود'],
       core: ['fridge', 'table'],
       serve: [{ id: 'burger', t: 'همبرگر', jobs: ['grill', 'burger', 'warm'] }, { id: 'chicken', t: 'مرغ سوخاری', jobs: ['marinate', 'fry', 'warm'] },
-        { id: 'fries', t: 'سیب‌زمینی سرخ‌کرده', jobs: ['fry', 'potato'] }, { id: 'sandwich', t: 'ساندویچ', jobs: ['toast'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['blend', 'ice'] }] },
-    { id: 'restaurant', t: 'رستوران', d: 'غذای گرم، کباب و منوی متنوع', sectors: ['رستوران', 'کباب', 'ایرانی', 'بین‌الملل'],
+        { id: 'fries', t: 'سیب‌زمینی سرخ‌کرده', jobs: ['fry', 'potato'] }, { id: 'sandwich', t: 'ساندویچ', jobs: ['toast'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['blend', 'ice'] }, { id: 'deli', t: 'سوسیس و کالباس', jobs: ['sausage', 'slicer'] }, { id: 'meat', t: 'آماده‌سازی گوشت', jobs: ['meatprep'] }] },
+    { id: 'restaurant, t: 'رستوران', d: 'غذای گرم، کباب و منوی متنوع', sectors: ['رستوران', 'کباب', 'ایرانی', 'بین‌الملل'],
       core: ['fridge', 'table', 'chop'],
       serve: [{ id: 'grill', t: 'کباب و گریل', jobs: ['grill', 'doner'] }, { id: 'hot', t: 'غذای گرم و خورشت', jobs: ['stove', 'bain'] },
-        { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'fry', t: 'سرخ‌کردنی', jobs: ['fry'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['ice', 'blend'] }] },
-    { id: 'pizza', t: 'پیتزا', d: 'پیتزا با فر مخصوص و خمیر تازه', sectors: ['فست‌فود', 'رستوران'],
+        { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'fry', t: 'سرخ‌کردنی', jobs: ['fry'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['ice', 'blend'] }, { id: 'meat', t: 'آماده‌سازی گوشت و مرغ', jobs: ['marinate', 'meatprep'] }, { id: 'sandwich', t: 'ساندویچ و برگر', jobs: ['burger', 'toast', 'slicer'] }, { id: 'warm', t: 'گرم‌نگهداری و نمایش غذا', jobs: ['warm'] }] },
+    { id: 'pizza, t: 'پیتزا', d: 'پیتزا با فر مخصوص و خمیر تازه', sectors: ['فست‌فود', 'رستوران'],
       core: ['pizza', 'dough', 'topping', 'fridge'],
       serve: [{ id: 'sheet', t: 'خمیر هم‌اندازه و سریع', jobs: ['sheeter'] }, { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'fry', t: 'پیش‌غذای سرخ‌شده', jobs: ['fry'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['ice', 'blend'] }] },
     { id: 'bakery', t: 'شیرینی و نانوایی', d: 'خمیر، پخت و ویترین', sectors: ['نانوایی', 'شیرینی'],
@@ -78,7 +81,7 @@
     juice: '<path d="M7 4h10l-1 16H8zM8 9h8M14 4l2-2"/>'
   };
 
-  var S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', serve: [], pick: {}, removed: [], qty: {} };   // q: the question on screen; ans: which questions the visitor has answered
+  var S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', energy: 'any', brand: 'any', serve: [], pick: {}, removed: [], qty: {} };   // q: the question on screen; ans: which questions the visitor has answered
   var TIERS = {}, TIERS_ON = false;   // product id -> 'eco' | 'mid' | 'pro' (assets/product-tiers.json, optional)
   var TIER_RANK = { eco: 0, mid: 1, pro: 2 }, TIER_WORD = { 'اقتصادی': 'eco', 'متعادل': 'mid', 'حرفه‌ای': 'pro', 'حرفه ای': 'pro', eco: 'eco', mid: 'mid', pro: 'pro' };
   try { var saved = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); if (saved && saved.concept) S = Object.assign(S, saved); } catch (e) { /* ignore */ }
@@ -111,6 +114,18 @@
     return r == null ? 1 : Math.abs(r - TIER_RANK[S.budget]);
   }
   function sectorHit(it, secs) { return (it.sec || []).some(function (x) { return secs.indexOf(x) >= 0; }); }
+  // energy the product runs on, from its specs: 'gas', 'electric', 'both', or '' when the catalog does not say
+  function energyOf(it) {
+    var t = (it.specs || []).filter(function (s) { return s[0] === 'نوع سوخت' || s[0] === 'نوع انرژی'; }).map(function (s) { return s[1]; }).join(' ');
+    var g = /گاز/.test(t), e = /برق/.test(t);
+    return g && e ? 'both' : g ? 'gas' : e ? 'electric' : '';
+  }
+  // a preference, not a filter: the wanted energy and brand come first, unknown next, the others last, so no job is left empty
+  function energyRank(it) {
+    if (S.energy === 'any') return 0;
+    var e = energyOf(it); return e === 'both' || e === S.energy ? 0 : e ? 2 : 1;
+  }
+  function brandRank(it) { return S.brand === 'any' || it.src === S.brand ? 0 : 1; }
   function candidates(job, cid) {
     var cats = JOBS[job].cats.map(nz), secs = conceptOf(cid || S.concept).sectors;
     var list = CAT.items.filter(function (it) { return cats.indexOf(nz(it.cat)) >= 0 && !(window.MSStatus && window.MSStatus.retired(it.id)) && !PUBRET[it.id]; });
@@ -118,7 +133,7 @@
     list.sort(function (a, b) {
       var ia = cats.indexOf(nz(a.cat)) - cats.indexOf(nz(b.cat));
       if (ia) return ia;
-      return (sectorHit(a, secs) ? 0 : 1) - (sectorHit(b, secs) ? 0 : 1) || tierDist(a) - tierDist(b) || fp(a) - fp(b);
+      return brandRank(a) - brandRank(b) || energyRank(a) - energyRank(b) || (sectorHit(a, secs) ? 0 : 1) - (sectorHit(b, secs) ? 0 : 1) || tierDist(a) - tierDist(b) || fp(a) - fp(b);
     });
     return list;
   }
@@ -128,8 +143,9 @@
     if (!cands.length) return null;
     if (!cid && S.pick[job] && BY[S.pick[job]]) return BY[S.pick[job]];
     var secs = conceptOf(cid || S.concept).sectors, f = cands[0];
-    var group = cands.filter(function (it) { return nz(it.cat) === nz(f.cat) && sectorHit(it, secs) === sectorHit(f, secs) && tierDist(it) === tierDist(f); });
-    if (group.length < 3) group = cands.filter(function (it) { return nz(it.cat) === nz(f.cat) && tierDist(it) === tierDist(f); });
+    var same = function (it) { return nz(it.cat) === nz(f.cat) && brandRank(it) === brandRank(f) && energyRank(it) === energyRank(f) && tierDist(it) === tierDist(f); };
+    var group = cands.filter(function (it) { return same(it) && sectorHit(it, secs) === sectorHit(f, secs); });
+    if (group.length < 3) group = cands.filter(same);
     if (!group.length) group = cands;
     var i = Math.min(group.length - 1, Math.floor(group.length * [0.15, 0.5, 0.85][cid ? 1 : S.size]));
     return group[i];
@@ -138,7 +154,7 @@
 
   // ---- views
   // the questions come one at a time; the plan is built only after all of them are answered
-  function qList() { return ['size'].concat(TIERS_ON ? ['budget'] : [], ['serve']); }
+  function qList() { return ['size'].concat(TIERS_ON ? ['budget'] : [], ['energy', 'brand', 'serve']); }
   function answered(k) { return k === 'serve' ? S.serve.length > 0 : !!(S.ans && S.ans[k]); }
   function firstOpen() { var l = qList(); for (var i = 0; i < l.length; i++) if (!answered(l[i])) return i; return -1; }
   var IC_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>';
@@ -185,6 +201,14 @@
       body = '<h2 class="pl-q">سطح بودجه؟</h2><div class="pl-seg" role="radiogroup" aria-label="سطح بودجه">' + [['eco', 'اقتصادی', 'ساده و مقرون‌به‌صرفه'], ['mid', 'متعادل', 'تعادل قیمت و کیفیت'], ['pro', 'حرفه‌ای', 'بالاترین دوام و ظرفیت']].map(function (b) {
         return '<button type="button" role="radio" class="pl-opt" data-budget="' + b[0] + '" aria-checked="' + (!!S.ans.budget && S.budget === b[0]) + '"><b>' + b[1] + '</b><small>' + b[2] + '</small></button>';
       }).join('') + '</div>';
+    } else if (k === 'energy') {
+      body = '<h2 class="pl-q">دستگاه‌های پخت با چه انرژی کار کنند؟</h2><div class="pl-seg" role="radiogroup" aria-label="انرژی">' + [['any', 'فرقی نمی‌کند', 'بهترین گزینه را پیشنهاد دهید'], ['gas', 'گازی', 'گاز شهری یا گاز مایع'], ['electric', 'برقی', 'بدون نیاز به لولهٔ گاز']].map(function (b) {
+        return '<button type="button" role="radio" class="pl-opt" data-energy="' + b[0] + '" aria-checked="' + (!!S.ans.energy && S.energy === b[0]) + '"><b>' + b[1] + '</b><small>' + b[2] + '</small></button>';
+      }).join('') + '</div><p class="pl-note">برای همهٔ دستگاه‌ها انرژی در کاتالوگ ثبت نشده؛ کارشناس فروش در تماس آن را با شما نهایی می‌کند.</p>';
+    } else if (k === 'brand') {
+      body = '<h2 class="pl-q">برند ترجیحی دارید؟</h2><div class="pl-seg" role="radiogroup" aria-label="برند">' + [['any', 'فرقی نمی‌کند', 'از همهٔ برندها'], ['max-silver', BRAND['max-silver'], 'محصولات مکث‌سیلور'], ['wintora', BRAND.wintora, 'محصولات وینتورا'], ['torbo-max', BRAND['torbo-max'], 'محصولات توربومکس']].map(function (b) {
+        return '<button type="button" role="radio" class="pl-opt" data-brand="' + b[0] + '" aria-checked="' + (!!S.ans.brand && S.brand === b[0]) + '"><b>' + b[1] + '</b><small>' + b[2] + '</small></button>';
+      }).join('') + '</div>';
     } else {
       body = '<h2 class="pl-q">چه چیزهایی سرو می‌کنید؟ <small>هر چند تا که می‌خواهید</small></h2><div class="pl-chips">' + c.serve.map(function (s) {
         return '<button type="button" class="pl-chip" data-serve="' + s.id + '" aria-pressed="' + (S.serve.indexOf(s.id) >= 0) + '">' + s.t + '</button>';
@@ -229,7 +253,23 @@
   function field(name, label, o) {
     o = o || {};
     return '<label class="pl-f' + (o.wide ? ' wide' : '') + (ERR[name] ? ' bad' : '') + '">' + label + '<input type="' + (o.type || 'text') + '" name="' + name + '" value="' + esc(F[name] || '') + '" autocomplete="' + (o.ac || 'off') + '"' +
-      (o.mode ? ' inputmode="' + o.mode + '"' : '') + (o.dir ? ' dir="' + o.dir + '"' : '') + (o.max ? ' maxlength="' + o.max + '"' : '') + '>' + (ERR[name] ? '<small class="pl-fe">' + esc(ERR[name]) + '</small>' : '') + '</label>';
+      (o.mode ? ' inputmode="' + o.mode + '" data-num="1"' : '') + (o.dir ? ' dir="' + o.dir + '"' : '') + (o.max ? ' maxlength="' + o.max + '"' : '') + '>' + (ERR[name] ? '<small class="pl-fe">' + esc(ERR[name]) + '</small>' : '') + '</label>';
+  }
+  // a drop-down: province first, then the cities of that province («شهر دیگر» opens a text box for a place that is not listed)
+  function toFa(s) { return window.MSRequests.fa(window.MSRequests.latin(s).replace(/[^0-9]/g, '')); }
+  var OTHER = '__other', IRAN = window.MS_IRAN || [];
+  function provinceCities(p) { var hit = IRAN.filter(function (x) { return x[0] === p; })[0]; return hit ? hit[1] : []; }
+  function selectField(name, label, list, o) {
+    o = o || {};
+    var opts = '<option value="">' + esc(o.ph || 'انتخاب کنید') + '</option>' + list.map(function (x) {
+      var v = Array.isArray(x) ? x[0] : x, t = Array.isArray(x) ? x[1] : x;
+      return '<option value="' + esc(v) + '"' + (F[name] === v ? ' selected' : '') + '>' + esc(t) + '</option>';
+    }).join('');
+    return '<label class="pl-f' + (ERR[name] ? ' bad' : '') + '">' + label + '<select name="' + name + '" autocomplete="' + (o.ac || 'off') + '"' + (o.disabled ? ' disabled' : '') + '>' + opts + '</select>' + (ERR[name] ? '<small class="pl-fe">' + esc(ERR[name]) + '</small>' : '') + '</label>';
+  }
+  function cityOf() { return F.city === OTHER ? F.cityOther || '' : F.city || ''; }
+  function formData() {
+    return { name: F.name, phone: F.phone, nid: F.nid, address: F.address, province: F.province, city: cityOf(), zip: F.zip, self: F.self, rName: F.rName, rNid: F.rNid, rPhone: F.rPhone, note: F.note, agree: F.agree };
   }
   function requestLines() {
     return plan().filter(function (j) { return S.removed.indexOf(j.id) < 0 && pickFor(j.id); }).map(function (j) {
@@ -244,7 +284,8 @@
       '<form class="pl-form" novalidate autocomplete="on">' + (ERR_ALL ? '<p class="pl-err" role="alert">' + esc(ERR_ALL) + '</p>' : '') +
       '<h3>مشخصات خریدار</h3><div class="pl-grid">' +
       field('name', 'نام و نام خانوادگی', { ac: 'name', wide: true, max: 80 }) + field('phone', 'شمارهٔ موبایل', { ac: 'tel-national', mode: 'numeric', dir: 'ltr', max: 14 }) + field('nid', 'کد ملی', { mode: 'numeric', dir: 'ltr', max: 10 }) +
-      field('city', 'شهر', { ac: 'address-level2', max: 40 }) + field('zip', 'کد پستی', { ac: 'postal-code', mode: 'numeric', dir: 'ltr', max: 10 }) + field('address', 'نشانی کامل', { ac: 'street-address', wide: true, max: 300 }) + '</div>' +
+      selectField('province', 'استان', IRAN.map(function (x) { return x[0]; }), { ac: 'address-level1', ph: 'استان را انتخاب کنید' }) + selectField('city', 'شهر', F.province ? provinceCities(F.province).concat([[OTHER, 'شهر دیگر…']]) : [], { ac: 'address-level2', disabled: !F.province, ph: F.province ? 'شهر را انتخاب کنید' : 'ابتدا استان' }) +
+      (F.city === OTHER ? field('cityOther', 'نام شهر', { ac: 'address-level2', wide: true, max: 40 }) : '') + field('zip', 'کد پستی', { ac: 'postal-code', mode: 'numeric', dir: 'ltr', max: 10 }) + field('address', 'نشانی کامل', { ac: 'street-address', wide: true, max: 300 }) + '</div>' +
       '<h3>تحویل‌گیرنده</h3><div class="pl-seg" role="radiogroup" aria-label="تحویل‌گیرنده">' +
       '<button type="button" role="radio" class="pl-opt" data-recv="self" aria-checked="' + !!F.self + '"><b>خودم تحویل می‌گیرم</b></button>' +
       '<button type="button" role="radio" class="pl-opt" data-recv="other" aria-checked="' + !F.self + '"><b>شخص دیگری</b><small>مشخصات او را بنویسید</small></button></div>' +
@@ -258,10 +299,10 @@
   function sheetHelpers() { var f = new Intl.NumberFormat('fa-IR'); return { esc: esc, faInt: f, fa: f, fa0: function (s) { return s; }, money: function () { return ''; }, numWords: function () { return ''; }, totals: function () { return {}; }, payPrint: function () { return ''; } }; }
   function stepDone() {
     var d = DONE, j = window.MSEvents ? window.MSEvents.toJ(new Date()) : null, date = j ? j.jy + '/' + (j.jm < 10 ? '0' : '') + j.jm + '/' + (j.jd < 10 ? '0' : '') + j.jd : '';
-    var doc = { template: 'chefmarket', docNo: d.code, date: date, customer: d.customer.name, customerCity: d.customer.city, customerPhone: d.customer.phone, customerAddress: d.customer.address, unit: 'تومان', lines: d.lines };
+    var doc = { template: 'chefmarket', docNo: d.code, date: date, customer: d.customer.name, customerCity: d.customer.city, customerPhone: toFa(d.customer.phone), customerAddress: d.customer.address, unit: 'تومان', lines: d.lines };
     var sparks = ['#ffcc2a', '#eb1d36', '#2eb872', '#4c8dff', '#ffcc2a', '#eb1d36', '#2eb872', '#4c8dff', '#ffcc2a', '#2eb872'].map(function (c, i) { return '<i style="--a:' + (i * 36) + 'deg;--c:' + c + '"></i>'; }).join('');
     return '<div class="pl-done"><div class="pl-seal" aria-hidden="true"><svg viewBox="0 0 52 52"><circle class="c" cx="26" cy="26" r="24"/><path class="t" d="M15 27l8 8 15-17"/></svg>' + sparks + '</div>' +
-      '<h1>درخواست شما ثبت شد</h1><p class="pl-lead">کارشناس فروش به‌زودی با شمارهٔ <b dir="ltr">' + esc(d.customer.phone) + '</b> تماس می‌گیرد.</p>' +
+      '<h1>درخواست شما ثبت شد</h1><p class="pl-lead">کارشناس فروش به‌زودی با شمارهٔ <b dir="ltr">' + esc(toFa(d.customer.phone)) + '</b> تماس می‌گیرد.</p>' +
       '<div class="pl-codebox"><span>کد پیگیری شما</span><b dir="ltr" id="plCode">' + esc(d.code) + '</b><button type="button" class="pl-copy" data-copy aria-label="کپی کد پیگیری">' + IC_COPY + '<span>کپی</span></button></div>' +
       '<p class="pl-note">این کد را نگه دارید و هنگام تماس با فروش بگویید.</p></div>' +
       '<div class="pl-sheetbox">' + window.MSInvoice.html(doc, sheetHelpers(), 'chefmarket') + '</div>' +
@@ -277,7 +318,20 @@
     }
   }  function readForm() {
     var form = root.querySelector('.pl-form'); if (!form) return;
-    Array.prototype.forEach.call(form.querySelectorAll('input[name]'), function (i) { F[i.name] = i.type === 'checkbox' ? i.checked : i.value; });
+    Array.prototype.forEach.call(form.querySelectorAll('input[name],select[name]'), function (i) { F[i.name] = i.type === 'checkbox' ? i.checked : i.hasAttribute('data-num') ? toFa(i.value) : i.value; });
+  }
+  // a city typed by hand has its own box, so its message belongs there
+  function fixErr(e) { if (F.city === OTHER && e.city) { e.cityOther = 'نام شهر را بنویسید.'; delete e.city; } return e; }
+  // checks one field when the visitor leaves it, and updates only that field so what is being typed elsewhere is not disturbed
+  function checkField(name) {
+    if (!/^(name|phone|nid|province|city|cityOther|zip|address|rName|rNid|rPhone)$/.test(name)) return;
+    readForm();
+    var r = window.MSRequests.check(formData()), e = fixErr(r.errors), lab = root.querySelector('[name="' + name + '"]');
+    lab = lab && lab.closest('label'); if (!lab) return;
+    if (e[name]) ERR[name] = e[name]; else delete ERR[name];
+    var old = lab.querySelector('.pl-fe'); if (old) old.remove();
+    lab.classList.toggle('bad', !!e[name]);
+    if (e[name]) { var s = document.createElement('small'); s.className = 'pl-fe'; s.textContent = e[name]; lab.appendChild(s); }
   }
   function sendRequest() {
     readForm();
@@ -287,10 +341,11 @@
     var last = 0; try { last = Number(localStorage.getItem('ms-req-last') || 0); } catch (e) { /* ignore */ }
     if (Date.now() - last < 120000) { ERR_ALL = 'درخواست قبلی شما تازه ثبت شده است؛ چند دقیقه صبر کنید.'; ERR = {}; render(); return; }
     var lines = requestLines(); if (!lines.length) { ERR_ALL = 'طرح شما کالایی ندارد.'; render(); return; }
-    var r = window.MSRequests.check({ name: F.name, phone: F.phone, nid: F.nid, address: F.address, city: F.city, zip: F.zip, self: F.self, rName: F.rName, rNid: F.rNid, rPhone: F.rPhone, note: F.note, agree: F.agree });
-    ERR = r.errors; ERR_ALL = r.ok ? '' : 'چند مورد را اصلاح کنید.';
-    if (!r.ok) { render(); var bad = root.querySelector('.pl-f.bad input'); if (bad) bad.focus(); return; }
+    var r = window.MSRequests.check(formData());
+    ERR = fixErr(r.errors); ERR_ALL = r.ok ? '' : 'چند مورد را اصلاح کنید.';
+    if (!r.ok) { render(); var bad = root.querySelector('.pl-f.bad input, .pl-f.bad select'); if (bad) bad.focus(); return; }
     var c = conceptOf(S.concept), serve = S.serve.map(function (sid) { var s = c.serve.filter(function (x) { return x.id === sid; })[0]; return s ? s.t : ''; }).filter(Boolean).join('، ').slice(0, 160);
+    r.customer.address = ('استان ' + r.province + '، ' + r.customer.address).slice(0, 300);
     var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: c.t, size: SIZES[S.size].t, serve: serve }, note: r.note, terms: r.terms, src: 'planner' };
     REQ_BUSY = true; render();
     window.MSRequests.submit(payload).then(function (code) {
@@ -362,6 +417,8 @@
     var t;
     if ((t = e.target.closest('[data-concept]'))) { S.concept = t.getAttribute('data-concept'); S.serve = []; S.pick = {}; S.removed = []; S.qty = {}; S.ans = {}; S.q = 0; S.step = 1; save(); render(); window.scrollTo(0, 0); return; }
     if ((t = e.target.closest('[data-budget]'))) { S.budget = t.getAttribute('data-budget'); S.ans.budget = true; S.pick = {}; save(); render(); nextQuestion('budget'); return; }
+    if ((t = e.target.closest('[data-energy]'))) { S.energy = t.getAttribute('data-energy'); S.ans.energy = true; S.pick = {}; save(); render(); nextQuestion('energy'); return; }
+    if ((t = e.target.closest('[data-brand]'))) { S.brand = t.getAttribute('data-brand'); S.ans.brand = true; S.pick = {}; save(); render(); nextQuestion('brand'); return; }
     if ((t = e.target.closest('[data-size]'))) { S.size = Number(t.getAttribute('data-size')); S.ans.size = true; S.qty = {}; S.pick = {}; save(); render(); nextQuestion('size'); return; }
     if ((t = e.target.closest('[data-serve]'))) { var id = t.getAttribute('data-serve'), i = S.serve.indexOf(id); if (i >= 0) S.serve.splice(i, 1); else S.serve.push(id); save(); render(); return; }
     if (e.target.closest('[data-plan]')) { S.step = 2; save(); render(); window.scrollTo(0, 0); return; }
@@ -383,10 +440,24 @@
     if ((t = e.target.closest('[data-recv]'))) { readForm(); F.self = t.getAttribute('data-recv') === 'self'; ERR = {}; render(); return; }
     if (e.target.closest('[data-send]')) { sendRequest(); return; }
     if (e.target.closest('[data-print]')) { window.print(); return; }
-    if (e.target.closest('[data-newplan]')) { DONE = null; S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', serve: [], pick: {}, removed: [], qty: {} }; save(); render(); window.scrollTo(0, 0); return; }
+    if (e.target.closest('[data-newplan]')) { DONE = null; S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', energy: 'any', brand: 'any', serve: [], pick: {}, removed: [], qty: {} }; save(); render(); window.scrollTo(0, 0); return; }
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
   });
 
+  // numbers are always shown in Persian digits, whatever keyboard is used
+  root.addEventListener('input', function (e) {
+    var i = e.target;
+    if (!i.matches || !i.matches('input[data-num]')) return;
+    var v = toFa(i.value);
+    if (v !== i.value) { var at = i.selectionStart; i.value = v; try { i.setSelectionRange(at, at); } catch (x) { /* ignore */ } }
+  });
+  root.addEventListener('focusout', function (e) { var i = e.target; if (i.name && i.closest && i.closest('.pl-form') && i.type !== 'checkbox') checkField(i.name); });
+  root.addEventListener('change', function (e) {
+    var i = e.target; if (!i.matches || !i.matches('select[name]')) return;
+    readForm();
+    if (i.name === 'province') { F.city = ''; F.cityOther = ''; delete ERR.province; delete ERR.city; delete ERR.cityOther; render(); var c = root.querySelector('select[name=city]'); if (c && F.province) c.focus(); }
+    else if (i.name === 'city') { delete ERR.city; delete ERR.cityOther; render(); var o = root.querySelector('input[name=cityOther]'); if (o) o.focus(); }
+  });
   // the business cards lean toward the pointer (or the finger) so the products seem to stand out of the card
   root.addEventListener('pointermove', function (e) {
     var c = e.target.closest && e.target.closest('.pl-card');

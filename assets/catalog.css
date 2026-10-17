@@ -332,3 +332,11 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .pc-price[data-s=r]{background:#fff4d1;color:#9a6a00}
 .pc.retired{opacity:.7}.pc.retired .pc-img img{filter:grayscale(1)}.pc-ret{margin-top:6px;padding:4px 10px;border-radius:10px;background:#f3f5f8;color:#667085;font-size:12px;font-weight:700;line-height:1.7}.dlg-ret{margin:0 0 10px;padding:8px 12px;border-radius:12px;background:#fff6d6;color:#7a5b00;font-size:13px;font-weight:700;line-height:1.8}.inv-ret{display:block;color:#b54708;font-size:12px;font-weight:700;margin-top:2px}
 .dlg-actions button:disabled,.pc-btn:disabled{opacity:.4;cursor:not-allowed}
+/* brand tiles: no icon or dot, just the brand colour as a stripe; the name wraps and the number keeps its own column so they never overlap */
+.bt{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;padding:12px 14px 16px;border-inline-start:6px solid var(--c)}
+.bt[data-brand=all]{--c:var(--ms-navy)}
+.bt-ico{display:none}
+.bt-name{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.bt-n{white-space:nowrap}
+.bt[aria-pressed=true]{border-inline-start-color:var(--c)}
+.bt[aria-pressed=true][data-brand=all]{border-inline-start-color:var(--ms-gold)}

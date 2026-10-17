@@ -10,6 +10,7 @@
   var NEXT_LOG = { call: 'تماس', note: 'یادداشت', status: 'تغییر وضعیت', route: 'تصمیم ارسال', assign: 'ارجاع' };
 
   function latin(s) { return String(s == null ? '' : s).replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); }).replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 1632); }); }
+  function fa(s) { return String(s == null ? '' : s).replace(/[0-9]/g, function (c) { return String.fromCharCode(1776 + Number(c)); }); }
   function digits(s) { return latin(s).replace(/\D/g, ''); }
   function phone(s) { var d = digits(s); if (/^0098/.test(d)) d = d.slice(4); else if (/^98/.test(d) && d.length === 12) d = d.slice(2); if (d.length === 10 && d.charAt(0) === '9') d = '0' + d; return d; }
   function validPhone(s) { return /^09\d{9}$/.test(phone(s)); }
@@ -61,7 +62,9 @@
     if (!validPhone(c.phone)) e.phone = 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد.';
     if (!validNid(c.nid)) e.nid = 'کد ملی ۱۰ رقمی و درست وارد کنید.';
     if (c.address.length < 5) e.address = 'نشانی را بنویسید.';
-    if (c.city.length < 2) e.city = 'شهر را بنویسید.';
+    var province = text(f.province, 40);
+    if (!province) e.province = 'استان را انتخاب کنید.';
+    if (c.city.length < 2) e.city = province ? 'شهر را انتخاب کنید.' : 'ابتدا استان را انتخاب کنید.';
     if (!validZip(c.zip)) e.zip = 'کد پستی ۱۰ رقمی است.';
     if (!f.agree) e.agree = 'برای ارسال، باید شرایط و ضوابط و سیاست حریم خصوصی را بپذیرید.';
     var r = { self: !!f.self };
@@ -71,7 +74,7 @@
       if (!validNid(r.nid)) e.rNid = 'کد ملی گیرنده درست نیست.';
       if (!validPhone(r.phone)) e.rPhone = 'موبایل گیرنده درست نیست.';
     }
-    return { ok: !Object.keys(e).length, errors: e, customer: c, receiver: r, note: text(f.note, 500), terms: TERMS };
+    return { ok: !Object.keys(e).length, errors: e, customer: c, province: province, receiver: r, note: text(f.note, 500), terms: TERMS };
   }
 
   function errText(e) {
@@ -104,5 +107,5 @@
     }).then(function (code) { return auth.signOut().then(function () { return code; }, function () { return code; }); },
       function (e) { return auth.signOut().then(function () { throw e; }, function () { throw e; }); });
   }
-  window.MSRequests = { TERMS: TERMS, STATUS: STATUS, ROUTE: ROUTE, LOGKIND: NEXT_LOG, latin: latin, digits: digits, phone: phone, validPhone: validPhone, validNid: validNid, validZip: validZip, text: text, cityCode: cityCode, buildCode: buildCode, check: check, errText: errText, submit: submit };
+  window.MSRequests = { TERMS: TERMS, STATUS: STATUS, ROUTE: ROUTE, LOGKIND: NEXT_LOG, latin: latin, fa: fa, digits: digits, phone: phone, validPhone: validPhone, validNid: validNid, validZip: validZip, text: text, cityCode: cityCode, buildCode: buildCode, check: check, errText: errText, submit: submit };
 })();
