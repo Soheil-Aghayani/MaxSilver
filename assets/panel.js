@@ -1295,7 +1295,45 @@
     var r = MSRoles.norm(u.role);
     return can('roleAdmin') || (r !== 'manager' && r !== 'ceo');   // hr never removes management or the CEO (the rules say the same)
   }
-  function render() { root.innerHTML = view(); var h = document.querySelector('.pn-head'); if (h) h.classList.toggle('anon', !S.user && !S.loading); paintMap(); }
+  // the open tab is a navy pill that slides and stretches to the next tab (the tabs change width at the same pace, so text never jumps)
+  var MORPH_MS = 300;
+  function tabSnap() {
+    var nav = root.querySelector('.pn-tabs'); if (!nav) return null;
+    var o = { w: {}, active: '', pill: null };
+    Array.prototype.forEach.call(nav.querySelectorAll('.pn-tab'), function (b) {
+      var k = b.getAttribute('data-tab'); o.w[k] = b.getBoundingClientRect().width;
+      if (b.getAttribute('aria-selected') === 'true') { o.active = k; o.pill = { left: b.offsetLeft, width: b.offsetWidth }; }
+    });
+    return o;
+  }
+  function placePill(nav, r) { var i = nav.querySelector('.pn-pill'); i.style.left = r.left + 'px'; i.style.width = r.width + 'px'; }
+  function morphTabs(prev) {
+    var nav = root.querySelector('.pn-tabs'); if (!nav) return;
+    var tabs = Array.prototype.slice.call(nav.querySelectorAll('.pn-tab')), act = nav.querySelector('.pn-tab[aria-selected=true]');
+    var pill = document.createElement('i'); pill.className = 'pn-pill'; pill.setAttribute('aria-hidden', 'true'); nav.insertBefore(pill, nav.firstChild);
+    if (!act) { pill.hidden = true; return; }
+    var to = { left: act.offsetLeft, width: act.offsetWidth }, calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!prev || !prev.pill || prev.active === act.getAttribute('data-tab') || calm) { placePill(nav, to); return; }
+    var ease = 'cubic-bezier(.4,0,.2,1)', now = {};
+    tabs.forEach(function (b) { now[b.getAttribute('data-tab')] = b.getBoundingClientRect().width; });
+    placePill(nav, prev.pill);
+    tabs.forEach(function (b) { var k = b.getAttribute('data-tab'); if (prev.w[k] != null) { b.style.flex = '0 0 auto'; b.style.width = prev.w[k] + 'px'; } });
+    void nav.offsetWidth;
+    pill.style.transition = 'left ' + MORPH_MS + 'ms ' + ease + ', width ' + MORPH_MS + 'ms ' + ease;
+    tabs.forEach(function (b) { var k = b.getAttribute('data-tab'); if (prev.w[k] != null) { b.style.transition = 'width ' + MORPH_MS + 'ms ' + ease; b.style.width = now[k] + 'px'; } });
+    placePill(nav, to);
+    setTimeout(function () { tabs.forEach(function (b) { b.style.flex = ''; b.style.width = ''; b.style.transition = ''; }); pill.style.transition = 'none'; placePill(nav, { left: act.offsetLeft, width: act.offsetWidth }); }, MORPH_MS + 40);
+  }
+  window.addEventListener('resize', function () {
+    var nav = root.querySelector('.pn-tabs'), act = nav && nav.querySelector('.pn-tab[aria-selected=true]'), pill = nav && nav.querySelector('.pn-pill');
+    if (act && pill) { pill.style.transition = 'none'; placePill(nav, { left: act.offsetLeft, width: act.offsetWidth }); }
+  });
+  function render() {
+    var prev = tabSnap();
+    root.innerHTML = view();
+    morphTabs(prev);
+    var h = document.querySelector('.pn-head'); if (h) h.classList.toggle('anon', !S.user && !S.loading); paintMap();
+  }
 
   // ----- actions
   document.addEventListener('click', function (e) {
