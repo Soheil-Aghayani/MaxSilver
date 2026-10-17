@@ -58,13 +58,14 @@
   function role() { try { return localStorage.getItem('ms-role') || ''; } catch (e) { return ''; } }
   function signed() {
     if (role()) return true;
-    try { for (var i = 0; i < localStorage.length; i++) if (/^firebase:authUser:/.test(localStorage.key(i))) return true; } catch (e) { /* ignore */ }
+    // an anonymous Firebase session (the public request form signs in for a moment to send) is not an account
+    try { for (var i = 0; i < localStorage.length; i++) if (/^firebase:authUser:/.test(localStorage.key(i))) { var u = null; try { u = JSON.parse(localStorage.getItem(localStorage.key(i))); } catch (e2) { /* ignore */ } if (!(u && u.isAnonymous)) return true; } } catch (e) { /* ignore */ }
     return false;
   }
   function allowed() {
     var r = role(), R = window.MSRoles, on = signed();
     return ITEMS.filter(function (it) {
-      if (!on) return it.id === 'home' || it.id === 'panel' || it.id === 'contact';
+      if (!on) return it.id === 'home' || it.id === 'planner' || it.id === 'panel' || it.id === 'contact';
       if (it.anon) return false;
       if (!it.area) return true;
       if (!r) return false;
@@ -90,7 +91,7 @@
     return true;
   }
   function link(it, cur) {
-    return '<li><a href="' + it.href + '"' + (cur ? ' aria-current="page"' : '') + ' aria-label="' + it.label + '" data-tip="' + it.label + '" data-dock="' + it.id + '">' + ICON[it.id] + '<span>' + it.label + '</span></a></li>';
+    return '<li><a href="' + it.href + '"' + (cur ? ' aria-current="page"' : '') + ' aria-label="' + (it.tip || it.label) + '" data-tip="' + (it.tip || it.label) + '" data-dock="' + it.id + '">' + ICON[it.id] + '<span>' + it.label + '</span></a></li>';
   }
 
   function render() {
@@ -99,7 +100,9 @@
     var cur = null, html = '';
     list.forEach(function (i) { if (isCurrent(i)) cur = i.id; });
     if (!signed()) {
-      html = ['home', 'contact', 'panel'].map(function (id) { return link(byId[id], cur === id); }).join('');
+      // visitors without an account: home, the business planner (its full name is the tooltip), contact, account
+      byId.planner = Object.assign({}, byId.planner, { label: 'راه‌اندازی کسب‌وکار', tip: 'چه کسب‌وکاری می‌خواهید راه بیندازید؟' });
+      html = ['home', 'planner', 'contact', 'panel'].map(function (id) { return link(byId[id], cur === id); }).join('');
     } else {
       html = link(byId.home, cur === 'home');
       pinsFor(list).slice(0, maxPins()).forEach(function (id) { html += link(byId[id], cur === id); });

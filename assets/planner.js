@@ -78,7 +78,7 @@
     juice: '<path d="M7 4h10l-1 16H8zM8 9h8M14 4l2-2"/>'
   };
 
-  var S = { step: 0, concept: '', size: 1, budget: 'mid', serve: [], pick: {}, removed: [], qty: {} };
+  var S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', serve: [], pick: {}, removed: [], qty: {} };   // q: the question on screen; ans: which questions the visitor has answered
   var TIERS = {}, TIERS_ON = false;   // product id -> 'eco' | 'mid' | 'pro' (assets/product-tiers.json, optional)
   var TIER_RANK = { eco: 0, mid: 1, pro: 2 }, TIER_WORD = { 'اقتصادی': 'eco', 'متعادل': 'mid', 'حرفه‌ای': 'pro', 'حرفه ای': 'pro', eco: 'eco', mid: 'mid', pro: 'pro' };
   try { var saved = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); if (saved && saved.concept) S = Object.assign(S, saved); } catch (e) { /* ignore */ }
@@ -137,10 +137,18 @@
   function qtyFor(job) { return S.qty[job] != null ? S.qty[job] : JOBS[job].qty[S.size]; }
 
   // ---- views
-  function dots() {
-    return '<ol class="pl-steps" aria-label="مراحل">' + ['چه می‌خواهید', 'اندازه و منو', 'طرح پیشنهادی'].concat(PUBLIC ? ['ثبت درخواست'] : []).map(function (t, i) {
-      return '<li class="' + (i === S.step ? 'on' : (i < S.step ? 'done' : '')) + '"><span>' + faInt.format(i + 1) + '</span>' + t + '</li>';
-    }).join('') + '</ol>';
+  // the questions come one at a time; the plan is built only after all of them are answered
+  function qList() { return ['size'].concat(TIERS_ON ? ['budget'] : [], ['serve']); }
+  function answered(k) { return k === 'serve' ? S.serve.length > 0 : !!(S.ans && S.ans[k]); }
+  function firstOpen() { var l = qList(); for (var i = 0; i < l.length; i++) if (!answered(l[i])) return i; return -1; }
+  var IC_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>';
+  var IC_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>';
+  var IC_TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+  // pos: how many steps are behind the visitor; the bar never reaches the end until the request is sent
+  function progress(pos, label) {
+    var total = qList().length + 2 + (PUBLIC ? 1 : 0), pct = Math.round(pos / total * 100);
+    return '<div class="pl-top">' + (pos > 0 ? '<button type="button" class="pl-ic back" data-back aria-label="بازگشت" title="بازگشت">' + IC_BACK + '</button>' : '') +
+      '<div class="pl-prog" role="progressbar" aria-label="پیشرفت" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div><span class="pl-pl">' + label + '</span></div>';
   }
   // 3D illustrations with transparent backgrounds (assets/art): the business icon in front, two typical machines behind it
   var ART = {
@@ -162,26 +170,29 @@
     }).join('') + '</span>';
   }
   function stepConcept() {
-    return dots() + '<h1>چه کسب‌وکاری می‌خواهید راه بیندازید؟</h1><p class="pl-lead">فقط یک انتخاب. لازم نیست جزئیات فنی بدانید؛ ما قدم‌به‌قدم کمک می‌کنیم.</p>' +
+    return progress(0, 'انتخاب کسب‌وکار') + '<h1>چه کسب‌وکاری می‌خواهید راه بیندازید؟</h1><p class="pl-lead">فقط یک انتخاب. لازم نیست جزئیات فنی بدانید؛ ما قدم‌به‌قدم کمک می‌کنیم.</p>' +
       '<div class="pl-cards">' + CONCEPTS.map(function (c) {
         return '<button type="button" class="pl-card" data-concept="' + c.id + '" style="--tint:' + TINT[c.id] + '">' + stage(c.id) + '<b>' + c.t + '</b><small>' + c.d + '</small></button>';
       }).join('') + '</div>';
   }
   function stepQuestions() {
-    var c = conceptOf(S.concept);
-    return dots() + '<h1>' + c.t + '؛ دو سؤال کوتاه</h1>' +
-      '<h2 class="pl-q">اندازهٔ کار شما؟</h2><div class="pl-seg" role="radiogroup" aria-label="اندازه">' + SIZES.map(function (z) {
-        return '<button type="button" role="radio" class="pl-opt" data-size="' + z.id + '" aria-checked="' + (S.size === z.id) + '"><b>' + z.t + '</b><small>' + z.d + '</small></button>';
-      }).join('') + '</div>' +
-      (TIERS_ON ? '<h2 class="pl-q">سطح بودجه؟</h2><div class="pl-seg" role="radiogroup" aria-label="سطح بودجه">' + [['eco', 'اقتصادی', 'ساده و مقرون‌به‌صرفه'], ['mid', 'متعادل', 'تعادل قیمت و کیفیت'], ['pro', 'حرفه‌ای', 'بالاترین دوام و ظرفیت']].map(function (b) {
-        return '<button type="button" role="radio" class="pl-opt" data-budget="' + b[0] + '" aria-checked="' + (S.budget === b[0]) + '"><b>' + b[1] + '</b><small>' + b[2] + '</small></button>';
-      }).join('') + '</div>' : '') +
-      '<h2 class="pl-q">چه چیزهایی سرو می‌کنید؟ <small>هر چند تا که می‌خواهید</small></h2><div class="pl-chips">' + c.serve.map(function (s) {
+    var c = conceptOf(S.concept), l = qList(), n = l.length, k = l[S.q] || l[0], body = '';
+    if (k === 'size') {
+      body = '<h2 class="pl-q">اندازهٔ کار شما؟</h2><div class="pl-seg" role="radiogroup" aria-label="اندازه">' + SIZES.map(function (z) {
+        return '<button type="button" role="radio" class="pl-opt" data-size="' + z.id + '" aria-checked="' + (!!S.ans.size && S.size === z.id) + '"><b>' + z.t + '</b><small>' + z.d + '</small></button>';
+      }).join('') + '</div>';
+    } else if (k === 'budget') {
+      body = '<h2 class="pl-q">سطح بودجه؟</h2><div class="pl-seg" role="radiogroup" aria-label="سطح بودجه">' + [['eco', 'اقتصادی', 'ساده و مقرون‌به‌صرفه'], ['mid', 'متعادل', 'تعادل قیمت و کیفیت'], ['pro', 'حرفه‌ای', 'بالاترین دوام و ظرفیت']].map(function (b) {
+        return '<button type="button" role="radio" class="pl-opt" data-budget="' + b[0] + '" aria-checked="' + (!!S.ans.budget && S.budget === b[0]) + '"><b>' + b[1] + '</b><small>' + b[2] + '</small></button>';
+      }).join('') + '</div>';
+    } else {
+      body = '<h2 class="pl-q">چه چیزهایی سرو می‌کنید؟ <small>هر چند تا که می‌خواهید</small></h2><div class="pl-chips">' + c.serve.map(function (s) {
         return '<button type="button" class="pl-chip" data-serve="' + s.id + '" aria-pressed="' + (S.serve.indexOf(s.id) >= 0) + '">' + s.t + '</button>';
       }).join('') + '</div>' +
-      '<div class="pl-nav"><button type="button" class="pl-btn ghost" data-back>بازگشت</button><button type="button" class="pl-btn primary" data-plan>ساخت طرح پیشنهادی</button></div>';
-  }
-  function jobCard(j) {
+        (S.serve.length ? '<div class="pl-bar"><button type="button" class="pl-btn primary" data-plan>ساخت طرح پیشنهادی</button></div>' : '<p class="pl-note">حداقل یک مورد را انتخاب کنید.</p>');
+    }
+    return progress(1 + S.q, 'سؤال ' + faInt.format(S.q + 1) + ' از ' + faInt.format(n)) + '<p class="pl-kicker">' + esc(c.t) + '</p>' + body;
+  }  function jobCard(j) {
     var p = pickFor(j.id), removed = S.removed.indexOf(j.id) >= 0, job = JOBS[j.id];
     var badge = j.kind === 'gap' ? '<span class="pl-gap">تکمیل‌کننده</span>' : '';
     if (removed) return '<li class="pl-job off"><div class="pl-jt"><b>' + job.t + '</b>' + badge + '</div><button type="button" class="pl-link" data-restore="' + j.id + '">برگرداندن</button></li>';
@@ -207,10 +218,10 @@
       var list = jobs.filter(function (j) { return JOBS[j.id].zone === z[0]; });
       return list.length ? '<section class="pl-zone"><h3>' + z[1] + '</h3><ul class="pl-jobs">' + list.map(jobCard).join('') + '</ul></section>' : '';
     }).join('');
-    return dots() + '<h1>طرح پیشنهادی برای ' + c.t + ' ' + SIZES[S.size].t + '</h1>' +
+    return progress(1 + qList().length, 'بررسی طرح') + '<h1>طرح پیشنهادی برای ' + c.t + ' ' + SIZES[S.size].t + '</h1>' +
       '<p class="pl-lead">برای هر کار یک دستگاه پیشنهاد شده. هرکدام را می‌توانید با نمونهٔ مشابه عوض یا حذف کنید. موارد «تکمیل‌کننده» چیزهایی است که معمولاً فراموش می‌شود.</p>' +
       '<div class="pl-sum"><span><b>' + faInt.format(live.length) + '</b> کار</span><span><b>' + faInt.format(machines) + '</b> دستگاه</span></div>' + zones +
-      '<div class="pl-bar"><button type="button" class="pl-btn ghost" data-back>تغییر انتخاب‌ها</button><button type="button" class="pl-btn primary" ' + (PUBLIC ? 'data-request' : 'data-toinv') + (live.length ? '' : ' disabled') + '>' + (PUBLIC ? 'ادامه و ثبت درخواست خرید' : 'افزودن به پیش‌فاکتور') + '</button></div>' +
+      '<div class="pl-bar"><button type="button" class="pl-btn primary" ' + (PUBLIC ? 'data-request' : 'data-toinv') + (live.length ? '' : ' disabled') + '>' + (PUBLIC ? 'ارسال درخواست به کارشناس' : 'افزودن به پیش‌فاکتور') + '</button></div>' +
       '<p class="pl-note">' + (PUBLIC ? 'این طرح قیمت ندارد. پس از ثبت درخواست، کارشناس فروش با شما تماس می‌گیرد و قیمت و شرایط را اعلام می‌کند.' : 'قیمت و مشخصات فنی را بعد از نهایی‌شدن طرح، کارشناس فروش با شما مرور می‌کند.') + '</p>';
   }
   // ---- public side: the request form and, after sending, the Chef Market sheet
@@ -228,7 +239,7 @@
   }
   function stepRequest() {
     var lines = requestLines(), c = conceptOf(S.concept);
-    return dots() + '<h1>ثبت درخواست خرید</h1><p class="pl-lead">اطلاعات خود را بنویسید تا کارشناس فروش مکث‌سیلور با شما تماس بگیرد. در این برگه قیمتی نیست؛ قیمت و شرایط را کارشناس فروش اعلام می‌کند.</p>' +
+    return progress(2 + qList().length, 'اطلاعات شما') + '<h1>ارسال درخواست به کارشناس</h1><p class="pl-lead">اطلاعات خود را بنویسید تا کارشناس فروش مکث‌سیلور با شما تماس بگیرد. در این برگه قیمتی نیست؛ قیمت و شرایط را کارشناس فروش اعلام می‌کند.</p>' +
       '<section class="pl-req"><h3>طرح شما: ' + esc(c.t) + ' ' + SIZES[S.size].t + '</h3><ul class="pl-rl">' + lines.map(function (l) { return '<li><b>' + esc(l.name) + '</b><span>' + (l.brand ? esc(l.brand) + SEP : '') + faInt.format(l.qty) + ' عدد</span></li>'; }).join('') + '</ul></section>' +
       '<form class="pl-form" novalidate autocomplete="on">' + (ERR_ALL ? '<p class="pl-err" role="alert">' + esc(ERR_ALL) + '</p>' : '') +
       '<h3>مشخصات خریدار</h3><div class="pl-grid">' +
@@ -241,17 +252,29 @@
       '<div class="pl-grid"><label class="pl-f wide">توضیح (اختیاری)<input type="text" name="note" value="' + esc(F.note || '') + '" maxlength="500" autocomplete="off"></label></div>' +
       '<input class="pl-hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">' +
       '<p class="pl-note">با ثبت درخواست، اطلاعات شما فقط برای تماس و پیگیری خرید در اختیار کارشناس فروش مکث‌سیلور قرار می‌گیرد.</p>' +
-      '<div class="pl-bar"><button type="button" class="pl-btn ghost" data-back>بازگشت به طرح</button><button type="button" class="pl-btn primary" data-send' + (REQ_BUSY ? ' disabled' : '') + '>' + (REQ_BUSY ? 'در حال ثبت…' : 'ثبت درخواست') + '</button></div></form>';
+      '<div class="pl-bar"><button type="button" class="pl-btn primary" data-send' + (REQ_BUSY ? ' disabled' : '') + '>' + (REQ_BUSY ? 'در حال ارسال…' : 'ارسال درخواست') + '</button></div></form>';
   }
   function sheetHelpers() { var f = new Intl.NumberFormat('fa-IR'); return { esc: esc, faInt: f, fa: f, fa0: function (s) { return s; }, money: function () { return ''; }, numWords: function () { return ''; }, totals: function () { return {}; }, payPrint: function () { return ''; } }; }
   function stepDone() {
     var d = DONE, j = window.MSEvents ? window.MSEvents.toJ(new Date()) : null, date = j ? j.jy + '/' + (j.jm < 10 ? '0' : '') + j.jm + '/' + (j.jd < 10 ? '0' : '') + j.jd : '';
     var doc = { template: 'chefmarket', docNo: d.code, date: date, customer: d.customer.name, customerCity: d.customer.city, customerPhone: d.customer.phone, customerAddress: d.customer.address, unit: 'تومان', lines: d.lines };
-    return '<h1>درخواست شما ثبت شد</h1><p class="pl-lead">کد پیگیری شما <b dir="ltr" class="pl-code">' + esc(d.code) + '</b> است؛ آن را نگه دارید. کارشناس فروش به‌زودی با شمارهٔ <b dir="ltr">' + esc(d.customer.phone) + '</b> تماس می‌گیرد.</p>' +
+    var sparks = ['#ffcc2a', '#eb1d36', '#2eb872', '#4c8dff', '#ffcc2a', '#eb1d36', '#2eb872', '#4c8dff', '#ffcc2a', '#2eb872'].map(function (c, i) { return '<i style="--a:' + (i * 36) + 'deg;--c:' + c + '"></i>'; }).join('');
+    return '<div class="pl-done"><div class="pl-seal" aria-hidden="true"><svg viewBox="0 0 52 52"><circle class="c" cx="26" cy="26" r="24"/><path class="t" d="M15 27l8 8 15-17"/></svg>' + sparks + '</div>' +
+      '<h1>درخواست شما ثبت شد</h1><p class="pl-lead">کارشناس فروش به‌زودی با شمارهٔ <b dir="ltr">' + esc(d.customer.phone) + '</b> تماس می‌گیرد.</p>' +
+      '<div class="pl-codebox"><span>کد پیگیری شما</span><b dir="ltr" id="plCode">' + esc(d.code) + '</b><button type="button" class="pl-copy" data-copy aria-label="کپی کد پیگیری">' + IC_COPY + '<span>کپی</span></button></div>' +
+      '<p class="pl-note">این کد را نگه دارید و هنگام تماس با فروش بگویید.</p></div>' +
       '<div class="pl-sheetbox">' + window.MSInvoice.html(doc, sheetHelpers(), 'chefmarket') + '</div>' +
       '<div class="pl-bar"><button type="button" class="pl-btn ghost" data-newplan>طرح تازه</button><button type="button" class="pl-btn primary" data-print>چاپ یا ذخیرهٔ PDF</button></div>';
   }
-  function readForm() {
+  function copyCode(btn) {
+    var el = document.getElementById('plCode'), txt = el ? el.textContent : '';
+    function done(ok) { var s = btn.querySelector('span'); btn.classList.toggle('ok', ok); btn.innerHTML = (ok ? IC_TICK : IC_COPY) + '<span>' + (ok ? 'کپی شد' : 'کپی نشد؛ کد را نگه دارید') + '</span>'; setTimeout(function () { btn.classList.remove('ok'); btn.innerHTML = IC_COPY + '<span>کپی</span>'; }, 2200); }
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(function () { done(true); }, function () { fallback(); }); } else fallback();
+    function fallback() {
+      var ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } ta.remove(); done(ok);
+    }
+  }  function readForm() {
     var form = root.querySelector('.pl-form'); if (!form) return;
     Array.prototype.forEach.call(form.querySelectorAll('input[name]'), function (i) { F[i.name] = i.value; });
   }
@@ -277,6 +300,9 @@
   }
   function render() {
     if (!ready) { root.innerHTML = failed ? '<p class="pl-note">کاتالوگ بارگذاری نشد؛ اتصال را بررسی و صفحه را دوباره باز کنید.</p>' : '<p class="pl-note">در حال آماده‌سازی…</p>'; return; }
+    var open = firstOpen();
+    if (S.concept && S.step >= 2 && open >= 0) { S.step = 1; S.q = open; }     // the plan waits until every question has an answer
+    if (S.step === 1 && S.q >= qList().length) S.q = qList().length - 1;
     if (PUBLIC && DONE) root.innerHTML = stepDone();
     else if (PUBLIC && S.step === 3 && S.concept) root.innerHTML = stepRequest();
     else if (S.step === 2 && S.concept) root.innerHTML = stepPlan();
@@ -327,14 +353,24 @@
     location.href = './product-catalog.html';
   }
 
+  // a single-choice answer moves on by itself after a short moment, so the visitor sees what was chosen
+  function nextQuestion(k) {
+    setTimeout(function () { if (S.step === 1 && qList()[S.q] === k) { S.q++; save(); render(); window.scrollTo(0, 0); } }, 280);
+  }
   document.addEventListener('click', function (e) {
     var t;
-    if ((t = e.target.closest('[data-concept]'))) { S.concept = t.getAttribute('data-concept'); S.serve = []; S.pick = {}; S.removed = []; S.qty = {}; S.step = 1; save(); render(); window.scrollTo(0, 0); return; }
-    if ((t = e.target.closest('[data-budget]'))) { S.budget = t.getAttribute('data-budget'); S.pick = {}; save(); render(); return; }
-    if ((t = e.target.closest('[data-size]'))) { S.size = Number(t.getAttribute('data-size')); S.qty = {}; S.pick = {}; save(); render(); return; }
+    if ((t = e.target.closest('[data-concept]'))) { S.concept = t.getAttribute('data-concept'); S.serve = []; S.pick = {}; S.removed = []; S.qty = {}; S.ans = {}; S.q = 0; S.step = 1; save(); render(); window.scrollTo(0, 0); return; }
+    if ((t = e.target.closest('[data-budget]'))) { S.budget = t.getAttribute('data-budget'); S.ans.budget = true; S.pick = {}; save(); render(); nextQuestion('budget'); return; }
+    if ((t = e.target.closest('[data-size]'))) { S.size = Number(t.getAttribute('data-size')); S.ans.size = true; S.qty = {}; S.pick = {}; save(); render(); nextQuestion('size'); return; }
     if ((t = e.target.closest('[data-serve]'))) { var id = t.getAttribute('data-serve'), i = S.serve.indexOf(id); if (i >= 0) S.serve.splice(i, 1); else S.serve.push(id); save(); render(); return; }
     if (e.target.closest('[data-plan]')) { S.step = 2; save(); render(); window.scrollTo(0, 0); return; }
-    if (e.target.closest('[data-back]')) { S.step = Math.max(0, S.step - 1); save(); render(); window.scrollTo(0, 0); return; }
+    if (e.target.closest('[data-back]')) {
+      if (S.step === 1) { if (S.q > 0) S.q--; else S.step = 0; }
+      else if (S.step === 2) { S.step = 1; S.q = qList().length - 1; }
+      else S.step = Math.max(0, S.step - 1);
+      save(); render(); window.scrollTo(0, 0); return;
+    }
+    if ((t = e.target.closest('[data-copy]'))) { copyCode(t); return; }
     if ((t = e.target.closest('[data-remove]'))) { S.removed.push(t.getAttribute('data-remove')); save(); render(); return; }
     if ((t = e.target.closest('[data-restore]'))) { S.removed = S.removed.filter(function (x) { return x !== t.getAttribute('data-restore'); }); save(); render(); return; }
     if ((t = e.target.closest('[data-q]'))) { var jb = t.getAttribute('data-q'), n = Math.max(1, Math.min(20, qtyFor(jb) + Number(t.getAttribute('data-d')))); S.qty[jb] = n; save(); render(); return; }
@@ -346,7 +382,7 @@
     if ((t = e.target.closest('[data-recv]'))) { readForm(); F.self = t.getAttribute('data-recv') === 'self'; ERR = {}; render(); return; }
     if (e.target.closest('[data-send]')) { sendRequest(); return; }
     if (e.target.closest('[data-print]')) { window.print(); return; }
-    if (e.target.closest('[data-newplan]')) { DONE = null; S = { step: 0, concept: '', size: 1, budget: 'mid', serve: [], pick: {}, removed: [], qty: {} }; save(); render(); window.scrollTo(0, 0); return; }
+    if (e.target.closest('[data-newplan]')) { DONE = null; S = { step: 0, q: 0, ans: {}, concept: '', size: 1, budget: 'mid', serve: [], pick: {}, removed: [], qty: {} }; save(); render(); window.scrollTo(0, 0); return; }
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
   });
 
