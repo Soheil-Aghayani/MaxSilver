@@ -2,7 +2,7 @@
 # Reads the owner's regional-expos page (an HTML file made outside the app) and writes assets/expos-data.js, the data behind the second
 # section of fairs.html. Run it again whenever the owner updates that file (new events, new pictures):
 #   "C:\Program Files\LibreOffice\program\python.exe" tools\import_regional_expos.py "<path to index.html>"
-# Pictures: an <img src> inside a card is copied to assets/art/fairs/expo-<id>.<ext>; cards without a picture show a colour block.
+# Pictures: an <img src> inside a card points at assets/art/fairs/sector-<name>.webp (converted by hand from the owner's PNG); cards without one show a colour block.
 import io, os, re, sys, json, html, shutil
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else r'C:\Users\Baskar\Documents\ChatGPT\Max Silver\output\maxsilver-regional-expos-1405\index.html'
@@ -96,13 +96,12 @@ def main():
         im = re.search(r'<img[^>]*src="([^"]*)"', a)
         e['art'] = ''
         if im and not im.group(1).startswith(('http', 'data:')):
-            src = os.path.join(base, im.group(1))
-            if os.path.isfile(src):
-                os.makedirs(ART, exist_ok=True)
-                ext = os.path.splitext(src)[1].lower()
-                dst = os.path.join(ART, e['id'] + ext)
-                shutil.copyfile(src, dst)
-                e['art'] = 'expo-%02d%s' % (n, ext)
+            # the owner's pictures are per sector; they are converted once to assets/art/fairs/sector-<name>.webp (640x640, transparent)
+            name = os.path.splitext(os.path.basename(im.group(1)))[0]
+            if os.path.isfile(os.path.join(ART, 'sector-%s.webp' % name)):
+                e['art'] = 'sector-%s.webp' % name
+            else:
+                print('picture not converted yet:', im.group(1))
         events.append(e)
     trips = [{'title': tx(a), 'text': tx(b)} for a, b in re.findall(r'<div class="trip"><strong>(.*?)</strong><p>(.*?)</p></div>', t, re.S)]
     methods = [{'title': tx(a), 'text': tx(b)} for a, b in re.findall(r'<div class="method-item"><strong>(.*?)</strong>(.*?)</div>', t, re.S)]

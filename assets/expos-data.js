@@ -77,7 +77,7 @@ window.MS_EXPOS = {
     11
    ],
    "id": "expo-01",
-   "art": ""
+   "art": "sector-construction-hvac.webp"
   },
   {
    "region": "iran",
@@ -124,7 +124,7 @@ window.MS_EXPOS = {
     15
    ],
    "id": "expo-02",
-   "art": ""
+   "art": "sector-print-packaging.webp"
   },
   {
    "region": "turkey",
@@ -179,7 +179,7 @@ window.MS_EXPOS = {
     14
    ],
    "id": "expo-03",
-   "art": ""
+   "art": "sector-horeca-kitchen.webp"
   },
   {
    "region": "iran",
@@ -220,7 +220,7 @@ window.MS_EXPOS = {
     29
    ],
    "id": "expo-04",
-   "art": ""
+   "art": "sector-restaurant-furniture.webp"
   },
   {
    "region": "iran",
@@ -267,7 +267,7 @@ window.MS_EXPOS = {
     30
    ],
    "id": "expo-05",
-   "art": ""
+   "art": "sector-construction-hvac.webp"
   },
   {
    "region": "iran",
@@ -308,7 +308,7 @@ window.MS_EXPOS = {
     6
    ],
    "id": "expo-06",
-   "art": ""
+   "art": "sector-hygiene.webp"
   },
   {
    "region": "iran",
@@ -357,7 +357,7 @@ window.MS_EXPOS = {
     7
    ],
    "id": "expo-07",
-   "art": ""
+   "art": "sector-tourism-hotel.webp"
   },
   {
    "region": "turkey",
@@ -411,7 +411,7 @@ window.MS_EXPOS = {
     5
    ],
    "id": "expo-08",
-   "art": ""
+   "art": "sector-horeca-kitchen.webp"
   },
   {
    "region": "turkey",
@@ -462,7 +462,7 @@ window.MS_EXPOS = {
     4
    ],
    "id": "expo-09",
-   "art": ""
+   "art": "sector-tourism-hotel.webp"
   },
   {
    "region": "iran",
@@ -509,7 +509,7 @@ window.MS_EXPOS = {
     15
    ],
    "id": "expo-10",
-   "art": ""
+   "art": "sector-construction-hvac.webp"
   },
   {
    "region": "iran",
@@ -549,7 +549,7 @@ window.MS_EXPOS = {
     23
    ],
    "id": "expo-11",
-   "art": ""
+   "art": "sector-restaurant-furniture.webp"
   },
   {
    "region": "iran",
@@ -602,7 +602,7 @@ window.MS_EXPOS = {
     14
    ],
    "id": "expo-12",
-   "art": ""
+   "art": "sector-food-coffee.webp"
   },
   {
    "region": "turkey",
@@ -656,7 +656,7 @@ window.MS_EXPOS = {
     15
    ],
    "id": "expo-13",
-   "art": ""
+   "art": "sector-horeca-kitchen.webp"
   },
   {
    "region": "turkey",
@@ -718,7 +718,7 @@ window.MS_EXPOS = {
     22
    ],
    "id": "expo-14",
-   "art": ""
+   "art": "sector-horeca-kitchen.webp"
   },
   {
    "region": "turkey",
@@ -774,7 +774,7 @@ window.MS_EXPOS = {
     30
    ],
    "id": "expo-15",
-   "art": ""
+   "art": "sector-horeca-kitchen.webp"
   },
   {
    "region": "turkey",
@@ -830,7 +830,7 @@ window.MS_EXPOS = {
     20
    ],
    "id": "expo-16",
-   "art": ""
+   "art": "sector-tourism-hotel.webp"
   },
   {
    "region": "turkey",
@@ -882,7 +882,7 @@ window.MS_EXPOS = {
     18
    ],
    "id": "expo-17",
-   "art": ""
+   "art": "sector-medical-hospital.webp"
   },
   {
    "region": "turkey",
@@ -929,7 +929,7 @@ window.MS_EXPOS = {
     30
    ],
    "id": "expo-18",
-   "art": ""
+   "art": "sector-construction-hvac.webp"
   }
  ]
 };
