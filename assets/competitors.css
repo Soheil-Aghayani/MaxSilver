@@ -91,3 +91,19 @@
 @media(prefers-reduced-motion:reduce){.cm-caret{animation:none}}
 @media(max-width:700px){.cm-ct>div{grid-template-columns:1fr;gap:0}.cm-ct dd{font-size:15px}.cm-dbody{padding:12px 14px 20px}}
 .cm-src2{margin:0;color:var(--ms-muted);font-size:12px}.cm-src2 a{color:#1746b5;font-weight:700}
+
+/* every competitor has its own colour and one of four looks, so the cards are easy to tell apart */
+.cm-tz{--c:#3858e9;--ink:#fff;position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--c) 28%,#e4e9f2);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 8%,#fff),#fff 62%)}
+.cm-tz:hover{border-color:var(--c);box-shadow:0 12px 30px color-mix(in srgb,var(--c) 22%,transparent)}
+.cm-tz .cm-top{align-items:center}
+.cm-mono{flex:none;display:grid;place-items:center;width:38px;height:38px;background:var(--c);color:var(--ink);font:900 17px/1 Estedad,Tahoma,sans-serif}
+.cm-tz h3{flex:1 1 120px;min-width:0}
+.cm-tz[data-v="0"]{border-top:4px solid var(--c)}.cm-tz[data-v="0"] .cm-mono{border-radius:12px}
+.cm-tz[data-v="1"]{border-inline-start:5px solid var(--c)}.cm-tz[data-v="1"] .cm-mono{border-radius:50%}
+.cm-tz[data-v="2"]::before{content:"";position:absolute;inset-inline-end:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:color-mix(in srgb,var(--c) 16%,transparent);pointer-events:none}.cm-tz[data-v="2"] .cm-mono{border-radius:12px 12px 12px 4px}
+.cm-tz[data-v="3"]{background-image:radial-gradient(color-mix(in srgb,var(--c) 20%,transparent) 1.2px,transparent 1.4px),linear-gradient(180deg,color-mix(in srgb,var(--c) 6%,#fff),#fff 62%);background-size:14px 14px,auto;background-position:0 0,0 0}.cm-tz[data-v="3"] .cm-mono{border-radius:10px 4px 10px 4px}
+.cm-tz .cm-more-btn,.cm-tz .cm-q{position:relative}
+.cm-tz .cm-q{background:color-mix(in srgb,var(--c) 14%,#fff);color:color-mix(in srgb,var(--c) 70%,#071b36)}
+.cm-tz .cm-more-btn{color:color-mix(in srgb,var(--c) 75%,#071b36)}
+.cm-dialog{--c:#3858e9}.cm-dialog .cm-dbar{border-bottom:3px solid var(--c)}
+.cm-dialog .cm-h4{padding-inline-start:8px;border-inline-start:4px solid var(--c)}

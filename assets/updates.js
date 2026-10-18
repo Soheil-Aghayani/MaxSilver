@@ -6,6 +6,9 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'competitors-colours', date: '1405/07/26', tag: 'بهبود', title: 'تحلیل رقبا: هر رقیب رنگ و طرح خودش را دارد',
+      summary: 'کارت هر رقیب یک رنگ، یک حرف اول رنگی و یکی از چهار طرح دارد تا در نگاه اول از هم جدا شوند؛ پنجرهٔ اطلاعات هم همان رنگ را می‌گیرد.',
+      details: ['رنگ را در فایل competitors_verified.json هم می‌توانید عوض کنید (فیلد color). جایی که سایت رقیب رنگ روشنی داشت از همان استفاده شد.'] },
     { id: 'competitors-popup-ai', date: '1405/07/26', tag: 'بهبود', title: 'تحلیل رقبا: کارت‌های هم‌اندازه، پنجرهٔ اطلاعات و خلاصهٔ هوش مصنوعی',
       summary: 'هر رقیب یک کارت کوتاه دارد؛ «اطلاعات بیشتر» پنجره‌ای با وب‌سایت، اینستاگرام، تلفن (قابل تماس)، ایمیل، نشانی و خلاصهٔ هوش مصنوعی باز می‌کند. خطای کارت‌های نمایشگاه‌ها که بعد از فیلتر دیده نمی‌شدند رفع شد.',
       details: ['برای دیدن اطلاعات تازه، فایل competitors_verified.json را دوباره با «جایگزینی با فایل تازه» بارگذاری کنید.',

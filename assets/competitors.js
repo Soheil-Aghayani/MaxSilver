@@ -40,10 +40,15 @@
   function siteLink(u) { return u ? '<a href="https://' + esc(u) + '" target="_blank" rel="noopener" dir="ltr">' + esc(u) + '</a>' : ''; }
   function telLink(n) { var s = String(n).replace(/[^\d+]/g, ''); return '<a href="tel:' + esc(s) + '" dir="ltr">' + esc(faN(s.replace(/^(0\d{2})(\d{8})$/, '$1-$2'))) + '</a>'; }
   function waLink(n) { var s = String(n).replace(/[^\d]/g, '').replace(/^0/, '98'); return '<a href="https://wa.me/' + esc(s) + '" target="_blank" rel="noopener" dir="ltr">' + esc(faN(n)) + '</a>'; }
+  var PAL = ['#3858e9', '#7f54b3', '#0891b2', '#e39c27', '#ce1f39', '#56007a', '#ff6a00', '#65a30d', '#0d9488', '#153587', '#be123c', '#64748b'];
+  function colorOf(x, key) { if (/^#[0-9a-f]{6}$/i.test(x.color || '')) return x.color; var n = 0, i; for (i = 0; i < key.length; i++) n += key.charCodeAt(i); return PAL[n % PAL.length]; }
+  // dark text on light colours, white text on dark ones
+  function ink(c) { var r = parseInt(c.substr(1, 2), 16), g = parseInt(c.substr(3, 2), 16), b = parseInt(c.substr(5, 2), 16); return (0.299 * r + 0.587 * g + 0.114 * b) > 165 ? '#071b36' : '#ffffff'; }
+  function sty(x, key) { var c = colorOf(x, key); return ' style="--c:' + c + ';--ink:' + ink(c) + '" data-v="' + (key.charCodeAt(0) + parseInt(key.slice(1), 10)) % 4 + '"'; }
   function teaser(key, x, num) {
     var th = x.threat ? '<span class="cm-th ' + tone(x.threat) + '">تهدید ' + esc(x.threat) + '</span>' : '';
     var links = [x.site ? '<a class="cm-q" href="https://' + esc(x.site) + '" target="_blank" rel="noopener" dir="ltr">' + esc(x.site) + '</a>' : '', x.phones && x.phones[0] ? '<a class="cm-q" href="tel:' + esc(x.phones[0]) + '" dir="ltr">' + esc(faN(x.phones[0])) + '</a>' : ''].filter(Boolean).join('');
-    return '<article class="cm-card cm-tz" data-key="' + key + '"><div class="cm-top"><h3>' + (num ? '<span class="cm-n">' + faN(num) + '</span>' : '') + esc(x.name) + '</h3>' + th + '</div>' +
+    return '<article class="cm-card cm-tz" data-key="' + key + '"' + sty(x, key) + '><div class="cm-top"><span class="cm-mono" aria-hidden="true">' + esc(String(x.name).trim().charAt(0)) + '</span><h3>' + (num ? '<span class="cm-n">' + faN(num) + '</span>' : '') + esc(x.name) + '</h3>' + th + '</div>' +
       '<p class="cm-lead2">' + esc(lead(x)) + '</p>' + (links ? '<div class="cm-ql">' + links + '</div>' : '') +
       '<button type="button" class="cm-more-btn" data-open="' + key + '">اطلاعات بیشتر</button></article>';
   }
@@ -71,7 +76,7 @@
     var tg = x.telegram ? '<a href="https://t.me/' + esc(x.telegram) + '" target="_blank" rel="noopener" dir="ltr">@' + esc(x.telegram) + '</a>' : '';
     var facts = x.facts ? x.facts : [x.focus ? ['تمرکز', x.focus] : null, x.finding ? ['یافته', x.finding] : null, x.text ? ['توضیح', x.text] : null].filter(Boolean);
     var rasmio = '<a href="https://rasmio.com/search/companies/" target="_blank" rel="noopener" dir="ltr">rasmio.com</a> (نام را آنجا جست‌وجو کنید: <b>' + esc(x.name.replace(/\s*\(.*$/, '')) + '</b>)';
-    dlg.setAttribute('aria-label', x.name);
+    dlg.setAttribute('aria-label', x.name); dlg.style.setProperty('--c', colorOf(x, key)); dlg.style.setProperty('--ink', ink(colorOf(x, key)));
     dlg.innerHTML = '<div class="cm-dbar"><h2>' + esc(x.name) + '</h2><button type="button" class="cm-x" data-cm-close aria-label="بستن">' + CLOSE + '</button></div>' +
       '<div class="cm-dbody">' + (x.threat ? '<p><span class="cm-th ' + tone(x.threat) + '">تهدید ' + esc(x.threat) + '</span></p>' : '') +
       (x.sum ? '<div class="cm-aibox"><button type="button" class="cm-ai" data-ai="' + key + '" aria-expanded="false">' + SPARK + '<span>خلاصهٔ هوش مصنوعی</span></button><div class="cm-aiout" hidden></div></div>' : '') +
