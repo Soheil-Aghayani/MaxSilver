@@ -214,3 +214,4 @@
 html{scroll-behavior:smooth}
 .cm-sec,.cm-tb,.cm-ov{scroll-margin-top:84px}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.cm-more-btn{min-height:36px;display:inline-flex;align-items:center}

@@ -181,3 +181,6 @@ a.ms-install-go{border:0;background:var(--ms-navy);color:#fff}
 .rv-in .rv-c{animation:rv-c .42s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--rd,0ms) + 140ms + var(--ci,0) * 45ms)}
 @keyframes rv-c{from{opacity:0;transform:translateY(8px)}}
 @media print,(prefers-reduced-motion:reduce){.rv{opacity:1!important;transform:none!important}.rv-in .rv-c{animation:none}}
+
+/* touch size: small links and dots keep their look but get a finger-sized area (at least about 36px) */
+.ms-legal a{display:inline-flex;align-items:center;min-height:36px;padding:0 4px}

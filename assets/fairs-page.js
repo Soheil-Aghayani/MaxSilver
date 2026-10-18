@@ -81,7 +81,7 @@
     var q = norm([v.title, v.en, v.country, v.city, v.venue, v.organizer, v.sectors.join(' ')].join(' '));
     var key = (v.abroad ? 'x:' : 'i:') + (v.city || v.country), p = E.toJ(v.d.a), q2 = E.toJ(v.d.b);
     var days = fa(p.jd) + (p.jm === q2.jm ? '' : ' ' + JM[p.jm - 1]) + ' تا ' + fa(q2.jd) + ' ' + JM[q2.jm - 1];
-    var sum = [v.venue.replace(/ \(.*$/, ''), v.fit || v.note].filter(Boolean).join(' — ');
+    var sum = [v.venue.replace(/ \(.*$/, ''), v.fit || v.note].filter(Boolean).join('، ');
     return '<li class="fe-item' + (past ? ' past' : '') + '" data-id="' + esc(v.id) + '" data-where="' + (v.abroad ? 'abroad' : 'iran') + '" data-place="' + esc(key) + '" data-past="' + (past ? 1 : 0) + '" data-q="' + esc(q) + '">' +
       '<article class="fe-card" data-tone="' + v.tone + '"><div class="fe-top">' + thumb(v) + '<div class="fe-meta"><span class="fe-m"><b>' + days + '</b>' + SEP + '<span class="' + (v.abroad ? 'ab' : '') + '">' + esc(place) + '</span></span>' +
       '<span class="fe-tags"><span class="fr-st ' + v.st.k + '">' + v.st.text + '</span>' + (v.invite ? '<em class="fe-inv">فقط با دعوت</em>' : '') + (hasDiff ? '<em class="fe-warn" title="اطلاعات منبع با فهرست ما فرق دارد">' + mk('diff') + 'بررسی لازم</em>' : '') + '</span></div></div>' +

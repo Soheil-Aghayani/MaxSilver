@@ -169,7 +169,7 @@
   function stageSection(x) {
     var cur = stg(x), path = ['request', 'confirmed', 'preinvoice', 'accepted', cur === 'production' ? 'production' : 'warehouse', 'ready', 'shipped', 'delivered'], idx = path.indexOf(cur);
     var steps = path.map(function (k, i) { return '<li class="cr-step' + (idx >= 0 && i < idx ? ' done' : '') + (k === cur ? ' on' : '') + '"><i></i><span>' + OF.LABEL[k] + '</span></li>'; }).join('');
-    var side = ['rejected', 'returned', 'cancelled'].indexOf(cur) >= 0 ? '<p class="cr-side sg-' + cur + '">' + OF.LABEL[cur] + (cur === 'rejected' && x.rejectReason ? ' — ' + esc(x.rejectReason) : '') + '</p>' : '';
+    var side = ['rejected', 'returned', 'cancelled'].indexOf(cur) >= 0 ? '<p class="cr-side sg-' + cur + '">' + OF.LABEL[cur] + (cur === 'rejected' && x.rejectReason ? ': ' + esc(x.rejectReason) : '') + '</p>' : '';
     var codes = x.orderCode || x.proformaNo ? '<dl class="cr-facts">' + row('شمارهٔ پیش‌فاکتور', x.proformaNo, true) + row('کد سفارش', x.orderCode, true) + '</dl>' : '';
     var acts = stageActions(x), hint = '';
     if (isAM() && (cur === 'preinvoice' || cur === 'rejected')) hint = '<p class="cr-hint">برای تأیید یا رد با دلیل، پیش‌فاکتور را در <a href="./panel.html#invoices">پنل ← پیش‌فاکتورها</a> باز کنید.</p>';

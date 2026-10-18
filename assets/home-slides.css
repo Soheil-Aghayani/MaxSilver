@@ -66,3 +66,5 @@
   .hs-slide.fair .hs-art img{object-position:center}
   .hs-slide.fair .hs-copy{max-width:none}
 }
+.hs-dot{position:relative}.hs-dot::before{content:"";position:absolute;inset:-14px -4px}
+.hs-pause{position:relative}.hs-pause::before{content:"";position:absolute;inset:-8px}

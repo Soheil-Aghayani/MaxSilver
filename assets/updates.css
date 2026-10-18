@@ -76,3 +76,5 @@ ul.upd-all p,.upd-one p{margin:0 0 8px;color:#35465e;font-size:14px;line-height:
 .tl-det.open>div{padding-top:4px}
 .tl-det p{margin:0 0 8px;color:#35465e;font-size:13.5px;line-height:1.95}
 @media(prefers-reduced-motion:reduce){.tl-det{transition:none}}
+.upd-allbtn{min-height:36px;padding:0 8px}
+.upd-more{min-height:36px;padding:0 4px;display:inline-flex;align-items:center}

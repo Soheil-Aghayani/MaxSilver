@@ -119,3 +119,4 @@
 .fr-tb .fr-note{margin:0}
 @media(max-width:560px){.fr-seg .fr-chip{padding:0 8px;font-size:12px}.fr-tb-top .fr-seg{width:100%}.fr-tb-top .fr-seg .fr-chip{flex:1}}
 #frP:empty{display:none}
+.fe-more{min-height:36px;display:inline-flex;align-items:center}

@@ -486,7 +486,7 @@
   function reviewLine(d) {
     var r = d.review || {};
     if (r.status === 'approved') return '<div class="arc-review ok">تأیید اکانت منیجر ✓</div>';
-    if (r.status === 'refusal') return '<div class="arc-review bad">رد شد · منتظر تصمیم مدیر فروش' + (r.reason ? ' — ' + esc(r.reason) : '') + '</div>';
+    if (r.status === 'refusal') return '<div class="arc-review bad">رد شد · منتظر تصمیم مدیر فروش' + (r.reason ? ': ' + esc(r.reason) : '') + '</div>';
     if (r.status === 'kept') return '<div class="arc-review">رد اکانت منیجر پذیرفته نشد؛ پیش‌فاکتور معتبر است</div>';
     if (d.sendPending) return '<div class="arc-review wait">در انتظار اتصال برای ارسال به اکانت منیجر</div>';
     if (d.sentAt) return '<div class="arc-review">برای اکانت منیجر ارسال شده · ' + esc(faTimeShort(d.sentAt)) + '</div>';
@@ -1032,7 +1032,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261317', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261318', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }
