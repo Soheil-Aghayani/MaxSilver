@@ -8,7 +8,7 @@
   if (!cfg || !window.firebase) { root.innerHTML = '<p class="cm-note">سرویس در دسترس نیست. صفحه را دوباره باز کنید.</p>'; return; }
   firebase.initializeApp(cfg);
   var auth = firebase.auth(), db = firebase.firestore(), DOC = db.collection('intel').doc('competitors');
-  var S = { user: null, profile: null, loading: true, data: null, error: '', msg: '', q: '', threat: 'all', busy: false };
+  var S = { sort: 'def', f: {}, cmp: [], user: null, profile: null, loading: true, data: null, error: '', msg: '', q: '', threat: 'all', busy: false };
   var esc = function (s) { return String(s == null ? '' : s).replace(/\s*\u2014\s*/g, '، ').replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var norm = function (s) { return String(s == null ? '' : s).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[‌\s]+/g, ' ').toLowerCase(); };
   var can = function (a) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, a)); };
@@ -50,7 +50,7 @@
     var links = [x.site ? '<a class="cm-q" href="https://' + esc(x.site) + '" target="_blank" rel="noopener" dir="ltr">' + esc(x.site) + '</a>' : '', x.phones && x.phones[0] ? '<a class="cm-q" href="tel:' + esc(x.phones[0]) + '" dir="ltr">' + esc(faN(x.phones[0])) + '</a>' : ''].filter(Boolean).join('');
     return '<article class="cm-card cm-tz" data-key="' + key + '"' + sty(x, key) + '><div class="cm-top"><span class="cm-mono" aria-hidden="true">' + esc(String(x.name).trim().charAt(0)) + '</span><h3>' + (num ? '<span class="cm-n">' + faN(num) + '</span>' : '') + esc(x.name) + '</h3>' + th + '</div>' +
       '<p class="cm-lead2">' + esc(lead(x)) + '</p>' + (links ? '<div class="cm-ql">' + links + '</div>' : '') +
-      '<button type="button" class="cm-more-btn" data-open="' + key + '">اطلاعات بیشتر</button></article>';
+      '<div class="cm-foot"><button type="button" class="cm-more-btn" data-open="' + key + '">اطلاعات بیشتر</button><label class="cm-cmp"><input type="checkbox" data-cmp="' + key + '"' + (S.cmp.indexOf(key) >= 0 ? ' checked' : '') + '>مقایسه</label></div></article>';
   }
   function ver(x) {
     if (!x.check || !x.check.length) return '';
@@ -61,17 +61,19 @@
     return '<h4 class="cm-h4">بررسی دوباره از سایت</h4>' + list;
   }
   function crow(k, v) { return v ? '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>' : ''; }
+  function ensureDlg() {
+    if (dlg) return;
+    dlg = document.createElement('dialog'); dlg.className = 'cm-dialog';
+    dlg.addEventListener('click', function (e) {
+      if (e.target === dlg || e.target.closest('[data-cm-close]')) { dlg.close(); return; }
+      var b = e.target.closest('[data-ai]'); if (b) ai(b);
+    });
+    dlg.addEventListener('close', function () { clearInterval(aiTimer); });
+    document.body.appendChild(dlg);
+  }
   function popup(key) {
     var x = ITEMS[key]; if (!x) return;
-    if (!dlg) {
-      dlg = document.createElement('dialog'); dlg.className = 'cm-dialog';
-      dlg.addEventListener('click', function (e) {
-        if (e.target === dlg || e.target.closest('[data-cm-close]')) { dlg.close(); return; }
-        var b = e.target.closest('[data-ai]'); if (b) ai(b);
-      });
-      dlg.addEventListener('close', function () { clearInterval(aiTimer); });
-      document.body.appendChild(dlg);
-    }
+    ensureDlg(); dlg.classList.remove('wide');
     var ig = x.instagram ? '<a href="https://instagram.com/' + esc(x.instagram) + '" target="_blank" rel="noopener" dir="ltr">@' + esc(x.instagram) + '</a>' : '';
     var tg = x.telegram ? '<a href="https://t.me/' + esc(x.telegram) + '" target="_blank" rel="noopener" dir="ltr">@' + esc(x.telegram) + '</a>' : '';
     var facts = x.facts ? x.facts : [x.focus ? ['تمرکز', x.focus] : null, x.finding ? ['یافته', x.finding] : null, x.text ? ['توضیح', x.text] : null].filter(Boolean);
@@ -105,28 +107,110 @@
     aiTimer = setInterval(function () { i += 2; if (i >= words.length) { i = words.length; clearInterval(aiTimer); } paint(); }, 55);
   }
   // the old sentence under this heading is not shown any more
+  // ---- toolbar: search, sort, threat, and four on/off filters; they work across all the cards on the page
+  var SORTS = [['def', 'ترتیب پرونده'], ['threat', 'تهدید'], ['age', 'سابقه'], ['digital', 'حضور دیجیتال']];
+  var FLT = [['ig', 'اینستاگرام'], ['shop', 'فروشگاه آنلاین'], ['mfr', 'تولیدکننده'], ['blog', 'بلاگ']];
+  function rank(th) { th = String(th || ''); return /پایین/.test(th) ? 1 : /متوسط-بالا/.test(th) ? 3 : /متوسط/.test(th) ? 2 : /بالا/.test(th) ? 4 : 0; }
+  function digital(x) { return (x.instagram ? 1 : 0) + (x.telegram ? 1 : 0) + (x.shop ? 1 : 0) + (x.blog ? 1 : 0) + (x.wa && x.wa.length ? 1 : 0); }
+  function hasF(x, k) { return k === 'ig' ? !!x.instagram : !!x[k]; }
+  function pass(x) {
+    var q = norm(S.q);
+    if (S.threat !== 'all' && x.threat !== S.threat) return false;
+    for (var k in S.f) if (S.f[k] && !hasF(x, k)) return false;
+    if (!q) return true;
+    return norm([x.name, x.sum, x.focus, x.finding, x.text, x.legal, x.address, (x.facts || []).map(function (f) { return f[0] + ' ' + f[1]; }).join(' ')].join(' ')).indexOf(q) >= 0;
+  }
+  function order(list) {   // list of [key, x, num]
+    var l = list.slice();
+    if (S.sort === 'threat') l.sort(function (p, q) { return rank(q[1].threat) - rank(p[1].threat); });
+    else if (S.sort === 'age') l.sort(function (p, q) { return (q[1].age == null ? -1 : q[1].age) - (p[1].age == null ? -1 : p[1].age); });
+    else if (S.sort === 'digital') l.sort(function (p, q) { return digital(q[1]) - digital(p[1]); });
+    return l;
+  }
+  function toolbar() {
+    return '<div class="cm-tb"><div class="cm-tb-top"><label class="cm-bar2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="cmQ" type="search" placeholder="جست‌وجوی نام، شهر، محصول…" value="' + esc(S.q) + '" autocomplete="off"></label>' +
+      '<div class="cm-chips cm-seg" role="group" aria-label="مرتب‌سازی" data-morph="sort">' + SORTS.map(function (s) { return '<button type="button" class="cm-chip" data-sort="' + s[0] + '" aria-pressed="' + (S.sort === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="cm-chips cm-seg wide" role="group" aria-label="سطح تهدید" data-morph="threat">' + THREATS.map(function (th) { return '<button type="button" class="cm-chip" data-th="' + esc(th[0]) + '" aria-pressed="' + (S.threat === th[0]) + '">' + th[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="cm-tog-row" role="group" aria-label="فیلتر">' + FLT.map(function (f) { return '<button type="button" class="cm-tog" data-flt="' + f[0] + '" aria-pressed="' + (!!S.f[f[0]]) + '">' + f[1] + '</button>'; }).join('') + '<span class="cm-count" id="cmCount" aria-live="polite"></span></div></div>';
+  }
+  var shown = 0;
+  function section(head, sub, list, cls) {
+    var l = order(list.filter(function (e) { return pass(e[1]); }));
+    shown += l.length;
+    return '<section class="cm-sec"><h2>' + esc(head) + '</h2>' + (sub ? '<p class="cm-sub">' + esc(sub) + '</p>' : '') + '<div class="cm-grid' + (cls ? ' ' + cls : '') + '">' + l.map(function (e) { return teaser(e[0], e[1], e[2]); }).join('') + '</div>' + (l.length ? '' : '<p class="cm-note">موردی پیدا نشد.</p>') + '</section>';
+  }
+  function entries(items, pre, nums) { return (items || []).map(function (x, i) { return [pre + i, x, nums ? x.n : 0]; }); }
   function strategicSub(d) { return String(d.strategic.sub || '').replace(/۱۰ شرکتی[^،]*?می‌کنند/, '').trim(); }
-  function strategic(d) {
-    var q = norm(S.q), list = [];
-    (d.strategic.items || []).forEach(function (x, i) {
-      if (S.threat !== 'all' && x.threat !== S.threat) return;
-      if (q && norm(x.name + ' ' + x.facts.map(function (f) { return f[0] + ' ' + f[1]; }).join(' ') + ' ' + (x.sum || '')).indexOf(q) < 0) return;
-      list.push([i, x]);
-    });
-    return '<section class="cm-sec"><h2>' + esc(d.strategic.heading) + '</h2>' + (strategicSub(d) ? '<p class="cm-sub">' + esc(strategicSub(d)) + '</p>' : '') +
-      '<div class="cm-bar"><input id="cmQ" type="search" placeholder="جست‌وجوی نام یا ویژگی…" value="' + esc(S.q) + '" autocomplete="off"><div class="cm-chips" role="group" aria-label="سطح تهدید" data-morph="threat">' +
-      THREATS.map(function (t) { return '<button type="button" class="cm-chip" data-th="' + esc(t[0]) + '" aria-pressed="' + (S.threat === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div></div>' +
-      '<div class="cm-grid">' + list.map(function (p) { return teaser('s' + p[0], p[1], p[1].n); }).join('') + '</div>' + (list.length ? '' : '<p class="cm-note">موردی پیدا نشد.</p>') + '</section>';
-  }
-  function market(d) {
-    var m = d.market; if (!m) return '';
-    return '<section class="cm-sec"><h2>' + esc(m.heading) + '</h2><p class="cm-sub">' + esc(m.sub) + '</p><div class="cm-grid">' + m.items.map(function (x, i) { return teaser('m' + i, x); }).join('') + '</div></section>';
-  }
+  function strategic(d) { return section(d.strategic.heading, strategicSub(d), entries(d.strategic.items, 's', true)); }
+  function market(d) { var m = d.market; return m ? section(m.heading, m.sub, entries(m.items, 'm')) : ''; }
   function plain(sec, pre) {
     if (!sec) return '';
+    if (pre) return section(sec.heading, sec.sub, entries(sec.items, pre), 'two');
     return '<section class="cm-sec"><h2>' + esc(sec.heading) + '</h2><p class="cm-sub">' + esc(sec.sub || '') + '</p><div class="cm-grid two">' +
-      sec.items.map(function (x, i) { return pre ? teaser(pre + i, x) : '<article class="cm-card soft"><h3>' + esc(x.name) + '</h3><p>' + esc(x.text) + '</p></article>'; }).join('') + '</div></section>';
+      sec.items.map(function (x) { return '<article class="cm-card soft"><h3>' + esc(x.name) + '</h3><p>' + esc(x.text) + '</p></article>'; }).join('') + '</div></section>';
   }
+  // ---- the areas matrix: who offers what, read from the sites; the empty columns are the openings
+  function matrix(d) {
+    var cols = d.areaCols; if (!cols || !cols.length) return '';
+    var rows = [], key;
+    Object.keys(ITEMS).forEach(function (k) { rows.push([k, ITEMS[k]]); });
+    var score = function (x) { var s = 0; if (x.areas) cols.forEach(function (c) { s += x.areas[c[0]] || 0; }); return s; };
+    rows.sort(function (p, q) { return score(q[1]) - score(p[1]); });
+    var cnt = cols.map(function (c) { var n = 0; rows.forEach(function (r) { if (r[1].areas && r[1].areas[c[0]] >= 1) n++; }); return n; });
+    var min = Math.min.apply(null, cnt);
+    var Q = '<svg class="mxq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="دادهٔ کافی نیست">' + MSVG.none + '</svg>';
+    var body = rows.map(function (r) {
+      var x = r[1], c = colorOf(x, r[0]);
+      var cells = !x.areas ? '<td colspan="' + cols.length + '" class="mx-na">دادهٔ کافی برای این مورد پیدا نشد</td>' : cols.map(function (col) {
+        var v = x.areas[col[0]];
+        return '<td>' + (v >= 2 ? '<i class="mx2" title="تمرکز روشن" style="background:' + c + '"></i>' : v === 1 ? '<i class="mx1" title="عرضه می‌کند" style="border-color:' + c + '"></i>' : (x.areasPartial ? Q : '<i class="mx0" title="در صفحه‌های خوانده‌شده دیده نشد"></i>')) + '</td>';
+      }).join('');
+      return '<tr data-open="' + r[0] + '"><th scope="row"><span class="mx-dot" style="background:' + c + '"></span>' + esc(x.name.replace(/\s*\(.*$/, '')) + '</th>' + cells + '</tr>';
+    }).join('');
+    var foot = '<tr class="mx-foot"><th scope="row">تعداد رقیب در این حوزه</th>' + cnt.map(function (n) { return '<td class="' + (n === min ? 'low' : '') + '">' + faN(n) + '</td>'; }).join('') + '</tr>';
+    return '<section class="cm-sec"><h2>ماتریس حوزه‌ها: هر رقیب کجا فعال است</h2><p class="cm-sub">' + esc(d.areaNote || '') + '</p>' +
+      '<div class="cm-legend"><span><i class="mx2" style="background:#1746b5"></i>تمرکز روشن</span><span><i class="mx1" style="border-color:#1746b5"></i>عرضه می‌کند</span><span><i class="mx0"></i>دیده نشد</span><span class="mx-lowkey"><i class="mxlow"></i>کم‌رقیب‌ترین حوزه</span></div>' +
+      '<div class="cm-tw"><table class="cm-mx"><thead><tr><th></th>' + cols.map(function (c, i) { return '<th class="' + (cnt[i] === min ? 'low' : '') + '"><span>' + esc(c[1]) + '</span></th>'; }).join('') + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div></section>';
+  }
+  // ---- compare 2 or 3 competitors side by side
+  var YES = '<svg class="cmp-yes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="بله">' + MSVG.ok + '</svg>';
+  var NO = '<span class="cmp-no" aria-label="خیر یا دیده نشد"></span>';
+  function capOf(x) { var r = x.registry && x.registry.rows; if (!r) return ''; for (var i = 0; i < r.length; i++) if (/^سرمایه/.test(r[i][0])) return r[i][1]; return ''; }
+  function compareHtml() {
+    var xs = S.cmp.map(function (k) { return [k, ITEMS[k]]; }).filter(function (p) { return p[1]; });
+    var head = '<tr><th></th>' + xs.map(function (p) { var c = colorOf(p[1], p[0]); return '<th style="--c:' + c + ';--ink:' + ink(c) + '"><span class="cm-mono">' + esc(String(p[1].name).trim().charAt(0)) + '</span>' + esc(p[1].name) + '</th>'; }).join('') + '</tr>';
+    function row(label, fn) { return '<tr><th scope="row">' + label + '</th>' + xs.map(function (p) { return '<td>' + (fn(p[1]) || NO) + '</td>'; }).join('') + '</tr>'; }
+    var areaNames = function (x, v) { return x.areas ? d_cols().filter(function (c) { return x.areas[c[0]] === v; }).map(function (c) { return esc(c[1]); }).join('، ') : ''; };
+    return head + row('سطح تهدید', function (x) { return x.threat ? '<span class="cm-th ' + tone(x.threat) + '">' + esc(x.threat) + '</span>' : ''; }) +
+      row('سابقه', function (x) { return x.age != null ? faN(x.age) + ' سال<small>' + esc(x.ageNote || '') + '</small>' : ''; }) +
+      row('تولیدکننده', function (x) { return x.mfr ? YES : ''; }) + row('فروشگاه آنلاین', function (x) { return x.shop ? YES : ''; }) + row('بلاگ', function (x) { return x.blog ? YES : ''; }) +
+      row('اینستاگرام', function (x) { return x.instagram ? '<a href="https://instagram.com/' + esc(x.instagram) + '" target="_blank" rel="noopener" dir="ltr">@' + esc(x.instagram) + '</a>' : ''; }) +
+      row('تلگرام', function (x) { return x.telegram ? '<a href="https://t.me/' + esc(x.telegram) + '" target="_blank" rel="noopener" dir="ltr">@' + esc(x.telegram) + '</a>' : ''; }) +
+      row('وب‌سایت', function (x) { return siteLink(x.site); }) + row('تلفن', function (x) { return (x.phones || []).slice(0, 2).map(telLink).join('<br>'); }) +
+      row('سرمایهٔ ثبتی', function (x) { return esc(capOf(x)); }) + row('تمرکز روشن در', function (x) { return areaNames(x, 2); }) + row('عرضه می‌کند', function (x) { return areaNames(x, 1); }) +
+      row('نشانی', function (x) { return esc(x.address || ''); }) + row('خلاصه', function (x) { return esc(x.sum || ''); });
+  }
+  function d_cols() { return (S.data && S.data.areaCols) || []; }
+  function openCompare() {
+    ensureDlg();
+    dlg.setAttribute('aria-label', 'مقایسه رقبا');
+    dlg.innerHTML = '<div class="cm-dbar"><h2>مقایسهٔ رقبا</h2><button type="button" class="cm-x" data-cm-close aria-label="بستن">' + CLOSE + '</button></div><div class="cm-dbody"><div class="cm-tw"><table class="cm-cmp-t">' + compareHtml() + '</table></div></div>';
+    dlg.style.setProperty('--c', '#1746b5');
+    dlg.classList.add('wide');
+    if (!dlg.open) dlg.showModal();
+  }
+  function cmpBar() {
+    var bar = document.getElementById('cmCmpBar');
+    if (!S.cmp.length) { if (bar) bar.hidden = true; return; }
+    if (!bar) { bar = document.createElement('div'); bar.id = 'cmCmpBar'; bar.className = 'cm-cmpbar'; document.body.appendChild(bar); bar.addEventListener('click', function (e) { if (e.target.closest('[data-cmp-go]') && S.cmp.length >= 2) openCompare(); if (e.target.closest('[data-cmp-clear]')) { S.cmp = []; syncCmp(); } }); }
+    bar.hidden = false;
+    bar.innerHTML = '<span>' + faN(S.cmp.length) + ' مورد برای مقایسه</span><button type="button" class="cm-cmp-go" data-cmp-go ' + (S.cmp.length < 2 ? 'disabled' : '') + '>مقایسه</button><button type="button" class="cm-cmp-x" data-cmp-clear aria-label="پاک کردن انتخاب">' + CLOSE + '</button>';
+  }
+  function syncCmp() {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-cmp]'), function (i) { i.checked = S.cmp.indexOf(i.getAttribute('data-cmp')) >= 0; });
+    cmpBar();
+  }
+
   function view() {
     if (S.loading) return '<p class="cm-note">در حال بارگذاری…</p>';
     if (!S.user) return '<p class="cm-note">برای دیدن این بخش ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
@@ -143,7 +227,9 @@
     }
     out += '<p class="cm-lead">' + esc(d.subtitle) + '</p><p class="cm-src">منبع: ' + esc(d.source) + '</p>';
     indexItems(d);
-    out += strategic(d) + market(d) + plain(d.supplementary, 'u') + plain(d.frameworks);
+    shown = 0;
+    out += toolbar() + strategic(d) + market(d) + plain(d.supplementary, 'u') + matrix(d) + plain(d.frameworks);
+    out += '<span id="cmShown" hidden>' + shown + '</span>';
     return out;
   }
   window.MSEvents_fa = function (n) { return String(n).replace(/\d/g, function (c) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(c); }); };
@@ -152,13 +238,25 @@
     var M = window.MSMorph, prev = M ? M.snapAll(root, '.cm-chips', '.cm-chip', '[aria-pressed=true]') : null;
     root.innerHTML = view();
     if (M) M.playAll(root, '.cm-chips', '.cm-chip', '[aria-pressed=true]', prev, { cls: 'chip' });
+    var sh = document.getElementById('cmShown'), ct = document.getElementById('cmCount'); if (sh && ct) ct.textContent = faN(sh.textContent) + ' مورد نمایش داده می‌شود';
+    cmpBar();
     if (window.MSGate) window.MSGate.apply();
     if (keep !== null) { var q = document.getElementById('cmQ'); if (q) { q.focus(); try { q.setSelectionRange(keep, keep); } catch (e) { /* ignore */ } } }
   }
   root.addEventListener('click', function (e) {
+    if (e.target.closest('.cm-cmp')) return;
+    var so = e.target.closest('[data-sort]'); if (so) { S.sort = so.getAttribute('data-sort'); render(); return; }
+    var fl = e.target.closest('[data-flt]'); if (fl) { var k = fl.getAttribute('data-flt'); S.f[k] = !S.f[k]; render(); return; }
     var t = e.target.closest('[data-th]'); if (t) { S.threat = t.getAttribute('data-th'); render(); return; }
     var o = e.target.closest('[data-open]'); if (o) { popup(o.getAttribute('data-open')); return; }
     var c = e.target.closest('.cm-tz'); if (c && !e.target.closest('a')) popup(c.getAttribute('data-key'));
+    var tr = e.target.closest('tr[data-open]'); if (tr) popup(tr.getAttribute('data-open'));
+  });
+  root.addEventListener('change', function (e) {
+    var c = e.target.closest && e.target.closest('[data-cmp]'); if (!c) return;
+    var k = c.getAttribute('data-cmp'), i = S.cmp.indexOf(k);
+    if (c.checked && i < 0) { if (S.cmp.length >= 3) { c.checked = false; return; } S.cmp.push(k); } else if (!c.checked && i >= 0) S.cmp.splice(i, 1);
+    cmpBar();
   });
   root.addEventListener('input', function (e) { if (e.target.id === 'cmQ') { S.q = e.target.value; render(); } });
   root.addEventListener('change', function (e) {
