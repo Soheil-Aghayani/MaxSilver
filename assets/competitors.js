@@ -23,6 +23,19 @@
   var THREATS = [['all', 'همه'], ['بالا', 'تهدید بالا'], ['متوسط-بالا', 'متوسط-بالا'], ['متوسط', 'متوسط']];
   function tone(t) { return /بالا/.test(t) && !/متوسط/.test(t) ? 'high' : /متوسط-بالا/.test(t) ? 'mid-high' : /متوسط/.test(t) ? 'mid' : /پایین/.test(t) ? 'low' : 'direct'; }
 
+  // the second look at each competitor's own site: marks (same / differs / not found), then the extra facts that were read
+  var MARK = { ok: ['✓', 'یکی است'], diff: ['≠', 'فرق دارد'], none: ['؟', 'پیدا نشد'] };
+  var MSVG = { ok: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', diff: '<path d="M12 7.5v6M12 17h.01"/>', none: '<path d="M9.5 9.2a2.7 2.7 0 1 1 3.9 2.4c-.9.5-1.4 1-1.4 2M12 17h.01"/>' };
+  function ver(x, compact) {
+    if (!x.check || !x.check.length) return '';
+    var site = x.site ? '<a class="cm-site" href="https://' + esc(x.site) + '" target="_blank" rel="noopener" dir="ltr">' + esc(x.site) + '</a>' : '<span class="cm-nosite">سایت رسمی تأیید نشد</span>';
+    var list = '<ul class="cm-chk">' + x.check.map(function (c) {
+      var k = MSVG[c[1]] ? c[1] : 'none';
+      return '<li class="' + k + '"><b title="' + MARK[k][1] + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + MSVG[k] + '</svg></b><span><em>' + esc(c[0]) + ':</em> ' + esc(c[2]) + ' <i>(' + MARK[k][1] + ')</i></span></li>';
+    }).join('') + '</ul>';
+    var more = x.more && x.more.length ? '<dl class="cm-more">' + x.more.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl>' : '';
+    return '<details class="cm-v"' + (compact ? '' : '') + '><summary>بررسی دوباره از سایت · ' + site + '</summary>' + list + more + '</details>';
+  }
   function strategic(d) {
     var q = norm(S.q), list = (d.strategic.items || []).filter(function (x) {
       if (S.threat !== 'all' && x.threat !== S.threat) return false;
@@ -33,19 +46,19 @@
       THREATS.map(function (t) { return '<button type="button" class="cm-chip" data-th="' + esc(t[0]) + '" aria-pressed="' + (S.threat === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div></div>' +
       '<div class="cm-grid">' + list.map(function (x) {
         return '<article class="cm-card"><div class="cm-top"><h3><span class="cm-n">' + window.MSEvents_fa(x.n) + '</span>' + esc(x.name) + '</h3><span class="cm-th ' + tone(x.threat) + '">تهدید ' + esc(x.threat) + '</span></div><dl>' +
-          x.facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl><p class="cm-ver">' + esc(x.verified || '') + '</p></article>';
+          x.facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl><p class="cm-ver">' + esc(x.verified || '') + '</p>' + ver(x) + '</article>';
       }).join('') + '</div>' + (list.length ? '' : '<p class="cm-note">موردی پیدا نشد.</p>') + '</section>';
   }
   function market(d) {
     var m = d.market; if (!m) return '';
     return '<section class="cm-sec"><h2>' + esc(m.heading) + '</h2><p class="cm-sub">' + esc(m.sub) + '</p><div class="cm-tw"><table class="cm-table"><thead><tr><th>رقیب</th><th>تمرکز</th><th>یافتهٔ تأییدشده</th><th>تهدید</th></tr></thead><tbody>' +
-      m.items.map(function (x) { return '<tr><td data-l="رقیب"><b>' + esc(x.name) + '</b></td><td data-l="تمرکز">' + esc(x.focus) + '</td><td data-l="یافته">' + esc(x.finding) + '</td><td data-l="تهدید"><span class="cm-th ' + tone(x.threat) + '">' + esc(x.threat) + '</span></td></tr>'; }).join('') +
+      m.items.map(function (x) { return '<tr><td data-l="رقیب"><b>' + esc(x.name) + '</b></td><td data-l="تمرکز">' + esc(x.focus) + '</td><td data-l="یافته">' + esc(x.finding) + '</td><td data-l="تهدید"><span class="cm-th ' + tone(x.threat) + '">' + esc(x.threat) + '</span></td></tr>' + (x.check ? '<tr class="cm-vr"><td colspan="4">' + ver(x) + '</td></tr>' : ''); }).join('') +
       '</tbody></table></div></section>';
   }
   function plain(sec) {
     if (!sec) return '';
     return '<section class="cm-sec"><h2>' + esc(sec.heading) + '</h2><p class="cm-sub">' + esc(sec.sub || '') + '</p><div class="cm-grid two">' +
-      sec.items.map(function (x) { return '<article class="cm-card soft"><h3>' + esc(x.name) + '</h3><p>' + esc(x.text) + '</p></article>'; }).join('') + '</div></section>';
+      sec.items.map(function (x) { return '<article class="cm-card soft"><h3>' + esc(x.name) + '</h3><p>' + esc(x.text) + '</p>' + ver(x) + '</article>'; }).join('') + '</div></section>';
   }
   function view() {
     if (S.loading) return '<p class="cm-note">در حال بارگذاری…</p>';
@@ -61,6 +74,7 @@
       return out;
     }
     out += '<p class="cm-lead">' + esc(d.subtitle) + '</p><p class="cm-src">منبع: ' + esc(d.source) + '</p>';
+    if (d.verification) out += '<p class="cm-ok2"><b>' + esc(d.verification.title) + ' (' + esc(d.verification.date) + ').</b> ' + esc(d.verification.text) + '</p>';
     if (d.transcription) out += '<p class="cm-warn">' + esc(d.transcription) + '</p>';
     if (d.method) out += '<section class="cm-box"><h2>' + esc(d.method.heading) + '</h2><h3>' + esc(d.method.sub) + '</h3><p>' + esc(d.method.text) + '</p><div class="cm-fix"><b>' + esc(d.method.fixTitle) + '</b><p>' + esc(d.method.fix) + '</p></div></section>';
     out += strategic(d) + market(d) + plain(d.supplementary) + plain(d.frameworks);

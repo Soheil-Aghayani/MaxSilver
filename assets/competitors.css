@@ -39,3 +39,27 @@
 .cm-btn{justify-self:start;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border:1px solid var(--ms-navy);border-radius:12px;background:var(--ms-navy);color:#fff;font:800 13.5px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
 .cm-btn.alt{background:#fff;color:var(--ms-navy)}
 @media(max-width:700px){.cm-card dl div{grid-template-columns:1fr;gap:0}.cm-table thead{display:none}.cm-table tr{display:grid;gap:2px;padding:10px 12px;border-top:1px solid #e9edf3}.cm-table td{border:0;padding:2px 0}.cm-table td::before{content:attr(data-l) ": ";color:var(--ms-muted);font-size:12px}}
+
+/* the second look at each competitor's site */
+.cm-ok2{margin:0;padding:10px 14px;border-radius:12px;background:#e8f7ee;color:#0c5c36;font-size:13px;font-weight:600;line-height:1.95}.cm-ok2 b{font-weight:800}
+.cm-v{margin-top:4px;border-top:1px dashed var(--ms-line);padding-top:6px}
+.cm-v summary{cursor:pointer;color:#1746b5;font-size:13px;font-weight:800;line-height:1.9;list-style:none}
+.cm-v summary::-webkit-details-marker{display:none}
+.cm-v summary::before{content:"▾ ";color:#8a97ab}.cm-v[open] summary::before{content:"▴ "}
+.cm-site{color:#1746b5}.cm-nosite{color:#b54708}
+.cm-chk{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.cm-chk li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:13.5px;line-height:1.9;color:#35465e}
+.cm-chk b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%}.cm-chk b svg{width:14px;height:14px}
+.cm-chk .ok b{background:#e8f7ee;color:#0c6b3d}.cm-chk .diff b{background:#fff1d6;color:#8a4a00}.cm-chk .none b{background:#eef2f8;color:#667085}
+.cm-chk em{font-style:normal;font-weight:800;color:var(--ms-navy)}.cm-chk i{font-style:normal;color:var(--ms-muted);font-size:12px}
+.cm-more{display:grid;gap:6px;margin:10px 0 0}.cm-more div{display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px}
+.cm-more dt{color:var(--ms-muted);font-size:12.5px;font-weight:700}.cm-more dd{margin:0;color:var(--ms-ink);font-size:13.5px;line-height:1.85;overflow-wrap:anywhere}
+.cm-vr td{padding-top:0!important}
+/* phones: bigger text, one column */
+@media(max-width:700px){
+  .cm{padding-inline:12px}
+  .cm-card dt,.cm-more dt{font-size:13px}.cm-card dd,.cm-more dd{font-size:15px;line-height:1.9}
+  .cm-card h3{font-size:16.5px}.cm-lead{font-size:15px}
+  .cm-chk li{font-size:14.5px}.cm-more div{grid-template-columns:1fr;gap:0}
+  .cm-vr,.cm-vr td{display:block}
+}
