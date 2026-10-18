@@ -130,7 +130,8 @@
     if (!S.user) return '<p class="cm-note">برای دیدن این بخش ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="cm-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('competitors')) return '<p class="cm-note">این بخش فقط برای مدیریت و مدیر فروش است.</p>';
-    var d = S.data, out = '<h1>تحلیل رقبا</h1>';
+    var d = S.data, UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>';
+    var out = '<div class="cm-head"><h1>تحلیل رقبا</h1>' + (d && can('roleAdmin') ? '<label class="cm-up" title="جایگزینی با فایل تازه" aria-label="جایگزینی با فایل تازه">' + UP + '<input id="cmFile" type="file" accept="application/json,.json" hidden></label>' : '') + '</div>';
     if (S.error) out += '<p class="cm-err" role="alert">' + esc(S.error) + '</p>';
     if (S.msg) out += '<p class="cm-ok" role="status">' + esc(S.msg) + '</p>';
     if (!d) {
@@ -145,7 +146,6 @@
     indexItems(d);
     out += strategic(d) + market(d) + plain(d.supplementary, 'u') + plain(d.frameworks);
     if (d.conclusion) out += '<section class="cm-sec cm-concl"><h2>' + esc(d.conclusion.heading) + '</h2><p class="cm-sub">' + esc(d.conclusion.sub) + '</p>' + d.conclusion.paras.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '<blockquote>' + esc(d.conclusion.quote) + '</blockquote></section>';
-    if (can('roleAdmin')) out += '<label class="cm-btn alt">جایگزینی با فایل تازه<input id="cmFile" type="file" accept="application/json,.json" hidden></label>';
     return out;
   }
   window.MSEvents_fa = function (n) { return String(n).replace(/\d/g, function (c) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(c); }); };
