@@ -15,7 +15,7 @@
 .hs-cta:hover{transform:translateY(-2px)}
 .hs-cta svg{width:18px;height:18px}
 .hs-art{position:absolute;inset:0 0 34px;z-index:0;display:block}
-.hs-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:left center}
+.hs-art img{display:block;width:100%;height:100%;object-fit:contain;object-position:left center}
 
 .hs-dots{position:absolute;z-index:3;left:50%;bottom:5px;translate:-50% 0;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:rgba(5,25,52,.35);backdrop-filter:blur(6px)}
 .hs-dot{width:9px;height:9px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;transition:width .2s,background .2s}
@@ -48,12 +48,19 @@
   .hs-slide.pic{min-height:390px;align-items:start}
   .hs-copy{max-width:none}
   .hs-copy p{display:none}
+  .hs-art{inset:auto 0 34px;height:44%}
   .hs-art img{object-position:center bottom}
 }
 @media(prefers-reduced-motion:reduce){.hs-slide,.hs-slide.on{transition:none;transform:none}}
 .hs-dots[hidden]{display:none}
 
-/* a fair slide: the picture is mirrored so its subject sits away from the text */
-.hs-slide.fair .hs-art img{transform:scaleX(-1);object-position:right center}
+/* a fair slide: the picture sits whole (never cropped) in its own box on the side away from the text, so it can never go under the words */
+.hs-slide.fair .hs-art{inset:14px auto 48px 18px;width:min(40%,420px)}
+.hs-slide.fair .hs-art img{transform:none;object-fit:contain;object-position:center}
+.hs-slide.fair .hs-copy{max-width:min(54%,560px)}
 .hs-slide.fair .hs-copy p{max-width:48ch}
-@media(max-width:760px){.hs-slide.fair .hs-art img{object-position:center bottom}}
+@media(max-width:760px){
+  .hs-slide.fair .hs-art{inset:auto 18px 40px 18px;width:auto;height:38%}
+  .hs-slide.fair .hs-art img{object-position:center bottom}
+  .hs-slide.fair .hs-copy{max-width:none}
+}
