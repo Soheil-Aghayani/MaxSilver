@@ -104,6 +104,8 @@
     paint();
     aiTimer = setInterval(function () { i += 2; if (i >= words.length) { i = words.length; clearInterval(aiTimer); } paint(); }, 55);
   }
+  // the old sentence under this heading is not shown any more
+  function strategicSub(d) { return String(d.strategic.sub || '').replace(/۱۰ شرکتی[^،]*?می‌کنند/, '').trim(); }
   function strategic(d) {
     var q = norm(S.q), list = [];
     (d.strategic.items || []).forEach(function (x, i) {
@@ -111,7 +113,7 @@
       if (q && norm(x.name + ' ' + x.facts.map(function (f) { return f[0] + ' ' + f[1]; }).join(' ') + ' ' + (x.sum || '')).indexOf(q) < 0) return;
       list.push([i, x]);
     });
-    return '<section class="cm-sec"><h2>' + esc(d.strategic.heading) + '</h2><p class="cm-sub">' + esc(d.strategic.sub) + '</p>' +
+    return '<section class="cm-sec"><h2>' + esc(d.strategic.heading) + '</h2>' + (strategicSub(d) ? '<p class="cm-sub">' + esc(strategicSub(d)) + '</p>' : '') +
       '<div class="cm-bar"><input id="cmQ" type="search" placeholder="جست‌وجوی نام یا ویژگی…" value="' + esc(S.q) + '" autocomplete="off"><div class="cm-chips" role="group" aria-label="سطح تهدید" data-morph="threat">' +
       THREATS.map(function (t) { return '<button type="button" class="cm-chip" data-th="' + esc(t[0]) + '" aria-pressed="' + (S.threat === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div></div>' +
       '<div class="cm-grid">' + list.map(function (p) { return teaser('s' + p[0], p[1], p[1].n); }).join('') + '</div>' + (list.length ? '' : '<p class="cm-note">موردی پیدا نشد.</p>') + '</section>';
@@ -140,9 +142,6 @@
       return out;
     }
     out += '<p class="cm-lead">' + esc(d.subtitle) + '</p><p class="cm-src">منبع: ' + esc(d.source) + '</p>';
-    if (d.verification) out += '<p class="cm-ok2"><b>' + esc(d.verification.title) + ' (' + esc(d.verification.date) + ').</b> ' + esc(d.verification.text) + '</p>';
-    if (d.transcription) out += '<p class="cm-warn">' + esc(d.transcription) + '</p>';
-    if (d.method) out += '<section class="cm-box"><h2>' + esc(d.method.heading) + '</h2><h3>' + esc(d.method.sub) + '</h3><p>' + esc(d.method.text) + '</p><div class="cm-fix"><b>' + esc(d.method.fixTitle) + '</b><p>' + esc(d.method.fix) + '</p></div></section>';
     indexItems(d);
     out += strategic(d) + market(d) + plain(d.supplementary, 'u') + plain(d.frameworks);
     if (d.conclusion) out += '<section class="cm-sec cm-concl"><h2>' + esc(d.conclusion.heading) + '</h2><p class="cm-sub">' + esc(d.conclusion.sub) + '</p>' + d.conclusion.paras.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '<blockquote>' + esc(d.conclusion.quote) + '</blockquote></section>';
