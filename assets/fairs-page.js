@@ -1,6 +1,6 @@
 // fairs.html: the trade fairs Max Silver follows, with a countdown. Every fact below was read from the organizer's own page on the
 // date in COLLECTED; a fact the page did not state is shown as «در منبع ذکر نشده». Banners are the owner's pictures:
-// put assets/art/fairs/<id>.webp (1280 x 360) and the card shows it; without a file the card shows a colour block.
+// the pictures are assets/art/fairs/<art or id>-pc.webp (1280x720) and -tablet.webp (1024x768); without a file the card shows a colour block.
 (function () {
   'use strict';
   var E = window.MSEvents, root = document.getElementById('fr');
@@ -27,7 +27,7 @@
       register: 'ثبت‌نام بازدیدکنندگان و غرفه‌داران در صفحهٔ نمایشگاه لینک شده است؛ مهلت و هزینه در صفحه ذکر نشده است.', note: '', tone: 'mint',
       source: 'https://www.midex.ir/%d9%81%d8%b1%d8%a7%d8%ae%d9%88%d8%a7%d9%86-%d8%ab%d8%a8%d8%aa-%d9%86%d8%a7%d9%85-%d8%af%d8%b1-%d9%86%d9%85%d8%a7%db%8c%d8%b4%da%af%d8%a7%d9%87-%d9%85%db%8c%d8%af%da%a9%d8%b3/',
       sourceName: 'midex.ir' },
-    { id: 'iran-food-hospitality', title: 'ایران فود + هاسپیتالیتی (بخشی از ایران اگروفود ۲۰۲۷)', en: 'Iran food + hospitality', edition: 'سی‌وچهارمین دوره', gFrom: [2027, 5, 10], gTo: [2027, 5, 13],
+    { id: 'iran-food-hospitality', art: 'iran-agrofood', title: 'ایران فود + هاسپیتالیتی (بخشی از ایران اگروفود ۲۰۲۷)', en: 'Iran food + hospitality', edition: 'سی‌وچهارمین دوره', gFrom: [2027, 5, 10], gTo: [2027, 5, 13],
       venue: 'محل دائمی نمایشگاه‌های بین‌المللی تهران', city: 'تهران', organizer: 'fairtrade Messe با همکاری شریک محلی «پلار سامانه»',
       contact: [], site: 'iran-agrofood.com', register: 'صفحه مهلت و هزینه ندارد؛ به صفحه‌های «Become an exhibitor» و «How to exhibit» و فرم تماس لینک می‌دهد.',
       note: 'تاریخ شمسی در منبع نیست؛ تاریخ شمسی بالا محاسبه‌شده است.', tone: 'rose',
@@ -63,7 +63,8 @@
     var when = gj ? jText(d.a, d.b) + SEP + gText(d.a, d.b) : gText(d.a, d.b) + SEP + jText(d.a, d.b) + ' <em class="fr-calc">(محاسبه‌شده)</em>';
     var contact = f.contact.map(function (c) { return /@/.test(c) ? '<a href="mailto:' + esc(c) + '" dir="ltr">' + esc(c) + '</a>' : '<span dir="ltr">' + esc(c) + '</span>'; }).join(' · ');
     return '<article class="fr-card' + (big ? ' big' : '') + (st.k === 'past' ? ' past' : '') + '" data-tone="' + f.tone + '">' +
-      '<div class="fr-banner"><span class="fr-ph" aria-hidden="true">' + esc(f.en) + '</span><img src="./assets/art/fairs/' + esc(f.id) + '.webp" alt="" loading="lazy" decoding="async" onerror="this.remove()"></div>' +
+      '<div class="fr-banner"><span class="fr-ph" aria-hidden="true">' + esc(f.en) + '</span><picture><source media="(max-width:1024px)" srcset="./assets/art/fairs/' + esc(f.art || f.id) + '-tablet.webp">' +
+      '<img src="./assets/art/fairs/' + esc(f.art || f.id) + '-pc.webp" alt="" loading="lazy" decoding="async" onerror="this.closest(\x27.fr-banner\x27).classList.add(\x27noimg\x27);this.remove()"></picture></div>' +
       '<div class="fr-body"><div class="fr-top"><span class="fr-ed">' + esc(f.edition) + '</span><span class="fr-st ' + st.k + '">' + st.text + '</span></div>' +
       '<h3>' + esc(f.title) + '</h3><p class="fr-when">' + when + '</p><dl class="fr-facts">' +
       row('محل برگزاری', esc(f.venue)) + row('شهر', f.city ? esc(f.city) : '<span class="fr-na">در منبع ذکر نشده</span>') + row('برگزارکننده', esc(f.organizer)) +
@@ -77,7 +78,6 @@
     var h = '<h1>نمایشگاه‌ها</h1><p class="fr-lead">نمایشگاه‌هایی که برای مکث‌سیلور مهم‌اند؛ اطلاعات از صفحهٔ رسمی برگزارکننده خوانده شده و منبع هر مورد زیر آن است. «مشارکت مکث‌سیلور» هنوز ثبت نشده است.</p>';
     if (up.length) h += '<section class="fr-sec"><h2>در پیش رو</h2><div class="fr-grid">' + up.map(function (x, i) { return card(x.f, i === 0); }).join('') + '</div></section>';
     if (past.length) h += '<section class="fr-sec"><h2>برگزارشده</h2><div class="fr-grid">' + past.map(function (x) { return card(x.f, false); }).join('') + '</div></section>';
-    h += '<p class="fr-note">تصویر بنر هر نمایشگاه را در <b dir="ltr">assets/art/fairs/&lt;id&gt;.webp</b> بگذارید (۱۲۸۰×۳۶۰)؛ شناسه‌ها: ' + FAIRS.map(function (f) { return '<b dir="ltr">' + esc(f.id) + '</b>'; }).join('، ') + '.</p>';
     root.innerHTML = h;
   }
   render();

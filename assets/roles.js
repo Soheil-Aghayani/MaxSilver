@@ -26,8 +26,14 @@
     analysis: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // customer and product sales analysis
     brand: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'],
     pricesEdit: ['manager', 'ceo', 'sales_manager'],                                    // edits the list prices of the catalog (everyone signed in sees them)
+    pricesAudit: ['manager', 'ceo', 'sales_manager', 'finance'],                         // opens the prices page: finance downloads the audit template; the others also edit and upload it
     crm: ['manager', 'ceo', 'sales_manager', 'visitor'],                                // purchase requests from the public planner: follow-up and decisions (a visitor sees the ones given to them)
     events: ['manager', 'ceo', 'sales_manager', 'marketing'],                           // occasions calendar and its bell reminders
+    warehouse: ['operations', 'account_manager', 'manager', 'ceo', 'sales_manager', 'production'],   // live inventory: who sees it
+    warehouseEdit: ['operations', 'manager'],                                           // enters stock by hand or from the Excel template
+    warehouseClaim: ['account_manager'],                                                // claims (reserves) and releases stock for an order
+    bankAccounts: ['account_manager', 'finance', 'manager', 'ceo', 'sales_manager'],   // bank accounts on pre-invoices: who sees them
+    bankEdit: ['account_manager'],                                                      // adds and edits them (only the account manager)
     fairs: ['manager', 'ceo', 'sales_manager', 'marketing'],                            // trade fairs the company follows
     competitors: ['manager', 'ceo', 'sales_manager'],                                   // competitor analysis (staff only)
     advertising: ['manager', 'ceo', 'sales_manager', 'marketing'],                      // advertising strategy tree

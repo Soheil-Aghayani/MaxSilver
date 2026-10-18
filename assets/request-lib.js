@@ -25,7 +25,7 @@
   function validZip(s) { return /^\d{10}$/.test(digits(s)); }
   function text(s, max) { return String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); }
 
-  // Request code: CON-<first three letters of the delivery city>-<Jalali yymmdd>-<number of the day, 4 digits>, e.g. CON-TEH-051025-0001.
+  // Request code: CON-<first three letters of the delivery city>-<Jalali yymmdd>-<four random digits>, e.g. CON-TEH-051025-4827. The prefix CON = consumer (CUS customer, BB company, BG government are planned).
   // CON = consumer. The number is the day's counter (request_counters/<yymmdd>), taken in the same transaction that writes the request.
   var CITIES = {
     'تهران': 'TEH', 'مشهد': 'MAS', 'اصفهان': 'ISF', 'کرج': 'KAR', 'شیراز': 'SHI', 'تبریز': 'TAB', 'قم': 'QOM', 'اهواز': 'AHV', 'کرمانشاه': 'KER', 'ارومیه': 'URM',
@@ -54,7 +54,8 @@
     var j = window.MSEvents ? window.MSEvents.toJ(new Date()) : { jy: 1405, jm: 1, jd: 1 }, p = function (n) { return (n < 10 ? '0' : '') + n; };
     return p(j.jy % 100) + p(j.jm) + p(j.jd);
   }
-  function buildCode(city, day, n) { return 'CON-' + cityCode(city) + '-' + day + '-' + (n < 10 ? '000' : n < 100 ? '00' : n < 1000 ? '0' : '') + n; }
+  function rand4() { var a = new Uint32Array(1); (window.crypto || window.msCrypto).getRandomValues(a); return ('000' + (a[0] % 10000)).slice(-4); }
+  function buildCode(city, day, n4) { return 'CON-' + cityCode(city) + '-' + day + '-' + n4; }
   // checks every field the same way the rules do; returns { ok, errors: { field: message }, data }
   function check(f) {
     var e = {}, c = { name: text(f.name, 80), phone: phone(f.phone), nid: digits(f.nid), address: text(f.address, 300), city: text(f.city, 40), zip: digits(f.zip) };
@@ -98,17 +99,15 @@
     var had = auth.currentUser;
     if (had && !had.isAnonymous) return Promise.reject({ code: 'staff-session' });
     var go = had ? Promise.resolve() : auth.signInAnonymously();
-    var day = dayStamp(), counter = db.collection('request_counters').doc(day);
-    return go.then(function () {
-      return db.runTransaction(function (tx) {
-        return tx.get(counter).then(function (s) {
-          var n = (s.exists ? (s.data().n || 0) : 0) + 1, code = buildCode(payload.customer.city, day, n);
-          tx.set(counter, { n: n });
-          tx.set(db.collection('requests').doc(code), Object.assign({ code: code, createdAt: Date.now(), status: 'new', route: 'call' }, payload));
-          return code;
-        });
-      });
-    }).then(function (code) { return auth.signOut().then(function () { return code; }, function () { return code; }); },
+    var day = dayStamp();
+    // the four digits are random (they say nothing about how many requests there were that day). A code that already exists makes the
+    // write an update, which the rules refuse for an anonymous visitor (permission-denied); then a new number is tried.
+    function attempt(k) {
+      var code = buildCode(payload.customer.city, day, rand4());
+      return db.collection('requests').doc(code).set(Object.assign({ code: code, createdAt: Date.now(), status: 'new', route: 'call' }, payload)).then(function () { return code; },
+        function (e) { if (k < 8 && /permission-denied/.test(e && e.code || '')) return attempt(k + 1); throw e; });
+    }
+    return go.then(function () { return attempt(0); }).then(function (code) { return auth.signOut().then(function () { return code; }, function () { return code; }); },
       function (e) { return auth.signOut().then(function () { throw e; }, function () { throw e; }); });
   }
   window.MSRequests = { TERMS: TERMS, STATUS: STATUS, ROUTE: ROUTE, LOGKIND: NEXT_LOG, latin: latin, fa: fa, digits: digits, phone: phone, validPhone: validPhone, validNid: validNid, validZip: validZip, text: text, cityCode: cityCode, buildCode: buildCode, check: check, errText: errText, submit: submit };

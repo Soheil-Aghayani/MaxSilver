@@ -46,3 +46,16 @@
   .pr-act{grid-column:1/-1;justify-content:flex-end}
 }
 .pr-row.retired{background:#f6f7f9}.pr-row.retired .pr-img img{filter:grayscale(1);opacity:.7}.pr-retline{color:#b54708;font-weight:700}.pr-retform{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:10px;border-top:1px dashed var(--ms-line)}.pr-retform label{display:grid;gap:4px;color:var(--ms-muted);font-size:12px}.pr-retform input{min-height:42px;padding:0 12px;border:1px solid var(--ms-line);border-radius:12px;font:700 14px/1 Estedad,Tahoma,sans-serif;color:var(--ms-navy);background:#fff}.pr-retbtn{grid-column:1/-1;display:flex;gap:8px}.pr-retbtn .pr-more{padding:0 16px}@media(max-width:760px){.pr-retform{grid-template-columns:1fr}}
+/* audit template and upload */
+.pr-tools{display:flex;flex-wrap:wrap;gap:8px}
+.pr-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--ms-navy);border-radius:12px;background:var(--ms-navy);color:#fff;font:800 13.5px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+.pr-btn svg{width:18px;height:18px}.pr-btn.alt{background:#fff;color:var(--ms-navy)}.pr-btn[disabled]{opacity:.5;cursor:not-allowed}
+.pr-imp{display:grid;gap:10px;padding:14px 16px;border:1px solid #ffcc2a;border-radius:18px;background:#fffbe9}
+.pr-imp h2{margin:0;color:var(--ms-navy);font-size:16px}
+.pr-errs{margin:0;padding:10px 28px;border-radius:12px;background:#fff1f0;color:#b42318;font-size:13px;line-height:1.9}
+.pr-tw{max-height:360px;overflow:auto;border:1px solid var(--ms-line);border-radius:12px;background:#fff}
+.pr-tbl{width:100%;border-collapse:collapse;font-size:13px}.pr-tbl th{position:sticky;top:0;padding:8px 10px;background:#10243f;color:#fff;text-align:start}.pr-tbl td{padding:8px 10px;border-top:1px solid #e9edf3}
+.pr-tbl .up{color:#b42318;font-weight:800}.pr-tbl .down{color:#14804a;font-weight:800}
+.pr-acts{display:flex;gap:8px;flex-wrap:wrap}
+.pr-roprice{display:none;color:var(--ms-navy);font-weight:800;font-size:14px}
+.pr-ro .pr-edit,.pr-ro .pr-act{display:none}.pr-ro .pr-roprice{display:block}

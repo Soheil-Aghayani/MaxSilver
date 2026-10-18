@@ -375,6 +375,46 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Live inventory. The warehouse (operations) and management write stock; the account manager may only change `reserved` (a claim for
+    // an order, always inside a transaction with a document in inventory_claims). Nobody can reserve more than is on hand.
+    function stockReaders() { return hasRole(['operations', 'account_manager', 'manager', 'ceo', 'sales_manager', 'production']); }
+    match /inventory/{pid} {
+      allow read: if stockReaders();
+      allow create, update: if (hasRole(['operations', 'manager'])
+          && request.resource.data.keys().hasOnly(['qty', 'reserved', 'loc', 'serials', 'note', 'updatedAt', 'updatedBy', 'updatedByName'])
+          && request.resource.data.qty is number && request.resource.data.qty >= 0 && request.resource.data.qty <= 1000000
+          && request.resource.data.reserved is number && request.resource.data.reserved >= 0 && request.resource.data.reserved <= request.resource.data.qty
+          && request.resource.data.loc is string && request.resource.data.loc.size() <= 60
+          && request.resource.data.serials is string && request.resource.data.serials.size() <= 2000)
+        || (hasRole(['account_manager']) && resource != null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reserved', 'updatedAt', 'updatedBy', 'updatedByName'])
+          && request.resource.data.reserved is number && request.resource.data.reserved >= 0 && request.resource.data.reserved <= request.resource.data.qty);
+      allow delete: if hasRole(['manager']);
+    }
+    match /inventory_claims/{cid} {
+      allow read: if stockReaders();
+      allow create: if hasRole(['account_manager'])
+        && request.resource.data.keys().hasOnly(['pid', 'qty', 'ref', 'customer', 'note', 'status', 'at', 'by', 'byName'])
+        && request.resource.data.qty is number && request.resource.data.qty > 0 && request.resource.data.qty <= 1000000
+        && request.resource.data.status == 'active' && request.resource.data.by == request.auth.uid;
+      allow update: if hasRole(['account_manager'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'releasedAt'])
+        && request.resource.data.status in ['released', 'shipped'];
+      allow delete: if false;
+    }
+
+    // Bank accounts shown on pre-invoices (a brand's, the company's or a supplier's). Only the account manager adds, edits or removes them;
+    // finance, management and the sales manager read them.
+    match /bank_accounts/{id} {
+      allow read: if hasRole(['account_manager', 'finance', 'manager', 'ceo', 'sales_manager']);
+      allow create, update: if hasRole(['account_manager'])
+        && request.resource.data.keys().hasOnly(['kind', 'brand', 'label', 'holder', 'bank', 'account', 'sheba', 'card', 'payee', 'note', 'active', 'updatedAt', 'updatedBy'])
+        && request.resource.data.kind in ['brand', 'company', 'supplier']
+        && request.resource.data.label is string && request.resource.data.label.size() >= 2 && request.resource.data.label.size() <= 80
+        && request.resource.data.holder is string && request.resource.data.holder.size() <= 80;
+      allow delete: if hasRole(['account_manager']);
+    }
+
     match /prices/{uid} {
       allow read, write: if approved() && request.auth.uid == uid;
     }
