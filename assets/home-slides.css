@@ -45,11 +45,13 @@
   .hero.hs{min-height:0}
   .hs-slide{padding:24px 18px 46px}
   .hs-slide.title{grid-template-columns:1fr}
-  .hs-slide.pic{min-height:390px;align-items:start}
+  .hs-slide.pic{min-height:420px;align-items:start}
   .hs-copy{max-width:none}
   .hs-copy p{display:none}
-  .hs-art{inset:auto 0 34px;height:44%}
-  .hs-art img{object-position:center bottom}
+  /* on a phone the picture is a row under the words and takes all the room that is left, so it is big and still never under the text */
+  .hs-slide.pic{grid-template-rows:auto minmax(210px,1fr);gap:8px}
+  .hs-art{position:relative;inset:auto;height:100%;min-height:210px;margin-bottom:34px}
+  .hs-art img{position:absolute;inset:0;object-position:center}
 }
 @media(prefers-reduced-motion:reduce){.hs-slide,.hs-slide.on{transition:none;transform:none}}
 .hs-dots[hidden]{display:none}
@@ -60,7 +62,7 @@
 .hs-slide.fair .hs-copy{max-width:min(54%,560px)}
 .hs-slide.fair .hs-copy p{max-width:48ch}
 @media(max-width:760px){
-  .hs-slide.fair .hs-art{inset:auto 18px 40px 18px;width:auto;height:38%}
-  .hs-slide.fair .hs-art img{object-position:center bottom}
+  .hs-slide.fair .hs-art{inset:auto;width:auto;height:100%}
+  .hs-slide.fair .hs-art img{object-position:center}
   .hs-slide.fair .hs-copy{max-width:none}
 }
