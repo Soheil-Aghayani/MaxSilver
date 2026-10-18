@@ -15,9 +15,11 @@
   function errText(e) {
     var c = e && e.code || '';
     if (/permission-denied/.test(c)) return 'اجازهٔ دیدن یا نوشتن ندارید (یا قوانین پایگاه داده هنوز منتشر نشده است).';
+    if (/invalid-argument|invalid data/.test(c + ' ' + (e && e.message || ''))) return 'ساختار فایل برای پایگاه داده مناسب نیست.';
     if (/network|unavailable|deadline|timeout/.test(c)) return 'اتصال برقرار نشد (اینترنت یا VPN).';
     return 'خطا: ' + (c || (e && e.message) || 'نامشخص');
   }
+  function unwrap(x) { if (x && typeof x.payload === 'string') { try { return JSON.parse(x.payload); } catch (e) { return null; } } return x; }
   var THREATS = [['all', 'همه'], ['بالا', 'تهدید بالا'], ['متوسط-بالا', 'متوسط-بالا'], ['متوسط', 'متوسط']];
   function tone(t) { return /بالا/.test(t) && !/متوسط/.test(t) ? 'high' : /متوسط-بالا/.test(t) ? 'mid-high' : /متوسط/.test(t) ? 'mid' : /پایین/.test(t) ? 'low' : 'direct'; }
 
@@ -103,7 +105,10 @@
           render();
         });
       }, 20000);
-      DOC.set(d).then(function () { if (done) return; done = true; clearTimeout(timer); clearInterval(tick); S.data = d; S.error = ''; S.msg = 'تحلیل رقبا بارگذاری شد.'; }, function (er) { if (done) return; done = true; clearTimeout(timer); clearInterval(tick); S.msg = ''; S.error = errText(er); })
+      // Firestore refuses arrays inside arrays (the file has pairs like [name, value]), so the whole analysis is stored as one text field
+      var stored = { title: String(d.title), updatedAt: d.updatedAt, updatedBy: d.updatedBy, payload: JSON.stringify(d) }, wr;
+      try { wr = DOC.set(stored); } catch (ex) { wr = Promise.reject(ex); }
+      wr.then(function () { if (done) return; done = true; clearTimeout(timer); clearInterval(tick); S.data = d; S.error = ''; S.msg = 'تحلیل رقبا بارگذاری شد.'; }, function (er) { if (done) return; done = true; clearTimeout(timer); clearInterval(tick); S.msg = ''; S.error = errText(er); })
         .then(function () { if (!done || S.msg === 'ارسال جواب نداد؛ اتصال به سرور بررسی می‌شود…') return; S.busy = false; render(); });
     };
     rd.readAsText(f, 'utf-8');
@@ -115,7 +120,7 @@
     db.collection('users').doc(u.uid).get().then(function (snap) {
       S.profile = snap.exists ? snap.data() : null;
       if (!S.profile || S.profile.active === false || !can('competitors')) { S.loading = false; render(); return; }
-      return DOC.get().then(function (s) { S.data = s.exists ? s.data() : null; S.loading = false; render(); });
+      return DOC.get().then(function (s) { S.data = s.exists ? unwrap(s.data()) : null; S.loading = false; render(); });
     }).then(null, function (e) { S.loading = false; S.error = errText(e); render(); });
   });
   render();
