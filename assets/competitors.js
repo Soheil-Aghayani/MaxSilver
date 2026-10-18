@@ -89,15 +89,22 @@
       var d; try { d = JSON.parse(String(rd.result).replace(/^\uFEFF/, '')); } catch (x) { S.msg = ''; S.error = 'فایل JSON درست نیست.'; render(); return; }
       if (!d || !d.strategic || !d.strategic.items || !d.title) { S.msg = ''; S.error = 'ساختار فایل با تحلیل رقبا نمی‌خواند.'; render(); return; }
       d.updatedAt = Date.now(); d.updatedBy = S.user.uid;
-      S.busy = true; S.msg = 'در حال ارسال به پایگاه داده…';
+      S.busy = true; var secs = 0; S.msg = 'در حال ارسال به پایگاه داده… ۰ ثانیه (منتظر بمانید؛ تا ۲۰ ثانیه طول می‌کشد)';
       render();
-      // a write made while the connection is down waits for ever without an error, so the person is told after 15 seconds
-      var done = false, timer = setTimeout(function () {
-        if (done) return; done = true; S.busy = false; S.msg = '';
-        S.error = 'پایگاه داده جواب نداد. اتصال اینترنت یا VPN را بررسی کنید و دوباره فایل را انتخاب کنید؛ اگر ارسال بعداً انجام شد، با باز کردن دوبارهٔ صفحه دیده می‌شود.'; render();
-      }, 15000);
-      DOC.set(d).then(function () { if (done) return; done = true; clearTimeout(timer); S.data = d; S.error = ''; S.msg = 'تحلیل رقبا بارگذاری شد.'; }, function (er) { if (done) return; done = true; clearTimeout(timer); S.msg = ''; S.error = errText(er); })
-        .then(function () { S.busy = false; render(); });
+      // a write made while the connection is down waits for ever without an error, so after 20 seconds the person is told, with a check of the server
+      var done = false, tick = setInterval(function () { if (done) return; secs++; S.msg = 'در حال ارسال به پایگاه داده… ' + window.MSEvents_fa(secs) + ' ثانیه (منتظر بمانید؛ تا ۲۰ ثانیه طول می‌کشد)'; render(); }, 1000);
+      var timer = setTimeout(function () {
+        if (done) return; done = true; clearInterval(tick);
+        S.msg = 'ارسال جواب نداد؛ اتصال به سرور بررسی می‌شود…'; render();
+        var probe = new Promise(function (ok) { var to = setTimeout(function () { ok('نشد'); }, 8000); DOC.get({ source: 'server' }).then(function () { clearTimeout(to); ok('شد'); }, function (er) { clearTimeout(to); ok('نشد (' + ((er && er.code) || 'خطا') + ')'); }); });
+        probe.then(function (r) {
+          S.busy = false; S.msg = '';
+          S.error = 'پایگاه داده جواب نداد. خواندن از سرور: ' + r + '. ' + (r === 'شد' ? 'خواندن کار می‌کند ولی نوشتن به سرور نمی‌رسد؛ احتمالاً مسیر نوشتن در اینترنت یا VPN شما بسته است.' : 'اتصال به سرور برقرار نیست؛ VPN یا اینترنت را بررسی کنید.') + ' دوباره فایل را انتخاب کنید.';
+          render();
+        });
+      }, 20000);
+      DOC.set(d).then(function () { if (done) return; done = true; clearTimeout(timer); clearInterval(tick); S.data = d; S.error = ''; S.msg = 'تحلیل رقبا بارگذاری شد.'; }, function (er) { if (done) return; done = true; clearTimeout(timer); clearInterval(tick); S.msg = ''; S.error = errText(er); })
+        .then(function () { if (!done || S.msg === 'ارسال جواب نداد؛ اتصال به سرور بررسی می‌شود…') return; S.busy = false; render(); });
     };
     rd.readAsText(f, 'utf-8');
   });
