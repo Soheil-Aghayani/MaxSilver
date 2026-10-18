@@ -23,6 +23,7 @@
     warehouse: svg('<path d="M3 9l9-6 9 6v11H3zM8 20v-6h8v6"/>'),
     banks: svg('<path d="M3 10l9-6 9 6M5 10v8m4-8v8m6-8v8m4-8v8M3 20h18"/>'),
     fairs: svg('<path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/>'),
+    features: svg('<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'),
     backup: svg('<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>'),
     competitors: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M8 11h6"/>'),
     events: svg('<rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4m8-4v4"/>'),
@@ -44,6 +45,7 @@
     { id: 'warehouse', href: './warehouse.html', label: 'انبار و موجودی', area: 'warehouse', page: 'warehouse.html' },
     { id: 'banks', href: './banks.html', label: 'حساب‌های بانکی', area: 'bankAccounts', page: 'banks.html' },
     { id: 'fairs', href: './fairs.html', label: 'نمایشگاه‌ها', page: 'fairs.html' },
+    { id: 'features', href: './features.html', label: 'ویژگی‌ها', area: 'features', page: 'features.html' },
     { id: 'backup', href: './backup.html', label: 'نسخهٔ پشتیبان', area: 'backup', page: 'backup.html' },
     { id: 'competitors', href: './competitors.html', label: 'تحلیل رقبا', area: 'competitors', page: 'competitors.html' },
     { id: 'dashboard', href: './ceo-dashboard.html', label: 'داشبورد CEO', area: 'dashboard', page: 'ceo-dashboard.html' },
@@ -75,6 +77,7 @@
   function allowed() {
     var r = role(), R = window.MSRoles, on = signed();
     return ITEMS.filter(function (it) {
+      if (window.MSFeatures && window.MSFeatures.hidden(it.id)) return false;
       if (!on) return it.id === 'home' || it.id === 'planner' || it.id === 'fairs' || it.id === 'panel' || it.id === 'contact';
       if (it.anon) return false;
       if (!it.area) return true;

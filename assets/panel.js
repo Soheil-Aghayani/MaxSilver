@@ -1222,7 +1222,7 @@
   }
 
   function view() {
-    if (S.loading) return '<p class="pn-note">در حال بارگذاری…</p>';
+    if (S.loading) return (window.MSSkel ? window.MSSkel() : '<p class="pn-note">در حال بارگذاری…</p>');
     if (!S.user) {
       return '<form class="pn-card pn-login" id="loginForm"><span class="pn-login-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.500"/><path d="M5 20c0-3.900 3.100-7 7-7s7 3.100 7 7"/></svg></span>' +
         '<h2>ورود به حساب</h2><p class="pn-note">با ایمیل و رمزی که مدیر برای شما ساخته وارد شوید.</p>' +

@@ -57,3 +57,15 @@ body{min-height:100vh}
 .hm-sec .portal-card.has-art:hover .tile-art{transform:scale(1.06) translateY(-2px)}
 .hm-sec .portal-card.has-art h2{flex:none;width:100%;text-align:center;font-size:14.5px}
 @media(prefers-reduced-motion:reduce){.hm-sec .tile-art{transition:none}}
+
+/* my tasks */
+.mt{margin-top:16px;display:grid;gap:10px;padding:14px 16px;border:1px solid var(--ms-line);border-radius:20px;background:linear-gradient(180deg,#f5f8ff,#fff);box-shadow:var(--ms-shadow)}
+.mt[hidden]{display:none}
+.mt-head{display:flex;align-items:center;gap:10px}.mt-head h2{margin:0;color:var(--ms-navy);font-size:17px}
+.mt-n{display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 8px;border-radius:999px;background:#ff3b30;color:#fff;font-size:13px;font-weight:800}
+.mt-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:8px}
+.mt-it{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;border:1px solid var(--ms-line);border-radius:16px;background:#fff;color:var(--ms-navy);text-decoration:none;transition:border-color .15s,transform .15s}
+.mt-it:hover{border-color:#90adff;transform:translateY(-1px)}
+.mt-ic{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:12px;background:#eef3ff;color:#1746b5}.mt-ic svg{width:20px;height:20px}
+.mt-tx{font-size:13.5px;font-weight:800;line-height:1.7}
+.mt-empty{display:flex;align-items:center;gap:10px;color:var(--ms-muted);font-size:14px;font-weight:700}.mt-empty svg{width:22px;height:22px;color:#14804a;background:#e8f7ee;border-radius:50%;padding:3px}

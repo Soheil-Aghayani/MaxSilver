@@ -13,6 +13,9 @@
   var S = { user: null, profile: null, loading: true, error: '', msg: '', list: [], groups: {}, years: [], latest: 0,
     q: '', fGroup: '', fStatus: 'all', sort: 'latest', shown: 60, invoices: null, users: null, busy: false, imp: null, impOpen: false, owner: null };
 
+  (function () { var k = window.MSKeep ? window.MSKeep.get('customers') : {}; if (k.fStatus) S.fStatus = k.fStatus; if (k.fGroup != null) S.fGroup = k.fGroup; if (k.sort) S.sort = k.sort; })();
+  function keepFilters() { if (window.MSKeep) window.MSKeep.set('customers', { fStatus: S.fStatus, fGroup: S.fGroup, sort: S.sort }); }
+
   // ---------- text helpers
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function latinDigits(s) { return String(s == null ? '' : s).replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); }).replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 1632); }); }
@@ -218,8 +221,10 @@
     return by;
   }
   function listView() {
+    keepFilters();
     var act = S.list.filter(function (c) { return c._status === 'active' || c._status === 'new'; });
-    var gn = groupNames(), names = Object.keys(gn).filter(Boolean).sort(function (a, b) { return gn[b] - gn[a]; });
+    var gn = groupNames(); if (S.fGroup && S.fGroup !== '__none' && !gn[S.fGroup]) S.fGroup = '';
+    var names = Object.keys(gn).filter(Boolean).sort(function (a, b) { return gn[b] - gn[a]; });
     var statuses = ['all', 'active', 'new', 'atrisk', 'lost', 'idle'];
     var cnt = function (s) { return s === 'all' ? S.list.length : S.list.filter(function (c) { return c._status === s; }).length; };
     var tile = function (k, color, label, val) { return '<div style="--c:' + color + '"><span class="cu-kic">' + ic(k) + '</span><div><span>' + label + '</span><b>' + val + '</b></div></div>'; };
@@ -622,7 +627,7 @@
   // ---------- render and events
   function route() { var m = /^#\/c\/(.+)$/.exec(location.hash || ''); return m ? decodeURIComponent(m[1]) : ''; }
   function view() {
-    if (S.loading) return '<p class="cu-note">در حال بارگذاری…</p>';
+    if (S.loading) return (window.MSSkel ? window.MSSkel() : '<p class="cu-note">در حال بارگذاری…</p>');
     if (!S.user) return '<p class="cu-note">برای دیدن مشتریان ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="cu-note">حساب شما هنوز فعال نشده است.</p>';
     if (S.error) return '<p class="cu-err" role="alert">' + esc(S.error) + '</p>';

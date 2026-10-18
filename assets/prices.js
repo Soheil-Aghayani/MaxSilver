@@ -104,7 +104,7 @@
       (list.length ? '' : '<p class="pr-note">محصولی پیدا نشد.</p>');
   }
   function view() {
-    if (S.loading) return '<p class="pr-note">در حال بارگذاری…</p>';
+    if (S.loading) return (window.MSSkel ? window.MSSkel() : '<p class="pr-note">در حال بارگذاری…</p>');
     if (!S.user) return '<p class="pr-note">برای ویرایش قیمت‌ها ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="pr-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('pricesAudit')) return '<p class="pr-note">ویرایش قیمت فقط برای مدیر فروش، مدیریت و تکنولوژی ارتباطات سازمانی است. قیمت‌ها را در کاتالوگ می‌بینید.</p>';

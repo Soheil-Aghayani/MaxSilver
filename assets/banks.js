@@ -59,7 +59,7 @@
       '<div class="bk-acts"><button type="button" class="bk-btn" data-save' + (S.busy ? ' disabled' : '') + '>ذخیره</button><button type="button" class="bk-btn alt" data-cancel>انصراف</button></div></section>';
   }
   function view() {
-    if (S.loading) return '<p class="bk-note">در حال بارگذاری…</p>';
+    if (S.loading) return (window.MSSkel ? window.MSSkel() : '<p class="bk-note">در حال بارگذاری…</p>');
     if (!S.user) return '<p class="bk-note">ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="bk-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('bankAccounts')) return '<p class="bk-note">این بخش برای اکانت منیجر، مالی و مدیریت است.</p>';

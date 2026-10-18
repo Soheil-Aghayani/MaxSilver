@@ -6,6 +6,11 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'ux-features-tasks', date: '1405/07/26', tag: 'جدید', title: 'کارهای من، خاموش و روشن کردن بخش‌ها، بارگذاری نرم و یادآوری فیلترها',
+      summary: 'صفحهٔ اصلی بالای همه نشان می‌دهد چه کارهایی منتظر شماست؛ مسئول فناوری می‌تواند بخش‌های سایت را روشن یا خاموش کند؛ صفحه‌ها هنگام بارگذاری اسکلت خاکستری دارند، قطع اینترنت اعلام می‌شود و فیلترها یادتان می‌ماند.',
+      details: ['کارهای من: درخواست‌های تازه، سفارش‌های منتظر مسیر، آماده‌سازی انبار، گفت‌وگوهای بی‌پاسخ و مانند آن، با لینک مستقیم؛ از همان فهرست زنگ ساخته می‌شود.',
+        'ویژگی‌ها (فقط مسئول فناوری): هر بخش که خاموش شود برای همه ناپدید می‌شود: کاشی، نوار پایین، منو، اسلاید بنر، خبرهای «تازه‌ها» و خود صفحه. دوباره روشن کنید همه‌چیز برمی‌گردد.',
+        'اسکلت بارگذاری، نوار «آفلاین هستید» و یادآوری آخرین فیلتر مشتریان، تحلیل رقبا و نمایشگاه‌ها روی همین دستگاه.'] },
     { id: 'customers-visual', date: '1405/07/26', tag: 'بهبود', title: 'مشتریان: ظاهر تازه با رنگ و آیکن',
       summary: 'هر مشتری یک رنگ و حرف اول رنگی دارد؛ بالای صفحه چهار کاشی با آیکن و یک نوار پراکندگی وضعیت مشتریان آمده؛ کارت‌ها رتبهٔ پنج مشتری برتر و فلش رشد یا افت را نشان می‌دهند؛ صفحهٔ هر مشتری هم آیکن و نمودار رنگی دارد.',
       details: ['رنگ مشتری از گروه (همکار مسئول) گرفته می‌شود؛ مشتریان یک همکار هم‌رنگ‌اند و گروه‌ها را راحت‌تر می‌شود تشخیص داد. اگر گروهی ثبت نشده باشد رنگ از نام مشتری می‌آید.'] },
@@ -241,7 +246,7 @@
   function visible() {
     if (!signed()) return [];
     var r = role(), nr = window.MSRoles && r ? window.MSRoles.norm(r) : r;
-    return all().filter(function (u) { return !u.roles || (nr && u.roles.indexOf(nr) >= 0); });
+    return all().filter(function (u) { return (!u.roles || (nr && u.roles.indexOf(nr) >= 0)) && !(window.MSFeatures && window.MSFeatures.newsHidden(u)); });
   }
   function seen() { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || '[]') || []; } catch (e) { return []; } }
   function mark(ids) {

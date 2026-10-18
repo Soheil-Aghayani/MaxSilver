@@ -92,7 +92,7 @@
       (list.length ? '' : '<p class="cr-note">درخواستی پیدا نشد.</p>');
   }
   function view() {
-    if (S.loading) return '<p class="cr-note">در حال بارگذاری…</p>';
+    if (S.loading) return (window.MSSkel ? window.MSSkel() : '<p class="cr-note">در حال بارگذاری…</p>');
     if (!S.user) return '<p class="cr-note">برای دیدن درخواست‌ها ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="cr-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('crm')) return '<p class="cr-note">این بخش برای فروش، اکانت منیجر و مدیریت است.</p>';

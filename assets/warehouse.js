@@ -117,7 +117,7 @@
       (list.length > S.shown ? '<button type="button" class="wh-more" data-more>نمایش بیشتر (' + faInt.format(list.length - S.shown) + ')</button>' : '') + (list.length ? '' : '<p class="wh-note">محصولی پیدا نشد.</p>');
   }
   function view() {
-    if (S.loading) return '<p class="wh-note">در حال بارگذاری…</p>';
+    if (S.loading) return (window.MSSkel ? window.MSSkel() : '<p class="wh-note">در حال بارگذاری…</p>');
     if (!S.user) return '<p class="wh-note">برای دیدن موجودی ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="wh-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('warehouse')) return '<p class="wh-note">این بخش برای انبار، اکانت منیجر و مدیریت است.</p>';

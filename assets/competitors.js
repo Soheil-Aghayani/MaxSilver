@@ -277,7 +277,7 @@
   }
 
   function view() {
-    if (S.loading) return '<p class="cm-note">در حال بارگذاری…</p>';
+    if (S.loading) return (window.MSSkel ? window.MSSkel() : '<p class="cm-note">در حال بارگذاری…</p>');
     if (!S.user) return '<p class="cm-note">برای دیدن این بخش ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="cm-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('competitors')) return '<p class="cm-note">این بخش فقط برای مدیریت و مدیر فروش است.</p>';
@@ -298,7 +298,10 @@
     return out;
   }
   window.MSEvents_fa = function (n) { return String(n).replace(/\d/g, function (c) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(c); }); };
+  function keepFilters() { if (window.MSKeep) window.MSKeep.set('competitors', { kpi: S.kpi, sort: S.sort, f: S.f, threat: S.threat }); }
+  (function () { var k = window.MSKeep ? window.MSKeep.get('competitors') : {}; if (k.kpi) S.kpi = k.kpi; if (k.sort) S.sort = k.sort; if (k.f && typeof k.f === 'object') S.f = k.f; if (k.threat) S.threat = k.threat; })();
   function render() {
+    keepFilters();
     var a = document.activeElement, keep = a && a.id === 'cmQ' ? a.selectionStart : null;
     var M = window.MSMorph, prev = M ? M.snapAll(root, '.cm-chips', '.cm-chip', '[aria-pressed=true]') : null;
     root.innerHTML = view();

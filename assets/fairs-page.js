@@ -11,6 +11,7 @@
   var JM = E.MONTHS, SEP = '<i class="ms-sep" aria-hidden="true"></i>';
   var MON_G = ['ژانویه', 'فوریه', 'مارس', 'آوریل', 'مه', 'ژوئن', 'ژوئیه', 'اوت', 'سپتامبر', 'اکتبر', 'نوامبر', 'دسامبر'];
   var S = { where: 'all', place: 'all', when: 'all', q: '' };
+  (function () { var k = window.MSKeep ? window.MSKeep.get('fairs') : {}; if (k.where) S.where = k.where; if (k.place) S.place = k.place; if (k.when) S.when = k.when; })();
   var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var norm = function (s) { return String(s == null ? '' : s).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[‌\s]+/g, ' ').toLowerCase(); };
   var latin = function (s) { return String(s).replace(/[۰-۹]/g, function (c) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(c); }); };
@@ -157,6 +158,7 @@
   }
   // hide what no longer fits (a short fade), then let the others glide to their new place and the new ones fade in
   function apply(first) {
+    if (window.MSKeep) window.MSKeep.set('fairs', { where: S.where, place: S.place, when: S.when });
     var want = els.map(show), n = want.filter(Boolean).length, nowShown = els.map(function (e) { return !e.hidden; });
     document.getElementById('frCount').textContent = fa(n) + ' رویداد از ' + fa(els.length);
     document.getElementById('frNone').hidden = n > 0;
