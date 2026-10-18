@@ -6,7 +6,7 @@
   'use strict';
   if (w.matchMedia && w.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if (!('IntersectionObserver' in w) || !('MutationObserver' in w)) return;
-  var CARDS = '.portal-card,.upd-card,.tl-item,.pn-card,.pn-user,.cu-card,.arc-card,article.pc,.pr-row,.pl-card,.pl-job,.pl-req,.ev-row,.ev-next,.fr-card,.fe-card,.fr-trip,.cr-card,.cm-card,.cm-box,.bk-card,.wh-row,.wh-cl,.wh-fl,.tk-card,.pn-rv';
+  var CARDS = '.portal-card,.upd-card,.tl-item,.pn-card,.pn-user,.cu-card,.arc-card,article.pc,.pr-row,.pl-card,.pl-job,.pl-req,.ev-row,.ev-next,.fr-card,.fr-trip,.cr-card,.cm-card,.cm-box,.bk-card,.wh-row,.wh-cl,.wh-fl,.tk-card,.pn-rv';
   var INNER = '.fr-facts>div,.cm-card dl>div,.bk-card dl>div,.cr-meta>span,.wh-fi>li,.cr-step,.tk-steps>li,.tl-card>*,.pl-rl>li';
   var seen = {}, STEP = 55;
   function key(el) {

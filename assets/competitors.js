@@ -9,7 +9,7 @@
   firebase.initializeApp(cfg);
   var auth = firebase.auth(), db = firebase.firestore(), DOC = db.collection('intel').doc('competitors');
   var S = { user: null, profile: null, loading: true, data: null, error: '', msg: '', q: '', threat: 'all', busy: false };
-  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/\s*\u2014\s*/g, '، ').replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var norm = function (s) { return String(s == null ? '' : s).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[‌\s]+/g, ' ').toLowerCase(); };
   var can = function (a) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, a)); };
   function errText(e) {
@@ -23,42 +23,102 @@
   var THREATS = [['all', 'همه'], ['بالا', 'تهدید بالا'], ['متوسط-بالا', 'متوسط-بالا'], ['متوسط', 'متوسط']];
   function tone(t) { return /بالا/.test(t) && !/متوسط/.test(t) ? 'high' : /متوسط-بالا/.test(t) ? 'mid-high' : /متوسط/.test(t) ? 'mid' : /پایین/.test(t) ? 'low' : 'direct'; }
 
-  // the second look at each competitor's own site: marks (same / differs / not found), then the extra facts that were read
+  // ---- cards: a short card for every competitor; "اطلاعات بیشتر" opens a popup with the contacts, the facts, the second look at the site and the AI summary
   var MARK = { ok: ['✓', 'یکی است'], diff: ['≠', 'فرق دارد'], none: ['؟', 'پیدا نشد'] };
   var MSVG = { ok: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', diff: '<path d="M12 7.5v6M12 17h.01"/>', none: '<path d="M9.5 9.2a2.7 2.7 0 1 1 3.9 2.4c-.9.5-1.4 1-1.4 2M12 17h.01"/>' };
-  function ver(x, compact) {
+  var SPARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4l1.6 4.4L16 10l-4.4 1.6L10 16l-1.6-4.4L4 10l4.4-1.6zM18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/></svg>';
+  var CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  var ITEMS = {}, dlg = null, aiTimer = 0;
+  var faN = function (s) { return window.MSEvents_fa(String(s)); };
+  function indexItems(d) {
+    ITEMS = {};
+    ((d.strategic && d.strategic.items) || []).forEach(function (x, i) { ITEMS['s' + i] = x; });
+    ((d.market && d.market.items) || []).forEach(function (x, i) { ITEMS['m' + i] = x; });
+    ((d.supplementary && d.supplementary.items) || []).forEach(function (x, i) { ITEMS['u' + i] = x; });
+  }
+  function lead(x) { return x.facts && x.facts[0] ? x.facts[0][1] : (x.finding || x.text || ''); }
+  function siteLink(u) { return u ? '<a href="https://' + esc(u) + '" target="_blank" rel="noopener" dir="ltr">' + esc(u) + '</a>' : ''; }
+  function telLink(n) { var s = String(n).replace(/[^\d+]/g, ''); return '<a href="tel:' + esc(s) + '" dir="ltr">' + esc(faN(s.replace(/^(0\d{2})(\d{8})$/, '$1-$2'))) + '</a>'; }
+  function waLink(n) { var s = String(n).replace(/[^\d]/g, '').replace(/^0/, '98'); return '<a href="https://wa.me/' + esc(s) + '" target="_blank" rel="noopener" dir="ltr">' + esc(faN(n)) + '</a>'; }
+  function teaser(key, x, num) {
+    var th = x.threat ? '<span class="cm-th ' + tone(x.threat) + '">تهدید ' + esc(x.threat) + '</span>' : '';
+    var links = [x.site ? '<a class="cm-q" href="https://' + esc(x.site) + '" target="_blank" rel="noopener" dir="ltr">' + esc(x.site) + '</a>' : '', x.phones && x.phones[0] ? '<a class="cm-q" href="tel:' + esc(x.phones[0]) + '" dir="ltr">' + esc(faN(x.phones[0])) + '</a>' : ''].filter(Boolean).join('');
+    return '<article class="cm-card cm-tz" data-key="' + key + '"><div class="cm-top"><h3>' + (num ? '<span class="cm-n">' + faN(num) + '</span>' : '') + esc(x.name) + '</h3>' + th + '</div>' +
+      '<p class="cm-lead2">' + esc(lead(x)) + '</p>' + (links ? '<div class="cm-ql">' + links + '</div>' : '') +
+      '<button type="button" class="cm-more-btn" data-open="' + key + '">اطلاعات بیشتر</button></article>';
+  }
+  function ver(x) {
     if (!x.check || !x.check.length) return '';
-    var site = x.site ? '<a class="cm-site" href="https://' + esc(x.site) + '" target="_blank" rel="noopener" dir="ltr">' + esc(x.site) + '</a>' : '<span class="cm-nosite">سایت رسمی تأیید نشد</span>';
     var list = '<ul class="cm-chk">' + x.check.map(function (c) {
       var k = MSVG[c[1]] ? c[1] : 'none';
       return '<li class="' + k + '"><b title="' + MARK[k][1] + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + MSVG[k] + '</svg></b><span><em>' + esc(c[0]) + ':</em> ' + esc(c[2]) + ' <i>(' + MARK[k][1] + ')</i></span></li>';
     }).join('') + '</ul>';
-    var more = x.more && x.more.length ? '<dl class="cm-more">' + x.more.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl>' : '';
-    return '<details class="cm-v"' + (compact ? '' : '') + '><summary>بررسی دوباره از سایت · ' + site + '</summary>' + list + more + '</details>';
+    return '<h4 class="cm-h4">بررسی دوباره از سایت</h4>' + list;
+  }
+  function crow(k, v) { return v ? '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>' : ''; }
+  function popup(key) {
+    var x = ITEMS[key]; if (!x) return;
+    if (!dlg) {
+      dlg = document.createElement('dialog'); dlg.className = 'cm-dialog';
+      dlg.addEventListener('click', function (e) {
+        if (e.target === dlg || e.target.closest('[data-cm-close]')) { dlg.close(); return; }
+        var b = e.target.closest('[data-ai]'); if (b) ai(b);
+      });
+      dlg.addEventListener('close', function () { clearInterval(aiTimer); });
+      document.body.appendChild(dlg);
+    }
+    var ig = x.instagram ? '<a href="https://instagram.com/' + esc(x.instagram) + '" target="_blank" rel="noopener" dir="ltr">@' + esc(x.instagram) + '</a>' : '';
+    var tg = x.telegram ? '<a href="https://t.me/' + esc(x.telegram) + '" target="_blank" rel="noopener" dir="ltr">@' + esc(x.telegram) + '</a>' : '';
+    var facts = x.facts ? x.facts : [x.focus ? ['تمرکز', x.focus] : null, x.finding ? ['یافته', x.finding] : null, x.text ? ['توضیح', x.text] : null].filter(Boolean);
+    var rasmio = '<a href="https://rasmio.com/search/companies/" target="_blank" rel="noopener" dir="ltr">rasmio.com</a> (نام را آنجا جست‌وجو کنید: <b>' + esc(x.name.replace(/\s*\(.*$/, '')) + '</b>)';
+    dlg.setAttribute('aria-label', x.name);
+    dlg.innerHTML = '<div class="cm-dbar"><h2>' + esc(x.name) + '</h2><button type="button" class="cm-x" data-cm-close aria-label="بستن">' + CLOSE + '</button></div>' +
+      '<div class="cm-dbody">' + (x.threat ? '<p><span class="cm-th ' + tone(x.threat) + '">تهدید ' + esc(x.threat) + '</span></p>' : '') +
+      (x.sum ? '<div class="cm-aibox"><button type="button" class="cm-ai" data-ai="' + key + '" aria-expanded="false">' + SPARK + '<span>خلاصهٔ هوش مصنوعی</span></button><div class="cm-aiout" hidden></div></div>' : '') +
+      '<h4 class="cm-h4">راه‌های ارتباط</h4><dl class="cm-ct">' + crow('وب‌سایت', siteLink(x.site)) + crow('اینستاگرام', ig) + crow('تلگرام', tg) +
+      crow('تلفن', (x.phones || []).map(telLink).join(' ، ')) + crow('واتس‌اپ', (x.wa || []).map(waLink).join(' ، ')) + crow('ایمیل', (x.emails || []).map(function (m) { return '<a href="mailto:' + esc(m) + '" dir="ltr">' + esc(m) + '</a>'; }).join(' ، ')) +
+      crow('نشانی', esc(x.address || '')) + crow('نام ثبتی', esc(x.legal || '')) + crow('ثبت شرکت', rasmio) + '</dl>' +
+      (!x.site && !(x.phones && x.phones.length) && !x.instagram && !(x.emails && x.emails.length) ? '<p class="cm-nosite">برای این مورد ارتباطی پیدا نشد.</p>' : '') +
+      '<h4 class="cm-h4">یافته‌های تحلیل</h4><dl class="cm-ct">' + facts.map(function (f) { return crow(esc(f[0]), esc(f[1])); }).join('') + '</dl>' +
+      ver(x) + (x.more && x.more.length ? '<h4 class="cm-h4">اطلاعات بیشتر از سایت</h4><dl class="cm-ct">' + x.more.map(function (f) { return crow(esc(f[0]), esc(f[1])); }).join('') + '</dl>' : '') + '</div>';
+    if (!dlg.open) dlg.showModal();
+    dlg.scrollTop = 0;
+  }
+  // The summary was written in advance by an AI (Claude) from the facts in this file; the button shows it word by word.
+  // It says so under the text, because it is not produced live.
+  function ai(btn) {
+    var out = btn.parentNode.querySelector('.cm-aiout'), x = ITEMS[btn.getAttribute('data-ai')];
+    if (!out || !x) return;
+    clearInterval(aiTimer);
+    if (!out.hidden) { out.hidden = true; btn.setAttribute('aria-expanded', 'false'); return; }
+    var note = (S.data && S.data.verification && S.data.verification.ai) || 'نوشته‌شده با هوش مصنوعی';
+    out.hidden = false; btn.setAttribute('aria-expanded', 'true');
+    var words = String(x.sum).split(' '), i = 0, calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function paint() { out.innerHTML = '<p>' + esc(words.slice(0, i).join(' ')) + (i < words.length ? '<span class="cm-caret"></span>' : '') + '</p>' + (i >= words.length ? '<small>' + esc(note) + '. این متن از قبل نوشته شده و در لحظه تولید نمی‌شود.</small>' : ''); }
+    if (calm) { i = words.length; paint(); return; }
+    paint();
+    aiTimer = setInterval(function () { i += 2; if (i >= words.length) { i = words.length; clearInterval(aiTimer); } paint(); }, 55);
   }
   function strategic(d) {
-    var q = norm(S.q), list = (d.strategic.items || []).filter(function (x) {
-      if (S.threat !== 'all' && x.threat !== S.threat) return false;
-      return !q || norm(x.name + ' ' + x.facts.map(function (f) { return f[0] + ' ' + f[1]; }).join(' ')).indexOf(q) >= 0;
+    var q = norm(S.q), list = [];
+    (d.strategic.items || []).forEach(function (x, i) {
+      if (S.threat !== 'all' && x.threat !== S.threat) return;
+      if (q && norm(x.name + ' ' + x.facts.map(function (f) { return f[0] + ' ' + f[1]; }).join(' ') + ' ' + (x.sum || '')).indexOf(q) < 0) return;
+      list.push([i, x]);
     });
     return '<section class="cm-sec"><h2>' + esc(d.strategic.heading) + '</h2><p class="cm-sub">' + esc(d.strategic.sub) + '</p>' +
       '<div class="cm-bar"><input id="cmQ" type="search" placeholder="جست‌وجوی نام یا ویژگی…" value="' + esc(S.q) + '" autocomplete="off"><div class="cm-chips" role="group" aria-label="سطح تهدید" data-morph="threat">' +
       THREATS.map(function (t) { return '<button type="button" class="cm-chip" data-th="' + esc(t[0]) + '" aria-pressed="' + (S.threat === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div></div>' +
-      '<div class="cm-grid">' + list.map(function (x) {
-        return '<article class="cm-card"><div class="cm-top"><h3><span class="cm-n">' + window.MSEvents_fa(x.n) + '</span>' + esc(x.name) + '</h3><span class="cm-th ' + tone(x.threat) + '">تهدید ' + esc(x.threat) + '</span></div><dl>' +
-          x.facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl><p class="cm-ver">' + esc(x.verified || '') + '</p>' + ver(x) + '</article>';
-      }).join('') + '</div>' + (list.length ? '' : '<p class="cm-note">موردی پیدا نشد.</p>') + '</section>';
+      '<div class="cm-grid">' + list.map(function (p) { return teaser('s' + p[0], p[1], p[1].n); }).join('') + '</div>' + (list.length ? '' : '<p class="cm-note">موردی پیدا نشد.</p>') + '</section>';
   }
   function market(d) {
     var m = d.market; if (!m) return '';
-    return '<section class="cm-sec"><h2>' + esc(m.heading) + '</h2><p class="cm-sub">' + esc(m.sub) + '</p><div class="cm-tw"><table class="cm-table"><thead><tr><th>رقیب</th><th>تمرکز</th><th>یافتهٔ تأییدشده</th><th>تهدید</th></tr></thead><tbody>' +
-      m.items.map(function (x) { return '<tr><td data-l="رقیب"><b>' + esc(x.name) + '</b></td><td data-l="تمرکز">' + esc(x.focus) + '</td><td data-l="یافته">' + esc(x.finding) + '</td><td data-l="تهدید"><span class="cm-th ' + tone(x.threat) + '">' + esc(x.threat) + '</span></td></tr>' + (x.check ? '<tr class="cm-vr"><td colspan="4">' + ver(x) + '</td></tr>' : ''); }).join('') +
-      '</tbody></table></div></section>';
+    return '<section class="cm-sec"><h2>' + esc(m.heading) + '</h2><p class="cm-sub">' + esc(m.sub) + '</p><div class="cm-grid">' + m.items.map(function (x, i) { return teaser('m' + i, x); }).join('') + '</div></section>';
   }
-  function plain(sec) {
+  function plain(sec, pre) {
     if (!sec) return '';
     return '<section class="cm-sec"><h2>' + esc(sec.heading) + '</h2><p class="cm-sub">' + esc(sec.sub || '') + '</p><div class="cm-grid two">' +
-      sec.items.map(function (x) { return '<article class="cm-card soft"><h3>' + esc(x.name) + '</h3><p>' + esc(x.text) + '</p>' + ver(x) + '</article>'; }).join('') + '</div></section>';
+      sec.items.map(function (x, i) { return pre ? teaser(pre + i, x) : '<article class="cm-card soft"><h3>' + esc(x.name) + '</h3><p>' + esc(x.text) + '</p></article>'; }).join('') + '</div></section>';
   }
   function view() {
     if (S.loading) return '<p class="cm-note">در حال بارگذاری…</p>';
@@ -77,7 +137,8 @@
     if (d.verification) out += '<p class="cm-ok2"><b>' + esc(d.verification.title) + ' (' + esc(d.verification.date) + ').</b> ' + esc(d.verification.text) + '</p>';
     if (d.transcription) out += '<p class="cm-warn">' + esc(d.transcription) + '</p>';
     if (d.method) out += '<section class="cm-box"><h2>' + esc(d.method.heading) + '</h2><h3>' + esc(d.method.sub) + '</h3><p>' + esc(d.method.text) + '</p><div class="cm-fix"><b>' + esc(d.method.fixTitle) + '</b><p>' + esc(d.method.fix) + '</p></div></section>';
-    out += strategic(d) + market(d) + plain(d.supplementary) + plain(d.frameworks);
+    indexItems(d);
+    out += strategic(d) + market(d) + plain(d.supplementary, 'u') + plain(d.frameworks);
     if (d.conclusion) out += '<section class="cm-sec cm-concl"><h2>' + esc(d.conclusion.heading) + '</h2><p class="cm-sub">' + esc(d.conclusion.sub) + '</p>' + d.conclusion.paras.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '<blockquote>' + esc(d.conclusion.quote) + '</blockquote></section>';
     if (can('roleAdmin')) out += '<label class="cm-btn alt">جایگزینی با فایل تازه<input id="cmFile" type="file" accept="application/json,.json" hidden></label>';
     return out;
@@ -91,7 +152,11 @@
     if (window.MSGate) window.MSGate.apply();
     if (keep !== null) { var q = document.getElementById('cmQ'); if (q) { q.focus(); try { q.setSelectionRange(keep, keep); } catch (e) { /* ignore */ } } }
   }
-  root.addEventListener('click', function (e) { var t = e.target.closest('[data-th]'); if (t) { S.threat = t.getAttribute('data-th'); render(); } });
+  root.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-th]'); if (t) { S.threat = t.getAttribute('data-th'); render(); return; }
+    var o = e.target.closest('[data-open]'); if (o) { popup(o.getAttribute('data-open')); return; }
+    var c = e.target.closest('.cm-tz'); if (c && !e.target.closest('a')) popup(c.getAttribute('data-key'));
+  });
   root.addEventListener('input', function (e) { if (e.target.id === 'cmQ') { S.q = e.target.value; render(); } });
   root.addEventListener('change', function (e) {
     if (e.target.id !== 'cmFile') return;
