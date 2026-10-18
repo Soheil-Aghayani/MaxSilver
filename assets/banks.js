@@ -36,23 +36,26 @@
     var sum = 0, i, n; for (i = 0; i < 16; i++) { n = Number(d.charAt(i)); if (i % 2 === 0) { n *= 2; if (n > 9) n -= 9; } sum += n; }
     return sum % 10 === 0;
   }
-  function blank() { return { id: '', kind: 'brand', brand: 'max-silver', label: '', holder: '', bank: '', account: '', sheba: '', card: '', payee: '', note: '', active: true }; }
+  var fmtCard = function (s) { var d = digits(s); return d ? faD(d.replace(/(\d{4})(?=\d)/g, '$1 ')) : ''; };
+  function blank() { return { id: '', mode: 'account', kind: 'brand', brand: 'max-silver', label: '', holder: '', bank: '', account: '', sheba: '', card: '', payee: '', note: '', active: true }; }
   var group = function (a) { return a.kind === 'brand' ? (BR[a.brand] || 'برند') : KIND[a.kind] || ''; };
   function cardHtml(a) {
     var f = function (k, v, ltr) { return v ? '<div><dt>' + k + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + esc(v) + '</dd></div>' : ''; };
     return '<article class="bk-card' + (a.active === false ? ' off' : '') + '"><div class="bk-top"><h3>' + esc(a.label) + '</h3><span class="bk-k ' + esc(a.kind) + '">' + esc(group(a)) + '</span></div><dl>' +
-      f('صاحب حساب', a.holder) + f('بانک', a.bank) + f('شمارهٔ حساب', faD(a.account), true) + f('شبا', a.sheba, true) + f('شمارهٔ کارت', faD(a.card), true) + f('در وجه (چک)', a.payee) + f('توضیح', a.note) + '</dl>' +
+      f('صاحب حساب', a.holder) + f('بانک', a.bank) + f('شمارهٔ حساب', faD(a.account), true) + f('شبا', a.sheba, true) + f('شمارهٔ کارت', fmtCard(a.card), true) + f('در وجه (چک)', a.payee) + f('توضیح', a.note) + '</dl>' +
       (a.active === false ? '<p class="bk-off">غیرفعال</p>' : '') +
       (can('bankEdit') ? '<div class="bk-acts"><button type="button" class="bk-btn alt" data-edit="' + esc(a.id) + '">ویرایش</button><button type="button" class="bk-btn alt" data-toggle="' + esc(a.id) + '">' + (a.active === false ? 'فعال کردن' : 'غیرفعال کردن') + '</button><button type="button" class="bk-btn danger" data-del="' + esc(a.id) + '">حذف</button></div>' : '') + '</article>';
   }
   function formHtml() {
     var f = S.form; if (!f) return '';
     var inp = function (k, label, o) { o = o || {}; return '<label class="' + (o.wide ? 'wide' : '') + '">' + label + '<input type="text" data-k="' + k + '" value="' + esc(f[k]) + '"' + (o.ltr ? ' dir="ltr"' : '') + (o.num ? ' inputmode="numeric"' : '') + ' maxlength="' + (o.max || 80) + '" autocomplete="off"></label>'; };
-    return '<section class="bk-form"><h2>' + (f.id ? 'ویرایش حساب' : 'افزودن حساب') + '</h2>' + (S.error ? '<p class="bk-err" role="alert">' + esc(S.error) + '</p>' : '') +
+    return '<section class="bk-form"><h2>' + (f.id ? (f.mode === 'card' ? 'ویرایش کارت' : 'ویرایش حساب') : f.mode === 'card' ? 'افزودن کارت' : 'افزودن حساب') + '</h2>' + (S.error ? '<p class="bk-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<div class="bk-seg" role="radiogroup" aria-label="صاحب حساب">' + Object.keys(KIND).map(function (k) { return '<button type="button" role="radio" data-kind="' + k + '" aria-checked="' + (f.kind === k) + '">' + KIND[k] + '</button>'; }).join('') + '</div>' +
       (f.kind === 'brand' ? '<div class="bk-seg" role="radiogroup" aria-label="برند">' + Object.keys(BR).map(function (k) { return '<button type="button" role="radio" data-brand="' + k + '" aria-checked="' + (f.brand === k) + '">' + BR[k] + '</button>'; }).join('') + '</div>' : '') +
-      '<div class="bk-grid">' + inp('label', 'عنوان حساب (برای انتخاب)', { wide: true }) + inp('holder', 'نام صاحب حساب') + inp('bank', 'نام بانک') + inp('account', 'شمارهٔ حساب', { ltr: true, num: true, max: 30 }) +
-      inp('sheba', 'شمارهٔ شبا (IR…)', { ltr: true, max: 30 }) + inp('card', 'شمارهٔ کارت (اختیاری)', { ltr: true, num: true, max: 19 }) + inp('payee', 'در وجه (برای چک)') + inp('note', 'توضیح (اختیاری)', { wide: true, max: 200 }) + '</div>' +
+      (f.mode === 'card'
+        ? '<div class="bk-grid">' + inp('card', 'شمارهٔ کارت (۱۶ رقم)', { ltr: true, num: true, max: 19, wide: true }) + inp('holder', 'نام صاحب کارت') + inp('bank', 'نام بانک') + inp('label', 'عنوان (اختیاری؛ برای انتخاب)', { wide: true }) + inp('note', 'توضیح (اختیاری)', { wide: true, max: 200 }) + '</div>'
+        : '<div class="bk-grid">' + inp('label', 'عنوان حساب (برای انتخاب)', { wide: true }) + inp('holder', 'نام صاحب حساب') + inp('bank', 'نام بانک') + inp('account', 'شمارهٔ حساب', { ltr: true, num: true, max: 30 }) +
+          inp('sheba', 'شمارهٔ شبا (IR…)', { ltr: true, max: 30 }) + inp('card', 'شمارهٔ کارت (اختیاری)', { ltr: true, num: true, max: 19 }) + inp('payee', 'در وجه (برای چک)') + inp('note', 'توضیح (اختیاری)', { wide: true, max: 200 }) + '</div>') +
       '<div class="bk-acts"><button type="button" class="bk-btn" data-save' + (S.busy ? ' disabled' : '') + '>ذخیره</button><button type="button" class="bk-btn alt" data-cancel>انصراف</button></div></section>';
   }
   function view() {
@@ -63,7 +66,7 @@
     var kinds = ['all', 'brand', 'company', 'supplier'], list = S.list.filter(function (a) { return S.kind === 'all' || a.kind === S.kind; });
     return '<h1>حساب‌های بانکی</h1><p class="bk-lead">حساب‌هایی که روی پیش‌فاکتور مشتری نوشته می‌شود تا بداند به چه کسی واریز کند یا چک بنویسد. حساب می‌تواند مال یک برند، خود شرکت یا یک تأمین‌کننده باشد. فقط اکانت منیجر حساب را اضافه یا ویرایش می‌کند؛ مالی از میان آن‌ها برای هر پیش‌فاکتور یکی را انتخاب می‌کند.</p>' +
       (S.msg ? '<p class="bk-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.form ? '' : (S.error ? '<p class="bk-err" role="alert">' + esc(S.error) + '</p>' : '')) +
-      (can('bankEdit') && !S.form ? '<button type="button" class="bk-btn" data-new>افزودن حساب</button>' : '') + formHtml() +
+      (can('bankEdit') && !S.form ? '<div class="bk-acts"><button type="button" class="bk-btn" data-new="account">افزودن حساب</button><button type="button" class="bk-btn alt" data-new="card">افزودن کارت</button></div>' : '') + formHtml() +
       '<div class="bk-chips" role="group" aria-label="صاحب حساب">' + kinds.map(function (k) { return '<button type="button" class="bk-chip" data-flt="' + k + '" aria-pressed="' + (S.kind === k) + '">' + (k === 'all' ? 'همه' : KIND[k]) + '</button>'; }).join('') + '</div>' +
       '<div class="bk-grid2">' + list.map(cardHtml).join('') + '</div>' + (list.length ? '' : '<p class="bk-note">هنوز حسابی ثبت نشده است.</p>') +
       '<p class="bk-note">انتخاب حساب روی هر پیش‌فاکتور مشتری در مرحلهٔ ساخت پیش‌فاکتور (گام بعدی جریان سفارش) اضافه می‌شود.</p>';
@@ -80,7 +83,14 @@
     var f = S.form, e = '';
     f.label = f.label.trim(); f.holder = f.holder.trim(); f.bank = f.bank.trim(); f.payee = f.payee.trim(); f.note = f.note.trim();
     f.account = digits(f.account); f.card = digits(f.card); f.sheba = latin(f.sheba).replace(/\s+/g, '').toUpperCase();
-    if (f.label.length < 2) e = 'عنوان حساب را بنویسید.';
+    if (f.mode === 'card') {
+      if (!f.card) e = 'شمارهٔ کارت را بنویسید.';
+      else if (!validCard(f.card)) e = 'شمارهٔ کارت درست نیست (۱۶ رقم).';
+      else if (f.holder.length < 3) e = 'نام صاحب کارت را بنویسید.';
+      if (!e && f.label.length < 2) f.label = ('کارت ' + (f.bank ? f.bank + ' ' : '') + f.card.slice(-4)).slice(0, 80);
+      if (!e) { f.account = ''; f.sheba = ''; }
+    }
+    else if (f.label.length < 2) e = 'عنوان حساب را بنویسید.';
     else if (f.holder.length < 3) e = 'نام صاحب حساب را بنویسید.';
     else if (!f.account && !f.sheba && !f.card) e = 'دست‌کم شمارهٔ حساب، شبا یا کارت را بنویسید.';
     else if (f.sheba && !validSheba(f.sheba)) e = 'شمارهٔ شبا درست نیست (IR و ۲۴ رقم).';
@@ -93,8 +103,8 @@
   }
   root.addEventListener('click', function (e) {
     var t;
-    if (e.target.closest('[data-new]')) { S.form = blank(); S.error = ''; S.msg = ''; render(); return; }
-    if ((t = e.target.closest('[data-edit]'))) { var a = S.list.filter(function (x) { return x.id === t.getAttribute('data-edit'); })[0]; if (a) { S.form = Object.assign(blank(), a); S.error = ''; S.msg = ''; render(); } return; }
+    var nw = e.target.closest('[data-new]'); if (nw) { S.form = blank(); S.form.mode = nw.getAttribute('data-new') === 'card' ? 'card' : 'account'; S.error = ''; S.msg = ''; render(); return; }
+    if ((t = e.target.closest('[data-edit]'))) { var a = S.list.filter(function (x) { return x.id === t.getAttribute('data-edit'); })[0]; if (a) { S.form = Object.assign(blank(), a); S.form.mode = !a.account && !a.sheba && a.card ? 'card' : 'account'; S.error = ''; S.msg = ''; render(); } return; }
     if (e.target.closest('[data-cancel]')) { S.form = null; S.error = ''; render(); return; }
     if (e.target.closest('[data-save]')) { save(); return; }
     if ((t = e.target.closest('[data-kind]'))) { S.form.kind = t.getAttribute('data-kind'); render(); return; }

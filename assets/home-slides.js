@@ -34,11 +34,33 @@
     track.insertBefore(s, first.nextSibling);
   }
 
+  // a fair or event that starts within 30 days (or is running) gets a slide, the main fairs first, then the best-matching events, four slides at most; visible to everyone, signed in or not
+  function syncFairs() {
+    var F = window.MSFairs, list = [];
+    try { list = F ? F.soon(30).filter(function (x) { return !(x.kind === 'expo' && x.f.matchLevel === 'low'); }).sort(function (a, b) { return (a.kind === 'main' ? 0 : 1) - (b.kind === 'main' ? 0 : 1) || a.d.a - b.d.a; }).slice(0, 4) : []; } catch (e) { list = []; }
+    var sig = list.map(function (x) { return x.id; }).join(',');
+    if ((hero.getAttribute('data-fairs') || '') === sig) return;
+    hero.setAttribute('data-fairs', sig);
+    Array.prototype.forEach.call(hero.querySelectorAll('.hs-slide.fair'), function (s) { s.remove(); });
+    var anchor = track.querySelector('.hs-slide.event') || track.querySelector('.hs-slide');
+    list.forEach(function (x) {
+      var f = x.f, E = window.MSEvents, s = document.createElement('div');
+      s.className = 'hs-slide pic fair'; s.setAttribute('data-tone', x.tone); s.setAttribute('data-fair', x.id);
+      var base = './assets/art/fairs/' + x.art, art = '';
+      if (x.art && x.kind === 'main') art = '<picture class="hs-art" aria-hidden="true"><source media="(max-width:760px)" srcset="' + base + '-mobile.webp" width="720" height="1279"><source media="(max-width:1100px)" srcset="' + base + '-tablet.webp" width="1024" height="768"><img src="' + base + '-pc.webp" alt="" width="1280" height="720" decoding="async"></picture>';
+      else if (x.art) art = '<picture class="hs-art" aria-hidden="true"><img src="' + base + x.ext + '" alt="" decoding="async"></picture>';
+      var when = x.st.k === 'now' ? 'در حال برگزاری' : x.st.text;
+      s.innerHTML = '<div class="hs-copy"><h2>' + esc(x.title) + '</h2><p>' + esc(when + ' · ' + (f.dateMain || (E.fa(x.d.a.getDate()) + ' تا ' + E.fa(x.d.b.getDate())))) + (f.venue ? ' · ' + esc(f.venue) : '') + '</p>' +
+        '<a class="hs-cta" href="./fairs.html">نمایشگاه‌ها<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg></a></div>' + art;
+      track.insertBefore(s, anchor.nextSibling); anchor = s;
+    });
+  }
+
   // people without an account only see the first slide; the others lead into sections they cannot open.
   // role-gate.js marks the page data-anon and hides slides the role may not open (data-manager-only)
   function active() {
     var all = slides();
-    if (anon()) return all.slice(0, 1);
+    if (anon()) return all.filter(function (s, k) { return k === 0 || s.classList.contains('fair'); });
     var l = all.filter(function (s) { return !s.hidden && s.style.display !== 'none'; });
     return l.length ? l : all.slice(0, 1);
   }
@@ -53,6 +75,7 @@
   }
   function show(n) {
     syncEvent();
+    syncFairs();
     var list = active();
     i = (n + list.length) % list.length;
     slides().forEach(function (s) {

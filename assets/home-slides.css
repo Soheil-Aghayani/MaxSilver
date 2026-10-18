@@ -52,3 +52,8 @@
 }
 @media(prefers-reduced-motion:reduce){.hs-slide,.hs-slide.on{transition:none;transform:none}}
 .hs-dots[hidden]{display:none}
+
+/* a fair slide: the picture is mirrored so its subject sits away from the text */
+.hs-slide.fair .hs-art img{transform:scaleX(-1);object-position:right center}
+.hs-slide.fair .hs-copy p{max-width:48ch}
+@media(max-width:760px){.hs-slide.fair .hs-art img{object-position:center bottom}}

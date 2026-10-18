@@ -174,3 +174,10 @@ a.ms-install-go{border:0;background:var(--ms-navy);color:#fff}
 .ms-pill.dock{z-index:0;background:var(--ms-navy);box-shadow:0 8px 18px rgba(7,27,54,.28)}
 @media(max-width:1100px){.ms-pill.dock{background:var(--ms-gold);box-shadow:none}}
 @media(max-width:1100px) and (orientation:landscape) and (max-height:480px){.ms-pill.dock{background:var(--ms-navy);box-shadow:0 8px 18px rgba(7,27,54,.28)}}
+
+/* appearance animation of cards (assets/reveal.js) */
+.rv{opacity:0;transform:translateY(16px) scale(.985)}
+.rv.rv-in{opacity:1;transform:none;transition:opacity .5s ease var(--rd,0ms),transform .55s cubic-bezier(.2,.7,.2,1) var(--rd,0ms)}
+.rv-in .rv-c{animation:rv-c .42s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--rd,0ms) + 140ms + var(--ci,0) * 45ms)}
+@keyframes rv-c{from{opacity:0;transform:translateY(8px)}}
+@media print,(prefers-reduced-motion:reduce){.rv{opacity:1!important;transform:none!important}.rv-in .rv-c{animation:none}}
