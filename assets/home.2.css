@@ -49,3 +49,11 @@ body{min-height:100vh}
 .hm-sec .pc-star svg{width:15px;height:15px}
 @media(max-width:560px){.hm-sec .portal-grid,.hm-sec.portal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.hm-sec .portal-card{border-radius:24px;padding:14px}.hm-h{font-size:16.5px}}
 @media(prefers-reduced-motion:reduce){.hm-sec .portal-card{transition:none}}
+
+/* a tile with its clay picture: the picture fills the top, whole and centered; the name sits below it */
+.hm-sec .portal-card.has-art{position:relative;justify-content:flex-end;gap:6px;padding:10px 12px 14px}
+.hm-sec .portal-card.has-art .card-icon{display:none}
+.hm-sec .tile-art{position:absolute;inset:12px 12px 52px;width:calc(100% - 24px);height:calc(100% - 64px);object-fit:contain;object-position:center;display:block;filter:drop-shadow(0 8px 10px rgba(7,27,54,.14));transition:transform .25s}
+.hm-sec .portal-card.has-art:hover .tile-art{transform:scale(1.06) translateY(-2px)}
+.hm-sec .portal-card.has-art h2{flex:none;width:100%;text-align:center;font-size:14.5px}
+@media(prefers-reduced-motion:reduce){.hm-sec .tile-art{transition:none}}
