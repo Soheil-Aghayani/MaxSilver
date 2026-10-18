@@ -37,6 +37,28 @@
   var can = function (area) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, area)); };
   var myName = function () { return (S.profile && S.profile.name) || (S.user && S.user.email) || ''; };
 
+
+  // ---------- look: every customer gets a colour (from the owner group, else the name) and a letter; icons are the app's stroke family
+  var PAL = ['#3858e9', '#7f54b3', '#0891b2', '#e39c27', '#ce1f39', '#0d9488', '#ff6a00', '#65a30d', '#be185d', '#4338ca', '#0369a1', '#a16207'];
+  function hue(c) { var s = norm(c.group || c.name || ''), h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return PAL[h % PAL.length]; }
+  function inkOn(col) { var r = parseInt(col.substr(1, 2), 16), g = parseInt(col.substr(3, 2), 16), b = parseInt(col.substr(5, 2), 16); return (0.299 * r + 0.587 * g + 0.114 * b) > 165 ? '#071b36' : '#ffffff'; }
+  function letter(c) { var n = String(c.name || '').replace(/\[.*?\]/g, '').trim(); return esc(n.charAt(0) || '؟'); }
+  var IC = {
+    pin: '<path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/>',
+    tag: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',
+    user: '<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c0-3.8 3.4-6.5 7.5-6.5s7.5 2.7 7.5 6.5"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6M17 5a3.5 3.5 0 0 1 0 7M21.5 20c0-2.6-1.7-4.7-4.2-5.6"/>',
+    coins: '<ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/>',
+    spark: '<path d="M10 4l1.6 4.4L16 10l-4.4 1.6L10 16l-1.6-4.4L4 10l4.4-1.6zM18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/>',
+    alert: '<path d="M12 4 3 20h18z"/><path d="M12 10v4M12 17h.01"/>',
+    up: '<path d="M12 19V5M6 11l6-6 6 6"/>', down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+    medal: '<circle cx="12" cy="9" r="5"/><path d="M8.5 13.5 7 21l5-3 5 3-1.5-7.5"/>', phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+    map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>'
+  };
+  function ic(k, cls) { return '<svg class="' + (cls || 'cu-i') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[k] + '</svg>'; }
+  function chg(v) { return '<em class="' + (v >= 0 ? 'up' : 'down') + '">' + ic(v >= 0 ? 'up' : 'down', 'cu-ar') + faPct.format(Math.abs(v)) + '٪</em>'; }
+  var STC = { active: '#14804a', 'new': '#1746b5', atrisk: '#e08a00', lost: '#8795aa', idle: '#c3cad6' };
+
   // ---------- city / province from the title (the accounting titles carry the city in brackets)
   var CITY_PROVINCE = {
     'تهران': 'تهران', 'اسلامشهر': 'تهران', 'ورامین': 'تهران', 'پاکدشت': 'تهران', 'شهریار': 'تهران', 'کرج': 'البرز', 'قم': 'قم',
@@ -171,12 +193,14 @@
     }).join('') + '</span>';
   }
   function card(c) {
-    var chg = c._prev > 0 ? (c._latest - c._prev) / c._prev * 100 : null;
-    return '<li><a class="cu-card" href="#/c/' + encodeURIComponent(c.code) + '">' +
-      '<div class="cu-card-top"><b>' + esc(c.name) + '</b><span class="cu-chip st-' + c._status + '">' + STATUS[c._status] + '</span></div>' +
-      '<div class="cu-card-meta"><span dir="ltr">' + esc(c.code) + '</span>' + (c.city ? '<span>' + esc(c.city) + '</span>' : '') + (c.group ? '<span>' + esc(c.group) + '</span>' : '') + '</div>' +
-      '<div class="cu-card-sales">' + bars(c) + '<span><small>فروش ' + faDigits(S.latest) + ' · تومان</small><b>' + compact(c._latest) + '</b></span>' +
-      (chg === null ? '' : '<em class="' + (chg >= 0 ? 'up' : 'down') + '">' + (chg >= 0 ? '▲' : '▼') + ' ' + faPct.format(Math.abs(chg)) + '٪</em>') + '</div></a></li>';
+    var d = (c._latest && c._prev > 0) || c._prev > 0 ? (c._latest - c._prev) / c._prev * 100 : null, col = hue(c), rk = (S.rank[c.code] || {})[S.latest];
+    return '<li><a class="cu-card" href="#/c/' + encodeURIComponent(c.code) + '" style="--c:' + col + ';--ink:' + inkOn(col) + '">' +
+      '<div class="cu-card-top"><span class="cu-av">' + letter(c) + '</span><div class="cu-nm"><b>' + esc(String(c.name).replace(/\s*\[.*?\]\s*$/, '')) + '</b>' +
+      '<div class="cu-card-meta"><span dir="ltr">' + ic('tag') + esc(c.code) + '</span>' + (c.city ? '<span>' + ic('pin') + esc(c.city) + '</span>' : '') + (c.group ? '<span>' + ic('user') + esc(c.group) + '</span>' : '') + '</div></div>' +
+      '<span class="cu-chip st-' + c._status + '"><i style="background:' + STC[c._status] + '"></i>' + STATUS[c._status] + '</span></div>' +
+      '<div class="cu-card-sales">' + bars(c) + '<span class="cu-amt"><small>فروش ' + faDigits(S.latest) + ' · تومان</small><b>' + compact(c._latest) + '</b></span>' +
+      (rk && rk.n <= 5 ? '<span class="cu-rk" title="رتبهٔ ' + faInt.format(rk.n) + ' در فروش ' + faDigits(S.latest) + '">' + ic('medal') + faInt.format(rk.n) + '</span>' : '') +
+      (d === null ? '' : chg(d)) + '</div></a></li>';
   }
   function listHtml() {
     var list = filtered(), part = list.slice(0, S.shown);
@@ -198,11 +222,15 @@
     var gn = groupNames(), names = Object.keys(gn).filter(Boolean).sort(function (a, b) { return gn[b] - gn[a]; });
     var statuses = ['all', 'active', 'new', 'atrisk', 'lost', 'idle'];
     var cnt = function (s) { return s === 'all' ? S.list.length : S.list.filter(function (c) { return c._status === s; }).length; };
+    var tile = function (k, color, label, val) { return '<div style="--c:' + color + '"><span class="cu-kic">' + ic(k) + '</span><div><span>' + label + '</span><b>' + val + '</b></div></div>'; };
+    var tot = S.list.length || 1, order = ['active', 'new', 'atrisk', 'lost', 'idle'];
     var kpi = '<div class="cu-kpis">' +
-      '<div><span>مشتری فعال ' + faDigits(S.latest || '') + '</span><b>' + faInt.format(act.length) + '</b></div>' +
-      '<div><span>فروش ' + faDigits(S.latest || '') + ' (تومان)</span><b>' + compact(((S.yearTotals || {})[S.latest] || 0) / 10) + '</b></div>' +
-      '<div><span>مشتری جدید</span><b>' + faInt.format(cnt('new')) + '</b></div>' +
-      '<div><span>در معرض ریزش</span><b>' + faInt.format(cnt('atrisk')) + '</b></div></div>';
+      tile('users', '#14804a', 'مشتری فعال ' + faDigits(S.latest || ''), faInt.format(act.length)) +
+      tile('coins', '#1746b5', 'فروش ' + faDigits(S.latest || '') + ' (تومان)', compact(((S.yearTotals || {})[S.latest] || 0) / 10)) +
+      tile('spark', '#7f54b3', 'مشتری جدید', faInt.format(cnt('new'))) +
+      tile('alert', '#e08a00', 'در معرض ریزش', faInt.format(cnt('atrisk'))) + '</div>' +
+      '<div class="cu-dist" role="img" aria-label="پراکندگی وضعیت مشتریان"><div class="cu-dist-bar">' + order.map(function (s) { var n = cnt(s); return n ? '<i style="flex:' + n + ';background:' + STC[s] + '" title="' + STATUS[s] + ': ' + faInt.format(n) + '"></i>' : ''; }).join('') + '</div>' +
+      '<div class="cu-dist-lg">' + order.map(function (s) { var n = cnt(s); return n ? '<span><i style="background:' + STC[s] + '"></i>' + STATUS[s] + ' ' + faInt.format(n) + '</span>' : ''; }).join('') + '</div></div>';
     var statusChips = statuses.map(function (s) {
       return '<button type="button" class="cu-fchip" data-status="' + s + '" aria-pressed="' + (S.fStatus === s) + '">' + (s === 'all' ? 'همه' : STATUS[s]) + ' <b>' + faInt.format(cnt(s)) + '</b></button>';
     }).join('');
@@ -283,14 +311,15 @@
   }
 
   // ---------- one customer
+  function chg_(v) { return chg(v); }
   function yearBars(c) {
     var max = Math.max.apply(null, S.years.map(function (y) { return (c.sales || {})[y] || 0; }).concat([1]));
-    return '<div class="cu-years">' + S.years.map(function (y, i) {
+    return '<div class="cu-years" style="--c:' + hue(c) + '">' + S.years.map(function (y, i) {
       var v = (c.sales || {})[y] || 0, pv = i ? (c.sales || {})[S.years[i - 1]] || 0 : 0;
       var chg = i && pv > 0 ? (v - pv) / pv * 100 : null, r = (S.rank[c.code] || {})[y], tot = (S.yearTotals || {})[y] || 0;
       return '<div class="cu-year"><div class="cu-bar"><i style="height:' + Math.max(3, Math.round(v / max * 100)) + '%"></i></div>' +
         '<b>' + compact(v / 10) + '</b><span>' + faDigits(y) + (y === S.latest ? ' (تا امروز)' : '') + '</span>' +
-        (chg === null ? '' : '<em class="' + (chg >= 0 ? 'up' : 'down') + '">' + (chg >= 0 ? '▲' : '▼') + ' ' + faPct.format(Math.abs(chg)) + '٪</em>') +
+        (chg === null ? '' : chg_(chg)) +
         (v > 0 && tot ? '<small>سهم ' + faInt.format(Math.round(v / tot * 1000) / 10) + '٪' + (r ? ' · رتبهٔ ' + faInt.format(r.n) + ' از ' + faInt.format(r.of) : '') + '</small>' : '') + '</div>';
     }).join('') + '</div>';
   }
@@ -299,14 +328,14 @@
     if (!c) return head('مشتری پیدا نشد', true) + '<p class="cu-note">این مشتری وجود ندارد یا برای شما قابل مشاهده نیست.</p>';
     var prov = c.province || provinceOf(c.city), reg = c.region || regionOf(prov);
     var invs = invoicesOf(c), items = itemsOf(invs);
-    var fact = function (l, v) { return '<div class="cu-fact"><dt>' + l + '</dt><dd>' + (v ? esc(v) : '<i>ثبت نشده</i>') + '</dd></div>'; };
+    var fact = function (l, v, k) { return '<div class="cu-fact">' + (k ? '<span class="cu-fi">' + ic(k) + '</span>' : '') + '<div><dt>' + l + '</dt><dd>' + (v ? esc(v) : '<i>ثبت نشده</i>') + '</dd></div></div>'; };
     var edit = can('customerEdit') || (S.user && c.ownerUid === S.user.uid);
     return head(c.name, true) +
-      '<section class="cu-card-box cu-top"><div class="cu-top-row"><span class="cu-chip st-' + c._status + '">' + STATUS[c._status] + '</span><span class="cu-chip" dir="ltr">' + esc(c.code) + '</span>' +
+      '<section class="cu-card-box cu-top" style="--c:' + hue(c) + ';--ink:' + inkOn(hue(c)) + '"><div class="cu-hero"><span class="cu-av big">' + letter(c) + '</span><div><span class="cu-hero-m">' + (c.city ? ic('pin') + esc(c.city) : '') + (c.group ? ic('user') + esc(c.group) : '') + '</span></div></div><div class="cu-top-row"><span class="cu-chip st-' + c._status + '">' + STATUS[c._status] + '</span><span class="cu-chip" dir="ltr">' + esc(c.code) + '</span>' +
       (c.ownerName ? '<span class="cu-chip ok">مسئول: ' + esc(c.ownerName) + '</span>' : '') + '</div>' +
-      '<dl class="cu-facts">' + fact('گروه (همکار مسئول)', c.group) + fact('شهر', c.city) + fact('استان', prov) + fact('منطقه فروش', reg) +
-      fact('آخرین سال خرید', (function () { var ys = S.years.filter(function (y) { return (c.sales || {})[y] > 0; }); return ys.length ? faDigits(ys[ys.length - 1]) : ''; })()) +
-      fact('مجموع فروش ثبت‌شده', c._total ? amount(c._total) + ' تومان' : '') + '</dl>' +
+      '<dl class="cu-facts">' + fact('گروه (همکار مسئول)', c.group, 'user') + fact('شهر', c.city, 'pin') + fact('استان', prov, 'map') + fact('منطقه فروش', reg, 'map') +
+      fact('آخرین سال خرید', (function () { var ys = S.years.filter(function (y) { return (c.sales || {})[y] > 0; }); return ys.length ? faDigits(ys[ys.length - 1]) : ''; })(), 'clock') +
+      fact('مجموع فروش ثبت‌شده', c._total ? amount(c._total) + ' تومان' : '', 'coins') + '</dl>' +
       (can('customerAssign') ? '<button type="button" class="cu-btn small" data-owner-customer="' + esc(c.code) + '">تغییر مسئول این مشتری</button>' : '') + '</section>' +
       '<section class="cu-card-box"><h2>خرید در سال‌ها</h2>' + yearBars(c) +
       '<p class="cu-note">مبلغ‌ها به تومان است (گزارش حسابداری به ریال است و اینجا تبدیل شده). سال ' + faDigits(S.latest) + ' هنوز تمام نشده است.</p></section>' +

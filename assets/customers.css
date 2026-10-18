@@ -125,3 +125,39 @@
 .cu-ico:disabled{opacity:.5;cursor:default}
 .cu-tools{align-items:center}
 .cu-tools-t{color:var(--ms-muted);font-size:12px;font-weight:700}
+
+/* look: colour per customer, icons, summary tiles */
+.cu-i{width:14px;height:14px;flex:none}
+.cu-kpis>div{display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
+.cu-kpis>div::after{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:4px;background:var(--c)}
+.cu-kic{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:14px;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c)}
+.cu-kic .cu-i{width:22px;height:22px}
+.cu-kpis>div>div{min-width:0}
+.cu-dist{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--ms-line);border-radius:16px;background:#fff}
+.cu-dist-bar{display:flex;height:12px;border-radius:999px;overflow:hidden;gap:2px;background:#eef2f8}.cu-dist-bar i{display:block}
+.cu-dist-lg{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--ms-muted);font-size:12.5px;font-weight:700}
+.cu-dist-lg span{display:inline-flex;align-items:center;gap:6px}.cu-dist-lg i{display:inline-block;width:10px;height:10px;border-radius:50%}
+.cu-av{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:14px;background:var(--c);color:var(--ink);font:900 19px/1 Estedad,Tahoma,sans-serif}
+.cu-av.big{width:64px;height:64px;border-radius:20px;font-size:28px}
+.cu-card{--c:#3858e9;--ink:#fff;position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--c) 24%,#e4e9f2);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 7%,#fff),#fff 65%);border-top:3px solid var(--c)}
+.cu-card:hover{border-color:var(--c);transform:translateY(-2px);box-shadow:0 12px 28px color-mix(in srgb,var(--c) 18%,transparent)}
+.cu-card-top{align-items:center}
+.cu-nm{flex:1 1 auto;min-width:0;display:grid;gap:3px}
+.cu-nm b{overflow-wrap:anywhere}
+.cu-card-meta{gap:2px 12px}.cu-card-meta span{display:inline-flex;align-items:center;gap:4px}
+.cu-chip{display:inline-flex;align-items:center;gap:6px}.cu-chip i{display:inline-block;width:7px;height:7px;border-radius:50%}
+.cu-spark i{background:color-mix(in srgb,var(--c) 40%,#fff)}.cu-spark i:last-child{background:var(--c)}
+.cu-amt b{font-size:17px}
+.cu-rk{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:999px;background:#fff6d6;color:#7a5b00;font-size:12px;font-weight:800}.cu-rk .cu-i{width:13px;height:13px}
+.cu-card-sales em,.cu-year em{display:inline-flex;align-items:center;gap:2px}.cu-ar{width:13px;height:13px}
+.cu-hero{display:flex;align-items:center;gap:14px}
+.cu-hero b{display:block;color:var(--ms-navy);font-size:18px;line-height:1.6}
+.cu-hero-m{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;color:var(--ms-muted);font-size:13px;font-weight:700}.cu-hero-m .cu-i{margin-inline-end:4px;vertical-align:-2px}
+.cu-top{border-top:4px solid var(--c);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 7%,#fff),#fff 60%)}
+.cu-fact{display:flex;align-items:flex-start;gap:10px}
+.cu-fi{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:10px;background:#eef2f8;color:#1746b5}.cu-fi .cu-i{width:17px;height:17px}
+.cu-fact>div{min-width:0}
+@media(max-width:560px){.cu-card-sales{flex-wrap:wrap}.cu-av.big{width:52px;height:52px;font-size:23px}}
+.cu-bar{background:color-mix(in srgb,var(--c,#071b36) 12%,#eef2f8)}.cu-bar i{background:var(--c,#071b36)}
+.cu-year{background:color-mix(in srgb,var(--c,#071b36) 6%,#f6f8fb)}
+.cu-hero-m{font-size:15px}
