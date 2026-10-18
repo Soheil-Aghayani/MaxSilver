@@ -90,3 +90,4 @@
 @keyframes cm-blink{50%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.cm-caret{animation:none}}
 @media(max-width:700px){.cm-ct>div{grid-template-columns:1fr;gap:0}.cm-ct dd{font-size:15px}.cm-dbody{padding:12px 14px 20px}}
+.cm-src2{margin:0;color:var(--ms-muted);font-size:12px}.cm-src2 a{color:#1746b5;font-weight:700}

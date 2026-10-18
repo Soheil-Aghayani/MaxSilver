@@ -80,6 +80,7 @@
       crow('نشانی', esc(x.address || '')) + crow('نام ثبتی', esc(x.legal || '')) + crow('ثبت شرکت', rasmio) + '</dl>' +
       (!x.site && !(x.phones && x.phones.length) && !x.instagram && !(x.emails && x.emails.length) ? '<p class="cm-nosite">برای این مورد ارتباطی پیدا نشد.</p>' : '') +
       '<h4 class="cm-h4">یافته‌های تحلیل</h4><dl class="cm-ct">' + facts.map(function (f) { return crow(esc(f[0]), esc(f[1])); }).join('') + '</dl>' +
+      (x.registry ? '<h4 class="cm-h4">ثبت رسمی شرکت</h4><dl class="cm-ct">' + x.registry.rows.map(function (f) { return crow(esc(f[0]), esc(f[1])); }).join('') + '</dl><p class="cm-src2">منبع: <a href="' + esc(x.registry.url) + '" target="_blank" rel="noopener" dir="ltr">' + esc(x.registry.source) + '</a>، ' + esc(x.registry.date) + '</p>' : '') +
       ver(x) + (x.more && x.more.length ? '<h4 class="cm-h4">اطلاعات بیشتر از سایت</h4><dl class="cm-ct">' + x.more.map(function (f) { return crow(esc(f[0]), esc(f[1])); }).join('') + '</dl>' : '') + '</div>';
     if (!dlg.open) dlg.showModal();
     dlg.scrollTop = 0;
