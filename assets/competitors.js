@@ -45,12 +45,26 @@
   // dark text on light colours, white text on dark ones
   function ink(c) { var r = parseInt(c.substr(1, 2), 16), g = parseInt(c.substr(3, 2), 16), b = parseInt(c.substr(5, 2), 16); return (0.299 * r + 0.587 * g + 0.114 * b) > 165 ? '#071b36' : '#ffffff'; }
   function sty(x, key) { var c = colorOf(x, key); return ' style="--c:' + c + ';--ink:' + ink(c) + '" data-v="' + (key.charCodeAt(0) + parseInt(key.slice(1), 10)) % 4 + '"'; }
+  // small icons on a card: age, and every channel the company uses
+  var MI = { age: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>', mfr: '<path d="M3 21h18M5 21V10l5 3v-3l5 3V6h4v15"/>', shop: '<path d="M3 4h2l2.4 11h9.2L19 8H6.5"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/>', ig: '<rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17" cy="7" r=".8"/>', tg: '<path d="M21 4 3 11l6 2 2 6 3-4 5 3z"/>', blog: '<path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/>' };
+  function mi(k, txt, on) { return '<span class="cm-mi' + (on === false ? ' off' : '') + '" title="' + esc(txt) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + MI[k] + '</svg>' + (k === 'age' && on !== false ? '<b>' + faN(x_age) + '</b>' : '') + '</span>'; }
+  var x_age = 0;
+  function mini(x) {
+    var o = '';
+    if (x.age != null) { x_age = x.age; o += mi('age', 'سابقه: ' + x.age + ' سال'); }
+    if (x.mfr) o += mi('mfr', 'تولیدکننده');
+    if (x.shop) o += mi('shop', 'فروشگاه آنلاین');
+    if (x.instagram) o += mi('ig', 'اینستاگرام');
+    if (x.telegram) o += mi('tg', 'تلگرام');
+    if (x.blog) o += mi('blog', 'بلاگ');
+    return o ? '<div class="cm-mini">' + o + '</div>' : '';
+  }
   function teaser(key, x, num) {
     var th = x.threat ? '<span class="cm-th ' + tone(x.threat) + '">تهدید ' + esc(x.threat) + '</span>' : '';
     var links = [x.site ? '<a class="cm-q" href="https://' + esc(x.site) + '" target="_blank" rel="noopener" dir="ltr">' + esc(x.site) + '</a>' : '', x.phones && x.phones[0] ? '<a class="cm-q" href="tel:' + esc(x.phones[0]) + '" dir="ltr">' + esc(faN(x.phones[0])) + '</a>' : ''].filter(Boolean).join('');
     return '<article class="cm-card cm-tz" data-key="' + key + '"' + sty(x, key) + '><div class="cm-top"><span class="cm-mono" aria-hidden="true">' + esc(String(x.name).trim().charAt(0)) + '</span><h3>' + (num ? '<span class="cm-n">' + faN(num) + '</span>' : '') + esc(x.name) + '</h3>' + th + '</div>' +
-      '<p class="cm-lead2">' + esc(lead(x)) + '</p>' + (links ? '<div class="cm-ql">' + links + '</div>' : '') +
-      '<div class="cm-foot"><button type="button" class="cm-more-btn" data-open="' + key + '">اطلاعات بیشتر</button><label class="cm-cmp"><input type="checkbox" data-cmp="' + key + '"' + (S.cmp.indexOf(key) >= 0 ? ' checked' : '') + '>مقایسه</label></div></article>';
+      '<p class="cm-lead2">' + esc(lead(x)) + '</p>' + mini(x) + (links ? '<div class="cm-ql">' + links + '</div>' : '') +
+      '<div class="cm-foot"><button type="button" class="cm-more-btn" data-open="' + key + '">اطلاعات بیشتر</button><label class="cm-cmp' + (S.cmp.indexOf(key) >= 0 ? ' on' : '') + '" title="افزودن به مقایسه"><input type="checkbox" data-cmp="' + key + '"' + (S.cmp.indexOf(key) >= 0 ? ' checked' : '') + ' aria-label="افزودن ' + esc(x.name) + ' به مقایسه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg></label></div></article>';
   }
   function ver(x) {
     if (!x.check || !x.check.length) return '';
@@ -136,7 +150,7 @@
     return l;
   }
   function toolbar() {
-    return '<div class="cm-tb"><div class="cm-tb-top"><label class="cm-bar2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="cmQ" type="search" placeholder="جست‌وجوی نام، شهر، محصول…" value="' + esc(S.q) + '" autocomplete="off"></label>' +
+    return '<div class="cm-tb" id="cmCards"><div class="cm-tb-top"><label class="cm-bar2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="cmQ" type="search" placeholder="جست‌وجوی نام، شهر، محصول…" value="' + esc(S.q) + '" autocomplete="off"></label>' +
       '<div class="cm-chips cm-seg" role="group" aria-label="مرتب‌سازی" data-morph="sort">' + SORTS.map(function (s) { return '<button type="button" class="cm-chip" data-sort="' + s[0] + '" aria-pressed="' + (S.sort === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div></div>' +
       '<div class="cm-chips cm-seg wide" role="group" aria-label="سطح تهدید" data-morph="threat">' + THREATS.map(function (th) { return '<button type="button" class="cm-chip" data-th="' + esc(th[0]) + '" aria-pressed="' + (S.threat === th[0]) + '">' + th[1] + '</button>'; }).join('') + '</div>' +
       '<div class="cm-tog-row" role="group" aria-label="فیلتر">' + FLT.map(function (f) { return '<button type="button" class="cm-tog" data-flt="' + f[0] + '" aria-pressed="' + (!!S.f[f[0]]) + '">' + f[1] + '</button>'; }).join('') + '<span class="cm-count" id="cmCount" aria-live="polite"></span></div></div>';
@@ -179,7 +193,7 @@
     var rows = Object.keys(ITEMS).map(function (k) { return [k, ITEMS[k]]; });
     var idx = { age: 0, cap: 1, scope: 2, digital: 3, proof: 4 }[S.kpi] || 0;
     rows.sort(function (p, q) { var a = bars(p[1])[idx][2], b = bars(q[1])[idx][2]; return (b == null ? -1 : b) - (a == null ? -1 : a); });
-    return '<section class="cm-sec"><h2>شاخص‌های عمومی رقبا</h2><p class="cm-sub">' + esc((S.data && S.data.kpiNote) || '') + '</p>' +
+    return '<section class="cm-sec" id="cmKpi"><h2>شاخص‌های عمومی رقبا</h2><p class="cm-sub">' + esc((S.data && S.data.kpiNote) || '') + '</p>' +
       '<div class="cm-chips cm-seg" role="group" aria-label="مرتب‌سازی شاخص‌ها" data-morph="kpi">' + KPIS.map(function (s) { return '<button type="button" class="cm-chip" data-kpi="' + s[0] + '" aria-pressed="' + (S.kpi === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div>' +
       '<div class="kb-list">' + rows.map(function (r) {
         var x = r[1], c = colorOf(x, r[0]);
@@ -188,6 +202,8 @@
   }
   // ---- overview: how many competitors, what they are, and how the threat is spread
   var IC = { n: '<path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6"/>', m: '<path d="M3 21h18M5 21V10l5 3v-3l5 3V6h4v15"/>', s: '<path d="M3 4h2l2.4 11h9.2L19 8H6.5"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/>', i: '<rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17" cy="7" r=".8"/>', a: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>' };
+  var NAVI = [['cmOv', 'نمای کلی'], ['cmCards', 'رقبا'], ['cmKpi', 'شاخص‌ها'], ['cmMx', 'ماتریس حوزه‌ها']];
+  function nav() { return '<nav class="cm-nav" aria-label="بخش‌های صفحه">' + NAVI.map(function (n) { return '<a href="#' + n[0] + '" data-go="' + n[0] + '">' + n[1] + '</a>'; }).join('') + '</nav>'; }
   function overview() {
     var xs = Object.keys(ITEMS).map(function (k) { return ITEMS[k]; }), n = xs.length, cnt = function (f) { return xs.filter(f).length; };
     var ages = xs.map(function (x) { return x.age; }).filter(function (a) { return a != null; }).sort(function (a, b) { return a - b; });
@@ -195,7 +211,7 @@
     var tiles = [['n', n, 'رقیب بررسی‌شده'], ['m', cnt(function (x) { return x.mfr; }), 'تولیدکننده'], ['s', cnt(function (x) { return x.shop; }), 'فروشگاه آنلاین'], ['i', cnt(function (x) { return x.instagram; }), 'با اینستاگرام'], ['a', med, 'سال، میانهٔ سابقه']];
     var lv = [[4, 'بالا', '#b42318'], [3, 'متوسط-بالا', '#e08a00'], [2, 'متوسط', '#d4b200'], [1, 'پایین‌تر', '#4f81c7'], [0, 'بدون ارزیابی', '#c3cad6']];
     var tot = lv.map(function (l) { return cnt(function (x) { return rank(x.threat) === l[0]; }); });
-    return '<div class="cm-ov">' + tiles.map(function (s) { return '<div class="cm-st"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[s[0]] + '</svg><b>' + faN(s[1]) + '</b><span>' + s[2] + '</span></div>'; }).join('') + '</div>' +
+    return '<div class="cm-ov" id="cmOv">' + tiles.map(function (s) { return '<div class="cm-st"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[s[0]] + '</svg><b>' + faN(s[1]) + '</b><span>' + s[2] + '</span></div>'; }).join('') + '</div>' +
       '<div class="cm-thb" role="img" aria-label="پراکندگی سطح تهدید"><div class="cm-thb-bar">' + lv.map(function (l, i) { return tot[i] ? '<i style="flex:' + tot[i] + ';background:' + l[2] + '" title="' + l[1] + ': ' + faN(tot[i]) + '"></i>' : ''; }).join('') + '</div><div class="cm-thb-lg">' + lv.map(function (l, i) { return tot[i] ? '<span><i style="background:' + l[2] + '"></i>' + l[1] + ' ' + faN(tot[i]) + '</span>' : ''; }).join('') + '</div></div>';
   }
   // ---- the areas matrix: who offers what, read from the sites; the empty columns are the openings
@@ -217,7 +233,7 @@
       return '<tr data-open="' + r[0] + '"><th scope="row"><span class="mx-dot" style="background:' + c + '"></span>' + esc(x.name.replace(/\s*\(.*$/, '')) + '</th>' + cells + '</tr>';
     }).join('');
     var foot = '<tr class="mx-foot"><th scope="row">تعداد رقیب در این حوزه</th>' + cnt.map(function (n) { return '<td class="' + (n === min ? 'low' : '') + '">' + faN(n) + '</td>'; }).join('') + '</tr>';
-    return '<section class="cm-sec"><h2>ماتریس حوزه‌ها: هر رقیب کجا فعال است</h2><p class="cm-sub">' + esc(d.areaNote || '') + '</p>' +
+    return '<section class="cm-sec" id="cmMx"><h2>ماتریس حوزه‌ها: هر رقیب کجا فعال است</h2><p class="cm-sub">' + esc(d.areaNote || '') + '</p>' +
       '<div class="cm-legend"><span><i class="mx2" style="background:#1746b5"></i>تمرکز روشن</span><span><i class="mx1" style="border-color:#1746b5"></i>عرضه می‌کند</span><span><i class="mx0"></i>دیده نشد</span><span class="mx-lowkey"><i class="mxlow"></i>کم‌رقیب‌ترین حوزه</span></div>' +
       '<div class="cm-tw"><table class="cm-mx"><thead><tr><th></th>' + cols.map(function (c, i) { return '<th class="' + (cnt[i] === min ? 'low' : '') + '"><span>' + esc(c[1]) + '</span></th>'; }).join('') + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div></section>';
   }
@@ -253,10 +269,10 @@
     if (!S.cmp.length) { if (bar) bar.hidden = true; return; }
     if (!bar) { bar = document.createElement('div'); bar.id = 'cmCmpBar'; bar.className = 'cm-cmpbar'; document.body.appendChild(bar); bar.addEventListener('click', function (e) { if (e.target.closest('[data-cmp-go]') && S.cmp.length >= 2) openCompare(); if (e.target.closest('[data-cmp-clear]')) { S.cmp = []; syncCmp(); } }); }
     bar.hidden = false;
-    bar.innerHTML = '<span>' + faN(S.cmp.length) + ' مورد برای مقایسه</span><button type="button" class="cm-cmp-go" data-cmp-go ' + (S.cmp.length < 2 ? 'disabled' : '') + '>مقایسه</button><button type="button" class="cm-cmp-x" data-cmp-clear aria-label="پاک کردن انتخاب">' + CLOSE + '</button>';
+    bar.innerHTML = '<span class="cm-cmp-n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg><b>' + faN(S.cmp.length) + '</b><small>از ۳</small></span><button type="button" class="cm-cmp-go" data-cmp-go title="نمایش مقایسه" aria-label="نمایش مقایسه" ' + (S.cmp.length < 2 ? 'disabled' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg></button><button type="button" class="cm-cmp-x" data-cmp-clear aria-label="پاک کردن انتخاب">' + CLOSE + '</button>';
   }
   function syncCmp() {
-    Array.prototype.forEach.call(root.querySelectorAll('[data-cmp]'), function (i) { i.checked = S.cmp.indexOf(i.getAttribute('data-cmp')) >= 0; });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-cmp]'), function (i) { i.checked = S.cmp.indexOf(i.getAttribute('data-cmp')) >= 0; i.parentNode.classList.toggle('on', i.checked); });
     cmpBar();
   }
 
@@ -277,7 +293,7 @@
     out += '<p class="cm-lead">' + esc(d.subtitle) + '</p><p class="cm-src">منبع: ' + esc(d.source) + '</p>';
     indexItems(d);
     shown = 0;
-    out += overview() + toolbar() + strategic(d) + market(d) + plain(d.supplementary, 'u') + kpiBoard() + matrix(d) + plain(d.frameworks);
+    out += nav() + overview() + toolbar() + strategic(d) + market(d) + plain(d.supplementary, 'u') + kpiBoard() + matrix(d) + plain(d.frameworks);
     out += '<span id="cmShown" hidden>' + shown + '</span>';
     return out;
   }
@@ -294,6 +310,7 @@
   }
   root.addEventListener('click', function (e) {
     if (e.target.closest('.cm-cmp')) return;
+    var go = e.target.closest('[data-go]'); if (go) { e.preventDefault(); var el = document.getElementById(go.getAttribute('data-go')); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     var kp = e.target.closest('[data-kpi]'); if (kp) { S.kpi = kp.getAttribute('data-kpi'); render(); return; }
     var so = e.target.closest('[data-sort]'); if (so) { S.sort = so.getAttribute('data-sort'); render(); return; }
     var fl = e.target.closest('[data-flt]'); if (fl) { var k = fl.getAttribute('data-flt'); S.f[k] = !S.f[k]; render(); return; }
@@ -306,6 +323,7 @@
     var c = e.target.closest && e.target.closest('[data-cmp]'); if (!c) return;
     var k = c.getAttribute('data-cmp'), i = S.cmp.indexOf(k);
     if (c.checked && i < 0) { if (S.cmp.length >= 3) { c.checked = false; return; } S.cmp.push(k); } else if (!c.checked && i >= 0) S.cmp.splice(i, 1);
+    c.parentNode.classList.toggle('on', c.checked);
     cmpBar();
   });
   root.addEventListener('input', function (e) { if (e.target.id === 'cmQ') { S.q = e.target.value; render(); } });
