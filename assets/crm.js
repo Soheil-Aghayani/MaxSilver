@@ -10,8 +10,8 @@
   firebase.initializeApp(cfg);
   var auth = firebase.auth(), db = firebase.firestore();
   var faInt = new Intl.NumberFormat('fa-IR');
-  var S = { user: null, profile: null, loading: true, error: '', msg: '', list: [], team: [], inv: {}, q: '', flt: 'all', sel: '', log: [], busy: false, shown: 40 };
-  var unsub = null, unsubLog = null, unsubInv = null;
+  var S = { user: null, profile: null, loading: true, error: '', msg: '', list: [], team: [], inv: {}, ful: null, edit: null, cat: null, addQ: '', q: '', flt: 'all', sel: '', log: [], busy: false, shown: 40 };
+  var unsub = null, unsubLog = null, unsubInv = null, unsubFul = null;
   var STATUS = RQ.STATUS, ROUTE = RQ.ROUTE;
   var I = {
     phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
@@ -115,6 +115,39 @@
   dlg.className = 'cr-dialog';
   document.body.appendChild(dlg);
   function row(k, v, ltr) { return '<div><dt>' + k + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + (v ? esc(v) : '—') + '</dd></div>'; }
+  // ---------- editing the items (before the pre-invoice): the specialist, or sales management
+  var BRAND = { 'max-silver': 'مکث‌سیلور', wintora: 'وینتورا', 'torbo-max': 'توربومکس' };
+  function canEditLines(x) { return ['request', 'confirmed'].indexOf(stg(x)) >= 0 && (lead() || (S.user && x.assignee === S.user.uid && !isAM())); }
+  function loadCatalog() {
+    if (S.cat) return Promise.resolve();
+    return Promise.all([fetch('./assets/catalog.json').then(function (r) { return r.json(); }), db.collection('public_config').doc('retired').get().then(function (s) { return s.exists ? (s.data().ids || []) : []; }, function () { return []; })])
+      .then(function (r) { var gone = {}; r[1].forEach(function (id) { gone[id] = true; }); S.cat = r[0].items.filter(function (it) { return !gone[it.id]; }); }, function () { S.cat = []; });
+  }
+  function editHtml(x) {
+    var e = S.edit, q = norm(S.addQ), res = [];
+    if (q && S.cat) res = S.cat.filter(function (it) { return norm(it.name + ' ' + (it.code || '') + ' ' + (it.cat || '')).indexOf(q) >= 0 && !e.lines.some(function (l) { return l.id === it.id; }); }).slice(0, 8);
+    return '<section class="cr-edit"><h3>ویرایش کالاها</h3><p class="cr-hint">با مشتری هماهنگ کنید، سپس تعداد را عوض کنید، کالایی را بردارید یا کالای تازه اضافه کنید. پس از ثبت پیش‌فاکتور دیگر از اینجا ویرایش نمی‌شود.</p>' +
+      '<ul class="cr-el">' + e.lines.map(function (l, i) {
+        return '<li><div><b>' + esc(l.name) + '</b><span dir="ltr">' + esc(l.code || '') + '</span></div><input type="text" inputmode="numeric" data-eq="' + i + '" value="' + esc(RQ.fa(l.qty)) + '" aria-label="تعداد"><button type="button" class="cr-mini danger" data-rm-line="' + i + '">حذف</button></li>';
+      }).join('') + '</ul>' +
+      '<label class="cr-add">افزودن کالا<input type="search" data-add-q value="' + esc(S.addQ) + '" placeholder="جست‌وجوی نام یا کد…" autocomplete="off"></label>' +
+      (q ? '<ul class="cr-ar">' + (res.length ? res.map(function (it) { return '<li><span>' + esc(it.name) + (it.code ? ' <code>' + esc(it.code) + '</code>' : '') + '</span><button type="button" class="cr-mini" data-add-item="' + esc(it.id) + '">افزودن</button></li>'; }).join('') : '<li class="cr-hint">کالایی پیدا نشد.</li>') + '</ul>' : '') +
+      '<div class="cr-acts"><button type="button" class="cr-btn" data-save-lines>ذخیرهٔ کالاها</button><button type="button" class="cr-btn alt" data-cancel-lines>انصراف</button></div></section>';
+  }
+  function saveLines(x) {
+    var e = S.edit, old = x.lines || [], i;
+    if (!e || !e.lines.length) { S.error = 'دست‌کم یک کالا باید بماند.'; showDetail(); return; }
+    for (i = 0; i < e.lines.length; i++) if (!(e.lines[i].qty >= 1 && e.lines[i].qty <= 99)) { S.error = 'تعداد هر کالا بین ۱ و ۹۹ باشد.'; showDetail(); return; }
+    var oldBy = {}, nowBy = {}, parts = [];
+    old.forEach(function (l) { oldBy[l.id] = l; }); e.lines.forEach(function (l) { nowBy[l.id] = l; });
+    e.lines.forEach(function (l) { if (!oldBy[l.id]) parts.push('افزوده شد: ' + l.name + ' × ' + l.qty); else if ((oldBy[l.id].qty || 0) !== l.qty) parts.push(l.name + ': ' + (oldBy[l.id].qty || 0) + ' ← ' + l.qty); });
+    old.forEach(function (l) { if (!nowBy[l.id]) parts.push('حذف شد: ' + l.name); });
+    if (!parts.length) { S.edit = null; showDetail(); return; }
+    var lines = e.lines.map(function (l) { return { id: l.id, code: String(l.code || '').slice(0, 20), name: String(l.name || '').slice(0, 120), brand: String(l.brand || '').slice(0, 40), qty: l.qty }; });
+    S.edit = null;
+    change(x.id, { lines: lines }, 'note', ('کالاها ویرایش شد: ' + parts.join('؛ ')).slice(0, 400));
+  }
+
   // ---------- the stage of an order
   function stockOf(id) { var d = S.inv[id]; return d ? { qty: d.qty || 0, res: d.reserved || 0, free: Math.max(0, (d.qty || 0) - (d.reserved || 0)) } : null; }
   function stageActions(x) {
@@ -141,8 +174,21 @@
     var acts = stageActions(x), hint = '';
     if (isAM() && (cur === 'preinvoice' || cur === 'rejected')) hint = '<p class="cr-hint">برای تأیید یا رد با دلیل، پیش‌فاکتور را در <a href="./panel.html#invoices">پنل ← پیش‌فاکتورها</a> باز کنید.</p>';
     else if (isAM() && !acts.length && cur !== 'delivered' && cur !== 'cancelled' && cur !== 'returned') hint = '<p class="cr-hint">این درخواست هنوز به مرحلهٔ شما نرسیده است.</p>';
-    return '<section><h3>مرحلهٔ سفارش</h3><ol class="cr-steps">' + steps + '</ol>' + side + codes + hint +
+    var rep = S.ful && (cur === 'warehouse' || cur === 'production' || cur === 'ready') ? '<p class="cr-rep' + (S.ful.ready ? ' ok' : '') + '">' + (S.ful.route === 'production' ? 'تولید' : 'انبار') + (S.ful.ready ? ' اعلام کرد: سفارش آماده است' + (S.ful.readyByName ? ' · ' + esc(S.ful.readyByName) : '') + (S.ful.readyAt ? SEP + esc(when(S.ful.readyAt)) : '') + '. مرحله را به «آمادهٔ ارسال» ببرید.' : ' هنوز آماده‌بودن را اعلام نکرده است.') + (S.ful.note ? '<br>' + esc(S.ful.note) : '') + '</p>' : '';
+    return '<section><h3>مرحلهٔ سفارش</h3><ol class="cr-steps">' + steps + '</ol>' + side + codes + rep + hint +
       (acts.length ? '<div class="cr-seg" role="group" aria-label="تغییر مرحله">' + acts.map(function (k) { return '<button type="button" data-stage="' + k + '">' + OF.LABEL[k] + '</button>'; }).join('') + '</div>' : '') + '</section>';
+  }
+  // routing to the warehouse or production hands the lines and the delivery contact to that team; later stages keep their copy in step
+  function fulfilSync(x, k) {
+    if (!isAM() && !lead()) return;
+    var now = Date.now(), ref = db.collection('fulfilment').doc(x.id), c = x.customer || {}, r = x.receiver || {}, self = r.self !== false;
+    if (k === 'warehouse' || k === 'production') {
+      ref.set({ code: x.code, orderCode: x.orderCode || '', route: k, stage: k, lines: (x.lines || []).map(function (l) { return { id: l.id, code: l.code || '', name: l.name || '', brand: l.brand || '', qty: l.qty || 1 }; }),
+        customer: String(c.name || '').slice(0, 80), recipient: String(self ? c.name : r.name || '').slice(0, 80), phone: String(self ? c.phone : r.phone || '').slice(0, 20), city: String(c.city || '').slice(0, 40), address: String(c.address || '').slice(0, 300),
+        ready: false, note: '', updatedAt: now, by: S.user.uid, byName: myName() }).then(null, function () { /* rules not published yet */ });
+    } else if (x.route === 'warehouse' || x.route === 'production') {
+      ref.update({ stage: k, updatedAt: now }).then(null, function () { /* no copy for this order */ });
+    }
   }
   function claimLine(x, i) {
     var l = (x.lines || [])[i]; if (!l || !isAM() || S.busy) return;
@@ -173,7 +219,7 @@
       (S.error ? '<p class="cr-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<section><h3>خریدار</h3><dl class="cr-facts">' + row('نام', c.name) + '<div><dt>موبایل</dt><dd>' + (c.phone ? '<a class="cr-tel" href="tel:' + esc(c.phone) + '" dir="ltr">' + I.phone + esc(RQ.fa(c.phone)) + '</a>' : '—') + '</dd></div>' + row('کد ملی', RQ.fa(c.nid), true) + row('شهر', c.city) + row('کد پستی', c.zip === '1111111111' ? 'ندارد' : RQ.fa(c.zip), c.zip !== '1111111111') + row('نشانی', c.address) + '</dl></section>' +
       '<section><h3>تحویل‌گیرنده</h3>' + (r.self ? '<p class="cr-self">خود خریدار تحویل می‌گیرد.</p>' : '<dl class="cr-facts">' + row('نام', r.name) + row('کد ملی', RQ.fa(r.nid), true) + '<div><dt>موبایل</dt><dd>' + (r.phone ? '<a class="cr-tel" href="tel:' + esc(r.phone) + '" dir="ltr">' + I.phone + esc(RQ.fa(r.phone)) + '</a>' : '—') + '</dd></div></dl>') + '</section>' +
-      '<section><h3>کالاها <small>' + esc(p.concept || '') + (p.size ? ' ' + esc(p.size) : '') + (p.serve ? SEP + esc(p.serve) : '') + '</small></h3><div class="cr-tw"><table class="cr-lines"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th>' + (showInv ? '<th>آزاد در انبار</th><th></th>' : '') + '</tr></thead><tbody>' + lines + '</tbody></table></div>' + (x.note ? '<p class="cr-self">توضیح مشتری: ' + esc(x.note) + '</p>' : '') + '</section>' +
+      '<section><h3>کالاها <small>' + esc(p.concept || '') + (p.size ? ' ' + esc(p.size) : '') + (p.serve ? SEP + esc(p.serve) : '') + '</small></h3><div class="cr-tw"><table class="cr-lines"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th>' + (showInv ? '<th>آزاد در انبار</th><th></th>' : '') + '</tr></thead><tbody>' + lines + '</tbody></table></div>' + (x.note ? '<p class="cr-self">توضیح مشتری: ' + esc(x.note) + '</p>' : '') + (canEditLines(x) && !(S.edit && S.edit.id === x.id) ? '<button type="button" class="cr-btn alt" data-edit-lines>ویرایش کالاها</button>' : '') + '</section>' + (S.edit && S.edit.id === x.id ? editHtml(x) : '') +
       stageSection(x) +
       (isAM() ? '' : '<section><h3>تصمیم</h3><p class="cr-hint">«نیاز به تماس» یعنی هنوز با مشتری صحبت نشده. پس از تماس و اطمینان از خریدار، مشخص کنید درخواست به انبار برود یا به تولید.</p>' +
       '<div class="cr-seg" role="radiogroup" aria-label="تصمیم ارسال">' + Object.keys(ROUTE).map(function (k) { return '<button type="button" role="radio" data-route="' + k + '" aria-checked="' + (x.route === k) + '">' + ROUTE[k] + '</button>'; }).join('') + '</div>' +
@@ -192,13 +238,16 @@
   }
   function openReq(id) {
     S.sel = id; S.log = []; S.error = ''; dlg.innerHTML = ''; showDetail();
+    var xo = byId(id); if (xo && window.MSNotify && window.MSNotify.ack) window.MSNotify.ack(id, stg(xo));
+    S.ful = null; if (unsubFul) { unsubFul(); unsubFul = null; }
+    if (isAM() || lead()) unsubFul = db.collection('fulfilment').doc(id).onSnapshot(function (s) { S.ful = s.exists ? s.data() : null; if (S.sel === id && !S.edit) showDetail(); }, function () { /* no report */ });
     if (unsubLog) { unsubLog(); unsubLog = null; }
     unsubLog = db.collection('requests').doc(id).collection('log').orderBy('at', 'desc').limit(60).onSnapshot(function (snap) {
       S.log = []; snap.forEach(function (s) { S.log.push(s.data()); });
       if (S.sel === id) { var t = dlg.querySelector('[data-text]'), v = t ? t.value : ''; showDetail(); var t2 = dlg.querySelector('[data-text]'); if (t2 && v) t2.value = v; }
     }, function () { /* the history stays empty */ });
   }
-  function closeReq() { S.sel = ''; if (unsubLog) { unsubLog(); unsubLog = null; } if (dlg.open) dlg.close(); }
+  function closeReq() { S.sel = ''; S.edit = null; if (unsubFul) { unsubFul(); unsubFul = null; } if (unsubLog) { unsubLog(); unsubLog = null; } if (dlg.open) dlg.close(); }
 
   // ---------- writes: one change plus one history line, together
   function change(id, fields, kind, text) {
@@ -207,7 +256,7 @@
     b.update(ref, upd);
     b.set(ref.collection('log').doc(), { at: now, by: S.user.uid, byName: myName(), kind: kind, text: String(text || '').slice(0, 400) });
     S.error = ''; S.busy = true;
-    return b.commit().then(null, function (e) { S.error = errText(e); }).then(function () { S.busy = false; showDetail(); render(); });
+    return b.commit().then(function () { if (fields && fields.stage) OF.status(db, id, fields.stage); }, function (e) { S.error = errText(e); }).then(function () { S.busy = false; showDetail(); render(); });
   }
   function toProforma(x) {
     var c = x.customer || {}, key = 'ms-proforma-v1', inv = null;
@@ -262,9 +311,14 @@
     if ((t = e.target.closest('[data-route]'))) { var k = t.getAttribute('data-route'); if (k !== x.route) change(x.id, { route: k }, 'route', ROUTE[k]); return; }
     if ((t = e.target.closest('[data-stage]'))) {
       var sk = t.getAttribute('data-stage');
-      if (sk !== stg(x)) { if ((sk === 'cancelled' || sk === 'returned') && !window.confirm('مرحلهٔ «' + OF.LABEL[sk] + '» ثبت شود؟')) return; change(x.id, stageFields(sk), 'status', 'مرحله: ' + OF.LABEL[sk]); }
+      if (sk !== stg(x)) { if ((sk === 'cancelled' || sk === 'returned') && !window.confirm('مرحلهٔ «' + OF.LABEL[sk] + '» ثبت شود؟')) return; change(x.id, stageFields(sk), 'status', 'مرحله: ' + OF.LABEL[sk]).then(function () { fulfilSync(x, sk); }); }
       return;
     }
+    if (e.target.closest('[data-edit-lines]')) { if (canEditLines(x)) { S.edit = { id: x.id, lines: (x.lines || []).map(function (l) { return { id: l.id, code: l.code, name: l.name, brand: l.brand, qty: l.qty || 1 }; }) }; S.addQ = ''; S.error = ''; loadCatalog().then(showDetail); showDetail(); } return; }
+    if (e.target.closest('[data-cancel-lines]')) { S.edit = null; S.addQ = ''; showDetail(); return; }
+    if (e.target.closest('[data-save-lines]')) { saveLines(x); return; }
+    if ((t = e.target.closest('[data-rm-line]'))) { S.edit.lines.splice(Number(t.getAttribute('data-rm-line')), 1); showDetail(); return; }
+    if ((t = e.target.closest('[data-add-item]'))) { var it = (S.cat || []).filter(function (c) { return c.id === t.getAttribute('data-add-item'); })[0]; if (it && S.edit) { S.edit.lines.push({ id: it.id, code: it.code || '', name: it.name, brand: BRAND[it.src] || '', qty: 1 }); S.addQ = ''; showDetail(); } return; }
     if ((t = e.target.closest('[data-claim-line]'))) { claimLine(x, Number(t.getAttribute('data-claim-line'))); return; }
     if ((t = e.target.closest('[data-assign]'))) { var u = S.team.filter(function (m) { return m.id === t.getAttribute('data-assign'); })[0]; if (u && u.id !== x.assignee) change(x.id, { assignee: u.id, assigneeName: u.name }, 'assign', u.name); return; }
     var box = dlg.querySelector('[data-text]'), txt = box ? box.value.trim() : '';
@@ -275,6 +329,11 @@
     if (e.target.closest('[data-lognote]')) { if (!txt) { S.error = 'یادداشت را بنویسید.'; showDetail(); return; } change(x.id, {}, 'note', txt); return; }
     if (e.target.closest('[data-proforma]')) toProforma(x);
     if (e.target.closest('[data-delete]')) removeReq(x);
+  });
+  dlg.addEventListener('input', function (e) {
+    var el = e.target;
+    if (el.hasAttribute && el.hasAttribute('data-eq') && S.edit) { var v = Number(RQ.latin(el.value).replace(/\D/g, '')); S.edit.lines[Number(el.getAttribute('data-eq'))].qty = v; var fa = v ? RQ.fa(v) : ''; if (el.value !== fa) el.value = fa; return; }
+    if (el.hasAttribute && el.hasAttribute('data-add-q')) { S.addQ = el.value; var at = el.selectionStart; showDetail(); var n = dlg.querySelector('[data-add-q]'); if (n) { n.focus(); try { n.setSelectionRange(at, at); } catch (x) { /* ignore */ } } }
   });
   dlg.addEventListener('close', function () { S.sel = ''; if (unsubLog) { unsubLog(); unsubLog = null; } });
 
@@ -292,7 +351,7 @@
     if (unsubInv) { unsubInv(); unsubInv = null; }
     if (!(isAM() || lead())) return;
     unsubInv = db.collection('inventory').onSnapshot(function (snap) {
-      var m = {}; snap.forEach(function (s) { m[s.id] = s.data(); }); S.inv = m; if (S.sel) showDetail();
+      var m = {}; snap.forEach(function (s) { m[s.id] = s.data(); }); S.inv = m; if (S.sel && !S.edit) showDetail();
     }, function () { /* no stock column */ });
   }
   function loadTeam() {

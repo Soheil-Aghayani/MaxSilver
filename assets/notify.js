@@ -108,7 +108,7 @@
   var seenMap = j(SEEN, {});
   function commit() {
     var list = [];
-    ['ticket', 'public', 'commission', 'requests'].forEach(function (k) { (parts[k] || []).forEach(function (x) { list.push(x); }); });
+    ['ticket', 'public', 'commission', 'requests', 'fulfil'].forEach(function (k) { (parts[k] || []).forEach(function (x) { list.push(x); }); });
     put(KEY, { at: Date.now(), role: role(), uid: me, items: list });
     paint();
     try { w.dispatchEvent(new CustomEvent('ms-notify')); } catch (e) { /* ignore */ }
@@ -162,16 +162,59 @@
       fresher.forEach(function (x) { announce('پیام بیرونی تازه', (x.name ? x.name + ': ' : '') + (x.text || ''), './panel.html#public', 'pub'); });
     }, function () { /* ignore */ }));
   }
-  // purchase requests from the public planner: management sees the new ones, a salesperson the new ones given to them
+  // purchase requests: management sees the new ones; a salesperson the new ones given to them and every later stage of theirs
+  // (accepted, rejected, warehouse, shipped…) until they open it; the account manager the accepted orders that still need a route
+  var STAGE_LABEL = { accepted: 'تأیید اکانت منیجر', rejected: 'رد اکانت منیجر', warehouse: 'در انبار', production: 'در تولید', ready: 'آمادهٔ ارسال', shipped: 'ارسال شد', delivered: 'تحویل شد', returned: 'مرجوع شد', cancelled: 'لغو شد' };
+  function stageOf(x) {
+    if (x.stage) return x.stage;
+    return x.status === 'won' ? 'delivered' : x.status === 'lost' ? 'cancelled' : x.status === 'quoted' ? 'preinvoice' : x.status === 'contacted' ? 'confirmed' : 'request';
+  }
+  var ACK = 'ms-stage-ack-v1', reqRecount = null;
   function watchRequests(r) {
-    var col = db.collection('requests'), lead = r === 'manager' || r === 'ceo' || r === 'sales_manager';
-    var q = lead ? col : col.where('assignee', '==', me);
-    unsubs.push(q.onSnapshot(function (snap) {
-      var n = 0, fresher = [];
-      snap.forEach(function (s) { var x = s.data(); if (x.status === 'new') { n++; if (fresh('req-' + s.id, x.createdAt || 0)) fresher.push(x); } });
-      parts.requests = n ? [{ kind: 'request', n: n, text: fa.format(n) + ' درخواست خرید تازه', href: './crm.html' }] : [];
+    var col = db.collection('requests'), lead = r === 'manager' || r === 'ceo' || r === 'sales_manager', am = r === 'account_manager';
+    var q = lead || am ? col : col.where('assignee', '==', me), cache = {};
+    function onData(loud) {
+      var ack = j(ACK, {}), n = 0, fresher = [], moves = [], routes = [], newMoves = [], newRoutes = [];
+      Object.keys(cache).forEach(function (id) {
+        var x = cache[id], st = stageOf(x);
+        if (!am && x.status === 'new' && st === 'request') { n++; if (fresh('req-' + id, x.createdAt || 0)) fresher.push(x); }
+        if (r === 'visitor' && STAGE_LABEL[st] && ack[id] !== st) { moves.push(x); if (fresh('stg-' + id + '-' + st, x.updatedAt || 0)) newMoves.push({ x: x, st: st }); }
+        if (am && st === 'accepted') { routes.push(x); if (fresh('am-' + id, x.updatedAt || 0)) newRoutes.push(x); }
+      });
+      var list = [];
+      if (n) list.push({ kind: 'request', n: n, text: fa.format(n) + ' درخواست خرید تازه', href: './crm.html' });
+      if (moves.length) list.push({ kind: 'stage', n: moves.length, text: fa.format(moves.length) + ' درخواست شما مرحلهٔ تازه دارد', href: './crm.html' });
+      if (routes.length) list.push({ kind: 'route', n: routes.length, text: fa.format(routes.length) + ' سفارش تأییدشده منتظر تعیین مسیر انبار یا تولید است', href: './crm.html' });
+      parts.requests = list;
       commit();
+      if (!loud) return;
       fresher.forEach(function (x) { announce('درخواست خرید تازه', ((x.customer && x.customer.name) || '') + (x.plan ? ' · ' + x.plan.concept : ''), './crm.html', 'req'); });
+      newMoves.forEach(function (m) { announce('مرحلهٔ درخواست عوض شد', (m.x.code || '') + ' · ' + STAGE_LABEL[m.st], './crm.html', 'stg'); });
+      newRoutes.forEach(function (x) { announce('سفارش تأیید شد', (x.code || '') + ' · مسیر انبار یا تولید را تعیین کنید', './crm.html', 'am'); });
+    }
+    reqRecount = function () { onData(false); };
+    unsubs.push(q.onSnapshot(function (snap) {
+      snap.forEach(function (s) { cache[s.id] = s.data(); });
+      onData(true);
+    }, function () { /* ignore */ }));
+  }
+  // orders routed to the warehouse or production (their list), and the team's «ready» report (the account manager)
+  function watchFulfilment(r) {
+    var am = r === 'account_manager' || r === 'manager';
+    unsubs.push(db.collection('fulfilment').onSnapshot(function (snap) {
+      var wait = 0, ready = 0, fw = [], fr = [];
+      snap.forEach(function (s) {
+        var x = s.data(), mine = r === 'operations' ? x.route === 'warehouse' : r === 'production' ? x.route === 'production' : true, live = x.stage === 'warehouse' || x.stage === 'production';
+        if (!mine || !live) return;
+        if (!x.ready) { if (!am) { wait++; if (fresh('ful-' + s.id, x.updatedAt || 0)) fw.push(x); } }
+        else if (am) { ready++; if (fresh('rdy-' + s.id, x.readyAt || 0)) fr.push(x); }
+      });
+      var list = [];
+      if (wait) list.push({ kind: 'fulfil', n: wait, text: fa.format(wait) + ' سفارش منتظر آماده‌سازی شماست', href: './warehouse.html' });
+      if (ready) list.push({ kind: 'ready', n: ready, text: fa.format(ready) + ' سفارش را انبار یا تولید آماده اعلام کرده؛ مرحله را ثبت کنید', href: './crm.html' });
+      parts.fulfil = list; commit();
+      fw.forEach(function (x) { announce('سفارش تازه برای آماده‌سازی', (x.orderCode || x.code || '') + ' · ' + ((x.lines || []).length) + ' قلم', './warehouse.html', 'ful'); });
+      fr.forEach(function (x) { announce('سفارش آماده است', (x.orderCode || x.code || '') + (x.readyByName ? ' · ' + x.readyByName : ''), './crm.html', 'rdy'); });
     }, function () { /* ignore */ }));
   }
   function watchCommission(r) {
@@ -229,6 +272,7 @@
           if (r === 'manager' || r === 'ceo' || r === 'sales_manager' || r === 'service') watchPublic(r);
           if (w.MSRoles.can(r, 'commission')) watchCommission(r);
           if (w.MSRoles.can(r, 'crm')) watchRequests(r);
+          if (r === 'operations' || r === 'production' || r === 'account_manager' || r === 'manager') watchFulfilment(r);
           // everything that existed before this visit is the baseline: only later changes pop up
           setTimeout(function () { baseline.done = true; }, 4000);
         });
@@ -242,7 +286,9 @@
     refresh: function () { start(); return Promise.resolve(); },
     prefs: prefs, setPrefs: setPrefs, askPermission: askPermission,
     permission: function () { return 'Notification' in w ? Notification.permission : 'unsupported'; },
-    announce: announce
+    announce: announce,
+    // the person opened a request: its current stage no longer counts as new
+    ack: function (code, stage) { var a = j(ACK, {}); a[code] = stage; put(ACK, a); if (reqRecount) reqRecount(); }
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   w.addEventListener('storage', function (e) { if (e.key === 'ms-role') { started = false; start(); } });

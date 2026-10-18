@@ -89,3 +89,15 @@
 .cr-side{margin:0 0 8px;padding:8px 12px;border-radius:12px;font-weight:800;font-size:13px}
 .cr-lines .okq{color:#0c6b3d;font-weight:800}.cr-lines .noq{color:#b54708;font-weight:700}
 .cr-mini{min-height:30px;padding:0 10px;border:1px solid var(--ms-navy);border-radius:8px;background:#fff;color:var(--ms-navy);font:800 12px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+
+/* editing the items of a request */
+.cr-edit{display:grid;gap:8px;padding:12px 14px;border:1px solid #ffcc2a;border-radius:16px;background:#fffbe9}
+.cr-el,.cr-ar{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.cr-el li{display:grid;grid-template-columns:minmax(0,1fr) 64px auto;gap:8px;align-items:center;padding:6px 8px;border-radius:12px;background:#fff}
+.cr-el li div{display:grid;gap:2px;min-width:0}.cr-el li b{font-size:13.5px;color:var(--ms-navy)}.cr-el li span{color:var(--ms-muted);font-size:12px}
+.cr-el input,.cr-add input{min-height:40px;padding:0 10px;border:1px solid var(--ms-line);border-radius:10px;font:700 14px/1 Estedad,Tahoma,sans-serif;text-align:center;box-sizing:border-box;width:100%}
+.cr-add{display:grid;gap:4px;color:var(--ms-muted);font-size:12px;font-weight:700}.cr-add input{text-align:start}
+.cr-ar li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:#fff;font-size:13px}
+.cr-mini.danger{border-color:#b42318;color:#b42318}
+
+.cr-rep{margin:0 0 8px;padding:8px 12px;border-radius:12px;background:#fff6d6;color:#7a5b00;font-size:13px;font-weight:700;line-height:1.9}.cr-rep.ok{background:#e8f7ee;color:#0c6b3d}

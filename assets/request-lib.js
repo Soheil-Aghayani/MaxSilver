@@ -104,7 +104,11 @@
     // write an update, which the rules refuse for an anonymous visitor (permission-denied); then a new number is tried.
     function attempt(k) {
       var code = buildCode(payload.customer.city, day, rand4());
-      return db.collection('requests').doc(code).set(Object.assign({ code: code, createdAt: Date.now(), status: 'new', route: 'call' }, payload)).then(function () { return code; },
+      return db.collection('requests').doc(code).set(Object.assign({ code: code, createdAt: Date.now(), status: 'new', route: 'call' }, payload)).then(function () {
+        // the public tracking document (stage only), so the customer can follow the request with the code
+        db.collection('request_status').doc(code).set({ stage: 'request', updatedAt: Date.now() }).then(null, function () { /* not published yet */ });
+        return code;
+      },
         function (e) { if (k < 8 && /permission-denied/.test(e && e.code || '')) return attempt(k + 1); throw e; });
     }
     return go.then(function () { return attempt(0); }).then(function (code) { return auth.signOut().then(function () { return code; }, function () { return code; }); },

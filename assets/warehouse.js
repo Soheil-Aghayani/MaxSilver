@@ -13,8 +13,8 @@
   var auth = firebase.auth(), db = firebase.firestore();
   var faInt = new Intl.NumberFormat('fa-IR');
   var BR = { 'max-silver': 'مکث‌سیلور', wintora: 'وینتورا', 'torbo-max': 'توربومکس' };
-  var S = { user: null, profile: null, loading: true, items: [], inv: {}, claims: [], q: '', brand: 'all', flt: 'all', shown: 50, draft: {}, claim: '', cIn: { qty: '1', ref: '' }, msg: '', error: '', imp: null, busy: '' };
-  var unsubInv = null, unsubCl = null;
+  var S = { user: null, profile: null, loading: true, items: [], inv: {}, claims: [], ful: [], q: '', brand: 'all', flt: 'all', shown: 50, draft: {}, claim: '', cIn: { qty: '1', ref: '' }, msg: '', error: '', imp: null, busy: '' };
+  var unsubInv = null, unsubCl = null, unsubFul = null;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function latin(s) { return String(s == null ? '' : s).replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); }).replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 1632); }); }
@@ -81,6 +81,23 @@
         (can('warehouseClaim') ? '<span class="wh-cb"><button type="button" class="wh-btn alt" data-rel="' + esc(c.id) + '">آزادسازی</button><button type="button" class="wh-btn" data-ship="' + esc(c.id) + '">ارسال شد</button></span>' : '') + '</li>';
     }).join('') + '</ul></section>';
   }
+  // orders routed to this team: the lines and the delivery contact; the team reports «ready», the account manager moves the stage
+  function roleKey() { return window.MSRoles ? window.MSRoles.norm(S.profile.role) : ''; }
+  function canReady(f) { var r = roleKey(); return r === 'manager' || (r === 'operations' && f.route === 'warehouse') || (r === 'production' && f.route === 'production'); }
+  function fulHtml() {
+    var r = roleKey(), list = S.ful.filter(function (f) { return ['warehouse', 'production', 'ready'].indexOf(f.stage) >= 0 && (r === 'operations' ? f.route === 'warehouse' : r === 'production' ? f.route === 'production' : true); });
+    if (!list.length) return '';
+    return '<section class="wh-fl"><h2>سفارش‌های آماده‌سازی <small>' + faInt.format(list.length) + '</small></h2><ul>' + list.map(function (f) {
+      return '<li class="' + (f.ready ? 'ok' : '') + '"><div class="wh-fh"><b dir="ltr">' + esc(f.orderCode || f.code) + '</b><span>' + (f.route === 'production' ? 'تولید' : 'انبار') + (f.ready ? ' · آماده اعلام شد' : ' · منتظر آماده‌سازی') + '</span></div>' +
+        '<ul class="wh-fi">' + (f.lines || []).map(function (l) { var s = stock(l.id); return '<li><span>' + esc(l.name) + '</span><b>' + faInt.format(l.qty || 0) + '</b>' + (f.route === 'warehouse' ? '<small>آزاد: ' + faInt.format(s ? s.free : 0) + '</small>' : '') + '</li>'; }).join('') + '</ul>' +
+        '<p class="wh-fc">' + esc(f.recipient || f.customer || '') + (f.phone ? ' · <span dir="ltr">' + esc(f.phone) + '</span>' : '') + (f.city ? ' · ' + esc(f.city) : '') + (f.address ? '<br>' + esc(f.address) : '') + '</p>' +
+        (canReady(f) ? '<div class="wh-cb"><button type="button" class="wh-btn' + (f.ready ? ' alt' : '') + '" data-fready="' + esc(f.id) + '" data-on="' + (!f.ready) + '">' + (f.ready ? 'هنوز آماده نیست' : 'آماده است') + '</button></div>' : '') + '</li>';
+    }).join('') + '</ul></section>';
+  }
+  function setReady(id, on) {
+    S.error = ''; S.msg = '';
+    db.collection('fulfilment').doc(id).update({ ready: on, readyAt: on ? Date.now() : 0, readyBy: on ? S.user.uid : '', readyByName: on ? myName() : '', updatedAt: Date.now() }).then(function () { S.msg = on ? 'اعلام شد؛ اکانت منیجر خبردار می‌شود.' : 'برگشت داده شد.'; }, function (e) { S.error = errText(e); }).then(render);
+  }
   function impHtml() {
     var m = S.imp; if (!m) return '';
     return '<section class="wh-imp"><h2>پیش‌نمایش بارگذاری: ' + esc(m.name) + '</h2><p class="wh-lead">' + faInt.format(m.rows.length) + ' کالا تغییر می‌کند · ' + faInt.format(m.same) + ' بدون تغییر' + (m.errs.length ? ' · ' + faInt.format(m.errs.length) + ' ردیف دارای خطا' : '') + '</p>' +
@@ -95,7 +112,7 @@
       '<div class="wh-bar"><input id="whQ" type="search" placeholder="جست‌وجوی نام، کد، دسته…" value="' + esc(S.q) + '" autocomplete="off"></div>' +
       '<div class="wh-chips" role="group" aria-label="برند">' + chip('data-brand', 'all', S.brand === 'all', 'همه برندها') + Object.keys(BR).map(function (k) { return chip('data-brand', k, S.brand === k, BR[k]); }).join('') + '</div>' +
       '<div class="wh-chips" role="group" aria-label="وضعیت موجودی">' + chip('data-flt', 'all', S.flt === 'all', 'همه') + chip('data-flt', 'stock', S.flt === 'stock', 'موجود', n.stock) + chip('data-flt', 'free', S.flt === 'free', 'آزاد', n.free) + chip('data-flt', 'claimed', S.flt === 'claimed', 'رزرو‌شده', n.claimed) + chip('data-flt', 'none', S.flt === 'none', 'بدون موجودی', n.none) + '</div>' +
-      '<div class="wh-tools"><button type="button" class="wh-btn alt" data-tpl>دانلود قالب Excel انبار</button>' + (edit ? '<label class="wh-btn">بارگذاری قالب پرشده<input type="file" id="whFile" accept=".xlsx,.xls" hidden></label>' : '') + '</div>' + impHtml() + claimsHtml() +
+      '<div class="wh-tools"><button type="button" class="wh-btn alt" data-tpl>دانلود قالب Excel انبار</button>' + (edit ? '<label class="wh-btn">بارگذاری قالب پرشده<input type="file" id="whFile" accept=".xlsx,.xls" hidden></label>' : '') + '</div>' + impHtml() + fulHtml() + claimsHtml() +
       '<div class="wh-list" id="whList">' + list.slice(0, S.shown).map(row).join('') + '</div>' +
       (list.length > S.shown ? '<button type="button" class="wh-more" data-more>نمایش بیشتر (' + faInt.format(list.length - S.shown) + ')</button>' : '') + (list.length ? '' : '<p class="wh-note">محصولی پیدا نشد.</p>');
   }
@@ -226,6 +243,7 @@
     if (e.target.closest('[data-tpl]')) { downloadTemplate(); return; }
     if (e.target.closest('[data-impok]')) { applyImport(); return; }
     if (e.target.closest('[data-impno]')) { S.imp = null; render(); return; }
+    if ((t = e.target.closest('[data-fready]'))) { setReady(t.getAttribute('data-fready'), t.getAttribute('data-on') === 'true'); return; }
     if ((t = e.target.closest('[data-save]'))) { save(rowId(t)); return; }
     if ((t = e.target.closest('[data-claim]'))) { S.claim = rowId(t); S.cIn = { qty: '1', ref: '' }; render(); return; }
     if (e.target.closest('[data-claimno]')) { S.claim = ''; render(); return; }
@@ -251,7 +269,8 @@
 
   // ---------- data: the catalog once, stock and claims live
   function listen() {
-    if (unsubInv) unsubInv(); if (unsubCl) unsubCl();
+    if (unsubInv) unsubInv(); if (unsubCl) unsubCl(); if (unsubFul) unsubFul();
+    unsubFul = db.collection('fulfilment').onSnapshot(function (snap) { var l = []; snap.forEach(function (s) { var d = s.data(); d.id = s.id; l.push(d); }); l.sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); }); S.ful = l; if (!S.loading) render(); }, function () { /* no orders list */ });
     unsubInv = db.collection('inventory').onSnapshot(function (snap) {
       var m = {}; snap.forEach(function (s) { m[s.id] = s.data(); });
       S.inv = m; if (!S.loading) render();
@@ -263,7 +282,7 @@
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.items = []; S.inv = {}; S.claims = [];
-    if (unsubInv) { unsubInv(); unsubInv = null; } if (unsubCl) { unsubCl(); unsubCl = null; }
+    if (unsubInv) { unsubInv(); unsubInv = null; } if (unsubCl) { unsubCl(); unsubCl = null; } if (unsubFul) { unsubFul(); unsubFul = null; }
     if (!u) { S.loading = false; render(); return; }
     S.loading = true; render();
     var catalog = fetch('./assets/catalog.json' + (VER ? '?v=' + VER : '')).then(function (r) { return r.json(); });

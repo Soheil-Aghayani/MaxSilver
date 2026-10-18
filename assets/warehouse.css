@@ -52,3 +52,10 @@
 .wh-tbl{width:100%;border-collapse:collapse;font-size:13px}.wh-tbl th{position:sticky;top:0;padding:8px 10px;background:#10243f;color:#fff;text-align:start}.wh-tbl td{padding:8px 10px;border-top:1px solid #e9edf3}
 .wh-more{min-height:46px;border:1px solid var(--ms-line);border-radius:14px;background:#fff;color:var(--ms-navy);font:800 14px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
 @media(max-width:760px){.wh-sum{grid-template-columns:repeat(2,minmax(0,1fr))}.wh-row{grid-template-columns:56px minmax(0,1fr)}.wh-nums{grid-column:1/-1}.wh-edit,.wh-claim{grid-column:1/-1;grid-template-columns:1fr 1fr}.wh-edit .wide{grid-column:1/-1}.wh-act{grid-column:1/-1}}
+
+/* orders to prepare */
+.wh-fl{display:grid;gap:8px;padding:12px 14px;border:1px solid #14b862;border-radius:16px;background:#f6fffa}.wh-fl h2 small{color:var(--ms-muted)}
+.wh-fl>ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}.wh-fl>ul>li{display:grid;gap:6px;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--ms-line)}.wh-fl>ul>li.ok{border-color:#14b862}
+.wh-fh{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.wh-fh b{color:var(--ms-navy);font-size:13.5px}.wh-fh span{color:var(--ms-muted);font-size:12px;font-weight:700}
+.wh-fi{margin:0;padding:0;list-style:none;display:grid;gap:3px}.wh-fi li{display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:13.5px}.wh-fi small{color:#0c6b3d;font-weight:700}
+.wh-fc{margin:0;color:var(--ms-muted);font-size:12.5px;line-height:1.9}

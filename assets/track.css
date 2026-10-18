@@ -1,0 +1,17 @@
+/* customer tracking */
+.tk{width:min(640px,100%);margin:0 auto;padding:18px 16px 64px;display:grid;gap:14px}
+.tk h1{margin:0;color:var(--ms-navy);font-size:clamp(22px,3.2vw,30px);line-height:1.5}
+.tk-lead,.tk-note{margin:0;color:var(--ms-muted);font-size:13.5px;line-height:1.95}.tk-note{font-size:12.5px}
+.tk-form{display:grid;gap:10px}.tk-form label{display:grid;gap:4px;color:var(--ms-muted);font-size:12.5px;font-weight:700}
+.tk-form input{min-height:50px;padding:0 14px;border:1px solid var(--ms-line);border-radius:14px;background:#fff;color:var(--ms-navy);font:800 15px/1 Estedad,Tahoma,sans-serif;box-sizing:border-box;width:100%;text-align:start}
+.tk-form input:focus{outline:3px solid #90adff;outline-offset:1px}
+.tk-btn{min-height:50px;border:0;border-radius:14px;background:var(--ms-navy);color:#fff;font:800 15px/1 Estedad,Tahoma,sans-serif;cursor:pointer}.tk-btn[disabled]{opacity:.6}
+.tk-err{margin:0;padding:10px 14px;border-radius:12px;background:#fff1f0;color:#b42318;font-size:13.5px;font-weight:700;line-height:1.9}
+.tk-card{display:grid;gap:10px;padding:16px 18px;border:1px solid var(--ms-line);border-radius:20px;background:#fff;box-shadow:var(--ms-shadow)}
+.tk-top{display:flex;justify-content:space-between;gap:8px;align-items:center;color:var(--ms-muted);font-size:12px}.tk-top b{color:var(--ms-navy);font-size:13px}
+.tk-card h2{margin:0;color:var(--ms-navy);font-size:19px;line-height:1.6}.tk-card p{margin:0;color:var(--ms-ink);font-size:14px;line-height:1.95}
+.tk-steps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:6px 0 0;padding:0;list-style:none}
+.tk-steps li{display:grid;justify-items:center;gap:4px;text-align:center;color:var(--ms-muted);font-size:11px;font-weight:700;line-height:1.5}
+.tk-steps i{width:14px;height:14px;border-radius:50%;background:#e4e9f2;box-shadow:0 0 0 3px #f3f5f7}
+.tk-steps .done i{background:#14b862}.tk-steps .done{color:var(--ms-ink)}.tk-steps .on i{background:var(--ms-gold,#ffcc2a);box-shadow:0 0 0 3px rgba(255,204,42,.35)}.tk-steps .on{color:var(--ms-navy);font-weight:900}
+@media(max-width:520px){.tk-steps{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:10px}}

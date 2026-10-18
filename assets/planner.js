@@ -321,7 +321,7 @@
     return '<div class="pl-done"><div class="pl-seal" aria-hidden="true"><svg viewBox="0 0 52 52"><circle class="c" cx="26" cy="26" r="24"/><path class="t" d="M15 27l8 8 15-17"/></svg>' + sparks + '</div>' +
       '<h1>درخواست شما ثبت شد</h1><p class="pl-lead">کارشناس فروش به‌زودی با شمارهٔ <b dir="ltr">' + esc(toFa(d.customer.phone)) + '</b> تماس می‌گیرد.</p>' +
       '<div class="pl-codebox"><span>کد پیگیری شما</span><b dir="ltr" id="plCode">' + esc(d.code) + '</b><button type="button" class="pl-copy" data-copy aria-label="کپی کد پیگیری">' + IC_COPY + '<span>کپی</span></button></div>' +
-      '<p class="pl-note">این کد را نگه دارید و هنگام تماس با فروش بگویید.</p></div>' +
+      '<p class="pl-note">این کد را نگه دارید و هنگام تماس با فروش بگویید.</p><a class="pl-btn ghost" href="./track.html?code=' + encodeURIComponent(d.code) + '">پیگیری درخواست</a></div>' +
       '<div class="pl-sheetbox">' + window.MSInvoice.html(doc, sheetHelpers(), 'chefmarket') + '</div>' +
       '<div class="pl-bar"><button type="button" class="pl-btn ghost" data-newplan>طرح تازه</button><button type="button" class="pl-btn primary" data-print>چاپ یا ذخیرهٔ PDF</button></div>';
   }

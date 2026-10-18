@@ -307,13 +307,15 @@ service cloud.firestore {
       allow update: if request.resource.data.status in ['new', 'contacted', 'quoted', 'won', 'lost']
         && request.resource.data.route in ['call', 'warehouse', 'production']
         && request.resource.data.get('stage', 'request') in ['request', 'confirmed', 'preinvoice', 'rejected', 'accepted', 'warehouse', 'production', 'ready', 'shipped', 'delivered', 'returned', 'cancelled']
+        && request.resource.data.lines is list && request.resource.data.lines.size() >= 1 && request.resource.data.lines.size() <= 40
         // stage: the specialist moves a request to «confirmed» and issues the pre-invoice (the app writes `preinvoice` and the numbers);
         // the account manager accepts, rejects and carries the order on; the sales manager and management may set any stage
         && ((salesLead()
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'assignee', 'assigneeName', 'updatedAt', 'lastNote', 'stage', 'proformaNo', 'orderCode', 'proformaUid', 'rejectReason']))
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'assignee', 'assigneeName', 'updatedAt', 'lastNote', 'stage', 'proformaNo', 'orderCode', 'proformaUid', 'rejectReason', 'lines']))
             || (hasRole(['visitor']) && resource.data.get('assignee', '') == request.auth.uid
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'updatedAt', 'lastNote', 'stage', 'proformaNo', 'orderCode', 'proformaUid'])
-              && request.resource.data.get('stage', 'request') in ['request', 'confirmed', 'preinvoice', 'cancelled'])
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'updatedAt', 'lastNote', 'stage', 'proformaNo', 'orderCode', 'proformaUid', 'lines'])
+              && request.resource.data.get('stage', 'request') in ['request', 'confirmed', 'preinvoice', 'cancelled']
+              && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lines']) || resource.data.get('stage', 'request') in ['request', 'confirmed']))
             || (hasRole(['account_manager'])
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['route', 'updatedAt', 'lastNote', 'stage', 'rejectReason'])
               && request.resource.data.get('stage', 'request') in ['accepted', 'rejected', 'warehouse', 'production', 'ready', 'shipped', 'delivered', 'returned', 'cancelled']));
@@ -431,6 +433,37 @@ service cloud.firestore {
       allow read: if approved();
       allow create: if approved() && request.resource.data.keys().hasOnly(['uid', 'at']) && request.resource.data.uid == request.auth.uid;
       allow update, delete: if false;
+    }
+
+    // Public tracking: request_status/<request code> holds only the stage and a time. Anyone who knows the code may read that one document
+    // (no listing). The planner creates it with the request; staff keep it in step with the stage.
+    match /request_status/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if code.matches('CON-[A-Z]{3}-[0-9]{6}-[0-9]{3,5}')
+        && request.resource.data.keys().hasOnly(['stage', 'updatedAt']) && request.resource.data.updatedAt is number
+        && ((signedIn() && request.resource.data.stage == 'request')
+            || (hasRole(['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'])
+                && request.resource.data.stage in ['request', 'confirmed', 'preinvoice', 'rejected', 'accepted', 'warehouse', 'production', 'ready', 'shipped', 'delivered', 'returned', 'cancelled']));
+      allow update: if hasRole(['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'])
+        && request.resource.data.keys().hasOnly(['stage', 'updatedAt']) && request.resource.data.updatedAt is number
+        && request.resource.data.stage in ['request', 'confirmed', 'preinvoice', 'rejected', 'accepted', 'warehouse', 'production', 'ready', 'shipped', 'delivered', 'returned', 'cancelled'];
+      allow delete: if salesLead();
+    }
+
+    // What the warehouse (operations) or production must prepare: the account manager creates it when an order is routed; the team that
+    // owns the route may only mark it ready (their report; the account manager alone moves the order's stage).
+    match /fulfilment/{code} {
+      allow read: if hasRole(['operations', 'production', 'account_manager', 'manager', 'ceo', 'sales_manager']);
+      allow create: if hasRole(['account_manager', 'manager'])
+        && request.resource.data.keys().hasOnly(['code', 'orderCode', 'route', 'stage', 'lines', 'customer', 'recipient', 'phone', 'city', 'address', 'ready', 'readyAt', 'readyBy', 'readyByName', 'note', 'updatedAt', 'by', 'byName'])
+        && request.resource.data.route in ['warehouse', 'production'] && request.resource.data.lines is list && request.resource.data.lines.size() <= 40;
+      allow update: if (hasRole(['account_manager', 'manager'])
+          && request.resource.data.keys().hasOnly(['code', 'orderCode', 'route', 'stage', 'lines', 'customer', 'recipient', 'phone', 'city', 'address', 'ready', 'readyAt', 'readyBy', 'readyByName', 'note', 'updatedAt', 'by', 'byName'])
+          && request.resource.data.route in ['warehouse', 'production'])
+        || (((hasRole(['operations']) && resource.data.route == 'warehouse') || (hasRole(['production']) && resource.data.route == 'production'))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ready', 'readyAt', 'readyBy', 'readyByName', 'note', 'updatedAt']));
+      allow delete: if hasRole(['account_manager', 'manager']);
     }
 
     match /prices/{uid} {

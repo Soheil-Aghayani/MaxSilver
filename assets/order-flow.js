@@ -25,7 +25,12 @@
     if (text) upd.lastNote = String(text).slice(0, 400);
     b.update(ref, upd);
     b.set(ref.collection('log').doc(), { at: now, by: who.uid, byName: who.name || '', kind: 'status', text: String(text || '').slice(0, 400) });
-    return b.commit().then(function () { return true; }, function () { return false; });
+    return b.commit().then(function () { status(db, code, fields.stage); return true; }, function () { return false; });
   }
-  w.MSOrder = { STAGES: STAGES, LABEL: LABEL, ORDER: ORDER, CLOSED: CLOSED, STATUS_FOR: STATUS_FOR, stageOf: stageOf, link: link };
+  // the public tracking document: only the stage and a time
+  function status(db, code, stage) {
+    if (!db || !code || !stage) return;
+    try { db.collection('request_status').doc(code).set({ stage: stage, updatedAt: Date.now() }).then(null, function () { /* rules not published yet */ }); } catch (e) { /* ignore */ }
+  }
+  w.MSOrder = { STAGES: STAGES, LABEL: LABEL, ORDER: ORDER, CLOSED: CLOSED, STATUS_FOR: STATUS_FOR, stageOf: stageOf, link: link, status: status };
 })(window);
