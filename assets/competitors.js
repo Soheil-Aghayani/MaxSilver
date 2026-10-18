@@ -144,7 +144,6 @@
     out += '<p class="cm-lead">' + esc(d.subtitle) + '</p><p class="cm-src">منبع: ' + esc(d.source) + '</p>';
     indexItems(d);
     out += strategic(d) + market(d) + plain(d.supplementary, 'u') + plain(d.frameworks);
-    if (d.conclusion) out += '<section class="cm-sec cm-concl"><h2>' + esc(d.conclusion.heading) + '</h2><p class="cm-sub">' + esc(d.conclusion.sub) + '</p>' + d.conclusion.paras.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '<blockquote>' + esc(d.conclusion.quote) + '</blockquote></section>';
     return out;
   }
   window.MSEvents_fa = function (n) { return String(n).replace(/\d/g, function (c) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(c); }); };
