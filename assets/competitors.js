@@ -78,14 +78,26 @@
   root.addEventListener('click', function (e) { var t = e.target.closest('[data-th]'); if (t) { S.threat = t.getAttribute('data-th'); render(); } });
   root.addEventListener('input', function (e) { if (e.target.id === 'cmQ') { S.q = e.target.value; render(); } });
   root.addEventListener('change', function (e) {
-    if (e.target.id !== 'cmFile' || !e.target.files[0] || S.busy) return;
-    var f = e.target.files[0], rd = new FileReader();
+    if (e.target.id !== 'cmFile') return;
+    var f = e.target.files && e.target.files[0];
+    e.target.value = '';                                  // so the same file can be chosen again after a failure
+    if (!f || S.busy) return;
+    S.msg = 'فایل خوانده می‌شود…'; S.error = ''; render();
+    var rd = new FileReader();
+    rd.onerror = function () { S.msg = ''; S.error = 'فایل خوانده نشد.'; render(); };
     rd.onload = function () {
-      var d; try { d = JSON.parse(String(rd.result)); } catch (x) { S.error = 'فایل JSON درست نیست.'; render(); return; }
-      if (!d || !d.strategic || !d.strategic.items || !d.title) { S.error = 'ساختار فایل با تحلیل رقبا نمی‌خواند.'; render(); return; }
+      var d; try { d = JSON.parse(String(rd.result).replace(/^\uFEFF/, '')); } catch (x) { S.msg = ''; S.error = 'فایل JSON درست نیست.'; render(); return; }
+      if (!d || !d.strategic || !d.strategic.items || !d.title) { S.msg = ''; S.error = 'ساختار فایل با تحلیل رقبا نمی‌خواند.'; render(); return; }
       d.updatedAt = Date.now(); d.updatedBy = S.user.uid;
-      S.busy = true; S.error = '';
-      DOC.set(d).then(function () { S.data = d; S.msg = 'تحلیل رقبا بارگذاری شد.'; }, function (er) { S.error = errText(er); }).then(function () { S.busy = false; render(); });
+      S.busy = true; S.msg = 'در حال ارسال به پایگاه داده…';
+      render();
+      // a write made while the connection is down waits for ever without an error, so the person is told after 15 seconds
+      var done = false, timer = setTimeout(function () {
+        if (done) return; done = true; S.busy = false; S.msg = '';
+        S.error = 'پایگاه داده جواب نداد. اتصال اینترنت یا VPN را بررسی کنید و دوباره فایل را انتخاب کنید؛ اگر ارسال بعداً انجام شد، با باز کردن دوبارهٔ صفحه دیده می‌شود.'; render();
+      }, 15000);
+      DOC.set(d).then(function () { if (done) return; done = true; clearTimeout(timer); S.data = d; S.error = ''; S.msg = 'تحلیل رقبا بارگذاری شد.'; }, function (er) { if (done) return; done = true; clearTimeout(timer); S.msg = ''; S.error = errText(er); })
+        .then(function () { S.busy = false; render(); });
     };
     rd.readAsText(f, 'utf-8');
   });
