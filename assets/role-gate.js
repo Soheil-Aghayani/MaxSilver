@@ -36,7 +36,7 @@
       var box = document.getElementById('anonBox');
       if (box) {
         box.hidden = false;
-        Array.prototype.forEach.call(document.querySelectorAll('.portal-grid:not(.anon), .data-note'), hide);
+        Array.prototype.forEach.call(document.querySelectorAll('.portal-grid:not(.anon), .hm-secs, .data-note'), hide);
       }
       return;
     }

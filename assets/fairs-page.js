@@ -60,10 +60,11 @@
     }
     return it.art ? '<span class="fe-pic"><img src="./assets/art/fairs/' + esc(it.art + it.ext) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()"></span>' : '';
   }
+  var SVGS = { ok: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', diff: '<path d="M12 7.5v6M12 17h.01"/>', none: '<path d="M9.5 9.2a2.7 2.7 0 1 1 3.9 2.4c-.9.5-1.4 1-1.4 2M12 17h.01"/>' };
+  function mk(k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + SVGS[k] + '</svg>'; }
   function checksHtml(v) {
     if (!v.checks.length) return '';
-    var mark = { ok: ['✓', 'ok'], diff: ['≠', 'diff'], none: ['؟', 'none'] };
-    return '<ul class="fe-checks">' + v.checks.map(function (c) { var m = mark[c[1]] || mark.none; return '<li class="' + m[1] + '"><b aria-hidden="true">' + m[0] + '</b><span><em>' + esc(c[0]) + ':</em> ' + esc(c[2]) + '</span></li>'; }).join('') + '</ul>';
+    return '<ul class="fe-checks">' + v.checks.map(function (c) { var k = SVGS[c[1]] ? c[1] : 'none', lab = { ok: 'یکی است', diff: 'فرق دارد', none: 'در صفحه نیست' }[k]; return '<li class="' + k + '"><b title="' + lab + '">' + mk(k) + '</b><span><em>' + esc(c[0]) + ':</em> ' + esc(c[2]) + ' <i class="fe-lab">(' + lab + ')</i></span></li>'; }).join('') + '</ul>';
   }
   function details(v) {
     var contact = v.phones.map(telLink).concat(v.emails.map(mailLink), v.wa ? [waLink(v.wa)] : []).join(' · ');
@@ -76,17 +77,18 @@
       (v.checks.length ? '<p class="fe-h">مقایسه با فهرست ما <small>خوانده‌شده ' + esc((window.MS_FAIRS_RESEARCH || {}).checked || F.COLLECTED) + '</small></p>' + checksHtml(v) : '<p class="fe-sec fe-na">این صفحه هنوز با منبع مقایسه نشده است.</p>') + acts +
       (v.source ? '<p class="fr-src">منبع: <a href="' + esc(v.source) + '" target="_blank" rel="noopener" dir="ltr">' + esc(v.sourceName) + '</a></p>' : '');
   }
+  // collapsed: one row (picture, title, dates and place, countdown); the whole row opens the details
   function card(v) {
     var past = v.st.k === 'past', place = [v.country, v.city].filter(Boolean).join(' · '), hasDiff = v.checks.some(function (c) { return c[1] === 'diff'; });
     var q = norm([v.title, v.en, v.country, v.city, v.venue, v.organizer, v.sectors.join(' ')].join(' '));
-    var key = (v.abroad ? 'x:' : 'i:') + (v.city || v.country);
+    var key = (v.abroad ? 'x:' : 'i:') + (v.city || v.country), p = E.toJ(v.d.a), q2 = E.toJ(v.d.b);
+    var days = fa(p.jd) + (p.jm === q2.jm ? '' : ' ' + JM[p.jm - 1]) + '–' + fa(q2.jd) + ' ' + JM[q2.jm - 1];
     return '<li class="fe-item' + (past ? ' past' : '') + '" data-id="' + esc(v.id) + '" data-where="' + (v.abroad ? 'abroad' : 'iran') + '" data-place="' + esc(key) + '" data-past="' + (past ? 1 : 0) + '" data-q="' + esc(q) + '">' +
-      '<i class="fe-dot ' + v.st.k + '" aria-hidden="true"></i><article class="fe-card" data-tone="' + v.tone + '">' + thumb(v) +
-      '<div class="fe-main"><div class="fe-top"><span class="fe-place' + (v.abroad ? ' ab' : '') + '">' + esc(place) + '</span>' + (v.invite ? '<span class="fe-inv">فقط با دعوت</span>' : '') + '<span class="fr-st ' + v.st.k + '">' + v.st.text + '</span></div>' +
-      '<h4>' + esc(v.title) + (v.edition ? ' <small>' + esc(v.edition) + '</small>' : '') + '</h4>' +
-      '<p class="fe-when">' + jText(v.d.a, v.d.b) + SEP + '<span>' + gText(v.d.a, v.d.b) + '</span></p>' +
-      '<p class="fe-sum">' + esc(v.venue.replace(/ \(.*$/, '')) + (hasDiff ? ' <em class="fe-warn">تاریخ یا اطلاعات منبع با فهرست ما فرق دارد</em>' : '') + '</p>' +
-      '<button type="button" class="fe-toggle" aria-expanded="false">جزئیات</button><div class="fe-det"><div>' + details(v) + '</div></div></div></article></li>';
+      '<article class="fe-card" data-tone="' + v.tone + '"><button type="button" class="fe-head" aria-expanded="false">' + thumb(v) +
+      '<span class="fe-main"><b class="fe-t">' + esc(v.title) + '</b><span class="fe-m">' + days + SEP + '<span class="' + (v.abroad ? 'ab' : '') + '">' + esc(place) + '</span>' +
+      (v.invite ? '<em class="fe-inv">فقط با دعوت</em>' : '') + (hasDiff ? '<em class="fe-warn" title="اطلاعات منبع با فهرست ما فرق دارد">' + mk('diff') + 'بررسی لازم</em>' : '') + '</span></span>' +
+      '<span class="fr-st ' + v.st.k + '">' + v.st.text + '</span><svg class="fe-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>' +
+      '<div class="fe-det"><div><p class="fe-when">' + jText(v.d.a, v.d.b) + SEP + '<span>' + gText(v.d.a, v.d.b) + '</span></p>' + (v.edition ? '<p class="fe-sec">' + esc(v.edition) + '</p>' : '') + details(v) + '</div></div></article></li>';
   }
   function monthKey(v) { var p = E.toJ(v.d.a); return p.jy * 100 + p.jm; }
   function groupsHtml(list) {
@@ -170,10 +172,10 @@
     apply();
   }
   root.addEventListener('click', function (e) {
-    var t = e.target.closest('.fe-toggle');
+    var t = e.target.closest('.fe-head');
     if (t) {
       var det = t.nextElementSibling, open = !det.classList.contains('open');
-      det.classList.toggle('open', open); t.setAttribute('aria-expanded', open); t.textContent = open ? 'بستن' : 'جزئیات';
+      det.classList.toggle('open', open); t.setAttribute('aria-expanded', open); t.closest('.fe-item').classList.toggle('open', open);
       return;
     }
     var c = e.target.closest('.fr-chip');

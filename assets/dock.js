@@ -149,17 +149,17 @@
   }
   function decorateHome() {
     if (page !== 'index.html') return;
-    var grid = document.querySelector('main .portal-grid:not(.anon)');
+    var grids = document.querySelectorAll('main .portal-grid:not(.anon)'), grid = grids[0];
     if (!grid) return;
     var on = signed(), list = allowed(), ids = list.map(function (i) { return i.id; }), pins = pinsFor(list).slice(0, maxPins());
     var hint = document.getElementById('dockHint');
     if (!hint) {
       hint = document.createElement('p'); hint.id = 'dockHint'; hint.className = 'dock-hint';
-      grid.parentNode.insertBefore(hint, grid);
+      var top = grid.closest('.hm-secs') || grid; top.parentNode.insertBefore(hint, top);
     }
     hint.hidden = !on;
     if (!hint.classList.contains('warn')) hint.innerHTML = ICON.star + '<span>با ستارهٔ هر بخش، آن را در نوار پایین نگه دارید؛ حداکثر ' + faN(maxPins()) + ' بخش.</span>';
-    Array.prototype.forEach.call(grid.querySelectorAll('a.portal-card'), function (a) {
+    Array.prototype.forEach.call(document.querySelectorAll('main .portal-grid:not(.anon) a.portal-card'), function (a) {
       var id = idByHref(a.getAttribute('href')), wrap = a.parentNode;
       if (!wrap.classList || !wrap.classList.contains('pc-wrap')) {
         wrap = document.createElement('div'); wrap.className = 'pc-wrap';
@@ -178,6 +178,10 @@
       star.setAttribute('aria-pressed', String(pinned));
       star.setAttribute('aria-label', (pinned ? 'برداشتن از نوار: ' : 'افزودن به نوار: ') + label);
       star.title = pinned ? 'برداشتن از نوار پایین' : 'افزودن به نوار پایین';
+    });
+    // a section whose cards this role cannot open is not shown at all
+    Array.prototype.forEach.call(document.querySelectorAll('.hm-sec:not(.anon)'), function (s) {
+      s.hidden = !Array.prototype.some.call(s.querySelectorAll('.pc-wrap'), function (w) { return w.style.display !== 'none'; });
     });
   }
   var warnTimer = 0;
