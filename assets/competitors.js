@@ -8,7 +8,7 @@
   if (!cfg || !window.firebase) { root.innerHTML = '<p class="cm-note">سرویس در دسترس نیست. صفحه را دوباره باز کنید.</p>'; return; }
   firebase.initializeApp(cfg);
   var auth = firebase.auth(), db = firebase.firestore(), DOC = db.collection('intel').doc('competitors');
-  var S = { sort: 'def', f: {}, cmp: [], user: null, profile: null, loading: true, data: null, error: '', msg: '', q: '', threat: 'all', busy: false };
+  var S = { kpi: 'proof', sort: 'def', f: {}, cmp: [], user: null, profile: null, loading: true, data: null, error: '', msg: '', q: '', threat: 'all', busy: false };
   var esc = function (s) { return String(s == null ? '' : s).replace(/\s*\u2014\s*/g, '، ').replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var norm = function (s) { return String(s == null ? '' : s).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[‌\s]+/g, ' ').toLowerCase(); };
   var can = function (a) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, a)); };
@@ -61,6 +61,13 @@
     return '<h4 class="cm-h4">بررسی دوباره از سایت</h4>' + list;
   }
   function crow(k, v) { return v ? '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>' : ''; }
+  function kpiExtra(x) {
+    var k = x.kpi || {}, out = '';
+    if (k.counts && k.counts.length) out += '<div class="kb-counts">' + k.counts.map(function (c) { return '<span><b>' + faN(c[1] >= 1000 ? '+' + c[1] : c[1]) + '</b>' + esc(c[0]) + '</span>'; }).join('') + '</div>';
+    if (k.proof && k.proof.length) out += '<ul class="kb-proof">' + k.proof.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>';
+    if (k.capNote) out += '<p class="cm-src2">سرمایه: ' + esc(k.capNote) + '</p>';
+    return out;
+  }
   function ensureDlg() {
     if (dlg) return;
     dlg = document.createElement('dialog'); dlg.className = 'cm-dialog';
@@ -86,6 +93,7 @@
       crow('تلفن', (x.phones || []).map(telLink).join(' ، ')) + crow('واتس‌اپ', (x.wa || []).map(waLink).join(' ، ')) + crow('ایمیل', (x.emails || []).map(function (m) { return '<a href="mailto:' + esc(m) + '" dir="ltr">' + esc(m) + '</a>'; }).join(' ، ')) +
       crow('نشانی', esc(x.address || '')) + crow('نام ثبتی', esc(x.legal || '')) + crow('ثبت شرکت', rasmio) + '</dl>' +
       (!x.site && !(x.phones && x.phones.length) && !x.instagram && !(x.emails && x.emails.length) ? '<p class="cm-nosite">برای این مورد ارتباطی پیدا نشد.</p>' : '') +
+      '<h4 class="cm-h4">شاخص‌های عمومی</h4>' + barsHtml(x, key) + kpiExtra(x) +
       '<h4 class="cm-h4">یافته‌های تحلیل</h4><dl class="cm-ct">' + facts.map(function (f) { return crow(esc(f[0]), esc(f[1])); }).join('') + '</dl>' +
       (x.registry ? '<h4 class="cm-h4">ثبت رسمی شرکت</h4><dl class="cm-ct">' + x.registry.rows.map(function (f) { return crow(esc(f[0]), esc(f[1])); }).join('') + '</dl><p class="cm-src2">منبع: <a href="' + esc(x.registry.url) + '" target="_blank" rel="noopener" dir="ltr">' + esc(x.registry.source) + '</a>، ' + esc(x.registry.date) + '</p>' : '') +
       ver(x) + (x.more && x.more.length ? '<h4 class="cm-h4">اطلاعات بیشتر از سایت</h4><dl class="cm-ct">' + x.more.map(function (f) { return crow(esc(f[0]), esc(f[1])); }).join('') + '</dl>' : '') + '</div>';
@@ -148,6 +156,47 @@
     if (pre) return section(sec.heading, sec.sub, entries(sec.items, pre), 'two');
     return '<section class="cm-sec"><h2>' + esc(sec.heading) + '</h2><p class="cm-sub">' + esc(sec.sub || '') + '</p><div class="cm-grid two">' +
       sec.items.map(function (x) { return '<article class="cm-card soft"><h3>' + esc(x.name) + '</h3><p>' + esc(x.text) + '</p></article>'; }).join('') + '</div></section>';
+  }
+  // ---- public indicators (KPI): only what the companies and the company registry publish; internal figures such as sales are not visible from outside
+  var KPIS = [['age', 'سابقه'], ['cap', 'سرمایهٔ ثبتی'], ['scope', 'گستردگی محصول'], ['digital', 'حضور دیجیتال'], ['proof', 'نشانه‌های اعتبار']];
+  function capText(n) { return n >= 1e9 ? faN(Math.round(n / 1e8) / 10).replace('.', '٫') + ' میلیارد ریال' : faN(Math.round(n / 1e5) / 10).replace('.', '٫') + ' میلیون ریال'; }
+  function bars(x) {
+    var k = x.kpi || {}, ar = x.areas ? Object.keys(x.areas).filter(function (c) { return x.areas[c] >= 1; }).length : null, pr = (k.proof || []).length, dg = digital(x);
+    return [
+      ['age', 'سابقه', x.age == null ? null : Math.min(x.age, 40) / 40, x.age == null ? 'نامشخص' : faN(x.age) + ' سال'],
+      ['cap', 'سرمایهٔ ثبتی', k.capital ? Math.max(0.05, Math.min(1, (Math.log(k.capital) / Math.LN10 - 7) / (Math.log(6e11) / Math.LN10 - 7))) : null, k.capital ? capText(k.capital) : 'نامشخص'],
+      ['scope', 'گستردگی محصول', ar == null ? null : ar / 8, ar == null ? 'نامشخص' : faN(ar) + ' از ۸ حوزه'],
+      ['digital', 'حضور دیجیتال', dg / 5, faN(dg) + ' از ۵ کانال'],
+      ['proof', 'نشانه‌های اعتبار', Math.min(pr, 4) / 4, faN(pr) + ' مورد']];
+  }
+  function barsHtml(x, key, hl) {
+    var c = colorOf(x, key);
+    return '<div class="kb" style="--c:' + c + '">' + bars(x).map(function (b) {
+      return '<div class="kb-r' + (hl === b[0] ? ' hl' : '') + '"><span class="kb-l">' + b[1] + '</span><span class="kb-t"><i style="width:' + (b[2] == null ? 0 : Math.round(b[2] * 100)) + '%"></i></span><span class="kb-v' + (b[2] == null ? ' na' : '') + '">' + b[3] + '</span></div>';
+    }).join('') + '</div>';
+  }
+  function kpiBoard() {
+    var rows = Object.keys(ITEMS).map(function (k) { return [k, ITEMS[k]]; });
+    var idx = { age: 0, cap: 1, scope: 2, digital: 3, proof: 4 }[S.kpi] || 0;
+    rows.sort(function (p, q) { var a = bars(p[1])[idx][2], b = bars(q[1])[idx][2]; return (b == null ? -1 : b) - (a == null ? -1 : a); });
+    return '<section class="cm-sec"><h2>شاخص‌های عمومی رقبا</h2><p class="cm-sub">' + esc((S.data && S.data.kpiNote) || '') + '</p>' +
+      '<div class="cm-chips cm-seg" role="group" aria-label="مرتب‌سازی شاخص‌ها" data-morph="kpi">' + KPIS.map(function (s) { return '<button type="button" class="cm-chip" data-kpi="' + s[0] + '" aria-pressed="' + (S.kpi === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="kb-list">' + rows.map(function (r) {
+        var x = r[1], c = colorOf(x, r[0]);
+        return '<article class="kb-row" data-open="' + r[0] + '" style="--c:' + c + ';--ink:' + ink(c) + '"><div class="kb-n"><span class="cm-mono">' + esc(String(x.name).trim().charAt(0)) + '</span><b>' + esc(x.name.replace(/\s*\(.*$/, '')) + '</b></div>' + barsHtml(x, r[0], S.kpi) + '</article>';
+      }).join('') + '</div></section>';
+  }
+  // ---- overview: how many competitors, what they are, and how the threat is spread
+  var IC = { n: '<path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6"/>', m: '<path d="M3 21h18M5 21V10l5 3v-3l5 3V6h4v15"/>', s: '<path d="M3 4h2l2.4 11h9.2L19 8H6.5"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/>', i: '<rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17" cy="7" r=".8"/>', a: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>' };
+  function overview() {
+    var xs = Object.keys(ITEMS).map(function (k) { return ITEMS[k]; }), n = xs.length, cnt = function (f) { return xs.filter(f).length; };
+    var ages = xs.map(function (x) { return x.age; }).filter(function (a) { return a != null; }).sort(function (a, b) { return a - b; });
+    var med = ages.length ? ages[Math.floor(ages.length / 2)] : 0;
+    var tiles = [['n', n, 'رقیب بررسی‌شده'], ['m', cnt(function (x) { return x.mfr; }), 'تولیدکننده'], ['s', cnt(function (x) { return x.shop; }), 'فروشگاه آنلاین'], ['i', cnt(function (x) { return x.instagram; }), 'با اینستاگرام'], ['a', med, 'سال، میانهٔ سابقه']];
+    var lv = [[4, 'بالا', '#b42318'], [3, 'متوسط-بالا', '#e08a00'], [2, 'متوسط', '#d4b200'], [1, 'پایین‌تر', '#4f81c7'], [0, 'بدون ارزیابی', '#c3cad6']];
+    var tot = lv.map(function (l) { return cnt(function (x) { return rank(x.threat) === l[0]; }); });
+    return '<div class="cm-ov">' + tiles.map(function (s) { return '<div class="cm-st"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[s[0]] + '</svg><b>' + faN(s[1]) + '</b><span>' + s[2] + '</span></div>'; }).join('') + '</div>' +
+      '<div class="cm-thb" role="img" aria-label="پراکندگی سطح تهدید"><div class="cm-thb-bar">' + lv.map(function (l, i) { return tot[i] ? '<i style="flex:' + tot[i] + ';background:' + l[2] + '" title="' + l[1] + ': ' + faN(tot[i]) + '"></i>' : ''; }).join('') + '</div><div class="cm-thb-lg">' + lv.map(function (l, i) { return tot[i] ? '<span><i style="background:' + l[2] + '"></i>' + l[1] + ' ' + faN(tot[i]) + '</span>' : ''; }).join('') + '</div></div>';
   }
   // ---- the areas matrix: who offers what, read from the sites; the empty columns are the openings
   function matrix(d) {
@@ -228,7 +277,7 @@
     out += '<p class="cm-lead">' + esc(d.subtitle) + '</p><p class="cm-src">منبع: ' + esc(d.source) + '</p>';
     indexItems(d);
     shown = 0;
-    out += toolbar() + strategic(d) + market(d) + plain(d.supplementary, 'u') + matrix(d) + plain(d.frameworks);
+    out += overview() + toolbar() + strategic(d) + market(d) + plain(d.supplementary, 'u') + kpiBoard() + matrix(d) + plain(d.frameworks);
     out += '<span id="cmShown" hidden>' + shown + '</span>';
     return out;
   }
@@ -245,6 +294,7 @@
   }
   root.addEventListener('click', function (e) {
     if (e.target.closest('.cm-cmp')) return;
+    var kp = e.target.closest('[data-kpi]'); if (kp) { S.kpi = kp.getAttribute('data-kpi'); render(); return; }
     var so = e.target.closest('[data-sort]'); if (so) { S.sort = so.getAttribute('data-sort'); render(); return; }
     var fl = e.target.closest('[data-flt]'); if (fl) { var k = fl.getAttribute('data-flt'); S.f[k] = !S.f[k]; render(); return; }
     var t = e.target.closest('[data-th]'); if (t) { S.threat = t.getAttribute('data-th'); render(); return; }
