@@ -25,7 +25,7 @@
   function validZip(s) { return /^\d{10}$/.test(digits(s)); }
   function text(s, max) { return String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); }
 
-  // Request code: CON-<first three letters of the delivery city>-<Jalali yymmdd>-<number of the day>, e.g. CON-TEH-051025-001.
+  // Request code: CON-<first three letters of the delivery city>-<Jalali yymmdd>-<number of the day, 4 digits>, e.g. CON-TEH-051025-0001.
   // CON = consumer. The number is the day's counter (request_counters/<yymmdd>), taken in the same transaction that writes the request.
   var CITIES = {
     'تهران': 'TEH', 'مشهد': 'MAS', 'اصفهان': 'ISF', 'کرج': 'KAR', 'شیراز': 'SHI', 'تبریز': 'TAB', 'قم': 'QOM', 'اهواز': 'AHV', 'کرمانشاه': 'KER', 'ارومیه': 'URM',
@@ -54,7 +54,7 @@
     var j = window.MSEvents ? window.MSEvents.toJ(new Date()) : { jy: 1405, jm: 1, jd: 1 }, p = function (n) { return (n < 10 ? '0' : '') + n; };
     return p(j.jy % 100) + p(j.jm) + p(j.jd);
   }
-  function buildCode(city, day, n) { return 'CON-' + cityCode(city) + '-' + day + '-' + (n < 10 ? '00' : n < 100 ? '0' : '') + n; }
+  function buildCode(city, day, n) { return 'CON-' + cityCode(city) + '-' + day + '-' + (n < 10 ? '000' : n < 100 ? '00' : n < 1000 ? '0' : '') + n; }
   // checks every field the same way the rules do; returns { ok, errors: { field: message }, data }
   function check(f) {
     var e = {}, c = { name: text(f.name, 80), phone: phone(f.phone), nid: digits(f.nid), address: text(f.address, 300), city: text(f.city, 40), zip: digits(f.zip) };

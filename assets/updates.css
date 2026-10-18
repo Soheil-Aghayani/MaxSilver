@@ -54,3 +54,25 @@ ul.upd-all p,.upd-one p{margin:0 0 8px;color:#35465e;font-size:14px;line-height:
 .pc-star[aria-pressed=true]{background:#ffcc2a;color:#071b36}
 .pc-star[aria-pressed=true] svg{fill:currentColor}
 .pc-star:focus-visible{outline:3px solid #90adff;outline-offset:2px}
+
+/* the popup as a timeline: dates down the side, one card per update, details open under a button */
+.upd-dialog{width:min(640px,calc(100vw - 20px))}
+.tl-wrap{display:grid;gap:18px;padding:12px 16px 20px}
+.tl-date{display:flex;align-items:baseline;gap:8px;margin:0 0 8px;color:var(--ms-navy);font-size:14px}
+.tl-date small{padding:1px 9px;border-radius:999px;background:var(--ms-navy);color:#fff;font-size:11.5px;font-weight:800}
+.tl{position:relative;margin:0;padding:0;padding-inline-start:26px;list-style:none;display:grid;gap:10px}
+.tl::before{content:"";position:absolute;inset-block:6px;inset-inline-start:7px;width:2px;border-radius:2px;background:linear-gradient(#ffcc2a,#e4e9f2)}
+.tl-item{position:relative}
+.tl-dot{position:absolute;inset-inline-start:-26px;top:16px;width:16px;height:16px;border:3px solid #fff;border-radius:50%;background:#ffcc2a;box-shadow:0 0 0 2px #e4e9f2}
+.tl-item.fresh .tl-dot{background:#ff3b30;box-shadow:0 0 0 2px #f4b9b5}
+.tl-card{display:grid;gap:6px;padding:12px 14px;border:1px solid var(--ms-line);border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(7,27,54,.05)}
+.tl-item.fresh .tl-card{border-color:#f4b9b5}
+.tl-card h4{margin:0;color:var(--ms-navy);font-size:15px;line-height:1.7}
+.tl-sum{margin:0;color:#35465e;font-size:13.5px;line-height:1.9}
+.tl-toggle{justify-self:start;min-height:34px;padding:0 12px;border:1px solid var(--ms-line);border-radius:999px;background:#f5f8ff;color:#1746b5;font:800 12.5px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
+.tl-det{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease}
+.tl-det.open{grid-template-rows:1fr}
+.tl-det>div{overflow:hidden;min-height:0}
+.tl-det.open>div{padding-top:4px}
+.tl-det p{margin:0 0 8px;color:#35465e;font-size:13.5px;line-height:1.95}
+@media(prefers-reduced-motion:reduce){.tl-det{transition:none}}

@@ -176,5 +176,5 @@
     });
   }
 
-  window.MSEvents = { upcoming: upcoming, active: active, reminders: reminders, fa: fa, MONTHS: MONTHS, toJ: toJ };
+  window.MSEvents = { upcoming: upcoming, active: active, reminders: reminders, fa: fa, MONTHS: MONTHS, toJ: toJ, fromJ: jDate };
 })();

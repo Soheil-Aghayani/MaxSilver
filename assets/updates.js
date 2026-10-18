@@ -6,6 +6,12 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'fairs-competitors-timeline', date: '1405/07/26', tag: 'جدید', title: 'نمایشگاه‌ها، تحلیل رقبا و تازه‌ها به‌صورت خط زمان',
+      summary: 'بخش «نمایشگاه‌ها» با چهار نمایشگاه، صفحهٔ «تحلیل رقبا» برای مدیریت و مدیر فروش، و «تازه‌ها» با کارت‌ها و خط زمان اضافه شد.',
+      details: ['نمایشگاه‌ها: ایران ریتیل شو، ایران کافکس، میدکس و ایران فود + هاسپیتالیتی؛ تاریخ، محل، برگزارکننده، ثبت‌نام، شمارش معکوس و پیوند منبع. تصویر بنر هر نمایشگاه را در assets/art/fairs بگذارید.',
+        'تحلیل رقبا (فقط مدیریت و مدیر فروش): رقبای استراتژیک و بازاری، یافته‌ها، چارچوب‌ها و جمع‌بندی، با جست‌وجو و فیلتر سطح تهدید. دادهٔ آن در مخزن عمومی نیست و با دکمهٔ بارگذاری (تکنولوژی ارتباطات سازمانی یا مدیریت) از فایل JSON وارد پایگاه داده می‌شود؛ قوانین پایگاه داده باید دوباره منتشر شود.',
+        'تازه‌ها: بر پایهٔ تاریخ گروه‌بندی شده و هر مورد یک کارت است؛ جزئیات زیر دکمهٔ «جزئیات» باز می‌شود.',
+        'کد درخواست خرید حالا شمارهٔ روز چهار رقمی دارد؛ مثل CON-TEH-051025-0001.'] },
     { id: 'jobdesc-crm-v2', date: '1405/07/26', tag: 'جدید', title: 'شرح وظایف در پنل و درخواست‌های خرید مرتب‌تر',
       summary: 'بخش «شرح وظایف» به پنل اضافه شد؛ درخواست‌های خرید به کارشناس منطقه سپرده می‌شود و کارت پایان‌یافته از فهرست بیرون می‌رود.',
       details: ['هر کاربر شرح وظایف خودش را می‌بیند. فقط منابع انسانی و مدیریت بالادستی (تکنولوژی ارتباطات سازمانی، مدیریت؛ و مدیر فروش برای کارشناسان فروش) آن را ویرایش می‌کنند.',
@@ -180,14 +186,33 @@
     document.body.appendChild(dlg);
     return dlg;
   }
-  function openAll() {
-    var list = visible(), s = seen(), d = ensureDialog();
+  // the popup is a timeline: one header per date, each update a card with its summary, the details open under a button
+  function dayLabel(date) {
+    var E = window.MSEvents; if (!E || !E.toJ) return '';
+    var p = function (n) { return (n < 10 ? '0' : '') + n; }, key = function (d) { var j = E.toJ(d); return j.jy + '/' + p(j.jm) + '/' + p(j.jd); };
+    var now = new Date(), yest = new Date(now.getTime() - 86400000);
+    return date === key(now) ? 'امروز' : date === key(yest) ? 'دیروز' : '';
+  }
+  function tlCard(u, s, open) {
+    var fresh = !u.quiet && s.indexOf(u.id) < 0, hasMore = u.details && u.details.length && (u.details.length > 1 || u.details[0] !== u.summary);
+    return '<li class="tl-item' + (fresh ? ' fresh' : '') + '" data-id="' + esc(u.id) + '"><span class="tl-dot" aria-hidden="true"></span><article class="tl-card">' +
+      '<div class="upd-meta"><span class="upd-tag">' + esc(u.tag || '') + '</span>' + (fresh ? '<i class="upd-new" title="خوانده‌نشده"></i>' : '') + '</div>' +
+      '<h4>' + esc(u.title) + '</h4><p class="tl-sum">' + esc(u.summary || '') + '</p>' +
+      (hasMore ? '<button type="button" class="tl-toggle" data-tl aria-expanded="' + (!!open) + '">' + (open ? 'بستن جزئیات' : 'جزئیات') + '</button><div class="tl-det' + (open ? ' open' : '') + '"><div>' + body(u) + '</div></div>' : '') +
+      '</article></li>';
+  }
+  function openAll(focusId) {
+    var list = visible(), s = seen(), d = ensureDialog(), days = [], map = {};
+    list.forEach(function (u) { var k = u.date || ''; if (!map[k]) { map[k] = { date: k, items: [] }; days.push(map[k]); } map[k].items.push(u); });
     d.setAttribute('aria-label', 'تازه‌ها');
     d.innerHTML = '<div class="upd-dbar"><h2>تازه‌ها</h2><button type="button" class="upd-x" data-upd-close aria-label="بستن">' + CLOSE + '</button></div>' +
-      (list.length ? '<ul class="upd-all">' + list.map(function (u) {
-        return '<li><div class="upd-meta"><span class="upd-tag">' + esc(u.tag || '') + '</span><time>' + fa(u.date) + '</time>' + (!u.quiet && s.indexOf(u.id) < 0 ? '<i class="upd-new" title="خوانده‌نشده"></i>' : '') + '</div><h3>' + esc(u.title) + '</h3>' + body(u) + '</li>';
-      }).join('') + '</ul>' : '<p class="upd-empty">فعلاً تازه‌ای نیست.</p>');
+      (days.length ? '<div class="tl-wrap">' + days.map(function (g) {
+        var lab = dayLabel(g.date);
+        return '<section class="tl-day"><h3 class="tl-date"><time>' + fa(g.date) + '</time>' + (lab ? '<small>' + lab + '</small>' : '') + '</h3><ol class="tl">' +
+          g.items.map(function (u) { return tlCard(u, s, u.id === focusId); }).join('') + '</ol></section>';
+      }).join('') + '</div>' : '<p class="upd-empty">فعلاً تازه‌ای نیست.</p>');
     if (!d.open) d.showModal();
+    if (focusId) { var el = d.querySelector('[data-id="' + focusId + '"]'); if (el && el.scrollIntoView) setTimeout(function () { el.scrollIntoView({ block: 'center' }); }, 60); }
     mark(list.map(function (u) { return u.id; }));
     paintSection();
   }
@@ -232,7 +257,12 @@
   document.addEventListener('click', function (e) {
     if (e.target.closest('#updBell') || e.target.closest('[data-upd-all]')) { openAll(); return; }
     var one = e.target.closest('[data-upd-open]');
-    if (one) openOne(one.getAttribute('data-upd-open'));
+    if (one) { openAll(one.getAttribute('data-upd-open')); return; }
+    var tg = e.target.closest('[data-tl]');
+    if (tg) {
+      var det = tg.parentNode.querySelector('.tl-det'), on = !det.classList.contains('open');
+      det.classList.toggle('open', on); tg.setAttribute('aria-expanded', on); tg.textContent = on ? 'بستن جزئیات' : 'جزئیات';
+    }
   });
   function apply() { paintDot(); paintSection(); }
   var G = window.MSGate;

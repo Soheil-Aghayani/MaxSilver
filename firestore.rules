@@ -367,6 +367,14 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Competitor analysis (sensitive, so it is not in the public repository): management, the CEO and the sales manager read it;
+    // only organizational technology and management load or replace it.
+    match /intel/{id} {
+      allow read: if hasRole(['manager', 'ceo', 'sales_manager']);
+      allow create, update: if hasRole(['manager', 'ceo']) && id == 'competitors' && request.resource.data.title is string;
+      allow delete: if false;
+    }
+
     match /prices/{uid} {
       allow read, write: if approved() && request.auth.uid == uid;
     }

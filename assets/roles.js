@@ -28,6 +28,8 @@
     pricesEdit: ['manager', 'ceo', 'sales_manager'],                                    // edits the list prices of the catalog (everyone signed in sees them)
     crm: ['manager', 'ceo', 'sales_manager', 'visitor'],                                // purchase requests from the public planner: follow-up and decisions (a visitor sees the ones given to them)
     events: ['manager', 'ceo', 'sales_manager', 'marketing'],                           // occasions calendar and its bell reminders
+    fairs: ['manager', 'ceo', 'sales_manager', 'marketing'],                            // trade fairs the company follows
+    competitors: ['manager', 'ceo', 'sales_manager'],                                   // competitor analysis (staff only)
     advertising: ['manager', 'ceo', 'sales_manager', 'marketing'],                      // advertising strategy tree
     invoices: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // read every proforma, not only one's own
     team: ['manager', 'ceo', 'sales_manager', 'hr'],                                    // see the team list
