@@ -50,7 +50,7 @@
       venue: r.address || f.venue || '', organizer: r.organizer || f.organizer || '', phones: phones || [], emails: emails || [], wa: r.wa || '', site: r.site || f.site || '',
       hours: r.hours || '', area: r.area || '', exhibitors: r.exhibitors || '', audience: r.audience || '', sectors: r.sectors || [], checks: r.checks || [],
       visitorReg: r.visitorReg || '', exhibitorReg: r.exhibitorReg || f.register || '', prices: r.prices || '', fit: main ? '' : (f.fit || ''), note: f.note || '',
-      actions: f.actions || [], edition: f.edition || '', source: main ? f.source : '', sourceName: main ? f.sourceName : '' };
+      actions: f.actions || [], invite: !!f.invite, edition: f.edition || '', source: main ? f.source : '', sourceName: main ? f.sourceName : '' };
   }
   function thumb(v) {
     var it = v.it;
@@ -82,7 +82,7 @@
     var key = (v.abroad ? 'x:' : 'i:') + (v.city || v.country);
     return '<li class="fe-item' + (past ? ' past' : '') + '" data-id="' + esc(v.id) + '" data-where="' + (v.abroad ? 'abroad' : 'iran') + '" data-place="' + esc(key) + '" data-past="' + (past ? 1 : 0) + '" data-q="' + esc(q) + '">' +
       '<i class="fe-dot ' + v.st.k + '" aria-hidden="true"></i><article class="fe-card" data-tone="' + v.tone + '">' + thumb(v) +
-      '<div class="fe-main"><div class="fe-top"><span class="fe-place' + (v.abroad ? ' ab' : '') + '">' + esc(place) + '</span><span class="fr-st ' + v.st.k + '">' + v.st.text + '</span></div>' +
+      '<div class="fe-main"><div class="fe-top"><span class="fe-place' + (v.abroad ? ' ab' : '') + '">' + esc(place) + '</span>' + (v.invite ? '<span class="fe-inv">فقط با دعوت</span>' : '') + '<span class="fr-st ' + v.st.k + '">' + v.st.text + '</span></div>' +
       '<h4>' + esc(v.title) + (v.edition ? ' <small>' + esc(v.edition) + '</small>' : '') + '</h4>' +
       '<p class="fe-when">' + jText(v.d.a, v.d.b) + SEP + '<span>' + gText(v.d.a, v.d.b) + '</span></p>' +
       '<p class="fe-sum">' + esc(v.venue.replace(/ \(.*$/, '')) + (hasDiff ? ' <em class="fe-warn">تاریخ یا اطلاعات منبع با فهرست ما فرق دارد</em>' : '') + '</p>' +
