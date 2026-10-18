@@ -161,3 +161,7 @@
 .cu-bar{background:color-mix(in srgb,var(--c,#071b36) 12%,#eef2f8)}.cu-bar i{background:var(--c,#071b36)}
 .cu-year{background:color-mix(in srgb,var(--c,#071b36) 6%,#f6f8fb)}
 .cu-hero-m{font-size:15px}
+/* tiles: the text starts at the edge with the colour strip, the icon sits at the far end */
+.cu-kpis>div{flex-direction:row-reverse;justify-content:space-between;padding-inline-start:18px}
+.cu-kpis>div>div{flex:1 1 auto;text-align:start}
+.cu-kpis b{font-size:24px;line-height:1.25}
