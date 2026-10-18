@@ -97,10 +97,9 @@
     if (!out || !x) return;
     clearInterval(aiTimer);
     if (!out.hidden) { out.hidden = true; btn.setAttribute('aria-expanded', 'false'); return; }
-    var note = (S.data && S.data.verification && S.data.verification.ai) || 'نوشته‌شده با هوش مصنوعی';
     out.hidden = false; btn.setAttribute('aria-expanded', 'true');
     var words = String(x.sum).split(' '), i = 0, calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    function paint() { out.innerHTML = '<p>' + esc(words.slice(0, i).join(' ')) + (i < words.length ? '<span class="cm-caret"></span>' : '') + '</p>' + (i >= words.length ? '<small>' + esc(note) + '. این متن از قبل نوشته شده و در لحظه تولید نمی‌شود.</small>' : ''); }
+    function paint() { out.innerHTML = '<p>' + esc(words.slice(0, i).join(' ')) + (i < words.length ? '<span class="cm-caret"></span>' : '') + '</p>'; }
     if (calm) { i = words.length; paint(); return; }
     paint();
     aiTimer = setInterval(function () { i += 2; if (i >= words.length) { i = words.length; clearInterval(aiTimer); } paint(); }, 55);
