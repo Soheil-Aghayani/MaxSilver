@@ -415,6 +415,13 @@ service cloud.firestore {
       allow delete: if hasRole(['account_manager']);
     }
 
+    // Registry of pre-invoice numbers: a number belongs to the first person who pushed it and is never reused by anyone else. Nobody edits or deletes an entry.
+    match /proforma_numbers/{no} {
+      allow read: if approved();
+      allow create: if approved() && request.resource.data.keys().hasOnly(['uid', 'at']) && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     match /prices/{uid} {
       allow read, write: if approved() && request.auth.uid == uid;
     }

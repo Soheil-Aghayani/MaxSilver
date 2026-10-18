@@ -34,7 +34,6 @@
     warehouseClaim: ['account_manager'],                                                // claims (reserves) and releases stock for an order
     bankAccounts: ['account_manager', 'finance', 'manager', 'ceo', 'sales_manager'],   // bank accounts on pre-invoices: who sees them
     bankEdit: ['account_manager'],                                                      // adds and edits them (only the account manager)
-    fairs: ['manager', 'ceo', 'sales_manager', 'marketing'],                            // trade fairs the company follows
     competitors: ['manager', 'ceo', 'sales_manager'],                                   // competitor analysis (staff only)
     advertising: ['manager', 'ceo', 'sales_manager', 'marketing'],                      // advertising strategy tree
     invoices: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // read every proforma, not only one's own

@@ -160,7 +160,7 @@
     try { inv = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { /* ignore */ }
     inv = Object.assign({ unit: 'تومان', docNo: '', discount: 0, discMode: 'pct', tax: 10, pay: { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false } }, inv || {});
     inv.lines = (x.lines || []).map(function (l) { return { id: l.id, qty: l.qty || 1, price: 0 }; });
-    inv.customer = c.name || ''; inv.custCity = c.city || ''; inv.custPhone = c.phone || ''; inv.custAddr = c.address || ''; inv.docNo = '';
+    inv.customer = c.name || ''; inv.custCity = c.city || ''; inv.custPhone = c.phone || ''; inv.custAddr = c.address || ''; inv.docNo = ''; inv.requestCode = x.code || '';
     try { localStorage.setItem(key, JSON.stringify(inv)); } catch (e) { /* ignore */ }
     change(x.id, x.status === 'new' || x.status === 'contacted' ? { status: 'quoted' } : {}, 'status', 'ساخت پیش‌فاکتور مکث‌سیلور از این درخواست').then(function () { location.href = './product-catalog.html'; });
   }

@@ -60,11 +60,28 @@
   function clean(d) { var o = JSON.parse(JSON.stringify(d)); ['synced', 'review', 'sendPending', 'cloudSeen'].forEach(function (k) { delete o[k]; }); return o; }
   // a number that the cloud already gives to another document is moved to the next free sequence
   function bumpSeq(no) { var m = /^(.*-)(\d+)$/.exec(no); return m ? m[1] + ('00' + (Number(m[2]) + 1)).slice(-Math.max(3, m[2].length)) : no + '-2'; }
+  // proforma_numbers/<docNo> says who owns a number: the first person to push it keeps it. Another person who made the same number
+  // (two people with the same code on the same day) is moved to the next free one. If the registry cannot be read (rules not
+  // published yet) nothing changes: the push goes on as before.
+  function claimNo(uid, d) {
+    var ref = db.collection('proforma_numbers').doc(d.docNo);
+    return ref.get().then(function (s) {
+      if (s.exists) return s.data().uid === uid;
+      return ref.set({ uid: uid, at: Date.now() }).then(function () { return true; }, function () {
+        return ref.get().then(function (s2) { return !s2.exists || s2.data().uid === uid; }, function () { return true; });
+      });
+    }, function () { return true; });
+  }
   function ensureFree(uid, d) {
     var tries = 0;
     function check() {
       return db.collection('invoices').doc(uid + '_' + d.docNo).get().then(function (s) {
-        if (!s.exists || s.data().createdAt === d.createdAt) return;
+        if (!s.exists || s.data().createdAt === d.createdAt) return claimNo(uid, d).then(function (ok) {
+          if (ok) return;
+          if (++tries > 60) throw { code: 'docno-conflict' };
+          d.docNo = bumpSeq(d.docNo);
+          return check();
+        });
         if (++tries > 30) throw { code: 'docno-conflict' };
         d.docNo = bumpSeq(d.docNo);
         return check();

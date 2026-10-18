@@ -401,7 +401,7 @@
   }
   function snapshot() {
     return {
-      docNo: inv.docNo, date: invDate || today(), createdAt: Date.now(), customer: inv.customer, customerCity: inv.custCity, customerPhone: inv.custPhone, customerAddress: inv.custAddr, issuer: inv.issuer, unit: inv.unit,
+      docNo: inv.docNo, requestCode: inv.requestCode || '', date: invDate || today(), createdAt: Date.now(), customer: inv.customer, customerCity: inv.custCity, customerPhone: inv.custPhone, customerAddress: inv.custAddr, issuer: inv.issuer, unit: inv.unit,
       tax: inv.tax, discount: inv.discount, discMode: inv.discMode, pay: payCopy(),
       lines: inv.lines.filter(function (l) { return byId[l.id]; }).map(function (l) {
         var it = byId[l.id];
@@ -716,6 +716,7 @@
     var kept = d.lines.filter(function (l) { return byId[l.id]; });
     inv.lines = kept.map(function (l) { return { id: l.id, qty: l.qty, price: l.price }; });
     inv.docNo = keepNo ? d.docNo : '';
+    inv.requestCode = d.requestCode || '';
     inv.customer = d.customer; inv.custCity = d.customerCity || ''; inv.custPhone = d.customerPhone || ''; inv.custAddr = d.customerAddress || ''; inv.issuer = d.issuer || inv.issuer; inv.unit = d.unit; inv.tax = d.tax; inv.discount = d.discount; inv.discMode = d.discMode;
     inv.pay = d.pay ? JSON.parse(JSON.stringify(d.pay)) : { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false };
     invDate = keepNo ? d.date : today();
@@ -898,7 +899,7 @@
     else if (t.hasAttribute('data-arc-fcopy')) loadDraft(foreign[Number(t.getAttribute('data-arc-fcopy'))], false);
     else if (t.hasAttribute('data-arc-fpdf')) printDoc(foreign[Number(t.getAttribute('data-arc-fpdf'))], t);
     else if (t.hasAttribute('data-arc-backup')) downloadBackup();
-    else if (t.hasAttribute('data-inv-clear')) { if (window.confirm('همهٔ ردیف‌های پیش‌فاکتور پاک شود؟')) { inv.lines = []; inv.docNo = ''; invSave(); trayRender(); invButtons(); invoiceView(); } }
+    else if (t.hasAttribute('data-inv-clear')) { if (window.confirm('همهٔ ردیف‌های پیش‌فاکتور پاک شود؟')) { inv.lines = []; inv.docNo = ''; inv.requestCode = ''; invSave(); trayRender(); invButtons(); invoiceView(); } }
     else if (t.hasAttribute('data-close')) dialog.close();
     else if (t.closest('#catSources')) {
       state.src = t.getAttribute('data-src');
@@ -1031,7 +1032,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261282', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261283', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }

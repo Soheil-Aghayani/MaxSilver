@@ -448,7 +448,7 @@
     try { inv = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { /* ignore */ }
     if (!inv || typeof inv !== 'object') inv = { lines: [], unit: 'تومان', docNo: '', issuer: '', customer: '', custCity: '', custPhone: '', custAddr: '', discount: 0, discMode: 'pct', tax: 10, pay: { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false } };
     inv.lines = inv.lines || [];
-    if (cust) Object.keys(cust).forEach(function (k) { inv[k] = cust[k]; });
+    if (cust) { Object.keys(cust).forEach(function (k) { inv[k] = cust[k]; }); inv.requestCode = ''; }
     jobs.forEach(function (j) {
       var p = pickFor(j.id), q = qtyFor(j.id), l = inv.lines.filter(function (x) { return x.id === p.id; })[0];
       if (l) l.qty = (l.qty || 0) + q; else inv.lines.push({ id: p.id, qty: q, price: 0 });

@@ -42,7 +42,7 @@
     { id: 'events', href: './events.html', label: 'مناسبت‌ها', area: 'events', page: 'events.html' },
     { id: 'warehouse', href: './warehouse.html', label: 'انبار و موجودی', area: 'warehouse', page: 'warehouse.html' },
     { id: 'banks', href: './banks.html', label: 'حساب‌های بانکی', area: 'bankAccounts', page: 'banks.html' },
-    { id: 'fairs', href: './fairs.html', label: 'نمایشگاه‌ها', area: 'fairs', page: 'fairs.html' },
+    { id: 'fairs', href: './fairs.html', label: 'نمایشگاه‌ها', page: 'fairs.html' },
     { id: 'competitors', href: './competitors.html', label: 'تحلیل رقبا', area: 'competitors', page: 'competitors.html' },
     { id: 'dashboard', href: './ceo-dashboard.html', label: 'داشبورد CEO', area: 'dashboard', page: 'ceo-dashboard.html' },
     { id: 'analysis', href: './sales-analysis.html', label: 'تحلیل جزئیات فروش', area: 'analysis', page: 'sales-analysis.html' },
@@ -73,7 +73,7 @@
   function allowed() {
     var r = role(), R = window.MSRoles, on = signed();
     return ITEMS.filter(function (it) {
-      if (!on) return it.id === 'home' || it.id === 'planner' || it.id === 'panel' || it.id === 'contact';
+      if (!on) return it.id === 'home' || it.id === 'planner' || it.id === 'fairs' || it.id === 'panel' || it.id === 'contact';
       if (it.anon) return false;
       if (!it.area) return true;
       if (!r) return false;
@@ -128,7 +128,7 @@
     if (!signed()) {
       // visitors without an account: home, the business planner (its full name is the tooltip), contact, account
       byId.planner = Object.assign({}, byId.planner, { label: 'راه‌اندازی کسب‌وکار', tip: 'چه کسب‌وکاری می‌خواهید راه بیندازید؟' });
-      html = ['home', 'planner', 'contact', 'panel'].map(function (id) { return link(byId[id], cur === id); }).join('');
+      html = ['home', 'planner', 'fairs', 'contact', 'panel'].map(function (id) { return link(byId[id], cur === id); }).join('');
     } else {
       html = link(byId.home, cur === 'home');
       pinsFor(list).slice(0, maxPins()).forEach(function (id) { html += link(byId[id], cur === id); });

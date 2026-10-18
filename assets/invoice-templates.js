@@ -45,7 +45,7 @@
     var t = T.totals ? c.totals(doc) : null, P = T.party;
     return '<table class="ip-frame" style="' + style + '"><thead><tr><td>' +
         '<div class="ip-top"><div class="ip-brand"><img src="' + T.logo.src + '" alt="' + T.logo.alt + '" width="' + T.logo.w + '" height="' + T.logo.h + '"></div>' +
-        '<dl class="ip-ref"><div><dt>' + T.ref.no + '</dt><dd dir="ltr">' + c.esc(doc.docNo) + '</dd></div><div><dt>' + T.ref.date + '</dt><dd>' + c.esc(doc.date) + '</dd></div></dl></div>' +
+        '<dl class="ip-ref"><div><dt>' + T.ref.no + '</dt><dd dir="ltr">' + c.esc(doc.docNo) + '</dd></div>' + (doc.requestCode ? '<div><dt>کد سفارش</dt><dd dir="ltr">' + c.esc(doc.requestCode + '-' + doc.docNo) + '</dd></div>' : '') + '<div><dt>' + T.ref.date + '</dt><dd>' + c.esc(doc.date) + '</dd></div></dl></div>' +
       '</td></tr></thead><tbody><tr><td>' +
         '<h1>' + T.title + '</h1>' +
         '<p class="ip-line"><strong>' + P.customer + '</strong> ' + c.esc(doc.customer || '—') + '</p>' +
