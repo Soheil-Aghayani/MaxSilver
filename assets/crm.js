@@ -4,14 +4,14 @@
 // Every call, note and decision is appended to requests/<code>/log.
 (function () {
   'use strict';
-  var cfg = window.MS_FIREBASE, root = document.getElementById('cr'), RQ = window.MSRequests;
+  var cfg = window.MS_FIREBASE, root = document.getElementById('cr'), RQ = window.MSRequests, OF = window.MSOrder;
   if (!root) return;
-  if (!cfg || !window.firebase || !RQ) { root.innerHTML = '<p class="cr-note">سرویس در دسترس نیست. صفحه را دوباره باز کنید.</p>'; return; }
+  if (!cfg || !window.firebase || !RQ || !OF) { root.innerHTML = '<p class="cr-note">سرویس در دسترس نیست. صفحه را دوباره باز کنید.</p>'; return; }
   firebase.initializeApp(cfg);
   var auth = firebase.auth(), db = firebase.firestore();
   var faInt = new Intl.NumberFormat('fa-IR');
-  var S = { user: null, profile: null, loading: true, error: '', msg: '', list: [], team: [], q: '', flt: 'all', sel: '', log: [], busy: false, shown: 40 };
-  var unsub = null, unsubLog = null;
+  var S = { user: null, profile: null, loading: true, error: '', msg: '', list: [], team: [], inv: {}, q: '', flt: 'all', sel: '', log: [], busy: false, shown: 40 };
+  var unsub = null, unsubLog = null, unsubInv = null;
   var STATUS = RQ.STATUS, ROUTE = RQ.ROUTE;
   var I = {
     phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
@@ -32,6 +32,8 @@
   }
   var can = function (area) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, area)); };
   var lead = function () { return !!(S.profile && window.MSRoles && ['manager', 'ceo', 'sales_manager'].indexOf(window.MSRoles.norm(S.profile.role)) >= 0); };
+  var isAM = function () { return !!(S.profile && window.MSRoles && window.MSRoles.norm(S.profile.role) === 'account_manager'); };
+  var stg = function (x) { return OF.stageOf(x); };
   var myName = function () { return (S.profile && S.profile.name) || (S.user && S.user.email) || ''; };
   function when(ms) {
     if (!ms) return '';
@@ -40,19 +42,21 @@
     return j ? window.MSEvents.fa(j.jy + '/' + p(j.jm) + '/' + p(j.jd) + ' ' + t) : t;
   }
   function byId(id) { return S.list.filter(function (x) { return x.id === id; })[0] || null; }
-  function openStates(x) { return x.status !== 'won' && x.status !== 'lost'; }
+  function openStates(x) { return OF.CLOSED.indexOf(stg(x)) < 0; }
 
   // ---------- filters
-  var FILTERS = [['all', 'در جریان'], ['new', 'جدید'], ['call', 'نیاز به تماس'], ['warehouse', 'ارسال به انبار'], ['production', 'ارسال به تولید'], ['quoted', 'پیش‌فاکتور فرستاده شد'], ['won', 'خرید شد'], ['lost', 'منصرف شد'], ['free', 'بدون مسئول']];
+  var FILTERS = [['all', 'در جریان'], ['new', 'جدید'], ['call', 'نیاز به تماس'], ['pre', 'پیش‌فاکتور'], ['rej', 'رد شده'], ['acc', 'تأیید شده'], ['ful', 'انبار و تولید'], ['out', 'ارسال و تحویل'], ['end', 'مرجوع و لغو'], ['free', 'بدون مسئول']];
+  var EXTRA = [['warehouse', ''], ['production', '']];
+  var GROUP = { pre: ['preinvoice'], rej: ['rejected'], acc: ['accepted'], ful: ['warehouse', 'production', 'ready'], out: ['shipped', 'delivered'], end: ['returned', 'cancelled'] };
   function match(x, f) {
     if (f === 'all') return openStates(x);
-    if (f === 'new') return x.status === 'new';
-    if (f === 'call') return x.route === 'call' && openStates(x);
+    if (f === 'new') return x.status === 'new' && stg(x) === 'request';
+    if (f === 'call') return x.route === 'call' && openStates(x) && ['request', 'confirmed'].indexOf(stg(x)) >= 0;
     if (f === 'warehouse' || f === 'production') return x.route === f && openStates(x);
     if (f === 'free') return !x.assignee && openStates(x);
-    return x.status === f;
+    return GROUP[f] ? GROUP[f].indexOf(stg(x)) >= 0 : true;
   }
-  function counts() { var n = {}; FILTERS.forEach(function (f) { n[f[0]] = S.list.filter(function (x) { return match(x, f[0]); }).length; }); return n; }
+  function counts() { var n = {}; FILTERS.concat(EXTRA).forEach(function (f) { n[f[0]] = S.list.filter(function (x) { return match(x, f[0]); }).length; }); return n; }
   function filtered() {
     var q = norm(S.q);
     return S.list.filter(function (x) {
@@ -64,7 +68,7 @@
   // ---------- list
   function chip(f, n) { return '<button type="button" class="cr-chip" data-flt="' + f[0] + '" aria-pressed="' + (S.flt === f[0]) + '">' + f[1] + ' <b>' + faInt.format(n[f[0]] || 0) + '</b></button>'; }
   function badges(x) {
-    return '<span class="cr-b st-' + esc(x.status) + '">' + esc(STATUS[x.status] || x.status) + '</span><span class="cr-b rt-' + esc(x.route) + '">' + esc(ROUTE[x.route] || x.route) + '</span>';
+    return '<span class="cr-b sg-' + esc(stg(x)) + '">' + esc(OF.LABEL[stg(x)]) + '</span><span class="cr-b rt-' + esc(x.route) + '">' + esc(ROUTE[x.route] || x.route) + '</span>';
   }
   function card(x) {
     var c = x.customer || {}, p = x.plan || {}, done = !openStates(x);
@@ -79,9 +83,10 @@
   }
   function listHtml() {
     var list = filtered(), n = counts();
-    return '<div class="cr-sum"><div><b>' + faInt.format(n.new) + '</b><span>جدید</span></div><div><b>' + faInt.format(n.call) + '</b><span>نیاز به تماس</span></div><div><b>' + faInt.format(n.warehouse) + '</b><span>ارسال به انبار</span></div><div><b>' + faInt.format(n.production) + '</b><span>ارسال به تولید</span></div></div>' +
+    var tiles = isAM() ? [['pre', 'منتظر بررسی شما'], ['acc', 'تأییدشده'], ['ful', 'انبار و تولید'], ['out', 'ارسال و تحویل']] : [['new', 'جدید'], ['call', 'نیاز به تماس'], ['warehouse', 'ارسال به انبار'], ['production', 'ارسال به تولید']];
+    return '<div class="cr-sum">' + tiles.map(function (k) { return '<div><b>' + faInt.format(n[k[0]] || 0) + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
       '<div class="cr-bar"><input id="crQ" type="search" placeholder="جست‌وجوی کد، نام، موبایل، شهر…" value="' + esc(S.q) + '" autocomplete="off"></div>' +
-      '<div class="cr-chips" role="group" aria-label="وضعیت">' + FILTERS.filter(function (f) { return f[0] !== 'free' || lead(); }).map(function (f) { return chip(f, n); }).join('') + '</div>' +
+      '<div class="cr-chips" role="group" aria-label="وضعیت">' + FILTERS.filter(function (f) { return f[0] !== 'free' || lead(); }).filter(function (f) { return !isAM() || ['all', 'pre', 'rej', 'acc', 'ful', 'out', 'end'].indexOf(f[0]) >= 0; }).map(function (f) { return chip(f, n); }).join('') + '</div>' +
       '<div class="cr-list">' + list.slice(0, S.shown).map(card).join('') + '</div>' +
       (list.length > S.shown ? '<button type="button" class="cr-more" data-more>نمایش بیشتر (' + faInt.format(list.length - S.shown) + ')</button>' : '') +
       (list.length ? '' : '<p class="cr-note">درخواستی پیدا نشد.</p>');
@@ -90,7 +95,9 @@
     if (S.loading) return '<p class="cr-note">در حال بارگذاری…</p>';
     if (!S.user) return '<p class="cr-note">برای دیدن درخواست‌ها ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="cr-note">حساب شما هنوز فعال نشده است.</p>';
-    if (!can('crm')) return '<p class="cr-note">این بخش برای فروش و مدیریت است.</p>';
+    if (!can('crm')) return '<p class="cr-note">این بخش برای فروش، اکانت منیجر و مدیریت است.</p>';
+    if (isAM()) return '<h1>سفارش‌ها</h1><p class="cr-lead">سفارش‌هایی که از درخواست مشتری ساخته شده‌اند. پیش‌فاکتور را در «پنل ← پیش‌فاکتورها» تأیید یا با دلیل رد کنید؛ پس از تأیید، مسیر انبار یا تولید را شما تعیین می‌کنید و مرحلهٔ سفارش (آماده، ارسال، تحویل، مرجوع) را شما ثبت می‌کنید. موجودی آزاد انبار لحظه‌ای نشان داده می‌شود.</p>' +
+      (S.error ? '<p class="cr-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.msg ? '<p class="cr-ok" role="status">' + esc(S.msg) + '</p>' : '') + listHtml();
     return '<h1>درخواست‌های خرید</h1><p class="cr-lead">درخواست مشتریانی که از «طراحی کافه و رستوران» ثبت شده است. شمارهٔ موبایل تأیید نشده؛ مشتری را با تماس بشناسید، سپس تصمیم بگیرید که درخواست به انبار یا تولید برود.</p>' +
       (S.error ? '<p class="cr-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.msg ? '<p class="cr-ok" role="status">' + esc(S.msg) + '</p>' : '') + listHtml();
   }
@@ -108,24 +115,72 @@
   dlg.className = 'cr-dialog';
   document.body.appendChild(dlg);
   function row(k, v, ltr) { return '<div><dt>' + k + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + (v ? esc(v) : '—') + '</dd></div>'; }
+  // ---------- the stage of an order
+  function stockOf(id) { var d = S.inv[id]; return d ? { qty: d.qty || 0, res: d.reserved || 0, free: Math.max(0, (d.qty || 0) - (d.reserved || 0)) } : null; }
+  function stageActions(x) {
+    var cur = stg(x), all = OF.STAGES.map(function (s) { return s[0]; });
+    if (lead()) return all.filter(function (k) { return k !== cur; });
+    if (isAM()) {
+      var next = { accepted: ['warehouse', 'production', 'cancelled'], warehouse: ['ready', 'cancelled'], production: ['ready', 'cancelled'], ready: ['shipped', 'cancelled'], shipped: ['delivered', 'returned', 'cancelled'], delivered: ['returned'] };
+      return next[cur] || [];
+    }
+    if (S.user && x.assignee === S.user.uid) return cur === 'request' ? ['confirmed', 'cancelled'] : cur === 'confirmed' ? ['cancelled'] : [];
+    return [];
+  }
+  function stageFields(k) {
+    var f = { stage: k };
+    if (k === 'warehouse' || k === 'production') f.route = k;
+    if (!isAM() && OF.STATUS_FOR[k]) f.status = OF.STATUS_FOR[k];
+    return f;
+  }
+  function stageSection(x) {
+    var cur = stg(x), path = ['request', 'confirmed', 'preinvoice', 'accepted', cur === 'production' ? 'production' : 'warehouse', 'ready', 'shipped', 'delivered'], idx = path.indexOf(cur);
+    var steps = path.map(function (k, i) { return '<li class="cr-step' + (idx >= 0 && i < idx ? ' done' : '') + (k === cur ? ' on' : '') + '"><i></i><span>' + OF.LABEL[k] + '</span></li>'; }).join('');
+    var side = ['rejected', 'returned', 'cancelled'].indexOf(cur) >= 0 ? '<p class="cr-side sg-' + cur + '">' + OF.LABEL[cur] + (cur === 'rejected' && x.rejectReason ? ' — ' + esc(x.rejectReason) : '') + '</p>' : '';
+    var codes = x.orderCode || x.proformaNo ? '<dl class="cr-facts">' + row('شمارهٔ پیش‌فاکتور', x.proformaNo, true) + row('کد سفارش', x.orderCode, true) + '</dl>' : '';
+    var acts = stageActions(x), hint = '';
+    if (isAM() && (cur === 'preinvoice' || cur === 'rejected')) hint = '<p class="cr-hint">برای تأیید یا رد با دلیل، پیش‌فاکتور را در <a href="./panel.html#invoices">پنل ← پیش‌فاکتورها</a> باز کنید.</p>';
+    else if (isAM() && !acts.length && cur !== 'delivered' && cur !== 'cancelled' && cur !== 'returned') hint = '<p class="cr-hint">این درخواست هنوز به مرحلهٔ شما نرسیده است.</p>';
+    return '<section><h3>مرحلهٔ سفارش</h3><ol class="cr-steps">' + steps + '</ol>' + side + codes + hint +
+      (acts.length ? '<div class="cr-seg" role="group" aria-label="تغییر مرحله">' + acts.map(function (k) { return '<button type="button" data-stage="' + k + '">' + OF.LABEL[k] + '</button>'; }).join('') + '</div>' : '') + '</section>';
+  }
+  function claimLine(x, i) {
+    var l = (x.lines || [])[i]; if (!l || !isAM() || S.busy) return;
+    var qty = l.qty || 1, invRef = db.collection('inventory').doc(l.id), cl = db.collection('inventory_claims').doc(), ref = (x.orderCode || x.code || '').slice(0, 60);
+    S.busy = true; S.error = '';
+    db.runTransaction(function (tx) {
+      return tx.get(invRef).then(function (snap) {
+        var d = snap.exists ? snap.data() : null, free = d ? (d.qty || 0) - (d.reserved || 0) : 0;
+        if (!d || qty > free) throw { code: 'not-enough', free: free };
+        tx.update(invRef, { reserved: (d.reserved || 0) + qty, updatedAt: Date.now(), updatedBy: S.user.uid, updatedByName: myName() });
+        tx.set(cl, { pid: l.id, qty: qty, ref: ref, customer: ((x.customer || {}).name || '').slice(0, 80), note: '', status: 'active', at: Date.now(), by: S.user.uid, byName: myName() });
+      });
+    }).then(function () { S.busy = false; return change(x.id, {}, 'note', 'رزرو انبار: ' + l.name + ' × ' + qty); },
+      function (e) { S.busy = false; S.error = e && e.code === 'not-enough' ? 'موجودی آزاد کافی نیست (فعلاً ' + faInt.format(e.free) + ' عدد).' : errText(e); showDetail(); });
+  }
   function detailHtml(x) {
     var c = x.customer || {}, r = x.receiver || {}, p = x.plan || {};
     var team = S.team.map(function (u) { return '<button type="button" role="radio" data-assign="' + esc(u.id) + '" aria-checked="' + (x.assignee === u.id) + '">' + esc(u.name) + '</button>'; }).join('');
-    var lines = (x.lines || []).map(function (l, i) { return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(l.code || '—') + '</td><td class="nm">' + esc(l.name) + '</td><td>' + esc(l.brand || '') + '</td><td>' + faInt.format(l.qty || 0) + '</td></tr>'; }).join('');
+    var showInv = isAM() || lead(), canClaim = isAM() && ['accepted', 'warehouse', 'production', 'ready'].indexOf(stg(x)) >= 0;
+    var lines = (x.lines || []).map(function (l, i) {
+      var s = stockOf(l.id), q = l.qty || 1;
+      return '<tr><td>' + faInt.format(i + 1) + '</td><td dir="ltr">' + esc(l.code || '—') + '</td><td class="nm">' + esc(l.name) + '</td><td>' + esc(l.brand || '') + '</td><td>' + faInt.format(l.qty || 0) + '</td>' +
+        (showInv ? '<td class="' + (s && s.free >= q ? 'okq' : 'noq') + '">' + (s ? faInt.format(s.free) : '—') + '</td><td>' + (canClaim && s && s.free >= q ? '<button type="button" class="cr-mini" data-claim-line="' + i + '">رزرو</button>' : '') + '</td>' : '') + '</tr>';
+    }).join('');
     var log = S.log.map(function (g) { return '<li><b>' + esc(RQ.LOGKIND[g.kind] || g.kind) + '</b> <span>' + esc(g.byName || '') + SEP + esc(when(g.at)) + '</span>' + (g.text ? '<p>' + esc(g.text) + '</p>' : '') + '</li>'; }).join('');
     return '<div class="cr-dbar"><div><h2 dir="ltr">' + esc(x.code) + '</h2><div class="cr-bs">' + badges(x) + '</div></div><button type="button" class="cr-ic" data-close aria-label="بستن">' + I.close + '</button></div>' +
       '<div class="cr-dbody" data-id="' + esc(x.id) + '">' +
       (S.error ? '<p class="cr-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<section><h3>خریدار</h3><dl class="cr-facts">' + row('نام', c.name) + '<div><dt>موبایل</dt><dd>' + (c.phone ? '<a class="cr-tel" href="tel:' + esc(c.phone) + '" dir="ltr">' + I.phone + esc(RQ.fa(c.phone)) + '</a>' : '—') + '</dd></div>' + row('کد ملی', RQ.fa(c.nid), true) + row('شهر', c.city) + row('کد پستی', c.zip === '1111111111' ? 'ندارد' : RQ.fa(c.zip), c.zip !== '1111111111') + row('نشانی', c.address) + '</dl></section>' +
       '<section><h3>تحویل‌گیرنده</h3>' + (r.self ? '<p class="cr-self">خود خریدار تحویل می‌گیرد.</p>' : '<dl class="cr-facts">' + row('نام', r.name) + row('کد ملی', RQ.fa(r.nid), true) + '<div><dt>موبایل</dt><dd>' + (r.phone ? '<a class="cr-tel" href="tel:' + esc(r.phone) + '" dir="ltr">' + I.phone + esc(RQ.fa(r.phone)) + '</a>' : '—') + '</dd></div></dl>') + '</section>' +
-      '<section><h3>کالاها <small>' + esc(p.concept || '') + (p.size ? ' ' + esc(p.size) : '') + (p.serve ? SEP + esc(p.serve) : '') + '</small></h3><div class="cr-tw"><table class="cr-lines"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th></tr></thead><tbody>' + lines + '</tbody></table></div>' + (x.note ? '<p class="cr-self">توضیح مشتری: ' + esc(x.note) + '</p>' : '') + '</section>' +
-      '<section><h3>تصمیم</h3><p class="cr-hint">«نیاز به تماس» یعنی هنوز با مشتری صحبت نشده. پس از تماس و اطمینان از خریدار، مشخص کنید درخواست به انبار برود یا به تولید.</p>' +
+      '<section><h3>کالاها <small>' + esc(p.concept || '') + (p.size ? ' ' + esc(p.size) : '') + (p.serve ? SEP + esc(p.serve) : '') + '</small></h3><div class="cr-tw"><table class="cr-lines"><thead><tr><th>ردیف</th><th>کد</th><th>شرح کالا</th><th>برند</th><th>تعداد</th>' + (showInv ? '<th>آزاد در انبار</th><th></th>' : '') + '</tr></thead><tbody>' + lines + '</tbody></table></div>' + (x.note ? '<p class="cr-self">توضیح مشتری: ' + esc(x.note) + '</p>' : '') + '</section>' +
+      stageSection(x) +
+      (isAM() ? '' : '<section><h3>تصمیم</h3><p class="cr-hint">«نیاز به تماس» یعنی هنوز با مشتری صحبت نشده. پس از تماس و اطمینان از خریدار، مشخص کنید درخواست به انبار برود یا به تولید.</p>' +
       '<div class="cr-seg" role="radiogroup" aria-label="تصمیم ارسال">' + Object.keys(ROUTE).map(function (k) { return '<button type="button" role="radio" data-route="' + k + '" aria-checked="' + (x.route === k) + '">' + ROUTE[k] + '</button>'; }).join('') + '</div>' +
-      '<h3 class="cr-h2">وضعیت</h3><div class="cr-seg" role="radiogroup" aria-label="وضعیت">' + Object.keys(STATUS).map(function (k) { return '<button type="button" role="radio" data-status="' + k + '" aria-checked="' + (x.status === k) + '">' + STATUS[k] + '</button>'; }).join('') + '</div>' +
-      '<h3 class="cr-h2">مسئول پیگیری</h3>' + (lead() ? (team ? '<div class="cr-seg" role="radiogroup" aria-label="مسئول پیگیری">' + team + '</div>' : '<p class="cr-hint">هیچ کارشناس فروش فعالی پیدا نشد.</p>') : '<p class="cr-self">' + esc(x.assigneeName || '—') + '</p>') + '</section>' +
+      '<h3 class="cr-h2">مسئول پیگیری</h3>' + (lead() ? (team ? '<div class="cr-seg" role="radiogroup" aria-label="مسئول پیگیری">' + team + '</div>' : '<p class="cr-hint">هیچ کارشناس فروش فعالی پیدا نشد.</p>') : '<p class="cr-self">' + esc(x.assigneeName || '—') + '</p>') + '</section>') +
       '<section><h3>ثبت تماس یا یادداشت</h3><textarea data-text rows="3" maxlength="400" placeholder="نتیجهٔ تماس، قول‌وقرار یا یادداشت…"></textarea>' +
-      '<div class="cr-acts"><button type="button" class="cr-btn" data-logcall>ثبت نتیجهٔ تماس</button><button type="button" class="cr-btn alt" data-lognote>فقط یادداشت</button>' +
-      '<button type="button" class="cr-btn alt" data-proforma>' + I.doc + 'ساخت پیش‌فاکتور مکث‌سیلور</button></div></section>' +
+      '<div class="cr-acts">' + (isAM() ? '' : '<button type="button" class="cr-btn" data-logcall>ثبت نتیجهٔ تماس</button>') + '<button type="button" class="cr-btn alt" data-lognote>فقط یادداشت</button>' +
+      (isAM() ? '' : '<button type="button" class="cr-btn alt" data-proforma>' + I.doc + 'ساخت پیش‌فاکتور مکث‌سیلور</button>') + '</div></section>' +
       '<section><h3>سابقه</h3>' + (log ? '<ul class="cr-log">' + log + '</ul>' : '<p class="cr-hint">هنوز چیزی ثبت نشده است.</p>') + '</section>' + (lead() ? '<section class="cr-danger"><h3>حذف</h3><p class="cr-hint">حذف کامل درخواست از پایگاه داده؛ برگشت ندارد.</p><button type="button" class="cr-btn danger" data-delete>' + I.trash + 'حذف این درخواست</button></section>' : '') + '</div>';
   }
   function showDetail() {
@@ -162,7 +217,7 @@
     inv.lines = (x.lines || []).map(function (l) { return { id: l.id, qty: l.qty || 1, price: 0 }; });
     inv.customer = c.name || ''; inv.custCity = c.city || ''; inv.custPhone = c.phone || ''; inv.custAddr = c.address || ''; inv.docNo = ''; inv.requestCode = x.code || '';
     try { localStorage.setItem(key, JSON.stringify(inv)); } catch (e) { /* ignore */ }
-    change(x.id, x.status === 'new' || x.status === 'contacted' ? { status: 'quoted' } : {}, 'status', 'ساخت پیش‌فاکتور مکث‌سیلور از این درخواست').then(function () { location.href = './product-catalog.html'; });
+    change(x.id, stg(x) === 'request' ? { stage: 'confirmed', status: 'contacted' } : {}, 'status', 'ساخت پیش‌فاکتور مکث‌سیلور از این درخواست').then(function () { location.href = './product-catalog.html'; });
   }
 
   function removeReq(x) {
@@ -205,7 +260,12 @@
     if (e.target === dlg || e.target.closest('[data-close]')) { closeReq(); return; }
     if (!x || S.busy) return;
     if ((t = e.target.closest('[data-route]'))) { var k = t.getAttribute('data-route'); if (k !== x.route) change(x.id, { route: k }, 'route', ROUTE[k]); return; }
-    if ((t = e.target.closest('[data-status]'))) { var s = t.getAttribute('data-status'); if (s !== x.status) change(x.id, { status: s }, 'status', STATUS[s]); return; }
+    if ((t = e.target.closest('[data-stage]'))) {
+      var sk = t.getAttribute('data-stage');
+      if (sk !== stg(x)) { if ((sk === 'cancelled' || sk === 'returned') && !window.confirm('مرحلهٔ «' + OF.LABEL[sk] + '» ثبت شود؟')) return; change(x.id, stageFields(sk), 'status', 'مرحله: ' + OF.LABEL[sk]); }
+      return;
+    }
+    if ((t = e.target.closest('[data-claim-line]'))) { claimLine(x, Number(t.getAttribute('data-claim-line'))); return; }
     if ((t = e.target.closest('[data-assign]'))) { var u = S.team.filter(function (m) { return m.id === t.getAttribute('data-assign'); })[0]; if (u && u.id !== x.assignee) change(x.id, { assignee: u.id, assigneeName: u.name }, 'assign', u.name); return; }
     var box = dlg.querySelector('[data-text]'), txt = box ? box.value.trim() : '';
     if (e.target.closest('[data-logcall]')) {
@@ -221,12 +281,19 @@
   // ---------- data
   function listen() {
     if (unsub) { unsub(); unsub = null; }
-    var col = db.collection('requests'), q = lead() ? col : col.where('assignee', '==', S.user.uid);
+    var col = db.collection('requests'), q = lead() || isAM() ? col : col.where('assignee', '==', S.user.uid);
     unsub = q.onSnapshot(function (snap) {
       S.list = []; snap.forEach(function (s) { var d = s.data(); d.id = s.id; S.list.push(d); });
       S.list.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
       S.loading = false; S.error = ''; render(); if (S.sel) showDetail(); autoAssign();
     }, function (e) { S.loading = false; S.error = errText(e); render(); });
+  }
+  function listenInv() {
+    if (unsubInv) { unsubInv(); unsubInv = null; }
+    if (!(isAM() || lead())) return;
+    unsubInv = db.collection('inventory').onSnapshot(function (snap) {
+      var m = {}; snap.forEach(function (s) { m[s.id] = s.data(); }); S.inv = m; if (S.sel) showDetail();
+    }, function () { /* no stock column */ });
   }
   function loadTeam() {
     if (!lead()) return Promise.resolve();
@@ -238,11 +305,14 @@
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.list = []; S.team = [];
     if (unsub) { unsub(); unsub = null; }
+    if (unsubInv) { unsubInv(); unsubInv = null; }
     if (!u) { S.loading = false; render(); return; }
     S.loading = true; render();
     db.collection('users').doc(u.uid).get().then(function (snap) {
       S.profile = snap.exists ? snap.data() : null;
       if (!S.profile || S.profile.active === false || !can('crm')) { S.loading = false; render(); return; }
+      if (isAM()) S.flt = 'pre';
+      listenInv();
       return loadTeam().then(listen);
     }).then(null, function (e) { S.loading = false; S.error = errText(e); render(); });
   });

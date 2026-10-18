@@ -28,3 +28,5 @@
 .ip-cap{position:fixed;left:-10000px;top:0;width:794px;box-sizing:border-box;padding:45px;background:#fff;color:var(--ip-t,var(--ip-i,#051934));font:12.5px/1.8 Estedad,Tahoma,sans-serif;direction:rtl}
 .ip-cap .ip-frame{height:auto}
 .ip-recv{display:flex;gap:28px}
+
+.ip-bank{margin:10px 0;padding:8px 12px;border:1px solid var(--ip-i,#051934);border-radius:6px;font-size:12.5px;break-inside:avoid}.ip-bank dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px;margin:6px 0 0}.ip-bank dl div{display:flex;gap:6px}.ip-bank dt{font-weight:700}.ip-bank dd{margin:0}

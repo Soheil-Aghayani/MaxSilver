@@ -35,6 +35,13 @@
   };
   function get(id) { return TEMPLATES[id] || TEMPLATES['max-silver']; }
 
+  // where the customer pays: the account finance chose for this pre-invoice (a brand's, the company's or a supplier's)
+  function bankBlock(b, c) {
+    var row = function (k, v, ltr) { return v ? '<div><dt>' + k + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + c.esc(v) + '</dd></div>' : ''; };
+    return '<div class="ip-bank"><strong>اطلاعات پرداخت</strong><dl>' + row('صاحب حساب', b.holder) + row('بانک', b.bank) + row('شمارهٔ حساب', b.account ? c.fa0(b.account) : '', true) + row('شبا', b.sheba, true) +
+      row('شمارهٔ کارت', b.card ? c.fa0(b.card) : '', true) + row('در وجه (چک)', b.payee) + '</dl></div>';
+  }
+
   // c: helpers from catalog.js { esc, faInt, fa, fa0, money, numWords, totals(doc), payPrint(doc) }
   function html(doc, c, id) {
     var T = get(id || doc.template), u = doc.unit, style = '--ip-a:' + T.accent + ';--ip-i:' + T.ink + (T.onAccent ? ';--ip-t:' + T.onAccent : '');
@@ -56,7 +63,7 @@
         '<table class="ip-items"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
         (T.totals ? '<table class="ip-totals"><tbody><tr><td>جمع کل</td><td>' + c.money(t.sub, u) + '</td></tr><tr><td>تخفیف</td><td>' + c.money(t.disc, u) + '</td></tr><tr><td>مبلغ پس از تخفیف</td><td>' + c.money(t.net, u) + '</td></tr>' +
         '<tr><td>مالیات بر ارزش افزوده (' + c.esc(c.fa.format(doc.tax || 0)) + '٪)</td><td>' + c.money(t.tax, u) + '</td></tr><tr class="grand"><td>مبلغ قابل پرداخت</td><td>' + c.money(t.total, u) + '</td></tr></tbody></table>' : '') +
-        (T.words ? '<p class="ip-words"><strong>مبلغ به حروف:</strong> ' + c.esc(c.numWords(t.total)) + ' ' + c.esc(u) + '</p>' : '') + (T.payment ? c.payPrint(doc) : '') +
+        (T.words ? '<p class="ip-words"><strong>مبلغ به حروف:</strong> ' + c.esc(c.numWords(t.total)) + ' ' + c.esc(u) + '</p>' : '') + (T.payment ? c.payPrint(doc) : '') + (T.payment && doc.bank ? bankBlock(doc.bank, c) : '') +
         (T.note ? '<p class="ip-words">' + c.esc(T.note) + '</p>' : '') +
         (T.sign ? '<div class="ip-sign"><div><b>' + T.sign[0] + '</b></div><div><b>' + T.sign[1] + '</b></div></div>' : '') +
       '</td></tr></tbody><tfoot><tr><td><div class="ip-foot">' + T.footer + (doc.docNo ? ' | ' + c.esc(doc.docNo) : '') + '</div></td></tr></tfoot></table>';

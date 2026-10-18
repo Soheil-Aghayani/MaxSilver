@@ -982,7 +982,7 @@
       fact('تلفن گیرنده', d.customerPhone ? faDigitsStr(d.customerPhone) : '', true) + fact('نشانی', d.customerAddress) + '</dl>' +
       '<div class="pn-tablewrap"><table class="pn-tbl"><thead><tr><th>کالا</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<dl class="pn-facts">' + fact('جمع کل', money(t.sub, d.unit)) + fact('تخفیف', money(t.disc, d.unit)) + fact('مالیات', money(t.tax, d.unit)) + fact('مبلغ قابل پرداخت', money(t.total, d.unit)) + fact('شرایط پرداخت', pay) + '</dl>' + cheques +
-      actions + '<p class="pn-err" id="rvErr" role="alert" hidden></p>' +
+      bankHtml(d, r, arch) + actions + '<p class="pn-err" id="rvErr" role="alert" hidden></p>' +
       (tk && !arch ? '<button type="button" class="pn-secondary" data-tk-open="' + esc(tk.id) + '">باز کردن گفت‌وگو</button>' : '') + '</div>';
     if (!dlg.open) dlg.showModal();
   }
@@ -1030,6 +1030,36 @@
     b.set(ref.collection('messages').doc(), { uid: me, name: myName(), role: myRole(), text: String(o.text).slice(0, 1900), at: now });
   }
   // account manager: approve, or refuse with a reason (the reason travels as a letter to the sales manager)
+  // the request this pre-invoice was made from follows the review (best effort: the review itself is already saved)
+  function stageLink(d, fields, text) {
+    if (!d || !d.requestCode || !window.MSOrder || !S.user) return;
+    window.MSOrder.link(db, d.requestCode, fields, text, { uid: S.user.uid, name: myName() });
+  }
+  // finance chooses the bank account that the customer's copy of an approved pre-invoice shows
+  function loadBanks() {
+    if (S.banks || S.banksBusy) return;
+    S.banksBusy = true;
+    db.collection('bank_accounts').get().then(function (qs) { var l = []; qs.forEach(function (s) { var x = s.data(); x.id = s.id; if (x.active !== false) l.push(x); }); S.banks = l; }, function () { S.banks = []; })
+      .then(function () { S.banksBusy = false; if (S.invOpen && dlg.open) invDetail(S.invOpen); });
+  }
+  var BANK_KIND = { brand: 'برند', company: 'شرکت', supplier: 'تأمین‌کننده' };
+  function bankHtml(d, r, arch) {
+    var b = d.bank, show = b ? '<p class="pn-note">' + esc(b.label || '') + ' · ' + esc(b.holder || '') + (b.sheba ? ' · <span dir="ltr">' + esc(b.sheba) + '</span>' : b.account ? ' · <span dir="ltr">' + esc(faDigitsStr(b.account)) + '</span>' : '') + '</p>' : '';
+    if (arch || r.status !== 'approved') return b ? '<div class="pn-rv"><b>حساب بانکی پیش‌فاکتور</b>' + show + '</div>' : '';
+    if (!can('bankPick')) return b ? '<div class="pn-rv ok"><b>حساب بانکی پیش‌فاکتور (انتخاب مالی)</b>' + show + '</div>' : '<div class="pn-rv"><b>حساب بانکی</b><p>مالی هنوز حسابی انتخاب نکرده است.</p></div>';
+    loadBanks();
+    if (!S.banks) return '<div class="pn-rv"><b>حساب بانکی پیش‌فاکتور</b><p>در حال بارگذاری…</p></div>';
+    if (!S.banks.length) return '<div class="pn-rv"><b>حساب بانکی پیش‌فاکتور</b><p>اکانت منیجر هنوز حسابی ثبت نکرده است (بخش «حساب‌های بانکی»).</p></div>';
+    return '<div class="pn-rv ok"><b>حساب بانکی پیش‌فاکتور: کدام حساب روی نسخهٔ مشتری بیاید؟</b><div class="pn-bankopts" role="radiogroup" aria-label="حساب بانکی">' + S.banks.map(function (x) {
+      return '<button type="button" role="radio" class="pn-bankopt" data-bank-pick="' + esc(x.id) + '" aria-checked="' + (d.bankId === x.id) + '"><b>' + esc(x.label) + '</b><small>' + esc(x.kind === 'brand' ? (x.brand || 'برند') : BANK_KIND[x.kind] || '') + ' · ' + esc(x.holder || '') + '</small></button>';
+    }).join('') + '</div></div>';
+  }
+  function pickBank(id) {
+    var d = findInv(S.invOpen), x = (S.banks || []).filter(function (b) { return b.id === id; })[0];
+    if (!d || !x || !S.user) return;
+    var snap = { label: x.label || '', kind: x.kind || '', brand: x.brand || '', holder: x.holder || '', bank: x.bank || '', account: x.account || '', sheba: x.sheba || '', card: x.card || '', payee: x.payee || '' };
+    db.collection('invoices').doc(invKey(d)).update({ bankId: id, bank: snap, updatedAt: Date.now() }).then(function () { return reloadInvoices(); }).then(function () { invDetail(S.invOpen); }, function (err) { rvFail(errText(err)); });
+  }
   function reviewDoc(status, reason) {
     var d = findInv(S.invOpen);
     if (!d || !S.user) return;
@@ -1051,7 +1081,11 @@
       noteTicket(b, tk, 'پیش‌فاکتور توسط اکانت منیجر تأیید شد.', true);
     }
     rvLock();
-    b.commit().then(function () { return reloadInvoices(); }).then(function () { dlg.close(); }, function (err) { rvFail(errText(err)); });
+    b.commit().then(function () {
+      stageLink(d, status === 'refusal' ? { stage: 'rejected', rejectReason: String(reason || '').slice(0, 400) } : { stage: 'accepted' },
+        status === 'refusal' ? 'پیش‌فاکتور ' + d.docNo + ' توسط اکانت منیجر رد شد و برای مدیر فروش فرستاده شد: ' + reason : 'پیش‌فاکتور ' + d.docNo + ' توسط اکانت منیجر تأیید شد');
+      return reloadInvoices();
+    }).then(function () { dlg.close(); }, function (err) { rvFail(errText(err)); });
   }
   // sales manager (or management): accept the refusal (archive and remove everywhere) or decline it (the proforma stays valid)
   function decideRefusal(accept, note) {
@@ -1076,7 +1110,10 @@
       toUid: d.ownerUid, toName: d.ownerName || '', kind: 'proforma-decision', docNo: d.docNo, ownerUid: d.ownerUid,
       audience: ['uid:' + me, 'uid:' + d.ownerUid, 'role:account_manager'] } });
     rvLock();
-    b.commit().then(function () { return reloadInvoices(); }).then(function () { dlg.close(); }, function (err) { rvFail(errText(err)); });
+    b.commit().then(function () {
+      stageLink(d, accept ? { stage: 'cancelled' } : { stage: 'accepted' }, accept ? 'مدیر فروش رد پیش‌فاکتور ' + d.docNo + ' را پذیرفت؛ سفارش لغو شد' : 'مدیر فروش رد پیش‌فاکتور ' + d.docNo + ' را نپذیرفت؛ پیش‌فاکتور معتبر ماند');
+      return reloadInvoices();
+    }).then(function () { dlg.close(); }, function (err) { rvFail(errText(err)); });
   }
 
   // ----- job descriptions (شرح وظایف): everyone reads their own; hr and management edit; every edit is copied to the employee and hr
@@ -1338,6 +1375,7 @@
   // ----- actions
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-out]')) { auth.signOut(); return; }
+    var bp = e.target.closest('[data-bank-pick]'); if (bp) { pickBank(bp.getAttribute('data-bank-pick')); return; }
     if (e.target.closest('[data-rv-approve]')) { reviewDoc('approved'); return; }
     if (e.target.closest('[data-rv-refuse]')) { var rb = dlg.querySelector('#rvBox'); if (rb) { rb.hidden = !rb.hidden; var rr = dlg.querySelector('#rvReason'); if (rr && !rb.hidden) rr.focus(); } return; }
     if (e.target.closest('[data-rv-send]')) {

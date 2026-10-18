@@ -90,7 +90,11 @@ service cloud.firestore {
         || (hasRole(['sales_manager', 'manager', 'ceo'])
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['review', 'updatedAt'])
           && resource.data.get('review', {}).get('status', '') == 'refusal'
-          && request.resource.data.review.status == 'kept'));
+          && request.resource.data.review.status == 'kept')
+        // finance chooses which bank account the customer's copy shows (only after the account manager approved the pre-invoice)
+        || (hasRole(['finance'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bankId', 'bank', 'updatedAt'])
+          && resource.data.get('review', {}).get('status', '') == 'approved'));
       allow delete: if approved() && (resource.data.ownerUid == request.auth.uid || isManager()
         || (hasRole(['sales_manager']) && resource.data.get('review', {}).get('status', '') == 'refusal'));
     }
@@ -299,18 +303,25 @@ service cloud.firestore {
         && request.resource.data.note is string && request.resource.data.note.size() <= 500
         && request.resource.data.terms is string && request.resource.data.terms.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
         && request.resource.data.src == 'planner';
-      allow read: if salesLead() || (hasRole(['visitor']) && resource.data.get('assignee', '') == request.auth.uid);
+      allow read: if salesLead() || hasRole(['account_manager']) || (hasRole(['visitor']) && resource.data.get('assignee', '') == request.auth.uid);
       allow update: if request.resource.data.status in ['new', 'contacted', 'quoted', 'won', 'lost']
         && request.resource.data.route in ['call', 'warehouse', 'production']
+        && request.resource.data.get('stage', 'request') in ['request', 'confirmed', 'preinvoice', 'rejected', 'accepted', 'warehouse', 'production', 'ready', 'shipped', 'delivered', 'returned', 'cancelled']
+        // stage: the specialist moves a request to «confirmed» and issues the pre-invoice (the app writes `preinvoice` and the numbers);
+        // the account manager accepts, rejects and carries the order on; the sales manager and management may set any stage
         && ((salesLead()
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'assignee', 'assigneeName', 'updatedAt', 'lastNote']))
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'assignee', 'assigneeName', 'updatedAt', 'lastNote', 'stage', 'proformaNo', 'orderCode', 'proformaUid', 'rejectReason']))
             || (hasRole(['visitor']) && resource.data.get('assignee', '') == request.auth.uid
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'updatedAt', 'lastNote'])));
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'route', 'updatedAt', 'lastNote', 'stage', 'proformaNo', 'orderCode', 'proformaUid'])
+              && request.resource.data.get('stage', 'request') in ['request', 'confirmed', 'preinvoice', 'cancelled'])
+            || (hasRole(['account_manager'])
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['route', 'updatedAt', 'lastNote', 'stage', 'rejectReason'])
+              && request.resource.data.get('stage', 'request') in ['accepted', 'rejected', 'warehouse', 'production', 'ready', 'shipped', 'delivered', 'returned', 'cancelled']));
       allow delete: if salesLead();   // management, the CEO and the sales manager
       // what was done on a request: calls, notes, decisions. Append only.
       match /log/{lid} {
-        allow read: if salesLead() || (hasRole(['visitor']) && get(/databases/$(database)/documents/requests/$(id)).data.get('assignee', '') == request.auth.uid);
-        allow create: if (salesLead() || (hasRole(['visitor']) && get(/databases/$(database)/documents/requests/$(id)).data.get('assignee', '') == request.auth.uid))
+        allow read: if salesLead() || hasRole(['account_manager']) || (hasRole(['visitor']) && get(/databases/$(database)/documents/requests/$(id)).data.get('assignee', '') == request.auth.uid);
+        allow create: if (salesLead() || hasRole(['account_manager']) || (hasRole(['visitor']) && get(/databases/$(database)/documents/requests/$(id)).data.get('assignee', '') == request.auth.uid))
           && request.resource.data.keys().hasOnly(['at', 'by', 'byName', 'kind', 'text'])
           && request.resource.data.by == request.auth.uid
           && request.resource.data.kind in ['call', 'note', 'status', 'route', 'assign']

@@ -57,7 +57,7 @@
 
   // ----- sync
   // fields that live only on this device or are written by reviewers never travel with the owner's copy
-  function clean(d) { var o = JSON.parse(JSON.stringify(d)); ['synced', 'review', 'sendPending', 'cloudSeen'].forEach(function (k) { delete o[k]; }); return o; }
+  function clean(d) { var o = JSON.parse(JSON.stringify(d)); ['synced', 'review', 'sendPending', 'cloudSeen', 'bank', 'bankId', 'reqLinked'].forEach(function (k) { delete o[k]; }); return o; }
   // a number that the cloud already gives to another document is moved to the next free sequence
   function bumpSeq(no) { var m = /^(.*-)(\d+)$/.exec(no); return m ? m[1] + ('00' + (Number(m[2]) + 1)).slice(-Math.max(3, m[2].length)) : no + '-2'; }
   // proforma_numbers/<docNo> says who owns a number: the first person to push it keeps it. Another person who made the same number
@@ -120,7 +120,24 @@
     }).then(function () {
       pend.forEach(function (d) { d.synced = true; d.cloudSeen = true; });
       A.save();
+      linkRequests(pend);
       if (window.MSNotify) window.MSNotify.paint();
+    });
+  }
+  // a pre-invoice made from a purchase request moves that request to «پیش‌فاکتور صادر شد» and records the pre-invoice number and the order code
+  function linkRequests(list) {
+    if (!window.MSOrder || !S.user) return;
+    var me = S.user.uid, who = { uid: me, name: (activeProfile() && activeProfile().name) || S.user.email || '' };
+    list.filter(function (d) { return d.requestCode && !d.reqLinked; }).forEach(function (d) {
+      var ref = db.collection('requests').doc(d.requestCode);
+      ref.get().then(function (s) {
+        if (!s.exists) return null;
+        var st = window.MSOrder.stageOf(s.data());
+        if (['request', 'confirmed'].indexOf(st) < 0 && s.data().proformaNo) { d.reqLinked = true; return null; }
+        var f = { proformaNo: d.docNo, orderCode: d.requestCode + '-' + d.docNo, proformaUid: me };
+        if (['request', 'confirmed'].indexOf(st) >= 0) { f.stage = 'preinvoice'; f.status = 'quoted'; }
+        return window.MSOrder.link(db, d.requestCode, f, 'پیش‌فاکتور ' + d.docNo + ' از این درخواست صادر شد (کد سفارش ' + f.orderCode + ')', who).then(function (ok) { if (ok) { d.reqLinked = true; A.save(); } });
+      }).then(null, function () { /* the request is not readable or the rules are not published yet: the pre-invoice itself is fine */ });
     });
   }
   // a proforma that could not be sent while offline is sent as soon as the connection is back
@@ -193,7 +210,7 @@
         mine.forEach(function (r) {
           var l = byNo[r.docNo];
           if (!l || (l.synced === true && (r.updatedAt || 0) > (l.updatedAt || l.createdAt || 0))) byNo[r.docNo] = Object.assign({}, r, { synced: true, cloudSeen: true });
-          else { l.review = r.review; l.cloudSeen = true; if (r.sentAt && !l.sentAt) l.sentAt = r.sentAt; }
+          else { l.review = r.review; l.bank = r.bank; l.bankId = r.bankId; l.cloudSeen = true; if (r.sentAt && !l.sentAt) l.sentAt = r.sentAt; }
         });
         // removed in the cloud (a refusal accepted by the sales manager, or deleted on another device): gone here too
         Object.keys(byNo).forEach(function (no) { var l = byNo[no]; if (l.synced === true && l.cloudSeen && l.ownerUid === uid && !remoteMine[no]) delete byNo[no]; });

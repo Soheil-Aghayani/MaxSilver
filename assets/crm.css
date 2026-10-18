@@ -76,3 +76,16 @@
 .cr-chips.has-pill .cr-chip[aria-pressed=true],.cr-seg.has-pill button[aria-checked=true]{background:transparent;border-color:transparent}
 .ms-pill.chip{z-index:0;border-radius:999px;background:var(--ms-navy)}
 .ms-pill.seg{z-index:0;border-radius:12px;background:var(--ms-navy)}
+
+/* stages of an order */
+.sg-request{background:#fff1f3;color:#eb1d36}.sg-confirmed{background:#eaf2ff;color:#1746b5}.sg-preinvoice{background:#fff6d6;color:#7a5b00}.sg-rejected{background:#fde7e4;color:#b42318}
+.sg-accepted{background:#e8f7ee;color:#0c6b3d}.sg-warehouse{background:#e6f1ff;color:#1746b5}.sg-production{background:#efe8ff;color:#5b2bb0}.sg-ready{background:#e8f7ee;color:#0c6b3d}
+.sg-shipped{background:#e0f4fb;color:#075e7a}.sg-delivered{background:#ecfdf3;color:#0c6b3d}.sg-returned{background:#fff0d6;color:#8a4a00}.sg-cancelled{background:#f2f4f7;color:#667085}
+.cr-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:6px;margin:0 0 8px;padding:0;list-style:none}
+.cr-step{display:grid;justify-items:center;gap:4px;text-align:center;color:var(--ms-muted);font-size:11.5px;font-weight:700;line-height:1.5}
+.cr-step i{width:14px;height:14px;border-radius:50%;background:#e4e9f2;box-shadow:0 0 0 3px #f3f5f7}
+.cr-step.done i{background:#14b862}.cr-step.done{color:var(--ms-ink)}
+.cr-step.on i{background:var(--ms-gold,#ffcc2a);box-shadow:0 0 0 3px rgba(255,204,42,.35)}.cr-step.on{color:var(--ms-navy);font-weight:900}
+.cr-side{margin:0 0 8px;padding:8px 12px;border-radius:12px;font-weight:800;font-size:13px}
+.cr-lines .okq{color:#0c6b3d;font-weight:800}.cr-lines .noq{color:#b54708;font-weight:700}
+.cr-mini{min-height:30px;padding:0 10px;border:1px solid var(--ms-navy);border-radius:8px;background:#fff;color:var(--ms-navy);font:800 12px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
