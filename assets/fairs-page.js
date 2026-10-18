@@ -52,13 +52,11 @@
       visitorReg: r.visitorReg || '', exhibitorReg: r.exhibitorReg || f.register || '', prices: r.prices || '', fit: main ? '' : (f.fit || ''), note: f.note || '',
       actions: f.actions || [], invite: !!f.invite, edition: f.edition || '', source: main ? f.source : '', sourceName: main ? f.sourceName : '' };
   }
+  // the picture of a row: the sector picture, whole inside the square. Banners of the main fairs stay on the home slides.
+  var PIC = { 'iran-retail-show': 'horeca-kitchen', 'iran-coffex': 'food-coffee', 'sense-of-coffee': 'food-coffee', 'iran-food-hospitality': 'food-coffee', midex: 'construction-hvac', 'expo-05': 'horeca-kitchen' };
   function thumb(v) {
-    var it = v.it;
-    if (v.main) {
-      var base = './assets/art/fairs/' + esc(it.art);
-      return '<span class="fe-pic main"><img src="' + base + '-tablet.webp" alt="" loading="lazy" decoding="async" onerror="this.remove()"></span>';
-    }
-    return it.art ? '<span class="fe-pic"><img src="./assets/art/fairs/' + esc(it.art + it.ext) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()"></span>' : '';
+    var it = v.it, name = PIC[v.id] || (it.art ? it.art.replace(/^sector-/, '').replace(/\.webp$/, '') : '');
+    return name ? '<span class="fe-pic"><img src="./assets/art/fairs/sector-' + esc(name) + '.webp" alt="" loading="lazy" decoding="async" onerror="this.remove()"></span>' : '';
   }
   var SVGS = { ok: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', diff: '<path d="M12 7.5v6M12 17h.01"/>', none: '<path d="M9.5 9.2a2.7 2.7 0 1 1 3.9 2.4c-.9.5-1.4 1-1.4 2M12 17h.01"/>' };
   function mk(k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + SVGS[k] + '</svg>'; }
@@ -77,18 +75,35 @@
       (v.checks.length ? '<p class="fe-h">مقایسه با فهرست ما <small>خوانده‌شده ' + esc((window.MS_FAIRS_RESEARCH || {}).checked || F.COLLECTED) + '</small></p>' + checksHtml(v) : '<p class="fe-sec fe-na">این صفحه هنوز با منبع مقایسه نشده است.</p>') + acts +
       (v.source ? '<p class="fr-src">منبع: <a href="' + esc(v.source) + '" target="_blank" rel="noopener" dir="ltr">' + esc(v.sourceName) + '</a></p>' : '');
   }
-  // collapsed: one row (picture, title, dates and place, countdown); the whole row opens the details
+  // a teaser card in the style of «تازه‌ها»: picture, name (never cut), dates and place, two lines of summary; «ادامه» opens the full details in a popup
   function card(v) {
     var past = v.st.k === 'past', place = [v.country, v.city].filter(Boolean).join(' · '), hasDiff = v.checks.some(function (c) { return c[1] === 'diff'; });
     var q = norm([v.title, v.en, v.country, v.city, v.venue, v.organizer, v.sectors.join(' ')].join(' '));
     var key = (v.abroad ? 'x:' : 'i:') + (v.city || v.country), p = E.toJ(v.d.a), q2 = E.toJ(v.d.b);
     var days = fa(p.jd) + (p.jm === q2.jm ? '' : ' ' + JM[p.jm - 1]) + '–' + fa(q2.jd) + ' ' + JM[q2.jm - 1];
+    var sum = [v.venue.replace(/ \(.*$/, ''), v.fit || v.note].filter(Boolean).join(' — ');
     return '<li class="fe-item' + (past ? ' past' : '') + '" data-id="' + esc(v.id) + '" data-where="' + (v.abroad ? 'abroad' : 'iran') + '" data-place="' + esc(key) + '" data-past="' + (past ? 1 : 0) + '" data-q="' + esc(q) + '">' +
-      '<article class="fe-card" data-tone="' + v.tone + '"><button type="button" class="fe-head" aria-expanded="false">' + thumb(v) +
-      '<span class="fe-main"><b class="fe-t">' + esc(v.title) + '</b><span class="fe-m">' + days + SEP + '<span class="' + (v.abroad ? 'ab' : '') + '">' + esc(place) + '</span>' +
-      (v.invite ? '<em class="fe-inv">فقط با دعوت</em>' : '') + (hasDiff ? '<em class="fe-warn" title="اطلاعات منبع با فهرست ما فرق دارد">' + mk('diff') + 'بررسی لازم</em>' : '') + '</span></span>' +
-      '<span class="fr-st ' + v.st.k + '">' + v.st.text + '</span><svg class="fe-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>' +
-      '<div class="fe-det"><div><p class="fe-when">' + jText(v.d.a, v.d.b) + SEP + '<span>' + gText(v.d.a, v.d.b) + '</span></p>' + (v.edition ? '<p class="fe-sec">' + esc(v.edition) + '</p>' : '') + details(v) + '</div></div></article></li>';
+      '<article class="fe-card" data-tone="' + v.tone + '"><div class="fe-top">' + thumb(v) + '<div class="fe-meta"><span class="fe-m"><b>' + days + '</b>' + SEP + '<span class="' + (v.abroad ? 'ab' : '') + '">' + esc(place) + '</span></span>' +
+      '<span class="fe-tags"><span class="fr-st ' + v.st.k + '">' + v.st.text + '</span>' + (v.invite ? '<em class="fe-inv">فقط با دعوت</em>' : '') + (hasDiff ? '<em class="fe-warn" title="اطلاعات منبع با فهرست ما فرق دارد">' + mk('diff') + 'بررسی لازم</em>' : '') + '</span></div></div>' +
+      '<h4 class="fe-t">' + esc(v.title) + '</h4><p class="fe-sum">' + esc(sum) + '</p>' +
+      '<button type="button" class="fe-more" data-open="' + esc(v.id) + '">ادامه</button></article></li>';
+  }
+  var dlg = null, byId = {};
+  var CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  function popup(id) {
+    var v = byId[id]; if (!v) return;
+    if (!dlg) {
+      dlg = document.createElement('dialog'); dlg.className = 'fe-dialog';
+      dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-fe-close]')) dlg.close(); });
+      document.body.appendChild(dlg);
+    }
+    var place = [v.country, v.city].filter(Boolean).join(' · ');
+    dlg.setAttribute('aria-label', v.title);
+    dlg.innerHTML = '<div class="fe-dbar"><h2>' + esc(v.title) + '</h2><button type="button" class="fe-x" data-fe-close aria-label="بستن">' + CLOSE + '</button></div>' +
+      '<div class="fe-dbody"><div class="fe-tags"><span class="fe-place' + (v.abroad ? ' ab' : '') + '">' + esc(place) + '</span><span class="fr-st ' + v.st.k + '">' + v.st.text + '</span>' + (v.invite ? '<em class="fe-inv">فقط با دعوت</em>' : '') + '</div>' +
+      '<p class="fe-when">' + jText(v.d.a, v.d.b) + SEP + '<span>' + gText(v.d.a, v.d.b) + '</span></p>' + (v.edition ? '<p class="fe-sec">' + esc(v.edition) + '</p>' : '') + details(v) + '</div>';
+    if (!dlg.open) dlg.showModal();
+    dlg.scrollTop = 0;
   }
   function monthKey(v) { var p = E.toJ(v.d.a); return p.jy * 100 + p.jm; }
   function groupsHtml(list) {
@@ -99,26 +114,27 @@
     if (past.length) { cur = 'برگزارشده'; past.slice().reverse().forEach(function (v) { buf.push(card(v)); }); flush(); }
     return out;
   }
-  function chips(label, group, list, cur) {
-    return '<div class="fr-chips" role="group" aria-label="' + label + '" data-morph="' + group + '">' + list.map(function (c) { return '<button type="button" class="fr-chip" data-' + group + '="' + esc(c[0]) + '" aria-pressed="' + (cur === c[0]) + '">' + esc(c[1]) + '</button>'; }).join('') + '</div>';
+  function chips(label, group, list, cur, cls) {
+    return '<div class="fr-chips ' + (cls || '') + '" role="group" aria-label="' + label + '" data-morph="' + group + '">' + list.map(function (c) { return '<button type="button" class="fr-chip" data-' + group + '="' + esc(c[0]) + '" aria-pressed="' + (cur === c[0]) + '">' + esc(c[1]) + '</button>'; }).join('') + '</div>';
   }
   function placeChips(all) {
     var seen = {}, list = [];
     all.forEach(function (v) {
       if ((S.where === 'iran' && !v.abroad) || (S.where === 'abroad' && v.abroad)) { var k = (v.abroad ? 'x:' : 'i:') + (v.city || v.country); if (!seen[k]) { seen[k] = 1; list.push([k, v.city || v.country]); } }
     });
-    return list.length > 1 ? chips('شهر', 'place', [['all', 'همهٔ شهرها']].concat(list), S.place) : '';
+    return list.length > 1 ? chips('شهر', 'place', [['all', 'همهٔ شهرها']].concat(list), S.place, 'fr-scroll') : '';
   }
 
   var all = [], els = [], bar;
   function build() {
     all = F.items().map(function (x) { x.st = F.status(x.d); return shape(x); });
+    byId = {}; all.forEach(function (v) { byId[v.id] = v; });
     var nIran = all.filter(function (v) { return !v.abroad; }).length, nAb = all.length - nIran;
     var h = '<h1>نمایشگاه‌ها</h1><p class="fr-lead">نمایشگاه‌ها و رویدادهایی که برای مکث‌سیلور مهم‌اند. هر کارت خلاصه است؛ با «جزئیات» همهٔ آنچه از صفحهٔ خود رویداد خوانده شده و مقایسه‌اش با فهرست ما را ببینید.</p>' +
-      '<div class="fr-bar"><input id="frQ" type="search" placeholder="جست‌وجوی نام، شهر، کشور، حوزه…" autocomplete="off"></div>' +
-      '<div id="frF">' + chips('مکان', 'where', [['all', 'همه (' + fa(all.length) + ')'], ['iran', 'در ایران (' + fa(nIran) + ')'], ['abroad', 'خارج از کشور (' + fa(nAb) + ')']], S.where) + '<div id="frP"></div>' +
-      chips('زمان', 'when', [['all', 'همه'], ['next', 'در پیش رو'], ['past', 'برگزارشده']], S.when) + '</div>' +
-      '<p class="fr-note" id="frCount" aria-live="polite"></p><div id="frL" class="fe-tl">' + groupsHtml(all) + '</div><p class="fr-note" id="frNone" hidden>رویدادی با این فیلتر پیدا نشد.</p>';
+      '<div id="frF" class="fr-tb"><div class="fr-tb-top"><label class="fr-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="frQ" type="search" placeholder="جست‌وجوی نام، شهر، کشور، حوزه…" autocomplete="off"></label>' +
+      chips('زمان', 'when', [['all', 'همه'], ['next', 'در پیش رو'], ['past', 'برگزارشده']], S.when, 'fr-seg') + '</div>' +
+      chips('مکان', 'where', [['all', 'همه (' + fa(all.length) + ')'], ['iran', 'در ایران (' + fa(nIran) + ')'], ['abroad', 'خارج از کشور (' + fa(nAb) + ')']], S.where, 'fr-seg wide') + '<div id="frP"></div>' +
+      '<p class="fr-note" id="frCount" aria-live="polite"></p></div><div id="frL" class="fe-tl">' + groupsHtml(all) + '</div><p class="fr-note" id="frNone" hidden>رویدادی با این فیلتر پیدا نشد.</p>';
     if (X && X.trips && X.trips.length) h += '<section class="fr-sec"><h2>مسیرهای سفر پیشنهادی</h2><div class="fr-trips">' + X.trips.map(function (t) { return '<article class="fr-trip"><b>' + esc(t.title) + '</b><p>' + esc(t.text) + '</p></article>'; }).join('') + '</div></section>';
     if (X && X.methods && X.methods.length) h += '<section class="fr-sec"><h2>راهنمای خواندن وضعیت‌ها</h2><div class="fr-trips">' + X.methods.map(function (t) { return '<article class="fr-trip soft"><b>' + esc(t.title) + '</b><p>' + esc(t.text) + '</p></article>'; }).join('') + '</div></section>';
     root.innerHTML = h;
@@ -172,12 +188,10 @@
     apply();
   }
   root.addEventListener('click', function (e) {
-    var t = e.target.closest('.fe-head');
-    if (t) {
-      var det = t.nextElementSibling, open = !det.classList.contains('open');
-      det.classList.toggle('open', open); t.setAttribute('aria-expanded', open); t.closest('.fe-item').classList.toggle('open', open);
-      return;
-    }
+    var o = e.target.closest('[data-open]');
+    if (o) { popup(o.getAttribute('data-open')); return; }
+    var card = e.target.closest('.fe-card');
+    if (card && !e.target.closest('a')) { popup(card.parentNode.getAttribute('data-id')); return; }
     var c = e.target.closest('.fr-chip');
     if (!c) return;
     ['where', 'place', 'when'].forEach(function (g) { if (c.hasAttribute('data-' + g)) setChip(g, c.getAttribute('data-' + g)); });
