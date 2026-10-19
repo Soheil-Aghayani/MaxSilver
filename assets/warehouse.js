@@ -26,7 +26,7 @@
     if (/network|unavailable|deadline|timeout/.test(c)) return 'اتصال برقرار نشد (اینترنت یا VPN).';
     return 'خطا: ' + (c || (e && e.message) || 'نامشخص');
   }
-  var can = function (a) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, a)); };
+  var can = function (a) { if (!(S.profile && S.profile.active !== false && window.MSRoles)) return false; return window.MSPerm ? window.MSPerm.can(S.profile.role, S.user && S.user.uid, a) : window.MSRoles.can(S.profile.role, a); };
   var myName = function () { return (S.profile && S.profile.name) || (S.user && S.user.email) || ''; };
   function itemById(id) { return S.items.filter(function (x) { return x.id === id; })[0] || null; }
   function byCode(code) { var k = norm(code); return k ? S.items.filter(function (x) { return x.code && norm(x.code) === k; })[0] || null : null; }
@@ -284,6 +284,7 @@
     S.user = u; S.profile = null; S.items = []; S.inv = {}; S.claims = [];
     if (unsubInv) { unsubInv(); unsubInv = null; } if (unsubCl) { unsubCl(); unsubCl = null; } if (unsubFul) { unsubFul(); unsubFul = null; }
     if (!u) { S.loading = false; render(); return; }
+    if (window.MSPerm) window.MSPerm.load(db).then(function () { render(); });
     S.loading = true; render();
     var catalog = fetch('./assets/catalog.json' + (VER ? '?v=' + VER : '')).then(function (r) { return r.json(); });
     db.collection('users').doc(u.uid).get().then(function (snap) {

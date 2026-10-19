@@ -7,6 +7,9 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'permissions-page', date: '1405/07/27', tag: 'جدید', title: 'صفحهٔ «دسترسی‌ها»: چه کسی بارگذاری و جایگزینی کند', roles: ['manager'],
+      summary: 'مسئول فناوری برای هر کار مشخص می‌کند چه کسانی اختیار دارند: نقشهٔ راه، فایل تحلیل رقبا، موجودی انبار، گزارش فروش و پایگاه مشتریان، و دو نفر مسئول قیمت. بقیه فقط می‌بینند. کاری که فهرست ندارد همان نقش‌های پیش‌فرض را نگه می‌دارد.',
+      details: ['این محدودیت در پایگاه داده هم اعمال می‌شود، نه فقط روی دکمه‌ها.'] },
     { id: 'owner-only-authority', date: '1405/07/27', tag: 'امنیت', title: 'اختیار دادن فقط با تکنولوژی ارتباطات سازمانی', roles: ['manager', 'ceo', 'sales_manager', 'finance', 'account_manager', 'hr'],
       summary: 'ساختن حساب و تعیین نقش، تعیین دو مسئول قیمت و بارگذاری یا جایگزینی فایل‌های داده (نقشهٔ راه، تحلیل رقبا) فقط با تکنولوژی ارتباطات سازمانی است. بقیه، از جمله مدیر فروش و CEO، آن‌ها را می‌بینند ولی نمی‌توانند عوض کنند.',
       details: ['این محدودیت در پایگاه داده هم اعمال می‌شود، نه فقط روی دکمه‌ها.'] },

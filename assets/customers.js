@@ -37,7 +37,7 @@
     if (/network|unavailable|deadline|timeout/.test(c)) return 'اتصال برقرار نشد (اینترنت یا VPN).';
     return 'خطا: ' + (c || (e && e.message) || 'نامشخص');
   }
-  var can = function (area) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, area)); };
+  var can = function (area) { if (!(S.profile && S.profile.active !== false && window.MSRoles)) return false; return window.MSPerm ? window.MSPerm.can(S.profile.role, S.user && S.user.uid, area) : window.MSRoles.can(S.profile.role, area); };
   var myName = function () { return (S.profile && S.profile.name) || (S.user && S.user.email) || ''; };
 
 
@@ -684,6 +684,7 @@
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.list = []; S.invoices = null;
     if (!u) { S.loading = false; render(); return; }
+    if (window.MSPerm) window.MSPerm.load(db).then(function () { render(); });
     load();
   });
   render();

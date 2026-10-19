@@ -36,6 +36,8 @@
     bankAccounts: ['account_manager', 'finance', 'manager', 'ceo', 'sales_manager'],   // bank accounts on pre-invoices: who sees them
     bankEdit: ['account_manager'],                                                      // adds and edits them (only the account manager)
     features: ['manager'],                                                              // switches parts of the site on and off (technology lead only)
+    roadmapEdit: ['manager'],                                                           // loads or replaces the roadmap (the owner, or people he names on «دسترسی‌ها»)
+    competitorsEdit: ['manager'],                                                       // loads or replaces the competitor file (same)
     roadmap: ['manager', 'ceo', 'sales_manager'],                                       // the milestone timeline (management, CEO, sales manager)
     backup: ['manager', 'ceo'],                                                         // downloads a backup of the database (management only)
     competitors: ['manager', 'ceo', 'sales_manager'],                                   // competitor analysis (staff only)

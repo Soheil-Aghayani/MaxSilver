@@ -11,7 +11,7 @@
   var S = { kpi: 'proof', sort: 'def', f: {}, cmp: [], user: null, profile: null, loading: true, data: null, error: '', msg: '', q: '', threat: 'all', busy: false };
   var esc = function (s) { return String(s == null ? '' : s).replace(/\s*\u2014\s*/g, '، ').replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var norm = function (s) { return String(s == null ? '' : s).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[‌\s]+/g, ' ').toLowerCase(); };
-  var can = function (a) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, a)); };
+  var can = function (a) { if (!(S.profile && S.profile.active !== false && window.MSRoles)) return false; return window.MSPerm ? window.MSPerm.can(S.profile.role, S.user && S.user.uid, a) : window.MSRoles.can(S.profile.role, a); };
   function errText(e) {
     var c = e && e.code || '';
     if (/permission-denied/.test(c)) return 'اجازهٔ دیدن یا نوشتن ندارید (یا قوانین پایگاه داده هنوز منتشر نشده است).';
@@ -282,12 +282,12 @@
     if (!S.profile || S.profile.active === false) return '<p class="cm-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('competitors')) return '<p class="cm-note">این بخش فقط برای مدیریت و مدیر فروش است.</p>';
     var d = S.data, UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>';
-    var out = '<div class="cm-head"><h1>تحلیل رقبا</h1>' + (d && can('roleAdmin') ? '<label class="cm-up" title="جایگزینی با فایل تازه" aria-label="جایگزینی با فایل تازه">' + UP + '<input id="cmFile" type="file" accept="application/json,.json" hidden></label>' : '') + '</div>';
+    var out = '<div class="cm-head"><h1>تحلیل رقبا</h1>' + (d && can('competitorsEdit') ? '<label class="cm-up" title="جایگزینی با فایل تازه" aria-label="جایگزینی با فایل تازه">' + UP + '<input id="cmFile" type="file" accept="application/json,.json" hidden></label>' : '') + '</div>';
     if (S.error) out += '<p class="cm-err" role="alert">' + esc(S.error) + '</p>';
     if (S.msg) out += '<p class="cm-ok" role="status">' + esc(S.msg) + '</p>';
     if (!d) {
       out += '<p class="cm-lead">هنوز دادهٔ این بخش بارگذاری نشده است. این اطلاعات محرمانه است و در مخزن عمومی نیست؛ از فایل «competitors.json» (پوشهٔ 01_Source_Data/Competitor_Analysis) بارگذاری می‌شود.</p>';
-      out += can('roleAdmin') ? '<label class="cm-btn">بارگذاری فایل داده<input id="cmFile" type="file" accept="application/json,.json" hidden></label>' : '<p class="cm-note">بارگذاری با تکنولوژی ارتباطات سازمانی یا مدیریت است.</p>';
+      out += can('competitorsEdit') ? '<label class="cm-btn">بارگذاری فایل داده<input id="cmFile" type="file" accept="application/json,.json" hidden></label>' : '<p class="cm-note">بارگذاری با تکنولوژی ارتباطات سازمانی یا مدیریت است.</p>';
       return out;
     }
     out += '<p class="cm-lead">' + esc(d.subtitle) + '</p><p class="cm-src">منبع: ' + esc(d.source) + '</p>';
@@ -367,6 +367,7 @@
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.data = null;
     if (!u) { S.loading = false; render(); return; }
+    if (window.MSPerm) window.MSPerm.load(db).then(function () { render(); });
     S.loading = true; render();
     db.collection('users').doc(u.uid).get().then(function (snap) {
       S.profile = snap.exists ? snap.data() : null;

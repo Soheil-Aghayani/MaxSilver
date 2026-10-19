@@ -29,6 +29,15 @@ service cloud.firestore {
     function role() { return rawRole() == 'it' ? 'manager' : (rawRole() == 'accounting' ? 'finance' : rawRole()); }
     function hasRole(list) { return approved() && role() in list; }
 
+    // Authority to load or replace data. The owner (manager) always has it; he can also name people per task in settings/permissions
+    // (roadmapEdit, competitorsEdit, warehouseEdit, customerImport). A task he has not configured keeps the roles listed in the rule.
+    function permSet() { return exists(/databases/$(database)/documents/settings/permissions); }
+    function permDoc() { return get(/databases/$(database)/documents/settings/permissions).data; }
+    function granted(cap, fallbackRoles) {
+      return hasRole(['manager'])
+        || (approved() && permSet() && cap in permDoc() && request.auth.uid in permDoc()[cap])
+        || ((!permSet() || !(cap in permDoc())) && hasRole(fallbackRoles));
+    }
     function isManager() { return hasRole(['manager', 'ceo']); }                                   // delete proformas, approve
     function seesAllInvoices() { return hasRole(['manager', 'ceo', 'sales_manager', 'account_manager', 'finance']); }
     function seesTeam() { return hasRole(['manager', 'ceo', 'sales_manager', 'hr']); }
@@ -106,9 +115,10 @@ service cloud.firestore {
     function ownsCustomer() { return approved() && resource.data.get('ownerUid', '') == request.auth.uid; }
     match /customers/{code} {
       allow read: if seesAllCustomers() || ownsCustomer();
-      allow create, delete: if hasRole(['manager', 'ceo', 'sales_manager']);
-      allow update: if hasRole(['manager', 'ceo', 'sales_manager'])
-        || ((hasRole(['account_manager']) || ownsCustomer())
+      allow create, delete: if granted('customerImport', ['manager', 'ceo', 'sales_manager']);
+      allow update: if granted('customerImport', ['manager', 'ceo', 'sales_manager'])
+        || (hasRole(['manager', 'ceo', 'sales_manager']) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid', 'ownerName', 'ownerLocked', 'updatedAt']))
+        || ((hasRole(['manager', 'ceo', 'sales_manager', 'account_manager']) || ownsCustomer())
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone', 'address', 'contact', 'notes', 'updatedAt']));
     }
     // A customer group is a responsible partner or person; the owner is applied to the group's customers.
@@ -269,6 +279,9 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['uids', 'names', 'at', 'by', 'byName'])
         && request.resource.data.uids is list && request.resource.data.uids.size() <= 2
         && request.resource.data.by == request.auth.uid;
+      allow create, update: if hasRole(['manager']) && id == 'permissions'
+        && request.resource.data.keys().hasOnly(['roadmapEdit', 'competitorsEdit', 'warehouseEdit', 'customerImport', 'names', 'at', 'by', 'byName'])
+        && request.resource.data.by == request.auth.uid;
       // the cheque price is the cash price plus a percentage (default and per product group); the same two people set it
       allow create, update: if priceEditor() && id == 'cheque_markup'
         && request.resource.data.keys().hasOnly(['def', 'byGrp', 'at', 'by', 'byName'])
@@ -410,7 +423,7 @@ service cloud.firestore {
     // only organizational technology (manager) loads or replaces it; the roadmap is read-only for everyone else.
     match /intel/{id} {
       allow read: if hasRole(['manager', 'ceo', 'sales_manager']);
-      allow create, update: if hasRole(['manager']) && (id == 'competitors' || id == 'roadmap') && request.resource.data.title is string;
+      allow create, update: if ((id == 'competitors' && granted('competitorsEdit', [])) || (id == 'roadmap' && granted('roadmapEdit', []))) && request.resource.data.title is string;
       allow delete: if false;
     }
 
@@ -419,7 +432,7 @@ service cloud.firestore {
     function stockReaders() { return hasRole(['operations', 'account_manager', 'manager', 'ceo', 'sales_manager', 'production']); }
     match /inventory/{pid} {
       allow read: if stockReaders();
-      allow create, update: if (hasRole(['operations', 'manager'])
+      allow create, update: if (granted('warehouseEdit', ['operations', 'manager'])
           && request.resource.data.keys().hasOnly(['qty', 'reserved', 'loc', 'serials', 'note', 'updatedAt', 'updatedBy', 'updatedByName'])
           && request.resource.data.qty is number && request.resource.data.qty >= 0 && request.resource.data.qty <= 1000000
           && request.resource.data.reserved is number && request.resource.data.reserved >= 0 && request.resource.data.reserved <= request.resource.data.qty
