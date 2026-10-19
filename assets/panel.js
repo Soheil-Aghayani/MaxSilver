@@ -855,7 +855,7 @@
   }
 
   // ---- private card: national id, written by hr or management only
-  S.nid = ''; S.bday = ''; S.tab = 'home';
+  S.nid = ''; S.bday = ''; S.tab = 'home'; S.launcher = true;
   function loadPersonal() {
     if (!S.user) return;
     db.collection('personal').doc(S.user.uid).get().then(function (s) { S.nid = s.exists ? String(s.data().nationalId || '') : ''; S.bday = s.exists ? String(s.data().birthday || '') : ''; render(); }, function () { /* rules not published yet */ });
@@ -885,9 +885,27 @@
   };
   var TAB_LABEL = { home: 'خانه', inv: 'پیش‌فاکتورها', chat: 'گفت‌وگوها', comm: 'پورسانت', team: 'تیم', jobs: 'شرح وظایف', me: 'تنظیمات من' };
   var HASH_TAB = { tickets: 'chat', public: 'chat', commission: 'comm', team: 'team', notify: 'home', invoices: 'inv' };
+
+  // ---- phones: the sections of the panel are an app grid (like the home page); a tab strip does not fit a narrow screen
+  var NARROW = window.matchMedia ? window.matchMedia('(max-width:760px)') : { matches: false };
+  var APP_ART = { home: 'tasks-follow-ups', inv: 'pro-formas', chat: 'conversations', comm: 'commission', team: 'customers', jobs: 'team-job-descriptions', me: 'settings' };
+  var APP_TONE = { home: '#3858e9', inv: '#e39c27', chat: '#0891b2', comm: '#0d9488', team: '#7f54b3', jobs: '#ce1f39', me: '#64748b' };
+  var APP_NAME = { home: 'نمای کلی', inv: 'پیش‌فاکتورها', chat: 'گفت‌وگوها', comm: 'پورسانت', team: 'تیم', jobs: 'شرح وظایف', me: 'تنظیمات من' };
+  function appsHtml(keys, badges) {
+    return '<div class="pn-apps" role="list">' + keys.map(function (k) {
+      var b = badges[k] ? '<i class="pn-app-n">' + faInt.format(badges[k]) + '</i>' : '';
+      return '<button type="button" class="pn-app" role="listitem" data-tab="' + k + '" style="--c:' + APP_TONE[k] + '">' + b +
+        '<img src="./assets/art/tiles/' + APP_ART[k] + '.webp" alt="" width="384" height="384" decoding="async" onerror="this.remove()"><span>' + esc(APP_NAME[k]) + '</span></button>';
+    }).join('') + '</div>';
+  }
+  function backBar(k) {
+    return '<div class="pn-backbar" style="--c:' + APP_TONE[k] + '"><button type="button" class="pn-back" data-launch aria-label="همهٔ بخش‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>همهٔ بخش‌ها</button>' +
+      '<b>' + esc(APP_NAME[k]) + '</b></div>';
+  }
+  if (NARROW.addEventListener) NARROW.addEventListener('change', function () { if (S.user && S.profile) render(); });
   function tabFromHash() {
     var h = (location.hash || '').slice(1), k = HASH_TAB[h];
-    if (k) { S.tab = k; render(); var el = document.getElementById(h); if (el && el.scrollIntoView) el.scrollIntoView(); }
+    if (k) { S.tab = k; S.launcher = false; render(); var el = document.getElementById(h); if (el && el.scrollIntoView) el.scrollIntoView(); }
   }
   window.addEventListener('hashchange', tabFromHash);
 
@@ -1267,9 +1285,18 @@
       jobs: jobsView(), me: lookView() + meView() + prefsView() };
     var keys = ['home', 'inv', 'chat', 'comm', 'team', 'jobs', 'me'].filter(function (k) { return !!secs[k]; });
     if (keys.indexOf(S.tab) < 0) S.tab = 'home';
-    out += '<nav class="pn-tabs" role="tablist" aria-label="بخش‌های پنل">' + keys.map(function (k) {
-      return '<button type="button" role="tab" class="pn-tab" data-tab="' + k + '" aria-selected="' + (S.tab === k) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICON[k] + '</svg><span>' + TAB_LABEL[k] + '</span></button>';
-    }).join('') + '</nav>';
+    if (NARROW.matches) {
+      if (S.launcher) {
+        var badges = { chat: tkWaiting() };
+        if (can('invoices') && can('invoiceReview')) badges.inv = S.docs.filter(function (d) { return revStatus(d) === 'pending'; }).length;
+        return out + appsHtml(keys, badges);
+      }
+      out += backBar(S.tab);
+    } else {
+      out += '<nav class="pn-tabs" role="tablist" aria-label="بخش‌های پنل">' + keys.map(function (k) {
+        return '<button type="button" role="tab" class="pn-tab" data-tab="' + k + '" aria-selected="' + (S.tab === k) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICON[k] + '</svg><span>' + TAB_LABEL[k] + '</span></button>';
+      }).join('') + '</nav>';
+    }
     out += '<div class="pn-tabpane" role="tabpanel">' + secs[S.tab] + '</div>';
     return out;
   }
@@ -1391,7 +1418,8 @@
     var ifl = e.target.closest('[data-inv-f]');
     if (ifl) { S.invF = ifl.getAttribute('data-inv-f'); render(); return; }
     var tb = e.target.closest('[data-tab]');
-    if (tb) { S.tab = tb.getAttribute('data-tab'); S.msg = ''; S.error = ''; render(); return; }
+    if (e.target.closest('[data-launch]')) { S.launcher = true; S.msg = ''; S.error = ''; render(); window.scrollTo(0, 0); return; }
+    if (tb) { S.tab = tb.getAttribute('data-tab'); S.launcher = false; S.msg = ''; S.error = ''; render(); if (NARROW.matches) window.scrollTo(0, 0); return; }
     var cy = e.target.closest('[data-comm-year]');
     if (cy) { S.comm.year = cy.getAttribute('data-comm-year'); S.comm.doc = null; S.comm.results = []; S.comm.mdoc = null; S.comm.mres = []; S.comm.msg = ''; S.comm.error = ''; render(); loadComm(); return; }
     if (e.target.closest('[data-tk-new]')) { S.tk.error = ''; dlg.innerHTML = tkNewForm(); dlg.showModal(); return; }
