@@ -888,7 +888,7 @@
 
   // ---- phones: the sections of the panel are an app grid (like the home page); a tab strip does not fit a narrow screen
   var NARROW = window.matchMedia ? window.matchMedia('(max-width:760px)') : { matches: false };
-  var APP_ART = { home: 'tasks-follow-ups', inv: 'pro-formas', chat: 'conversations', comm: 'commission', team: 'customers', jobs: 'team-job-descriptions', me: 'settings' };
+  var APP_ART = { home: 'overview', inv: 'pro-formas', chat: 'conversations', comm: 'commission', team: 'team', jobs: 'team-job-descriptions', me: 'settings' };
   var APP_TONE = { home: '#3858e9', inv: '#e39c27', chat: '#0891b2', comm: '#0d9488', team: '#7f54b3', jobs: '#ce1f39', me: '#64748b' };
   var APP_NAME = { home: 'نمای کلی', inv: 'پیش‌فاکتورها', chat: 'گفت‌وگوها', comm: 'پورسانت', team: 'تیم', jobs: 'شرح وظایف', me: 'تنظیمات من' };
   function appsHtml(keys, badges) {
