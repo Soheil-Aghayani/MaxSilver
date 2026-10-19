@@ -42,7 +42,7 @@
     advertising: ['manager', 'ceo', 'sales_manager', 'marketing'],                      // advertising strategy tree
     invoices: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // read every proforma, not only one's own
     team: ['manager', 'ceo', 'sales_manager', 'hr'],                                    // see the team list
-    roleAdmin: ['manager', 'ceo'],                                                      // create accounts, set role and code
+    roleAdmin: ['manager'],                                                             // gives anyone authority: create accounts, set role and code, name the price editors, load or replace data files (roadmap, competitors)
     people: ['manager', 'ceo', 'hr'],                                                   // name, phone, active flag of others
     userDelete: ['manager', 'ceo', 'hr'],                                               // remove an account (hr never one of management or the CEO)
     territory: ['manager', 'ceo', 'sales_manager'],                                     // provinces and cities of a specialist

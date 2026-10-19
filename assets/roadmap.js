@@ -11,7 +11,7 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var fa = function (n) { return String(n).replace(/\d/g, function (c) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(c); }); };
   var can = function () { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, 'roadmap')); };
-  var canUpload = function () { return !!(S.profile && (S.profile.role === 'manager' || S.profile.role === 'ceo')); };
+  var canUpload = function () { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, 'roleAdmin')); };
   var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg>';
   var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';
 
@@ -48,8 +48,8 @@
   }
   function upload() {
     return '<section class="rm-empty"><img src="./assets/art/tiles/activity-log.webp" alt="" width="120" height="120">' +
-      '<h2>نقشهٔ راه هنوز بارگذاری نشده</h2><p>فایل <b dir="ltr">milestones_for_app.json</b> را از پوشهٔ Roadmap بارگذاری کنید. محتوا فقط برای مدیریت، CEO و مدیر فروش دیده می‌شود و در کد عمومی سایت نیست.</p>' +
-      (canUpload() ? '<label class="rm-pick"><input type="file" accept="application/json,.json" data-file hidden><span class="rm-btn now">انتخاب فایل</span></label>' : '<p class="rm-note2">بارگذاری با مدیریت است.</p>') +
+      '<h2>نقشهٔ راه هنوز بارگذاری نشده</h2><p>فایل <b dir="ltr">milestones_for_app.json</b> را از پوشهٔ Roadmap بارگذاری کنید. محتوا فقط برای مدیریت، CEO و مدیر فروش دیده می‌شود (فقط تکنولوژی ارتباطات سازمانی آن را بارگذاری می‌کند) و در کد عمومی سایت نیست.</p>' +
+      (canUpload() ? '<label class="rm-pick"><input type="file" accept="application/json,.json" data-file hidden><span class="rm-btn now">انتخاب فایل</span></label>' : '<p class="rm-note2">فقط تکنولوژی ارتباطات سازمانی نقشهٔ راه را بارگذاری یا عوض می‌کند.</p>') +
       (S.msg ? '<p class="rm-msg" role="status">' + esc(S.msg) + '</p>' : '') + '</section>';
   }
   function view() {

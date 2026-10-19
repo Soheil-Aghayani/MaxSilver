@@ -111,7 +111,7 @@
     if (can('roleAdmin')) {
       var opts = function (sel) { return '<option value="">— انتخاب —</option>' + S.team.map(function (u) { return '<option value="' + esc(u.id) + '"' + (sel === u.id ? ' selected' : '') + '>' + esc(u.name || u.email || u.id) + ' · ' + esc(window.MSRoles ? window.MSRoles.label(u.role) : u.role) + '</option>'; }).join(''); };
       out += '<details class="pr-pct"><summary>تعیین مسئولان تغییر قیمت (حداکثر دو نفر)</summary><div class="pr-pform"><label>نفر اول<select id="prEd1">' + opts(S.pick1) + '</select></label><label>نفر دوم<select id="prEd2">' + opts(S.pick2) + '</select></label>' +
-        '<button type="button" class="pr-btn" data-edsave>ذخیرهٔ مسئولان</button></div><p class="pr-lead">فقط مدیریت، CEO و مدیر فروش که حساب فعال دارند در فهرست می‌آیند. تا دو نفر تعیین نشوند کسی قیمت را تغییر نمی‌دهد.</p></details>';
+        '<button type="button" class="pr-btn" data-edsave>ذخیرهٔ مسئولان</button></div><p class="pr-lead">این بخش فقط برای تکنولوژی ارتباطات سازمانی است. مدیریت، CEO و مدیر فروش که حساب فعال دارند در فهرست می‌آیند. تا دو نفر تعیین نشوند کسی قیمت را تغییر نمی‌دهد.</p></details>';
     }
     return out + '</section>';
   }

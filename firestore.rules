@@ -32,7 +32,8 @@ service cloud.firestore {
     function isManager() { return hasRole(['manager', 'ceo']); }                                   // delete proformas, approve
     function seesAllInvoices() { return hasRole(['manager', 'ceo', 'sales_manager', 'account_manager', 'finance']); }
     function seesTeam() { return hasRole(['manager', 'ceo', 'sales_manager', 'hr']); }
-    function adminsRoles() { return hasRole(['manager', 'ceo']); }                                 // create, delete, role, code
+    // Only organizational technology (the manager role, the owner of the system) gives anyone authority: accounts, roles, codes, the price editors and every data file that is loaded or replaced.
+    function adminsRoles() { return hasRole(['manager']); }                                        // create, delete, role, code
     function editsPeople() { return hasRole(['hr']); }                                             // name, phone, active
     function editsTerritory() { return hasRole(['sales_manager']); }                               // regions, cities
 
@@ -264,7 +265,7 @@ service cloud.firestore {
     }
     match /settings/{id} {
       allow read: if approved();
-      allow create, update: if hasRole(['manager', 'ceo']) && id == 'price_editors'
+      allow create, update: if hasRole(['manager']) && id == 'price_editors'
         && request.resource.data.keys().hasOnly(['uids', 'names', 'at', 'by', 'byName'])
         && request.resource.data.uids is list && request.resource.data.uids.size() <= 2
         && request.resource.data.by == request.auth.uid;
@@ -406,10 +407,10 @@ service cloud.firestore {
     }
 
     // Competitor analysis (sensitive, so it is not in the public repository): management, the CEO and the sales manager read it;
-    // only organizational technology and management load or replace it.
+    // only organizational technology (manager) loads or replaces it; the roadmap is read-only for everyone else.
     match /intel/{id} {
       allow read: if hasRole(['manager', 'ceo', 'sales_manager']);
-      allow create, update: if hasRole(['manager', 'ceo']) && (id == 'competitors' || id == 'roadmap') && request.resource.data.title is string;
+      allow create, update: if hasRole(['manager']) && (id == 'competitors' || id == 'roadmap') && request.resource.data.title is string;
       allow delete: if false;
     }
 
