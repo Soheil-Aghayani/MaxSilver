@@ -65,10 +65,10 @@ for jf in glob.glob(os.path.join(ROOT, '**', '*.json'), recursive=True):
         problems.append('JSON does not parse: %s (%s)' % (os.path.relpath(jf, ROOT), e))
 
 # 6. update ids
-ids = re.findall(r"\{\s*id:\s*'([^']+)'", read('assets/updates.js'))
+ids = re.findall(r"\{\s*id:\s*'([^']+)'", read('assets/updates.js') + read('assets/updates-archive.js'))
 dup = sorted({i for i in ids if ids.count(i) > 1})
 if dup:
-    problems.append('assets/updates.js repeats ids: ' + ', '.join(dup))
+    problems.append('assets/updates.js or updates-archive.js repeats ids: ' + ', '.join(dup))
 
 # warn: long dashes in what people read
 for rel in sorted(scripts) + [os.path.basename(p) for p in pages]:

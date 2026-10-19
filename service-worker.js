@@ -2,7 +2,7 @@
 
 // Every release changes VERSION and the ?v= stamp on the pages. Assets that carry ?v= are matched exactly,
 // so a page can never be combined with CSS/JS from another release.
-const VERSION = 'v3-20261350';
+const VERSION = 'v3-20261352';
 const CACHE_NAME = 'maxsilver-portal-' + VERSION;
 const SCOPE = self.registration.scope;
 const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'customers.html', 'planner.html', 'events.html', 'fairs.html', 'competitors.html', 'backup.html', 'features.html', 'warehouse.html', 'banks.html', 'track.html', 'prices.html', 'crm.html', 'legal.html', 'product-catalog.html', 'sales-process.html', 'brand-books.html', 'panel.html', 'contact.html', 'advertising.html'];
@@ -56,16 +56,24 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.includes('/data/')) return; // user data never goes through the cache
 
   if (request.mode === 'navigate') {
-    // Pages: always ask the server (GitHub Pages sends max-age=600); the cache is only for offline.
+    // Pages: the saved copy opens at once and a fresh one is fetched behind it for the next visit (stale-while-revalidate).
+    // Safe because a saved page and the versioned files it uses (?v=) were saved together; a new release arrives through
+    // the service worker update, which shows the «new version» bar. Nothing saved yet: ask the server, as before.
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
-      try {
-        const response = await fetch(request, { cache: 'no-cache' });
-        if (response.ok) cache.put(request, response.clone());
+      const cached = await cache.match(request, { ignoreSearch: true });
+      const refresh = fetch(request, { cache: 'no-cache' }).then((response) => {
+        if (response && response.ok) cache.put(request, response.clone());
         return response;
+      });
+      if (cached) {
+        event.waitUntil(refresh.catch(() => null));
+        return cached;
+      }
+      try {
+        return await refresh;
       } catch (error) {
-        return (await cache.match(request, { ignoreSearch: true })) ||
-               (await cache.match(abs('index.html'))) ||
+        return (await cache.match(abs('index.html'))) ||
                new Response('برای استفادهٔ آفلاین، یک‌بار صفحه را آنلاین باز کنید.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
       }
     })());
