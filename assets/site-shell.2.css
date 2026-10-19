@@ -188,9 +188,3 @@ a.ms-install-go{border:0;background:var(--ms-navy);color:#fff}
 /* safety net on every page: nothing may make the page wider than the screen (it also pushes the bottom bar out of place) */
 body.ms-portal-body{overflow-x:clip;max-width:100%}
 html:has(body.ms-portal-body){overflow-x:clip}
-
-@media(max-width:1100px) and (orientation:portrait){
-  html.ms-dockup .ms-sitebar nav{bottom:calc(66px + env(safe-area-inset-bottom,0px))}
-  html.ms-dockup body.ms-portal-body{padding-bottom:calc(var(--ms-tabbar-offset) + 56px)}
-  html.ms-dockup .ms-toast,html.ms-dockup .ms-save,html.ms-dockup .cm-cmpbar{margin-bottom:56px}
-}
