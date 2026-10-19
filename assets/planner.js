@@ -329,18 +329,41 @@
     var lines = requestLines(), c = conceptOf(S.concept);
     return progress(2 + qList().length, 'مشتری و ارسال') + '<h1>پیش‌فاکتور برای اکانت منیجر</h1><p class="pl-lead">مشخصات مشتری را بنویسید. طرح به پیش‌فاکتور تبدیل می‌شود و با یک ضربه برای اکانت منیجر ارسال می‌شود.</p>' +
       '<section class="pl-req"><h3>طرح: ' + esc(c.t) + ' ' + SIZES[S.size].t + '</h3><ul class="pl-rl">' + lines.map(function (l) { return '<li><b>' + esc(l.name) + '</b><span>' + (l.brand ? esc(l.brand) + SEP : '') + faInt.format(l.qty) + ' عدد</span></li>'; }).join('') + '</ul></section>' +
-      '<form class="pl-form" novalidate>' + (ERR_ALL ? '<p class="pl-err" role="alert">' + esc(ERR_ALL) + '</p>' : '') + '<div class="pl-grid">' +
-      field('cName', 'نام مشتری', { wide: true, max: 80 }) + field('cPhone', 'موبایل مشتری', { mode: 'numeric', dir: 'ltr', max: 14 }) + field('cCity', 'شهر', { max: 40 }) + field('cAddr', 'نشانی (اختیاری)', { wide: true, max: 300 }) + '</div>' +
+      '<form class="pl-form" novalidate autocomplete="on">' + (ERR_ALL ? '<p class="pl-err" role="alert">' + esc(ERR_ALL) + '</p>' : '') +
+      '<h3>مشخصات مشتری</h3><div class="pl-grid">' +
+      field('name', 'نام و نام خانوادگی', { ac: 'off', wide: true, max: 80 }) + field('phone', 'شمارهٔ موبایل', { mode: 'numeric', dir: 'ltr', max: 14 }) +
+      field('zip', 'کد پستی', { mode: 'numeric', dir: 'ltr', max: 10 }) +
+      selectField('province', 'استان', IRAN.map(function (x) { return x[0]; }), { ph: 'استان را انتخاب کنید' }) + selectField('city', 'شهر', F.province ? provinceCities(F.province).concat([[OTHER, 'شهر دیگر…']]) : [], { disabled: !F.province, ph: F.province ? 'شهر را انتخاب کنید' : 'ابتدا استان' }) +
+      (F.city === OTHER ? field('cityOther', 'نام شهر', { wide: true, max: 40 }) : '') + field('address', 'نشانی کامل', { wide: true, max: 300 }) + '</div>' +
+      '<h3>تحویل‌گیرنده</h3><div class="pl-seg" role="radiogroup" aria-label="تحویل‌گیرنده">' +
+      '<button type="button" role="radio" class="pl-opt" data-recv="self" aria-checked="' + !!F.self + '"><b>خود مشتری تحویل می‌گیرد</b></button>' +
+      '<button type="button" role="radio" class="pl-opt" data-recv="other" aria-checked="' + !F.self + '"><b>شخص دیگری</b><small>مشخصات او را بنویسید</small></button></div>' +
+      (F.self ? '' : '<div class="pl-grid">' + field('rName', 'نام و نام خانوادگی گیرنده', { wide: true, max: 80 }) + field('rPhone', 'موبایل گیرنده', { mode: 'numeric', dir: 'ltr', max: 14 }) + '</div>') +
       '<div class="pl-bar"><button type="button" class="pl-btn primary" data-sendinv>ساخت پیش‌فاکتور و ادامه</button></div></form>';
+  }
+  // the rules of the proforma form: every box is required except the receiver, who is asked only when it is somebody else
+  function staffErrors() {
+    var e = {}, M = window.MSRequests, name = String(F.name || '').replace(/\s+/g, ' ').trim(), addr = String(F.address || '').trim(), zip = M.latin(F.zip || '').replace(/[^0-9]/g, '');
+    if (name.length < 3) e.name = 'نام مشتری را کامل بنویسید.';
+    if (!F.phone) e.phone = 'شمارهٔ موبایل را بنویسید.'; else if (!M.validPhone(F.phone)) e.phone = 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد.';
+    if (!F.province) e.province = 'استان را انتخاب کنید.';
+    if (cityOf().trim().length < 2) e[F.city === OTHER ? 'cityOther' : 'city'] = F.province ? (F.city === OTHER ? 'نام شهر را بنویسید.' : 'شهر را انتخاب کنید.') : 'ابتدا استان را انتخاب کنید.';
+    if (!/^\d{10}$/.test(zip)) e.zip = 'کد پستی ۱۰ رقمی است.';
+    if (addr.length < 5) e.address = 'نشانی را بنویسید.';
+    if (!F.self) {
+      if (String(F.rName || '').trim().length < 3) e.rName = 'نام گیرنده را بنویسید.';
+      if (!F.rPhone) e.rPhone = 'موبایل گیرنده را بنویسید.'; else if (!M.validPhone(F.rPhone)) e.rPhone = 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد.';
+    }
+    return e;
   }
   function sendInv() {
     readForm();
-    var name = String(F.cName || '').replace(/s+/g, ' ').trim(), e = {};
-    if (name.length < 3) e.cName = 'نام مشتری را کامل بنویسید.';
-    if (F.cPhone && !window.MSRequests.validPhone(F.cPhone)) e.cPhone = 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد.';
+    var e = staffErrors(), M = window.MSRequests;
     ERR = e; ERR_ALL = Object.keys(e).length ? 'چند مورد را اصلاح کنید.' : '';
-    if (ERR_ALL) { render(); var bad = root.querySelector('.pl-f.bad input'); if (bad) bad.focus(); return; }
-    toProforma({ customer: name, custPhone: F.cPhone ? window.MSRequests.phone(F.cPhone) : '', custCity: String(F.cCity || '').trim(), custAddr: String(F.cAddr || '').trim() });
+    if (ERR_ALL) { render(); var bad = root.querySelector('.pl-f.bad input, .pl-f.bad select'); if (bad) bad.focus(); return; }
+    var zip = M.latin(F.zip || '').replace(/[^0-9]/g, ''), addr = 'استان ' + F.province + '، ' + String(F.address).trim() + '، کد پستی ' + M.fa(zip) +
+      (F.self ? '' : ' (تحویل‌گیرنده: ' + String(F.rName).trim() + '، ' + M.fa(M.phone(F.rPhone)) + ')');
+    toProforma({ customer: String(F.name).replace(/\s+/g, ' ').trim(), custPhone: M.phone(F.phone), custCity: cityOf().trim(), custAddr: addr.slice(0, 400) });
   }
   function sheetHelpers() { var f = new Intl.NumberFormat('fa-IR'); return { esc: esc, faInt: f, fa: f, fa0: function (s) { return s; }, money: function () { return ''; }, numWords: function () { return ''; }, totals: function () { return {}; }, payPrint: function () { return ''; } }; }
   function stepDone() {
@@ -373,11 +396,15 @@
     if (!/^(name|phone|nid|province|city|cityOther|zip|address|rName|rNid|rPhone|cName|cPhone)$/.test(name)) return;
     readForm();
     var e, lab = root.querySelector('[name="' + name + '"]');
+    if (!PUBLIC && S.step === 4) { e = staffErrors(); finishCheck(name, lab, e); return; }
     if (name === 'cName' || name === 'cPhone') {
       e = {};
       if (name === 'cName' && String(F.cName || '').trim().length < 3) e.cName = 'نام مشتری را کامل بنویسید.';
       if (name === 'cPhone' && F.cPhone && !window.MSRequests.validPhone(F.cPhone)) e.cPhone = 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد.';
     } else e = fixErr(window.MSRequests.check(formData()).errors);
+    finishCheck(name, lab, e);
+  }
+  function finishCheck(name, lab, e) {
     lab = lab && lab.closest('label'); if (!lab) return;
     if (e[name]) ERR[name] = e[name]; else delete ERR[name];
     var old = lab.querySelector('.pl-fe'); if (old) old.remove();
