@@ -345,3 +345,5 @@ body.ms-portal-body[data-brand=max-silver]{--brand:#ffcc2a}body.ms-portal-body[d
 .cs-label{overflow:visible;text-overflow:clip;white-space:normal;line-height:1.5}
 .cs-list{max-width:min(360px,92vw)}
 .cs-list li{font-family:inherit;white-space:normal}
+/* the choice sheet sits where the pre-invoice tray sits; while it is open the tray steps aside so it never covers an option */
+body.cs-open .cmp-tray{display:none}
