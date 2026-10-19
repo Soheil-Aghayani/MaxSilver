@@ -44,7 +44,9 @@
       '<button type="button" class="rm-btn now" data-go="' + esc(d.focus) + '">مرحلهٔ جاری</button>' +
       '<button type="button" class="rm-btn" data-dir="-1" aria-label="آینده"><span>آینده</span>' + ARROW + '</button></div></header>' +
       '<div class="rm-lane" tabindex="0" role="region" aria-label="خط زمانی مرحله‌ها"><ol class="rm-track">' + d.items.map(function (i, k) { return card(i, k, d, m); }).join('') + '</ol></div>' +
-      '<p class="rm-foot">آخرین به‌روزرسانی: ' + esc(d.updated || '') + '. زمان‌ها و میزان کار برآورد است، نه تعهد.' + (canUpload() ? ' <button type="button" class="rm-link" data-upload>بارگذاری فایل تازه</button>' : '') + '</p>';
+      '<footer class="rm-foot"><div class="rm-upd"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>آخرین به‌روزرسانی</span><b>' + esc(d.updated || '') + '</b></div>' +
+      '<p class="rm-est">زمان‌ها و میزان کار برآورد است، نه تعهد.</p>' +
+      (canUpload() ? '<button type="button" class="rm-up" data-upload><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>بارگذاری فایل تازه</button>' : '') + '</footer>';
   }
   function upload() {
     return '<section class="rm-empty"><img src="./assets/art/tiles/activity-log.webp" alt="" width="120" height="120">' +

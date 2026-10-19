@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'roadmap-footer-style', date: '1405/07/27', tag: 'بهبود', title: 'نوار پایین نقشهٔ راه زیباتر شد', roles: ['manager', 'ceo', 'sales_manager'],
+      summary: 'تاریخ آخرین به‌روزرسانی، یادآوری برآورد بودن زمان‌ها و دکمهٔ بارگذاری فایل تازه حالا در یک کارت مرتب با آیکن آمده‌اند.' },
     { id: 'features-owner-sees', date: '1405/07/27', tag: 'بهبود', title: 'بخش خاموش‌شده برای مسئول فناوری پنهان نمی‌شود', roles: ['manager'],
       summary: 'وقتی یک بخش را در «ویژگی‌ها» خاموش می‌کنید، برای بقیه ناپدید می‌شود ولی برای شما می‌ماند و با برچسب «خاموش برای دیگران» دیده می‌شود؛ صفحهٔ آن هم باز می‌شود و نواری بالای آن می‌گوید برای دیگران خاموش است.' },
     { id: 'permissions-page', date: '1405/07/27', tag: 'جدید', title: 'صفحهٔ «دسترسی‌ها»: چه کسی بارگذاری و جایگزینی کند', roles: ['manager'],
