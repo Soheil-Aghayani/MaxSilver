@@ -7,6 +7,10 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'features-every-tile', date: '1405/07/27', tag: 'بهبود', title: 'هر کاشی صفحهٔ اصلی را می‌توانید برای دیگران خاموش کنید', roles: ['manager'],
+      summary: 'کاشی‌هایی مثل «دسترسی‌ها»، «پشتیبان‌گیری»، «تماس»، «پیش‌فاکتورها» و بخش «به‌زودی» هم کلید خاموش و روشن دارند. بخش خاموش‌شده برای شما همان‌طور که هست می‌ماند و فقط یک آیکن کوچک در گوشهٔ کاشی نشان می‌دهد برای دیگران خاموش است.' },
+    { id: 'new-future-tiles', date: '1405/07/27', tag: 'جدید', title: 'چهار کاشی تازه در «به‌زودی»', roles: ['manager', 'ceo', 'sales_manager'],
+      summary: 'چک‌لیست‌ها، ایمنی انبار، دستیار هوشمند و مجوز استفاده با آیکن‌های سه‌بعدی تازه و کد مرحلهٔ فعال‌سازی.' },
     { id: 'roadmap-footer-style', date: '1405/07/27', tag: 'بهبود', title: 'نوار پایین نقشهٔ راه زیباتر شد', roles: ['manager', 'ceo', 'sales_manager'],
       summary: 'تاریخ آخرین به‌روزرسانی، یادآوری برآورد بودن زمان‌ها و دکمهٔ بارگذاری فایل تازه حالا در یک کارت مرتب با آیکن آمده‌اند.' },
     { id: 'features-owner-sees', date: '1405/07/27', tag: 'بهبود', title: 'بخش خاموش‌شده برای مسئول فناوری پنهان نمی‌شود', roles: ['manager'],

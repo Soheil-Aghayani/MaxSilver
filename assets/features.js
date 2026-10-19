@@ -25,7 +25,14 @@
     { id: 'brand', label: 'برندبوک‌ها', group: 'بازار و رشد', page: 'brand-books.html', info: 'هویت چهار برند' },
     { id: 'dashboard', label: 'داشبورد CEO', group: 'مدیریت و تحلیل', page: 'ceo-dashboard.html', info: 'نقشهٔ استان‌ها و مقایسهٔ سال‌ها' },
     { id: 'roadmap', label: 'نقشهٔ راه', group: 'مدیریت و تحلیل', page: 'roadmap.html', info: 'خط زمانی مرحله‌های پروژه؛ فقط مدیریت، CEO و مدیر فروش' },
-    { id: 'analysis', label: 'تحلیل جزئیات فروش', group: 'مدیریت و تحلیل', page: 'sales-analysis.html', info: 'گزارش مشتری و کالا' }
+    { id: 'analysis', label: 'تحلیل جزئیات فروش', group: 'مدیریت و تحلیل', page: 'sales-analysis.html', info: 'گزارش مشتری و کالا' },
+    { id: 'permissions', label: 'دسترسی‌ها', group: 'مدیریت و تحلیل', page: 'permissions.html', info: 'تعیین کسانی که بارگذاری و تغییر قیمت می‌کنند؛ فقط شما آن را می‌بینید' },
+    { id: 'backup', label: 'پشتیبان‌گیری', group: 'مدیریت و تحلیل', page: 'backup.html', info: 'نسخهٔ پشتیبان از داده‌ها' },
+    { id: 'soon', label: 'بخش «به‌زودی»', group: 'مدیریت و تحلیل', page: '', info: 'کاشی‌های خاکستری قابلیت‌های آینده در صفحهٔ اصلی' },
+    { id: 'invoices', label: 'پیش‌فاکتورها', group: 'فروش و مشتری', page: '', info: 'کاشی پیش‌فاکتورها در صفحهٔ اصلی (خود پنل باز می‌ماند)' },
+    { id: 'tickets', label: 'تیکت‌های پشتیبانی', group: 'فروش و مشتری', page: '', info: 'کاشی تیکت‌ها در صفحهٔ اصلی (خود پنل باز می‌ماند)' },
+    { id: 'panel', label: 'پنل من و ورود', group: 'بازدیدکننده و مشتری', page: '', info: 'کاشی ورود در جعبهٔ بازدیدکننده؛ صفحهٔ ورود همیشه باز است' },
+    { id: 'contact', label: 'تماس با ما', group: 'بازدیدکننده و مشتری', page: 'contact.html', info: 'صفحهٔ تماس عمومی' }
   ];
   // news entries (assets/updates.js) that belong to a part, by id; an entry can also carry feature: '<id>'
   var NEWS = [[/^customers/, 'customers'], [/^competitors/, 'competitors'], [/^fairs|^home-tiles-compact-fairs/, 'fairs'], [/^order-|^crm-|^proforma|^send-to-am|^doc-number/, 'crm'],
@@ -57,8 +64,8 @@
     reset();
     var off = FEATURES.filter(function (f) { return H[f.id]; });
     off.forEach(function (f) {
-      Array.prototype.forEach.call(document.querySelectorAll('[data-feature="' + f.id + '"]'), hide);
-      Array.prototype.forEach.call(document.querySelectorAll('a[href="./' + f.page + '"]'), function (a) {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-feature~="' + f.id + '"]'), hide);
+      if (f.page) Array.prototype.forEach.call(document.querySelectorAll('a[href="./' + f.page + '"]'), function (a) {
         var slide = a.closest('.hs-slide'), li = a.closest('li'), wrap = a.closest('.pc-wrap');
         if (slide) hide(slide);
         else if (a.classList.contains('portal-card')) { hide(a); if (wrap) hide(wrap); }
@@ -76,7 +83,7 @@
   }
   // the page of a part that is off
   function gate() {
-    var f = byPage(page());
+    var f = page() ? byPage(page()) : null;
     var old = document.getElementById('msOff'), bar = document.getElementById('msOffBar');
     if (owner()) {
       if (old) old.remove();

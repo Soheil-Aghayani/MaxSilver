@@ -18,17 +18,17 @@
     var groups = [], by = {};
     F.list.forEach(function (f) { if (!by[f.group]) { by[f.group] = []; groups.push(f.group); } by[f.group].push(f); });
     var offN = Object.keys(S.off).filter(function (k) { return S.off[k]; }).length;
-    return '<h1>ویژگی‌ها</h1><p class="ft-lead">هر بخش را که خاموش کنید برای دیگران ناپدید می‌شود و فقط شما (مسئول فناوری) آن را با برچسب «خاموش برای دیگران» می‌بینید: کاشی صفحهٔ اصلی، نوار پایین، منو، اسلایدهای بنر، خبرهای «تازه‌ها» و خود صفحه. هر وقت دوباره روشنش کنید همه‌چیز برمی‌گردد و چیزی پاک نمی‌شود.</p>' +
+    return '<h1>ویژگی‌ها</h1><p class="ft-lead">هر بخش را که خاموش کنید برای دیگران ناپدید می‌شود و فقط شما (مسئول فناوری) آن را می‌بینید، با یک آیکن کوچک چشم‌بسته در گوشهٔ کاشی: کاشی صفحهٔ اصلی، نوار پایین، منو، اسلایدهای بنر، خبرهای «تازه‌ها» و خود صفحه. هر وقت دوباره روشنش کنید همه‌چیز برمی‌گردد و چیزی پاک نمی‌شود.</p>' +
       '<p class="ft-sum"><b>' + fa(F.list.length - offN) + '</b> روشن <span></span><b>' + fa(offN) + '</b> خاموش</p>' +
       groups.map(function (g) {
-        var GA = { 'فروش و مشتری': 'group-sales-customers', 'انبار و مالی': 'group-warehouse-finance', 'بازار و رشد': 'group-market-growth', 'مدیریت و تحلیل': 'group-management-analysis' };
+        var GA = { 'فروش و مشتری': 'group-sales-customers', 'انبار و مالی': 'group-warehouse-finance', 'بازار و رشد': 'group-market-growth', 'مدیریت و تحلیل': 'group-management-analysis', 'بازدیدکننده و مشتری': 'consumer-panel-my-orders' };
         return '<section class="ft-grp"><h2>' + (GA[g] ? '<img class="ft-gimg" src="./assets/art/tiles/' + GA[g] + '.webp" alt="" width="44" height="44" decoding="async">' : '') + esc(g) + '</h2><ul class="ft-list">' + by[g].map(function (f) {
           var on = !S.off[f.id];
           return '<li class="' + (on ? '' : 'off') + '"><div><b>' + esc(f.label) + '</b><small>' + esc(f.info) + '</small></div>' +
             '<button type="button" class="ft-sw" role="switch" aria-checked="' + on + '" data-id="' + f.id + '" aria-label="' + esc(f.label) + '"' + (S.busy ? ' disabled' : '') + '><i></i><span>' + (on ? 'روشن' : 'خاموش') + '</span></button></li>';
         }).join('') + '</ul></section>';
       }).join('') +
-      '<p class="ft-foot">بخش‌های اصلی (صفحهٔ اصلی، حساب من، تماس، نسخهٔ پشتیبان و همین صفحه) قابل خاموش شدن نیستند. تغییر برای هر کاربر تا چند دقیقه بعد، هنگام باز کردن صفحهٔ بعدی، دیده می‌شود.</p>';
+      '<p class="ft-foot">هر کاشی صفحهٔ اصلی را می‌توانید خاموش کنید؛ فقط صفحهٔ اصلی، صفحهٔ ورود و همین صفحه خاموش نمی‌شوند. تغییر برای هر کاربر تا چند دقیقه بعد، هنگام باز کردن صفحهٔ بعدی، دیده می‌شود.</p>';
   }
   function render() { root.innerHTML = view(); }
   // the switch is changed in place (not redrawn) so it can glide; if the save fails it glides back
