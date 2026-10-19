@@ -374,3 +374,12 @@
 @media(prefers-reduced-motion:reduce){.pn-app{transition:none}}
 .pn-apps{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
 @media(min-width:760px){.pn-app{font-size:14px;border-radius:28px}.pn-apps{gap:16px}}
+
+/* Telegram style: a round pencil button floats over the chat list instead of a text button */
+.pn-fab{position:fixed;inset-inline-start:18px;bottom:98px;z-index:30;display:grid;place-items:center;width:58px;height:58px;padding:0;border:0;border-radius:50%;background:#ffcc2a;color:#071b36;box-shadow:0 10px 26px rgba(7,27,54,.32),0 2px 0 rgba(255,255,255,.5) inset;cursor:pointer;animation:pn-fab-in .5s cubic-bezier(.2,1.5,.4,1) both;transition:transform .15s}
+.pn-fab svg{width:26px;height:26px}
+.pn-fab:active{transform:scale(.9)}
+@media(min-width:761px){.pn-fab{bottom:28px}}
+.ms-embed .pn-fab{bottom:20px}
+@keyframes pn-fab-in{from{opacity:0;transform:scale(.3) rotate(-40deg)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.pn-fab{animation:none}}

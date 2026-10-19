@@ -515,10 +515,10 @@
         '<span class="pn-chat-last">' + (mineLast ? '<i class="pn-you">شما:</i> ' : '') + esc(x.lastText || '') + '</span></span>' +
         (waiting ? '<i class="pn-unread" aria-label="منتظر پاسخ شما"></i>' : '') + '</button></li>';
     }).join('');
-    return '<section class="pn-card pn-tickets" id="tickets"><div class="pn-tk-head"><h2>گفت‌وگوها' + (wait ? ' <span class="pn-badge" aria-label="منتظر پاسخ شما">' + faInt.format(wait) + '</span>' : '') + '</h2>' +
-      '<button type="button" class="pn-secondary" data-tk-new>گفت‌وگوی تازه</button></div>' +
+    return '<section class="pn-card pn-tickets" id="tickets" data-no-reveal><div class="pn-tk-head"><h2>گفت‌وگوها' + (wait ? ' <span class="pn-badge" aria-label="منتظر پاسخ شما">' + faInt.format(wait) + '</span>' : '') + '</h2>' +
+      '</div>' +
       (T.error ? '<p class="pn-err" role="alert">' + esc(T.error) + '</p>' : '') +
-      (rows ? '<ul class="pn-chats">' + rows + '</ul>' : '<p class="pn-note">' + (T.loading ? 'در حال بارگذاری…' : 'گفت‌وگویی نیست. برای پیام به فروش، مالی، مدیریت یا هر واحد دیگر «گفت‌وگوی تازه» را بزنید.') + '</p>') + '</section>';
+      (rows ? '<ul class="pn-chats">' + rows + '</ul>' : '<p class="pn-note">' + (T.loading ? 'در حال بارگذاری…' : 'گفت‌وگویی نیست. برای پیام به فروش، مالی، مدیریت یا هر واحد دیگر دکمهٔ مداد را بزنید.') + '</p>') + '<button type="button" class="pn-fab" data-tk-new aria-label="گفت‌وگوی تازه" title="گفت‌وگوی تازه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>' + '</section>';
   }
   function tkNewForm() {
     var groups = [{ label: 'واحد', options: TK_TARGETS.map(function (r) { return { v: 'role:' + r, t: MSRoles.label(r) }; }) }];
