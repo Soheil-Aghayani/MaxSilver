@@ -146,12 +146,113 @@
     });
   }
 
+
+  // ----- the pre-invoice cart. At the top of the page it is the gold button in the tray at the bottom; once you scroll away from the search
+  // console (phones and tablets) it turns into a cart icon in the top bar, next to the search icon, and turns back when you return.
+  // An item you add flies into whichever of the two is showing.
+  var MSCart = window.MSCart = { up: false, away: false, btn: null };
+  var CART_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h9.2L19 8H6.5"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>';
+  var calmMotion = function () { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); };
+  function layer() { return document.querySelector('dialog[open]') || document.body; }
+  function rectOf(el) { var r = el.getBoundingClientRect(); return { l: r.left, t: r.top, w: r.width, h: r.height }; }
+  MSCart.build = function (box, before) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.id = 'catCartBtn'; b.className = 'ms-cart-btn'; b.hidden = true;
+    b.setAttribute('aria-label', 'باز کردن پیش‌فاکتور'); b.title = 'پیش‌فاکتور';
+    b.innerHTML = CART_SVG + '<i class="ms-cart-n" aria-hidden="true"></i>';
+    box.insertBefore(b, before);
+    b.addEventListener('click', function () { invoiceView(); });
+    MSCart.btn = b;
+  };
+  function badge() { if (MSCart.btn) { MSCart.btn.querySelector('.ms-cart-n').textContent = faInt.format(inv.lines.length); } }
+  // sparks that burst out of the cart when something lands in it
+  function sparks(r) {
+    if (calmMotion()) return;
+    var cx = r.l + r.w / 2, cy = r.t + r.h / 2, host = layer();
+    for (var i = 0; i < 10; i++) {
+      var s = document.createElement('i'), a = (Math.PI * 2 * i) / 10 + Math.random() * 0.5, d = 28 + Math.random() * 22;
+      s.className = 'ms-spark'; s.style.left = cx + 'px'; s.style.top = cy + 'px';
+      s.style.background = i % 3 === 0 ? '#fff' : (i % 3 === 1 ? '#ffcc2a' : '#ff9f0a');
+      host.appendChild(s);
+      s.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: 'translate(calc(-50% + ' + Math.cos(a) * d + 'px),calc(-50% + ' + Math.sin(a) * d + 'px)) scale(.2)', opacity: 0 }], { duration: 560, easing: 'cubic-bezier(.2,.7,.3,1)' }).onfinish = (function (x) { return function () { x.remove(); }; })(s);
+    }
+  }
+  function pulse(el) {
+    if (!el || calmMotion() || !el.animate) return;
+    el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.28)' }, { transform: 'scale(.92)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }], { duration: 520, easing: 'cubic-bezier(.3,.7,.4,1)' });
+    var n = el.querySelector('.ms-cart-n, #invCount'); if (n) n.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.7)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'ease-out' });
+    var r = rectOf(el), ring = document.createElement('i'); ring.className = 'ms-ring';
+    ring.style.left = r.l + 'px'; ring.style.top = r.t + 'px'; ring.style.width = r.w + 'px'; ring.style.height = r.h + 'px'; ring.style.borderRadius = getComputedStyle(el).borderRadius;
+    layer().appendChild(ring);
+    ring.animate([{ transform: 'scale(1)', opacity: .7 }, { transform: 'scale(1.9)', opacity: 0 }], { duration: 620, easing: 'ease-out' }).onfinish = function () { ring.remove(); };
+  }
+  // the gold pill and the round cart icon are one shape that stretches, arcs through the air and shrinks (or the reverse)
+  function morph(from, to, up, done) {
+    if (calmMotion() || !document.body.animate) { done(); return; }
+    var g = document.createElement('div'), pill = document.createElement('div'), cart = document.createElement('div');
+    g.className = 'ms-morph'; pill.className = 'mm-a'; cart.className = 'mm-b';
+    var src = $('invOpen').cloneNode(true); src.removeAttribute('id'); src.removeAttribute('hidden'); Array.prototype.forEach.call(src.querySelectorAll('[id]'), function (x) { x.removeAttribute('id'); });
+    src.style.pointerEvents = 'none'; src.style.margin = '0'; pill.appendChild(src); cart.innerHTML = CART_SVG;
+    g.appendChild(pill); g.appendChild(cart); layer().appendChild(g);
+    var big = { left: from.l, top: from.t, width: from.w, height: from.h, br: 18 }, small = { left: to.l, top: to.t, width: to.w, height: to.h, br: 12 };
+    var A = up ? from : to, B = up ? to : from; // the pill is the larger shape; A = start rect, B = end rect
+    var s0 = { left: from.l + 'px', top: from.t + 'px', width: from.w + 'px', height: from.h + 'px', borderRadius: (up ? 18 : 12) + 'px' };
+    var s1 = { left: to.l + 'px', top: to.t + 'px', width: to.w + 'px', height: to.h + 'px', borderRadius: (up ? 12 : 18) + 'px' };
+    var lift = -Math.min(70, Math.abs(from.t - to.t) / 3 + 26), mid = { left: ((from.l + to.l) / 2) + 'px', top: ((from.t + to.t) / 2) + 'px', width: Math.max(from.w, to.w) * .8 + 'px', height: Math.max(from.h, to.h) * 1.05 + 'px', borderRadius: '22px' };
+    s0.transform = 'translateY(0)'; s1.transform = 'translateY(0)'; mid.transform = 'translateY(' + lift + 'px)';
+    var dur = 760;
+    g.animate([s0, mid, s1], { duration: dur, easing: 'cubic-bezier(.45,0,.2,1)', fill: 'forwards' });
+    pill.animate([{ opacity: up ? 1 : 0 }, { opacity: 0 }, { opacity: up ? 0 : 1 }], { duration: dur, fill: 'forwards' });
+    cart.animate([{ opacity: up ? 0 : 1, transform: 'scale(.6) rotate(-18deg)' }, { opacity: 1, transform: 'scale(1.15) rotate(8deg)' }, { opacity: up ? 1 : 0, transform: 'scale(1) rotate(0)' }], { duration: dur, fill: 'forwards' });
+    setTimeout(function () { g.remove(); done(); }, dur + 20);
+  }
+  MSCart.apply = function (animate) {
+    var btn = MSCart.btn; if (!btn) return;
+    var n = inv.lines.length, want = MSCart.away && n > 0;
+    badge();
+    if (want === MSCart.up) { trayRender(); return; }
+    var tray = $('cmpTray'), pillBtn = $('invOpen');
+    if (want) {                                    // up: tray button -> cart in the bar
+      var from = (!tray.hidden && !pillBtn.hidden) ? rectOf(pillBtn) : null;
+      MSCart.up = true; trayRender(); btn.hidden = false;
+      if (animate && from) { btn.style.visibility = 'hidden'; var to = rectOf(btn); morph(from, to, true, function () { btn.style.visibility = ''; pulse(btn); sparks(rectOf(btn)); }); }
+    } else {                                       // down: cart -> tray button
+      var from2 = btn.hidden ? null : rectOf(btn);
+      MSCart.up = false; btn.hidden = true; trayRender();
+      if (animate && from2 && n > 0) { pillBtn.style.visibility = 'hidden'; var to2 = rectOf(pillBtn); morph(from2, to2, false, function () { pillBtn.style.visibility = ''; }); }
+    }
+  };
+  // an item flies from its card into the cart that is showing
+  MSCart.fly = function (id) {
+    if (calmMotion()) { pulse(MSCart.up ? MSCart.btn : $('invOpen')); return; }
+    var target = MSCart.up ? MSCart.btn : $('invOpen');
+    if (!target || target.hidden) return;
+    var card = document.querySelector('[data-inv="' + id + '"]'), img = card && card.closest('.pc') ? card.closest('.pc').querySelector('.pc-img img') : null;
+    var srcEl = (img && img.complete && img.naturalWidth) ? img : (document.activeElement && document.activeElement.getBoundingClientRect ? document.activeElement : null);
+    if (!srcEl) { pulse(target); return; }
+    var a = rectOf(srcEl), b = rectOf(target), size = Math.min(84, Math.max(44, Math.min(a.w, a.h) * .7));
+    var f = document.createElement('div'); f.className = 'ms-fly';
+    if (srcEl.tagName === 'IMG') f.style.backgroundImage = 'url("' + srcEl.currentSrc + '")'; else f.style.background = '#ffcc2a';
+    var sx = a.l + a.w / 2 - size / 2, sy = a.t + a.h / 2 - size / 2, ex = b.l + b.w / 2 - size / 2, ey = b.t + b.h / 2 - size / 2;
+    f.style.width = size + 'px'; f.style.height = size + 'px'; f.style.left = '0'; f.style.top = '0';
+    layer().appendChild(f);
+    var peak = Math.min(sy, ey) - 90, mx = sx + (ex - sx) * .5;
+    f.animate([
+      { transform: 'translate(' + sx + 'px,' + sy + 'px) scale(.5) rotate(0deg)', opacity: 0, offset: 0 },
+      { transform: 'translate(' + sx + 'px,' + sy + 'px) scale(1.06) rotate(0deg)', opacity: 1, offset: .12 },
+      { transform: 'translate(' + mx + 'px,' + peak + 'px) scale(.9) rotate(180deg)', opacity: 1, offset: .55 },
+      { transform: 'translate(' + ex + 'px,' + ey + 'px) scale(.24) rotate(340deg)', opacity: .95, offset: 1 }
+    ], { duration: 820, easing: 'cubic-bezier(.45,.05,.35,1)', fill: 'forwards' }).onfinish = function () { f.remove(); pulse(target); sparks(rectOf(target)); };
+  };
+
   function trayRender() {
     var tray = $('cmpTray');
-    tray.hidden = compare.length === 0 && inv.lines.length === 0;
+    var pillOn = inv.lines.length > 0 && !MSCart.up;
+    tray.hidden = compare.length === 0 && !pillOn;
     $('cmpGroup').hidden = compare.length === 0;
-    $('invOpen').hidden = inv.lines.length === 0;
+    $('invOpen').hidden = !pillOn;
     $('invCount').textContent = faInt.format(inv.lines.length);
+    badge();
     $('cmpThumbs').innerHTML = compare.map(function (id) { var it = byId[id]; return '<span style="background-image:url(\'' + esc(it.img) + '\')" title="' + esc(it.name) + '"></span>'; }).join('');
     $('cmpCount').textContent = faInt.format(compare.length);
     $('cmpOpen').disabled = compare.length < 2;
@@ -169,6 +270,8 @@
     var l = invLine(id);
     if (l) inv.lines.splice(inv.lines.indexOf(l), 1); else inv.lines.push({ id: id, qty: 1, price: prices[id] || listPrice(id) });
     invSave(); trayRender(); invButtons();
+    MSCart.apply(true);
+    if (!l) MSCart.fly(id);
   }
   function invButtons() {
     document.querySelectorAll('[data-inv]').forEach(function (b) {
@@ -974,6 +1077,7 @@
     box.className = 'ms-actions';
     shareBtn.parentNode.insertBefore(box, shareBtn);
     box.appendChild(btn); box.appendChild(shareBtn);
+    MSCart.build(box, btn);
     btn.type = 'button'; btn.id = 'catSearchBtn'; btn.className = 'ms-search-btn'; btn.hidden = true;
     btn.setAttribute('aria-label', 'جست‌وجو و فیلتر'); btn.setAttribute('aria-expanded', 'false'); btn.title = 'جست‌وجو و فیلتر';
     btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>';
@@ -993,6 +1097,7 @@
       away = v && mq.matches;
       btn.hidden = !away;
       if (!away) close();
+      MSCart.away = away; MSCart.apply(true);
     }
     var barH = function () { var h = document.querySelector('.ms-sitebar'); return h ? h.getBoundingClientRect().height : 60; };
     if ('IntersectionObserver' in window) {
@@ -1032,7 +1137,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261340', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261342', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }

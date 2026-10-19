@@ -2,13 +2,12 @@
 // A part that is off disappears for everyone: its tile on the home page, its entry in the bottom bar and the top menu, its banner slides,
 // the news about it (assets/updates.js), and the page itself (it shows «این بخش فعلاً خاموش است»).
 // The switches live in one public document (public_config/features, readable by everyone, writable only by the manager). This file reads
-// it with a plain request (no sign-in and no Firebase library needed, so it works on the public pages too) and keeps a copy in the browser
+// it with the Firebase library (no sign-in needed, so it works on the public pages too) and keeps a copy in the browser
 // so the next page opens already knowing what is off.
 (function (w) {
   'use strict';
   var KEY = 'ms-features';
-  var PROJECT = 'maxsilver-portal', API = 'AIzaSyD6Askz1Z4G6Nb1r7cdScFh9IaeLMdepS8';
-  // id = the id the bottom bar uses; locked parts can never be switched off
+    // id = the id the bottom bar uses; locked parts can never be switched off
   var FEATURES = [
     { id: 'customers', label: 'مشتریان', group: 'فروش و مشتری', page: 'customers.html', info: 'پایگاه مشتریان و صفحهٔ هر مشتری' },
     { id: 'crm', label: 'درخواست‌های خرید', group: 'فروش و مشتری', page: 'crm.html', info: 'پیگیری درخواست‌ها، مرحله‌ها و تحویل' },
@@ -84,12 +83,36 @@
     return out;
   }
   function set(h) { H = h || {}; state = { hidden: H, at: Date.now() }; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ } apply(); }
+  // The switches are read with the Firebase library (the plain web address of the database does not answer a browser). Pages that already have
+  // the library use it; the others load it a few seconds after the page is ready, at most once every 15 minutes on that device.
+  function loadScript(src) {
+    return new Promise(function (ok, no) {
+      if (document.querySelector('script[data-ms-sdk="' + src + '"]')) { ok(); return; }
+      var s = document.createElement('script'); s.src = src; s.setAttribute('data-ms-sdk', src); s.onload = ok; s.onerror = no; document.head.appendChild(s);
+    });
+  }
+  function sdk() {
+    if (w.firebase && w.firebase.firestore && w.MS_FIREBASE) return Promise.resolve();
+    var v = '10.12.5';
+    return loadScript('./assets/vendor/firebase-app-compat-' + v + '.js').then(function () { return loadScript('./assets/vendor/firebase-firestore-compat-' + v + '.js'); })
+      .then(function () { return w.MS_FIREBASE ? null : loadScript('./assets/firebase-config.js?v=' + (document.currentScript && document.currentScript.src.split('v=')[1] || '')); });
+  }
+  var busy = false;
   function sync(force) {
-    if (!force && state.at && Date.now() - state.at < 90000) return;
-    var url = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databases/(default)/documents/public_config/features?key=' + API;
-    fetch(url, { cache: 'no-store' }).then(function (r) { return r.status === 404 ? { fields: {} } : (r.ok ? r.json() : null); }).then(function (d) {
-      if (d) { var n = parse(d); if (JSON.stringify(n) !== JSON.stringify(H) || !state.at) set(n); else { state.at = Date.now(); try { localStorage.setItem(KEY, JSON.stringify({ hidden: H, at: state.at })); } catch (e) { /* ignore */ } } }
-    }).catch(function () { /* offline: the copy in the browser stays */ });
+    var age = state.at ? Date.now() - state.at : Infinity, hasLib = !!(w.firebase && w.firebase.firestore && w.MS_FIREBASE);
+    if (busy || (!force && age < (hasLib ? 90000 : 900000))) return;
+    busy = true;
+    var run = function () {
+      sdk().then(function () {
+        var app; try { app = w.firebase.apps.length ? w.firebase.app() : w.firebase.initializeApp(w.MS_FIREBASE, 'ms-features'); } catch (e) { app = w.firebase.app(); }
+        return app.firestore().collection('public_config').doc('features').get();
+      }).then(function (snap) {
+        var n = {}, d = snap && snap.exists ? snap.data() : null, h = d && d.hidden || {};
+        Object.keys(h).forEach(function (k) { if (h[k] === true) n[k] = true; });
+        if (JSON.stringify(n) !== JSON.stringify(H) || !state.at) set(n); else { state.at = Date.now(); try { localStorage.setItem(KEY, JSON.stringify({ hidden: H, at: state.at })); } catch (e) { /* ignore */ } }
+      }).catch(function () { /* offline: the copy in the browser stays */ }).then(function () { busy = false; });
+    };
+    if (hasLib || force) run(); else if (w.requestIdleCallback) setTimeout(function () { w.requestIdleCallback(run, { timeout: 4000 }); }, 2500); else setTimeout(run, 3500);
   }
   w.MSFeatures = { list: FEATURES, hidden: hidden, newsHidden: newsHidden, apply: apply, sync: sync, set: set, all: function () { return H; } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { apply(); sync(); }); else { apply(); sync(); }
