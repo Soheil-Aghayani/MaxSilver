@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'no-download-popup', date: '1405/07/28', tag: 'اصلاح', title: 'دیگر هنگام باز کردن برنامه پنجرهٔ دانلود باز نمی‌شود', quiet: true,
+      summary: 'برنامه دیگر فایل‌های PDF و اکسل را پنهانی دانلود نمی‌کند؛ این فایل‌ها فقط وقتی دکمهٔ دریافت را بزنید دانلود می‌شوند. اگر IDM دارید پنجرهٔ «Download File Info» دیگر ظاهر نمی‌شود.' },
     { id: 'owner-keeps-star', date: '1405/07/27', tag: 'اصلاح', title: 'ستارهٔ نوار پایین برای بخش خاموش‌شده هم برای شما می‌ماند', roles: ['manager'],
       summary: 'بخشی که برای دیگران خاموش کرده‌اید را هنوز می‌توانید با ستاره به نوار پایین خودتان اضافه کنید و در کارهای من هم دیده می‌شود.' },
     { id: 'features-every-tile', date: '1405/07/27', tag: 'بهبود', title: 'هر کاشی صفحهٔ اصلی را می‌توانید برای دیگران خاموش کنید', roles: ['manager'],

@@ -2,7 +2,7 @@
 
 // Every release changes VERSION and the ?v= stamp on the pages. Assets that carry ?v= are matched exactly,
 // so a page can never be combined with CSS/JS from another release.
-const VERSION = 'v3-20261374';
+const VERSION = 'v3-20261375';
 const CACHE_NAME = 'maxsilver-portal-' + VERSION;
 const SCOPE = self.registration.scope;
 const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'customers.html', 'planner.html', 'events.html', 'fairs.html', 'competitors.html', 'backup.html', 'features.html', 'roadmap.html', 'permissions.html', 'warehouse.html', 'banks.html', 'track.html', 'prices.html', 'crm.html', 'legal.html', 'product-catalog.html', 'sales-process.html', 'brand-books.html', 'panel.html', 'contact.html', 'advertising.html'];
@@ -32,7 +32,8 @@ self.addEventListener('install', (event) => {
         if (!response.ok) continue;
         await cache.put(abs(page), response.clone());
         const html = await response.text();
-        for (const match of html.matchAll(/(?:href|src)="(\.\/[^"#]+)"/g)) wanted.add(new URL(match[1], abs(page)).href);
+        // files people download on purpose (PDF, Excel, CSV...) are not part of the app shell; fetching them at install made download managers (IDM) pop up
+        for (const match of html.matchAll(/(?:href|src)="(\.\/[^"#]+)"/g)) if (!/\.(pdf|csv|xlsx?|docx?|pptx?|zip|rar)(\?|$)/i.test(match[1])) wanted.add(new URL(match[1], abs(page)).href);
       } catch (error) { /* offline install: pages are cached on first visit instead */ }
     }
     await Promise.all([...wanted].map((url) => cache.add(new Request(url, { cache: 'reload' })).catch(() => null)));
