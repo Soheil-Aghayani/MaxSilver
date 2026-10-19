@@ -30,7 +30,7 @@ service cloud.firestore {
     function hasRole(list) { return approved() && role() in list; }
 
     // Authority to load or replace data. The owner (manager) always has it; he can also name people per task in settings/permissions
-    // (roadmapEdit, competitorsEdit, warehouseEdit, customerImport). A task he has not configured keeps the roles listed in the rule.
+    // (roadmapEdit, competitorsEdit, warehouseEdit). A task he has not configured keeps the roles listed in the rule.
     function permSet() { return exists(/databases/$(database)/documents/settings/permissions); }
     function permDoc() { return get(/databases/$(database)/documents/settings/permissions).data; }
     function granted(cap, fallbackRoles) {
@@ -115,10 +115,9 @@ service cloud.firestore {
     function ownsCustomer() { return approved() && resource.data.get('ownerUid', '') == request.auth.uid; }
     match /customers/{code} {
       allow read: if seesAllCustomers() || ownsCustomer();
-      allow create, delete: if granted('customerImport', ['manager', 'ceo', 'sales_manager']);
-      allow update: if granted('customerImport', ['manager', 'ceo', 'sales_manager'])
-        || (hasRole(['manager', 'ceo', 'sales_manager']) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid', 'ownerName', 'ownerLocked', 'updatedAt']))
-        || ((hasRole(['manager', 'ceo', 'sales_manager', 'account_manager']) || ownsCustomer())
+      allow create, delete: if hasRole(['manager', 'ceo', 'sales_manager']);
+      allow update: if hasRole(['manager', 'ceo', 'sales_manager'])
+        || ((hasRole(['account_manager']) || ownsCustomer())
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone', 'address', 'contact', 'notes', 'updatedAt']));
     }
     // A customer group is a responsible partner or person; the owner is applied to the group's customers.
@@ -280,7 +279,7 @@ service cloud.firestore {
         && request.resource.data.uids is list && request.resource.data.uids.size() <= 2
         && request.resource.data.by == request.auth.uid;
       allow create, update: if hasRole(['manager']) && id == 'permissions'
-        && request.resource.data.keys().hasOnly(['roadmapEdit', 'competitorsEdit', 'warehouseEdit', 'customerImport', 'names', 'at', 'by', 'byName'])
+        && request.resource.data.keys().hasOnly(['roadmapEdit', 'competitorsEdit', 'warehouseEdit', 'names', 'at', 'by', 'byName'])
         && request.resource.data.by == request.auth.uid;
       // the cheque price is the cash price plus a percentage (default and per product group); the same two people set it
       allow create, update: if priceEditor() && id == 'cheque_markup'

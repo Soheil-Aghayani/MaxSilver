@@ -1,5 +1,5 @@
 // Who may load or replace data. The owner (role manager) always may. He can also name people for each task on the page «دسترسی‌ها»
-// (Firestore settings/permissions: { roadmapEdit: [uid], competitorsEdit: [uid], warehouseEdit: [uid], customerImport: [uid] }).
+// (Firestore settings/permissions: { roadmapEdit: [uid], competitorsEdit: [uid], warehouseEdit: [uid] }).
 // A task he has not configured keeps the role list of assets/roles.js. firestore.rules enforces the same thing; this file only decides what the pages show.
 (function (w) {
   'use strict';
@@ -8,8 +8,7 @@
   var TASKS = {
     roadmapEdit: 'بارگذاری و جایگزینی نقشهٔ راه',
     competitorsEdit: 'بارگذاری و جایگزینی فایل تحلیل رقبا',
-    warehouseEdit: 'ثبت و بارگذاری موجودی انبار',
-    customerImport: 'بارگذاری گزارش فروش و ویرایش کامل پایگاه مشتریان'
+    warehouseEdit: 'ثبت و بارگذاری موجودی انبار'
   };
   function configured(cap) { return !!(doc && Array.isArray(doc[cap])); }
   // role: the person's role, uid: their account id, area: a task above or any role area

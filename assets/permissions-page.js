@@ -12,8 +12,7 @@
   var CARDS = [
     ['roadmapEdit', 'نقشهٔ راه', 'کسی که می‌تواند فایل نقشهٔ راه را بارگذاری یا جایگزین کند.', 'پیش‌فرض: فقط شما'],
     ['competitorsEdit', 'فایل تحلیل رقبا', 'کسی که می‌تواند فایل دادهٔ رقبا را بارگذاری یا جایگزین کند.', 'پیش‌فرض: فقط شما'],
-    ['warehouseEdit', 'موجودی انبار', 'کسانی که موجودی را دستی یا با فایل Excel ثبت می‌کنند.', 'پیش‌فرض: نقش انبار و شما'],
-    ['customerImport', 'پایگاه مشتریان', 'بارگذاری گزارش فروش حسابداری و ساخت یا حذف مشتری. تغییر مسئول و یادداشت و تماس مشتری از این‌جا بسته نمی‌شود.', 'پیش‌فرض: مدیر فروش، CEO و شما']
+    ['warehouseEdit', 'موجودی انبار', 'کسانی که موجودی را دستی یا با فایل Excel ثبت می‌کنند.', 'پیش‌فرض: نقش انبار و شما']
   ];
   var can = function () { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, 'roleAdmin')); };
   var roleLabel = function (r) { return window.MSRoles ? window.MSRoles.label(r) : r; };
@@ -53,7 +52,7 @@
     var next = Object.assign({}, S.perm); if (list == null) delete next[cap]; else next[cap] = list;
     var names = Object.assign({}, S.perm.names || {}); (list || []).forEach(function (id) { names[id] = nameOf(id); });
     var doc = { names: names, at: Date.now(), by: S.user.uid, byName: S.profile.name || '' };
-    ['roadmapEdit', 'competitorsEdit', 'warehouseEdit', 'customerImport'].forEach(function (k) { if (Array.isArray(next[k])) doc[k] = next[k]; });
+    ['roadmapEdit', 'competitorsEdit', 'warehouseEdit'].forEach(function (k) { if (Array.isArray(next[k])) doc[k] = next[k]; });
     S.busy = cap; render();
     db.collection('settings').doc('permissions').set(doc).then(function () { S.perm = doc; M.set(doc); done(true, list == null ? 'به پیش‌فرض برگشت.' : 'ذخیره شد.'); }, function () { done(false, 'ذخیره نشد. قوانین Firestore را منتشر کرده‌اید؟'); });
   }
