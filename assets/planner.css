@@ -186,5 +186,9 @@
 .pl-card:hover .pl-one{transform:scale(1.07) translateY(-2px)}
 .pl-card b{width:100%;font-size:14.5px;line-height:1.5;text-align:center}
 .pl-card small{display:none}
-@media(max-width:760px){.pl-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* as many tiles per row as the screen has room for: wide screens get smaller tiles */
+.pl-cards{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}
+.pl-card{transform-style:flat;will-change:auto}
+.pl-card b{font-size:13.5px}
+@media(max-width:560px){.pl-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.pl-card{padding:10px 6px;border-radius:20px}.pl-card b{font-size:12.5px}}
 @media(prefers-reduced-motion:reduce){.pl-card .pl-one{transition:none}}

@@ -214,7 +214,7 @@
   function stage(id) {
     var a = ART[id];
     if (!a) return '<span class="pl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CONCEPT_ICON[id] + '</svg></span>';
-    return '<img class="pl-one" src="./assets/art/' + a[0] + '.webp" alt="" width="320" height="320" loading="lazy" decoding="async">';
+    return '<img class="pl-one" src="./assets/art/' + a[0] + '.webp" alt="" width="320" height="320" decoding="async">';
   }
   function stepConcept() {
     return progress(0, 'انتخاب کسب‌وکار') + '<h1>چه کسب‌وکاری می‌خواهید راه بیندازید؟</h1><p class="pl-lead">فقط یک انتخاب. لازم نیست جزئیات فنی بدانید؛ ما قدم‌به‌قدم کمک می‌کنیم.</p>' +

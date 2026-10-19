@@ -6,6 +6,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'planner-tiles-responsive', date: '1405/07/27', tag: 'بهبود', title: 'کاشی‌های کسب‌وکار: تعداد در هر ردیف بر اساس اندازهٔ صفحه',
+      summary: 'در صفحهٔ بزرگ کاشی‌ها کوچک‌تر و بیشتر در هر ردیف می‌آید و در گوشی سه‌تا سه‌تا؛ ایرادی که با رفتن ماوس روی کاشی تصویر بقیه کاشی‌ها را می‌پراند برطرف شد.' },
     { id: 'panel-popups', date: '1405/07/27', tag: 'بهبود', title: 'گفت‌وگوها و پیش‌فاکتورها در پنجرهٔ بازشو باز می‌شود',
       summary: 'با زدن «گفت‌وگوها»، «پیش‌فاکتورها» (و پورسانت و تیم) از صفحهٔ اصلی، نوار پایین یا هر جای دیگر، پنجره‌ای از پایین بالا می‌آید و از صفحه‌ای که در آن هستید بیرون نمی‌روید. فقط آیکن آدمک شما را به پنل می‌برد.',
       details: ['پنجره را با ✕، کلید Esc، زدن بیرون پنجره یا دکمهٔ برگشت گوشی ببندید.'] },
