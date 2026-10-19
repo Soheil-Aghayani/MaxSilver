@@ -184,3 +184,7 @@ a.ms-install-go{border:0;background:var(--ms-navy);color:#fff}
 
 /* touch size: small links and dots keep their look but get a finger-sized area (at least about 36px) */
 .ms-legal a{display:inline-flex;align-items:center;min-height:36px;padding:0 4px}
+
+/* safety net on every page: nothing may make the page wider than the screen (it also pushes the bottom bar out of place) */
+body.ms-portal-body{overflow-x:clip;max-width:100%}
+html:has(body.ms-portal-body){overflow-x:clip}
