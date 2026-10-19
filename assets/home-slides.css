@@ -89,3 +89,6 @@
 @keyframes hs-in-l{from{opacity:0;transform:translateX(-34px)}to{opacity:1;transform:none}}
 @keyframes hs-in-r{from{opacity:0;transform:translateX(34px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.hero[data-dir] .hs-slide.on{animation:none}}
+
+/* visitors: fairs show only as banner slides, with no button to the fairs page */
+html[data-anon] .hs-slide.fair .hs-cta{display:none}

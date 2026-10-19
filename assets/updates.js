@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'fairs-visitors-slides-only', date: '1405/07/27', tag: 'بهبود', title: 'نمایشگاه‌ها برای بازدیدکننده‌ها فقط اسلاید است',
+      summary: 'کسی که وارد حساب نشده است نمایشگاه‌ها را فقط در اسلایدهای صفحهٔ اصلی می‌بیند؛ دکمه و آیکن نمایشگاه‌ها در منو و نوار پایین نیست و صفحهٔ نمایشگاه‌ها برایش باز نمی‌شود.' },
     { id: 'clay-icons-3', date: '1405/07/27', tag: 'بهبود', title: 'آیکن‌های سه‌بعدی تازه در سراسر برنامه',
       summary: 'بالای صفحهٔ مشتریان، سبد پیش‌فاکتور، نوار نسخهٔ تازه، نوار آفلاین، صفحهٔ بخش خاموش، «چیزی پیدا نشد»، ثبت موفق درخواست و گروه‌های صفحهٔ ویژگی‌ها حالا آیکن سه‌بعدی دارند.' },
     { id: 'speed-round-2', date: '1405/07/27', tag: 'بهبود', title: 'صفحه‌ها فوراً باز می‌شوند',
