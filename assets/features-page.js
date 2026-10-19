@@ -30,16 +30,26 @@
       '<p class="ft-foot">بخش‌های اصلی (صفحهٔ اصلی، حساب من، تماس، نسخهٔ پشتیبان و همین صفحه) قابل خاموش شدن نیستند. تغییر برای هر کاربر تا چند دقیقه بعد، هنگام باز کردن صفحهٔ بعدی، دیده می‌شود.</p>';
   }
   function render() { root.innerHTML = view(); }
-  function save(next, id) {
-    S.busy = id; render();
+  // the switch is changed in place (not redrawn) so it can glide; if the save fails it glides back
+  function paintSw(b, on) {
+    b.setAttribute('aria-checked', String(on)); b.querySelector('span').textContent = on ? 'روشن' : 'خاموش';
+    b.closest('li').classList.toggle('off', !on);
+  }
+  function sum() {
+    var offN = Object.keys(S.off).filter(function (k) { return S.off[k]; }).length, el = root.querySelector('.ft-sum');
+    if (el) el.innerHTML = '<b>' + fa(F.list.length - offN) + '</b> روشن <span></span><b>' + fa(offN) + '</b> خاموش';
+  }
+  function save(b, id) {
+    var next = Object.assign({}, S.off); next[id] = !next[id];
+    S.busy = id; paintSw(b, !next[id]);
+    Array.prototype.forEach.call(root.querySelectorAll('.ft-sw'), function (x) { x.disabled = true; });
     var hidden = {}; Object.keys(next).forEach(function (k) { if (next[k]) hidden[k] = true; });
-    DOC.set({ hidden: hidden, at: Date.now(), by: S.user.uid }).then(function () { S.off = next; F.set(hidden); }, function () { /* the save message at the bottom says why */ })
-      .then(function () { S.busy = ''; render(); });
+    DOC.set({ hidden: hidden, at: Date.now(), by: S.user.uid }).then(function () { S.off = next; F.set(hidden); sum(); }, function () { paintSw(b, !!next[id]); /* the save message at the bottom says why */ })
+      .then(function () { S.busy = ''; Array.prototype.forEach.call(root.querySelectorAll('.ft-sw'), function (x) { x.disabled = false; }); });
   }
   root.addEventListener('click', function (e) {
     var b = e.target.closest('.ft-sw'); if (!b || S.busy) return;
-    var id = b.getAttribute('data-id'), next = Object.assign({}, S.off); next[id] = !next[id];
-    save(next, id);
+    save(b, b.getAttribute('data-id'));
   });
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null;

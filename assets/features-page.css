@@ -17,3 +17,12 @@
 .ft-sw:focus-visible{outline:3px solid #90adff;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.ft-sw,.ft-sw i{transition:none}}
 .ft-sw[aria-checked=false]{flex-direction:row-reverse;padding:0 6px 0 14px}
+/* the switch, third version: one width for both states; the knob and the word glide, the colour fades */
+.ft-sw{display:block;position:relative;width:98px;height:40px;padding:0;border-radius:999px;overflow:hidden;flex-direction:row}
+.ft-sw[aria-checked=false]{flex-direction:row;padding:0}
+.ft-sw i{position:absolute;top:6px;left:calc(100% - 34px);width:28px;height:28px;transform:none;transition:left .28s cubic-bezier(.4,0,.2,1)}
+.ft-sw[aria-checked=false] i{left:6px;transform:none}
+.ft-sw span{position:absolute;top:0;left:10px;width:52px;line-height:40px;text-align:center;transition:left .28s cubic-bezier(.4,0,.2,1)}
+.ft-sw[aria-checked=false] span{left:calc(100% - 62px)}
+.ft-sw{transition:background-color .28s}
+@media(prefers-reduced-motion:reduce){.ft-sw,.ft-sw i,.ft-sw span{transition:none}}
