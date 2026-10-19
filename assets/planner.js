@@ -105,7 +105,7 @@
       serve: [{ id: 'cake', t: 'کیک و شیرینی', jobs: ['cake'] }, { id: 'juice', t: 'آبمیوهٔ تازه', jobs: ['juice'] }, { id: 'waffle', t: 'وافل و دسر', jobs: ['waffle'] },
         { id: 'warm', t: 'غذای گرم صبحانه', jobs: ['warm', 'stove'] }, { id: 'deli', t: 'کالباس و پنیر', jobs: ['slicer'] }] },
     { id: 'selfservice', t: 'سلف‌سرویس و غذاخوری', d: 'غذای روزانه برای کارکنان و دانشجو', sectors: ['رستوران', 'ایرانی'],
-      core: ['bain', 'warm', 'fridge', 'table', 'wash'],
+      core: ['bain', 'warm', 'fridge', 'table'],
       serve: [{ id: 'hot', t: 'پخت خورش و غذای اصلی', jobs: ['stove', 'hood'] }, { id: 'grill', t: 'کباب و گریل', jobs: ['grill'] }, { id: 'chop', t: 'سبزی و سالاد', jobs: ['chop'] },
         { id: 'drinks', t: 'نوشیدنی', jobs: ['coffee', 'ice'] }, { id: 'cake', t: 'دسر و کیک', jobs: ['cake'] }] }
   ];
@@ -142,7 +142,6 @@
     if (have.fry) add('oilFilter', 'gap', 'روغن سرخ‌کن را تمیز نگه می‌دارد و هزینهٔ روغن را کم می‌کند');
     if (['blend', 'juice', 'coffee', 'cold'].some(function (j) { return have[j]; }) && !have.ice) add('ice', 'gap', 'نوشیدنی سرد بدون یخ کامل نمی‌شود');
     if (!have.fridge) add('fridge', 'gap', 'مواد اولیه باید سرد نگه داشته شود');
-    add('wash', 'gap');
     return out;
   }
   function tierDist(it) {

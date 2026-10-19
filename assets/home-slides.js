@@ -29,7 +29,7 @@
     s.innerHTML = '<div class="hs-copy"><h2>' + esc(ev.title + (ev.days === 0 ? ' مبارک' : '')) + '</h2><p>' + esc(ev.hello) + '</p>' +
       '<a class="hs-cta" href="./events.html">مناسبت‌ها<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg></a></div>' +
       '<picture class="hs-art" aria-hidden="true"><source media="(max-width:760px)" srcset="' + base + '-mobile.webp" width="720" height="900"><source media="(max-width:1100px)" srcset="' + base + '-tablet.webp" width="1024" height="360">' +
-      '<img src="' + base + '-pc.webp" alt="" width="1280" height="360" decoding="async"></picture>';
+      '<img src="' + base + '-pc.webp" alt="" width="1280" height="360" loading="lazy" decoding="async"></picture>';
     var first = track.querySelector('.hs-slide');
     track.insertBefore(s, first.nextSibling);
   }
@@ -47,8 +47,8 @@
       var f = x.f, E = window.MSEvents, s = document.createElement('div');
       s.className = 'hs-slide pic fair'; s.setAttribute('data-feature', 'fairs'); s.setAttribute('data-tone', x.tone); s.setAttribute('data-fair', x.id);
       var base = './assets/art/fairs/' + x.art, art = '';
-      if (x.art && x.kind === 'main') art = '<picture class="hs-art" aria-hidden="true"><source media="(max-width:760px)" srcset="' + base + '-mobile.webp" width="720" height="1279"><source media="(max-width:1100px)" srcset="' + base + '-tablet.webp" width="1024" height="768"><img src="' + base + '-pc.webp" alt="" width="1280" height="720" decoding="async"></picture>';
-      else if (x.art) art = '<picture class="hs-art" aria-hidden="true"><img src="' + base + x.ext + '" alt="" decoding="async"></picture>';
+      if (x.art && x.kind === 'main') art = '<picture class="hs-art" aria-hidden="true"><source media="(max-width:760px)" srcset="' + base + '-mobile.webp" width="720" height="1279"><source media="(max-width:1100px)" srcset="' + base + '-tablet.webp" width="1024" height="768"><img src="' + base + '-pc.webp" alt="" width="1280" height="720" loading="lazy" decoding="async"></picture>';
+      else if (x.art) art = '<picture class="hs-art" aria-hidden="true"><img src="' + base + x.ext + '" alt="" loading="lazy" decoding="async"></picture>';
       var when = x.st.k === 'now' ? 'در حال برگزاری' : x.st.text;
       s.innerHTML = '<div class="hs-copy"><h2>' + esc(x.title) + '</h2><p>' + esc(when + ' · ' + (f.dateMain || (E.fa(x.d.a.getDate()) + ' تا ' + E.fa(x.d.b.getDate())))) + (f.venue ? ' · ' + esc(f.venue) : '') + '</p>' +
         '<a class="hs-cta" href="./fairs.html">نمایشگاه‌ها<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg></a></div>' + art;

@@ -1,4 +1,4 @@
-@font-face{font-family:Estedad;src:url('./fonts/Estedad-VF.ttf') format('truetype');font-style:normal;font-weight:100 900;font-display:swap}
+@font-face{font-family:Estedad;src:url('./fonts/Estedad-VF.woff2') format('woff2'),url('./fonts/Estedad-VF.ttf') format('truetype');font-style:normal;font-weight:100 900;font-display:swap}
 :root{--ms-navy:#071b36;--ms-blue:#2456d8;--ms-blue-soft:#edf3ff;--ms-gold:#ffcc2a;--ms-ink:#17263d;--ms-muted:#5b6a80;--ms-line:#d7dfeb;--ms-paper:#f4f6f9;--ms-white:#fff;--ms-green:#14804a;--ms-red:#b42318;--ms-radius:18px;--ms-shadow:0 14px 42px rgba(7,27,54,.07);font-family:Estedad,Tahoma,sans-serif;color:var(--ms-ink)}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
