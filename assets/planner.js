@@ -370,7 +370,7 @@
     var d = DONE, j = window.MSEvents ? window.MSEvents.toJ(new Date()) : null, date = j ? j.jy + '/' + (j.jm < 10 ? '0' : '') + j.jm + '/' + (j.jd < 10 ? '0' : '') + j.jd : '';
     var doc = { template: 'chefmarket', docNo: d.code, date: date, customer: d.customer.name, customerCity: d.customer.city, customerPhone: toFa(d.customer.phone), customerAddress: d.customer.address, unit: 'تومان', lines: d.lines };
     var sparks = ['#ffcc2a', '#eb1d36', '#2eb872', '#4c8dff', '#ffcc2a', '#eb1d36', '#2eb872', '#4c8dff', '#ffcc2a', '#2eb872'].map(function (c, i) { return '<i style="--a:' + (i * 36) + 'deg;--c:' + c + '"></i>'; }).join('');
-    return '<div class="pl-done"><div class="pl-seal" aria-hidden="true"><svg viewBox="0 0 52 52"><circle class="c" cx="26" cy="26" r="24"/><path class="t" d="M15 27l8 8 15-17"/></svg>' + sparks + '</div>' +
+    return '<div class="pl-done"><div class="pl-seal" aria-hidden="true"><img class="pl-seal-img" src="./assets/art/tiles/success.webp" alt="" width="104" height="104">' + sparks + '</div>' +
       '<h1>درخواست شما ثبت شد</h1><p class="pl-lead">کارشناس فروش به‌زودی با شمارهٔ <b dir="ltr">' + esc(toFa(d.customer.phone)) + '</b> تماس می‌گیرد.</p>' +
       '<div class="pl-codebox"><span>کد پیگیری شما</span><b dir="ltr" id="plCode">' + esc(d.code) + '</b><button type="button" class="pl-copy" data-copy aria-label="کپی کد پیگیری">' + IC_COPY + '<span>کپی</span></button></div>' +
       '<p class="pl-note">این کد را نگه دارید و هنگام تماس با فروش بگویید.</p><a class="pl-btn ghost" href="./track.html?code=' + encodeURIComponent(d.code) + '">پیگیری درخواست</a></div>' +

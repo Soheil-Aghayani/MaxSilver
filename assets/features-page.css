@@ -26,3 +26,6 @@
 .ft-sw[aria-checked=false] span{left:calc(100% - 62px)}
 .ft-sw{transition:background-color .28s}
 @media(prefers-reduced-motion:reduce){.ft-sw,.ft-sw i,.ft-sw span{transition:none}}
+
+.ft-grp h2{display:flex;align-items:center;gap:10px}
+.ft-gimg{flex:none;width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(7,27,54,.18))}

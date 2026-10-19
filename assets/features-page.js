@@ -21,7 +21,8 @@
     return '<h1>ویژگی‌ها</h1><p class="ft-lead">هر بخش را که خاموش کنید برای همه ناپدید می‌شود: کاشی صفحهٔ اصلی، نوار پایین، منو، اسلایدهای بنر، خبرهای «تازه‌ها» و خود صفحه. هر وقت دوباره روشنش کنید همه‌چیز برمی‌گردد و چیزی پاک نمی‌شود.</p>' +
       '<p class="ft-sum"><b>' + fa(F.list.length - offN) + '</b> روشن <span></span><b>' + fa(offN) + '</b> خاموش</p>' +
       groups.map(function (g) {
-        return '<section class="ft-grp"><h2>' + esc(g) + '</h2><ul class="ft-list">' + by[g].map(function (f) {
+        var GA = { 'فروش و مشتری': 'group-sales-customers', 'انبار و مالی': 'group-warehouse-finance', 'بازار و رشد': 'group-market-growth', 'مدیریت و تحلیل': 'group-management-analysis' };
+        return '<section class="ft-grp"><h2>' + (GA[g] ? '<img class="ft-gimg" src="./assets/art/tiles/' + GA[g] + '.webp" alt="" width="44" height="44" decoding="async">' : '') + esc(g) + '</h2><ul class="ft-list">' + by[g].map(function (f) {
           var on = !S.off[f.id];
           return '<li class="' + (on ? '' : 'off') + '"><div><b>' + esc(f.label) + '</b><small>' + esc(f.info) + '</small></div>' +
             '<button type="button" class="ft-sw" role="switch" aria-checked="' + on + '" data-id="' + f.id + '" aria-label="' + esc(f.label) + '"' + (S.busy ? ' disabled' : '') + '><i></i><span>' + (on ? 'روشن' : 'خاموش') + '</span></button></li>';

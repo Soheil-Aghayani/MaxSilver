@@ -207,7 +207,7 @@
   }
   function listHtml() {
     var list = filtered(), part = list.slice(0, S.shown);
-    return (part.length ? part.map(card).join('') : '<li class="cu-note">مشتری مطابق این فیلتر پیدا نشد.</li>') +
+    return (part.length ? part.map(card).join('') : '<li class="cu-note ms-empty"><img class="ms-empty-img" src="./assets/art/tiles/no-results.webp" alt="" width="96" height="96" decoding="async"><span>مشتری مطابق این فیلتر پیدا نشد.</span></li>') +
       (list.length > part.length ? '<li class="cu-more"><button type="button" class="cu-btn" data-more>نمایش بیشتر (' + faInt.format(list.length - part.length) + ')</button></li>' : '');
   }
   function paintList() {
@@ -227,7 +227,7 @@
     var names = Object.keys(gn).filter(Boolean).sort(function (a, b) { return gn[b] - gn[a]; });
     var statuses = ['all', 'active', 'new', 'atrisk', 'lost', 'idle'];
     var cnt = function (s) { return s === 'all' ? S.list.length : S.list.filter(function (c) { return c._status === s; }).length; };
-    var KART = { users: 'customers', coins: 'finance-invoices', spark: 'purchase-requests', alert: 'notifications' };
+    var KART = { users: 'active-customers', coins: 'sales-revenue', spark: 'new-customer', alert: 'at-risk-customers' };
     var tile = function (k, color, label, val) { return '<div style="--c:' + color + '"><img class="cu-kimg" src="./assets/art/tiles/' + KART[k] + '.webp" alt="" width="96" height="96" decoding="async" onerror="this.remove()"><div><span>' + label + '</span><b>' + val + '</b></div></div>'; };
     var tot = S.list.length || 1, order = ['active', 'new', 'atrisk', 'lost', 'idle'];
     var kpi = '<div class="cu-kpis">' +

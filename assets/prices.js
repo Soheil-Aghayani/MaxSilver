@@ -101,7 +101,7 @@
       chip('data-flt', 'inquiry', S.flt === 'inquiry', 'استعلام', n.inquiry) + chip('data-flt', 'restock', S.flt === 'restock', 'شارژ', n.restock) + chip('data-flt', 'edited', S.flt === 'edited', 'ویرایش‌شده', n.edited) + chip('data-flt', 'retired', S.flt === 'retired', 'کنار گذاشته', n.retired) + '</div>' +
       '<div class="pr-list" id="prList">' + list.slice(0, S.shown).map(row).join('') + '</div>' +
       (list.length > S.shown ? '<button type="button" class="pr-more" data-more>نمایش بیشتر (' + faInt.format(list.length - S.shown) + ')</button>' : '') +
-      (list.length ? '' : '<p class="pr-note">محصولی پیدا نشد.</p>');
+      (list.length ? '' : '<p class="pr-note ms-empty"><img class="ms-empty-img" src="./assets/art/tiles/no-results.webp" alt="" width="96" height="96" decoding="async"><span>محصولی پیدا نشد.</span></p>');
   }
   function view() {
     if (S.loading) return (window.MSSkel ? window.MSSkel() : '<p class="pr-note">در حال بارگذاری…</p>');

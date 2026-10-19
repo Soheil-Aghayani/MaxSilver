@@ -947,7 +947,7 @@
   }
   function invListHtml() {
     var list = invSource().filter(invMatches);
-    return list.length ? list.slice(0, 200).map(invCard).join('') : '<li class="pn-note">پیش‌فاکتوری با این فیلتر پیدا نشد.</li>';
+    return list.length ? list.slice(0, 200).map(invCard).join('') : '<li class="pn-note ms-empty"><img class="ms-empty-img" src="./assets/art/tiles/no-results.webp" alt="" width="96" height="96" decoding="async"><span>پیش‌فاکتوری با این فیلتر پیدا نشد.</span></li>';
   }
   function invoicesView() {
     var n = function (st) { return S.docs.filter(function (d) { return revStatus(d) === st; }).length; };

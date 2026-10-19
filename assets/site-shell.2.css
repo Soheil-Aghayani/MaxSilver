@@ -188,3 +188,9 @@ a.ms-install-go{border:0;background:var(--ms-navy);color:#fff}
 /* safety net on every page: nothing may make the page wider than the screen (it also pushes the bottom bar out of place) */
 body.ms-portal-body{overflow-x:clip;max-width:100%}
 html:has(body.ms-portal-body){overflow-x:clip}
+
+/* empty states: a clay picture above the sentence */
+.ms-empty{display:grid;justify-items:center;gap:6px;text-align:center}
+.ms-empty-img{display:block;width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(7,27,54,.14));animation:ms-empty-in .5s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes ms-empty-in{from{opacity:0;transform:translateY(10px) scale(.8)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.ms-empty-img{animation:none}}

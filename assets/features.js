@@ -74,7 +74,7 @@
     var m = document.createElement('main');
     m.id = 'msOff';
     m.style.cssText = 'width:min(560px,calc(100% - 32px));margin:48px auto;padding:28px 22px;border:1px solid #d7dfeb;border-radius:20px;background:#fff;text-align:center;line-height:2';
-    m.innerHTML = '<h1 style="margin:0 0 8px;font-size:20px;color:#071b36">این بخش فعلاً خاموش است</h1><p style="margin:0 0 16px;color:#5b6a80">«' + f.label + '» را مسئول فناوری موقتاً بسته است.</p><a href="./index.html" style="display:inline-block;padding:10px 20px;border-radius:12px;background:#071b36;color:#fff;font-weight:800;text-decoration:none">بازگشت به صفحهٔ اصلی</a>';
+    m.innerHTML = '<img src="./assets/art/tiles/feature-off.webp" alt="" width="120" height="120" style="display:block;margin:0 auto 8px;width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 8px 10px rgba(7,27,54,.18))"><h1 style="margin:0 0 8px;font-size:20px;color:#071b36">این بخش فعلاً خاموش است</h1><p style="margin:0 0 16px;color:#5b6a80">«' + f.label + '» را مسئول فناوری موقتاً بسته است.</p><a href="./index.html" style="display:inline-block;padding:10px 20px;border-radius:12px;background:#071b36;color:#fff;font-weight:800;text-decoration:none">بازگشت به صفحهٔ اصلی</a>';
     var foot = document.querySelector('footer'); document.body.insertBefore(m, foot || null);
   }
   function parse(doc) {

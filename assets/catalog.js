@@ -151,7 +151,7 @@
   // console (phones and tablets) it turns into a cart icon in the top bar, next to the search icon, and turns back when you return.
   // An item you add flies into whichever of the two is showing.
   var MSCart = window.MSCart = { up: false, away: false, btn: null };
-  var CART_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h9.2L19 8H6.5"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>';
+  var CART_SVG = '<img class="ms-cart-img" src="./assets/art/tiles/shopping-cart.webp" alt="" width="34" height="34" decoding="async">';
   var calmMotion = function () { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); };
   function layer() { return document.querySelector('dialog[open]') || document.body; }
   function rectOf(el) { var r = el.getBoundingClientRect(); return { l: r.left, t: r.top, w: r.width, h: r.height }; }
@@ -1137,7 +1137,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261352', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261354', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }

@@ -106,7 +106,8 @@
   // a signed-in person gets the sheet ready in the background
   var signed = false; try { signed = !!localStorage.getItem('ms-role'); } catch (e) { /* ignore */ }
   var saver = w.navigator.connection && w.navigator.connection.saveData;
-  if (signed && !saver) {
+  var noWarm = false; try { noWarm = !!localStorage.getItem('ms-nowarm'); } catch (e) { /* ignore */ }   // a test switch: no background build
+  if (signed && !saver && !noWarm) {
     var warm = function () { if (!pop && d.visibilityState === 'visible') build(); };
     var arm = function () { setTimeout(function () { if (w.requestIdleCallback) w.requestIdleCallback(warm, { timeout: 4000 }); else warm(); }, 3500); };
     if (d.readyState === 'complete') arm(); else w.addEventListener('load', arm);

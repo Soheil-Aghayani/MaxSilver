@@ -89,7 +89,7 @@
       '<div class="cr-chips" role="group" aria-label="وضعیت">' + FILTERS.filter(function (f) { return f[0] !== 'free' || lead(); }).filter(function (f) { return !isAM() || ['all', 'pre', 'rej', 'acc', 'ful', 'out', 'end'].indexOf(f[0]) >= 0; }).map(function (f) { return chip(f, n); }).join('') + '</div>' +
       '<div class="cr-list">' + list.slice(0, S.shown).map(card).join('') + '</div>' +
       (list.length > S.shown ? '<button type="button" class="cr-more" data-more>نمایش بیشتر (' + faInt.format(list.length - S.shown) + ')</button>' : '') +
-      (list.length ? '' : '<p class="cr-note">درخواستی پیدا نشد.</p>');
+      (list.length ? '' : '<p class="cr-note ms-empty"><img class="ms-empty-img" src="./assets/art/tiles/no-results.webp" alt="" width="96" height="96" decoding="async"><span>درخواستی پیدا نشد.</span></p>');
   }
   function view() {
     if (S.loading) return (window.MSSkel ? window.MSSkel() : '<p class="cr-note">در حال بارگذاری…</p>');
