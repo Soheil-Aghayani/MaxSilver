@@ -143,7 +143,7 @@
     };
     if (hasLib || force) run(); else if (w.requestIdleCallback) setTimeout(function () { w.requestIdleCallback(run, { timeout: 4000 }); }, 2500); else setTimeout(run, 3500);
   }
-  w.MSFeatures = { list: FEATURES, hidden: hidden, newsHidden: newsHidden, apply: apply, sync: sync, set: set, all: function () { return H; } };
+  w.MSFeatures = { list: FEATURES, hidden: hidden, owner: owner, newsHidden: newsHidden, apply: apply, sync: sync, set: set, all: function () { return H; } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { apply(); sync(); }); else { apply(); sync(); }
   document.addEventListener('visibilitychange', function () { if (!document.hidden) sync(); });
   // the pages draw some of their parts later (bottom bar, banner slides, home tiles): the switches are applied again

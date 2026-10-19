@@ -81,7 +81,7 @@
   function allowed() {
     var r = role(), R = window.MSRoles, on = signed();
     return ITEMS.filter(function (it) {
-      if (window.MSFeatures && window.MSFeatures.hidden(it.id)) return false;
+      if (window.MSFeatures && window.MSFeatures.hidden(it.id) && !window.MSFeatures.owner()) return false;
       if (!on) return it.id === 'home' || it.id === 'planner' || it.id === 'panel' || it.id === 'contact';
       if (it.anon) return false;
       if (!it.area) return true;

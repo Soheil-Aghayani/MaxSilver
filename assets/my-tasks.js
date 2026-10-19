@@ -25,7 +25,7 @@
   function off(h) {
     var F = window.MSFeatures; if (!F) return false;
     var p = pageOf(h), f = F.list.filter(function (x) { return x.page === p; })[0];
-    return !!(f && F.hidden(f.id));
+    return !!(f && F.hidden(f.id) && !(F.owner && F.owner()));
   }
   function paint() {
     if (!signed()) { box.hidden = true; return; }
