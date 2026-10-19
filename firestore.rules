@@ -268,13 +268,19 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['uids', 'names', 'at', 'by', 'byName'])
         && request.resource.data.uids is list && request.resource.data.uids.size() <= 2
         && request.resource.data.by == request.auth.uid;
+      // the cheque price is the cash price plus a percentage (default and per product group); the same two people set it
+      allow create, update: if priceEditor() && id == 'cheque_markup'
+        && request.resource.data.keys().hasOnly(['def', 'byGrp', 'at', 'by', 'byName'])
+        && request.resource.data.def is number && request.resource.data.def >= 0 && request.resource.data.def <= 100
+        && request.resource.data.byGrp is map && request.resource.data.by == request.auth.uid;
       allow delete: if false;
     }
     match /list_prices/{id} {
       allow read: if approved();
       allow create, update: if priceEditor()
-        && request.resource.data.keys().hasOnly(['p', 's', 'at', 'by', 'byName', 'prev'])
-        && request.resource.data.s in ['p', 'i', 'r']
+        && request.resource.data.keys().hasOnly(['p', 's', 'at', 'by', 'byName', 'prev', 'c'])
+        && request.resource.data.s in ['p', 'i', 'r', 'n']
+        && (!('c' in request.resource.data) || (request.resource.data.c is number && request.resource.data.c >= 0 && request.resource.data.c < 100000000000))
         && request.resource.data.p is number && request.resource.data.p >= 0 && request.resource.data.p < 100000000000
         && request.resource.data.by == request.auth.uid;
       allow delete: if priceEditor();

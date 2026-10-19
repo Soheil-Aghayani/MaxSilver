@@ -180,9 +180,11 @@
     if (!live() || !approved() || !window.MSPrices) return Promise.resolve();
     return withTimeout(db.collection('list_prices').get()).then(function (snap) {
       var m = {};
-      snap.forEach(function (s) { var d = s.data(); m[s.id] = { p: d.p || 0, s: d.s || 'p', at: d.at || 0, by: d.byName || '' }; });
+      snap.forEach(function (s) { var d = s.data(); m[s.id] = { p: d.p || 0, s: d.s || 'p', c: d.c || 0, at: d.at || 0, by: d.byName || '' }; });
       window.MSPrices.setEdits(m);
-    }, function () { /* offline, or the rules are not published yet: the prices read last time stay */ });
+    }, function () { /* offline, or the rules are not published yet: the prices read last time stay */ }).then(function () {
+      return withTimeout(db.collection('settings').doc('cheque_markup').get()).then(function (s) { if (s.exists && window.MSPrices.setMarkup) window.MSPrices.setMarkup(s.data()); }, function () { /* keep the last one */ });
+    });
   }
   // product codes retired by sales management and management (item_status) leave the catalog for sales
   function loadItemStatus() {

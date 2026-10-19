@@ -7,6 +7,9 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'three-price-types', date: '1405/07/27', tag: 'جدید', title: 'سه نوع قیمت: نقدی، چکی و توافقی', roles: ['manager', 'ceo', 'sales_manager', 'finance', 'account_manager', 'visitor'], feature: 'prices',
+      summary: 'هر کالا حالا قیمت نقدی، قیمت چکی و حالت «توافقی» دارد. قیمت چکی = نقدی + یک درصد که دو مسئول قیمت برای هر گروه می‌گذارند (یا قیمت جدا برای یک کالا). در کاتالوگ هر دو قیمت دیده می‌شود و قیمت توافقی عدد ندارد.',
+      details: ['فایل قالب قیمت (Excel) ستون نقدی و چکی دارد و در Google Sheets هم باز می‌شود؛ بعد از ویرایش به‌صورت .xlsx دانلود و در صفحهٔ قیمت‌ها بارگذاری می‌شود.', 'پیش‌فاکتور هنوز کالاها را با قیمت نقدی می‌نویسد.'] },
     { id: 'price-editors-two', date: '1405/07/27', tag: 'امنیت', title: 'تغییر قیمت فقط با دو نفر تعیین‌شده', roles: ['manager', 'ceo', 'sales_manager', 'finance', 'account_manager'], feature: 'prices',
       summary: 'از این پس فقط دو نفری که مدیریت یا CEO در صفحهٔ «قیمت‌ها» تعیین می‌کنند می‌توانند قیمت را عوض کنند، فایل بازبینی بارگذاری کنند، درصد گروه را بزنند یا کدی را کنار بگذارند. بقیه قیمت‌ها را فقط می‌بینند.',
       details: ['این محدودیت در خود پایگاه داده هم اعمال می‌شود، نه فقط روی دکمه‌ها. تا دو نفر تعیین نشوند کسی قیمت را تغییر نمی‌دهد.'] },

@@ -11,7 +11,7 @@
   var auth = firebase.auth(), db = firebase.firestore();
   var faInt = new Intl.NumberFormat('fa-IR'), faDate = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' });
   var BR = { 'max-silver': 'مکث‌سیلور', wintora: 'وینتورا', 'torbo-max': 'توربومکس' };
-  var ST = [['p', 'قیمت'], ['i', 'استعلام'], ['r', 'شارژ']];
+  var ST = [['p', 'نقدی'], ['i', 'استعلام'], ['r', 'شارژ'], ['n', 'توافقی']];
   var S = { user: null, profile: null, loading: true, error: '', msg: '', items: [], q: '', brand: 'all', flt: 'all', shown: 60, draft: {}, busy: '', ret: '', repIn: '', noteIn: '', pGrp: '', pCat: '', pBr: 'all', pPct: '', pRound: '0', editors: { uids: [], names: {} }, team: [], pick1: '', pick2: '' };
   var I = {
     save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7"/></svg>',
@@ -47,6 +47,7 @@
       if (S.flt === 'none' && c) return false;
       if (S.flt === 'inquiry' && !(c && c.s === 'i')) return false;
       if (S.flt === 'restock' && !(c && c.s === 'r')) return false;
+      if (S.flt === 'nego' && !(c && c.s === 'n')) return false;
       if (S.flt === 'edited' && !(c && c.edited)) return false;
       if (S.flt === 'retired' && !ST8.retired(it.id)) return false;
       return !q || norm(it.name + ' ' + (it.code || '') + ' ' + (it.cat || '')).indexOf(q) >= 0;
@@ -93,7 +94,9 @@
       np = step ? Math.round(np / step) * step : Math.round(np);
       if (np < 1) np = 1;
       if (np === c.p) { m.same++; return; }
-      m.changes.push({ it: it, old: c, nw: { p: np, s: 'p' }, note: '' });
+      var nw = { p: np, s: 'p' };
+      if (c.c > 0) nw.c = step ? Math.round(c.c * (1 + pct / 100) / step) * step : Math.round(c.c * (1 + pct / 100));
+      m.changes.push({ it: it, old: c, nw: nw, note: '' });
     });
     m.title = 'تغییر ' + (pct > 0 ? '+' : '') + faInt.format(pct) + '٪ · ' + (S.pCat || S.pGrp || 'همهٔ گروه‌ها') + (S.pBr !== 'all' ? ' · ' + BR[S.pBr] : '') + ' · ' + faInt.format(scope) + ' کالای قیمت‌دار';
     if (!scope) m.errs.push('کالای قیمت‌داری در این گروه و برند نیست.');
@@ -120,6 +123,30 @@
     S.error = ''; S.msg = '';
     db.collection('settings').doc('price_editors').set(doc).then(function () { S.editors = { uids: u, names: names }; S.msg = 'مسئولان تغییر قیمت ذخیره شد.'; }, function (e) { S.error = errText(e); }).then(render);
   }
+  // ---------- cheque price = cash + a percentage
+  function markupHtml() {
+    if (!canEdit()) return '';
+    var mk = P.markup(), grps = {};
+    S.items.forEach(function (it) { if (it.grp) grps[it.grp] = true; });
+    var inp = function (id, v) { return '<input type="text" inputmode="decimal" dir="ltr" autocomplete="off" data-mk="' + esc(id) + '" value="' + (v == null ? '' : esc(String(v))) + '" placeholder="پیش‌فرض">'; };
+    return '<details class="pr-pct"><summary>قیمت چکی: درصد بیشتر از نقدی</summary><p class="pr-lead">قیمت چکی هر کالا = قیمت نقدی + این درصد (به نزدیک‌ترین ۱٬۰۰۰ تومان). برای هر گروه می‌توانید درصد جدا بگذارید؛ خالی یعنی همان پیش‌فرض. قیمت توافقی عدد ندارد: کارشناس فروش با مشتری توافق می‌کند.</p>' +
+      '<div class="pr-pform"><label>پیش‌فرض همهٔ گروه‌ها (٪)<input type="text" inputmode="decimal" dir="ltr" autocomplete="off" id="prMkDef" value="' + esc(String(mk.def || 0)) + '"></label>' +
+      Object.keys(grps).sort().map(function (g) { return '<label>' + esc(g) + ' (٪)' + inp(g, typeof mk.byGrp[g] === 'number' ? mk.byGrp[g] : null) + '</label>'; }).join('') +
+      '<button type="button" class="pr-btn" data-mksave>ذخیرهٔ درصدها</button></div></details>';
+  }
+  function saveMarkup() {
+    var num = function (v) { var x = parseFloat(latin(String(v)).replace(/[٫,]/g, '.')); return isNaN(x) ? null : x; };
+    var def = num(document.getElementById('prMkDef').value), byGrp = {}, bad = false;
+    if (def == null || def < 0 || def > 100) { S.error = 'درصد پیش‌فرض باید بین ۰ و ۱۰۰ باشد.'; S.msg = ''; render(); return; }
+    Array.prototype.forEach.call(root.querySelectorAll('[data-mk]'), function (i) {
+      if (!String(i.value).trim()) return;
+      var x = num(i.value); if (x == null || x < 0 || x > 100) { bad = true; return; } byGrp[i.getAttribute('data-mk')] = x;
+    });
+    if (bad) { S.error = 'درصد هر گروه باید بین ۰ و ۱۰۰ باشد.'; S.msg = ''; render(); return; }
+    var doc = { def: def, byGrp: byGrp, at: Date.now(), by: S.user.uid, byName: myName() };
+    S.error = ''; S.msg = '';
+    db.collection('settings').doc('cheque_markup').set(doc).then(function () { P.setMarkup(doc); S.msg = 'درصد قیمت چکی ذخیره شد.'; }, function (e) { S.error = errText(e); }).then(render);
+  }
   function chip(attr, val, on, text, n) { return '<button type="button" class="pr-chip" ' + attr + '="' + val + '" aria-pressed="' + on + '">' + text + (n != null ? ' <b>' + faInt.format(n) + '</b>' : '') + '</button>'; }
 
   function byCode(code) {
@@ -137,12 +164,17 @@
       '<label>یادداشت (اختیاری)<input type="text" data-note maxlength="200" value="' + esc(S.noteIn) + '" autocomplete="off"></label>' +
       '<div class="pr-retbtn"><button type="button" class="pr-more" data-retok>کنار گذاشتن این کد</button><button type="button" class="pr-more" data-retno>انصراف</button></div></div>';
   }
+  function chequeLine(it, c) {
+    if (!c || c.s !== 'p' || !(c.p > 0)) return '';
+    var ch = P.cheque(c, it.grp);
+    return '<small class="pr-chq">چکی: <b>' + faInt.format(ch) + '</b>' + (c.c > 0 ? ' (قیمت جدا)' : ch !== c.p ? ' (' + faInt.format(P.pct(it.grp)) + '٪ بیشتر)' : '') + '</small>';
+  }
   function row(it) {
     var c = cur(it.id), d = dval(it), dirty = !!S.draft[it.id], rt = ST8.retired(it.id);
     var src = c ? (c.edited ? 'ویرایش' + (c.by ? ' ' + esc(c.by) : '') + (c.at ? '<i class="ms-sep" aria-hidden="true"></i>' + faDate.format(new Date(c.at)) : '') : 'لیست ' + esc(P.date())) : 'بدون قیمت';
     return '<article class="pr-row' + (dirty ? ' dirty' : '') + (rt ? ' retired' : '') + '" data-id="' + esc(it.id) + '">' +
       '<div class="pr-img">' + (it.img ? '<img src="' + esc(it.img) + '" alt="" loading="lazy" decoding="async">' : '') + '</div>' +
-      '<div class="pr-name"><b>' + esc(it.name) + '</b><span>' + (it.code ? '<code>' + esc(it.code) + '</code>' : '') + '<i class="pr-br" data-b="' + esc(it.src) + '">' + esc(BR[it.src] || '') + '</i></span><small>' + src + '</small>' + retLine(it) + '</div>' +
+      '<div class="pr-name"><b>' + esc(it.name) + '</b><span>' + (it.code ? '<code>' + esc(it.code) + '</code>' : '') + '<i class="pr-br" data-b="' + esc(it.src) + '">' + esc(BR[it.src] || '') + '</i></span><small>' + src + '</small>' + chequeLine(it, c) + retLine(it) + '</div>' +
       '<div class="pr-roprice">' + esc(P.label(c) || 'بدون قیمت') + '</div>' +
       '<div class="pr-edit"><label class="pr-field"><input class="pr-in" type="text" inputmode="numeric" autocomplete="off" data-in value="' + (d.s === 'p' && d.p ? esc(faInt.format(d.p)) : '') + '" placeholder="۰"' + (d.s === 'p' ? '' : ' disabled') + ' aria-label="قیمت ' + esc(it.name) + '"><span>تومان</span></label>' +
       '<div class="pr-st" role="radiogroup" aria-label="وضعیت">' + ST.map(function (x) { return '<button type="button" role="radio" data-st="' + x[0] + '" aria-checked="' + (d.s === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</div></div>' +
@@ -156,11 +188,11 @@
     return '<div class="pr-bar"><input id="prQ" type="search" placeholder="جست‌وجوی نام، کد، دسته…" value="' + esc(S.q) + '" autocomplete="off">' +
       '<button type="button" class="pr-ic wide" data-csv title="دانلود قیمت‌ها (CSV)" aria-label="دانلود قیمت‌ها">' + I.csv + '</button></div>' +
       '<div class="pr-tools"><button type="button" class="pr-btn" data-tpl>' + I.csv + 'دانلود قالب بازبینی قیمت (Excel)</button>' +
-      (canEdit() ? '<label class="pr-btn alt">بارگذاری قیمت‌های بازبینی‌شده<input type="file" id="prFile" accept=".xlsx,.xls" hidden></label>' : '') + '</div>' + pctHtml() + impHtml() +
+      (canEdit() ? '<label class="pr-btn alt">بارگذاری قیمت‌های بازبینی‌شده<input type="file" id="prFile" accept=".xlsx,.xls" hidden></label>' : '') + '</div>' + markupHtml() + pctHtml() + impHtml() +
       '<div class="pr-chips" role="group" aria-label="برند">' + chip('data-brand', 'all', S.brand === 'all', 'همه برندها') + Object.keys(BR).map(function (k) { return chip('data-brand', k, S.brand === k, BR[k]); }).join('') + '</div>' +
       '<div class="pr-chips" role="group" aria-label="وضعیت قیمت">' +
       chip('data-flt', 'all', S.flt === 'all', 'همه') + chip('data-flt', 'priced', S.flt === 'priced', 'قیمت‌دار', n.priced) + chip('data-flt', 'none', S.flt === 'none', 'بدون قیمت', n.none) +
-      chip('data-flt', 'inquiry', S.flt === 'inquiry', 'استعلام', n.inquiry) + chip('data-flt', 'restock', S.flt === 'restock', 'شارژ', n.restock) + chip('data-flt', 'edited', S.flt === 'edited', 'ویرایش‌شده', n.edited) + chip('data-flt', 'retired', S.flt === 'retired', 'کنار گذاشته', n.retired) + '</div>' +
+      chip('data-flt', 'inquiry', S.flt === 'inquiry', 'استعلام', n.inquiry) + chip('data-flt', 'restock', S.flt === 'restock', 'شارژ', n.restock) + chip('data-flt', 'nego', S.flt === 'nego', 'توافقی') + chip('data-flt', 'edited', S.flt === 'edited', 'ویرایش‌شده', n.edited) + chip('data-flt', 'retired', S.flt === 'retired', 'کنار گذاشته', n.retired) + '</div>' +
       '<div class="pr-list" id="prList">' + list.slice(0, S.shown).map(row).join('') + '</div>' +
       (list.length > S.shown ? '<button type="button" class="pr-more" data-more>نمایش بیشتر (' + faInt.format(list.length - S.shown) + ')</button>' : '') +
       (list.length ? '' : '<p class="pr-note ms-empty"><img class="ms-empty-img" src="./assets/art/tiles/no-results.webp" alt="" width="96" height="96" decoding="async"><span>محصولی پیدا نشد.</span></p>');
@@ -170,7 +202,7 @@
     if (!S.user) return '<p class="pr-note">برای ویرایش قیمت‌ها ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="pr-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('pricesAudit')) return '<p class="pr-note">ویرایش قیمت فقط برای مدیر فروش، مدیریت و تکنولوژی ارتباطات سازمانی است. قیمت‌ها را در کاتالوگ می‌بینید.</p>';
-    return '<h1>قیمت‌ها</h1><p class="pr-lead">قیمت لیست محصولات به تومان. قیمتی که اینجا ذخیره کنید جای قیمت لیست پایه (مکث‌سیلور، وینتورا و توربومکس، ' + esc(P.date()) + ') را می‌گیرد و در کاتالوگ و پیش‌فاکتور برای همه دیده می‌شود. کدی را که دیگر استفاده نمی‌شود با دکمهٔ ⊘ کنار بگذارید (کد جایگزین اختیاری است).</p>' +
+    return '<h1>قیمت‌ها</h1><p class="pr-lead">قیمت لیست محصولات به تومان (نقدی، چکی و توافقی). قیمتی که اینجا ذخیره کنید جای قیمت لیست پایه (مکث‌سیلور، وینتورا و توربومکس، ' + esc(P.date()) + ') را می‌گیرد و در کاتالوگ و پیش‌فاکتور برای همه دیده می‌شود. کدی را که دیگر استفاده نمی‌شود با دکمهٔ ⊘ کنار بگذارید (کد جایگزین اختیاری است).</p>' +
       (S.error ? '<p class="pr-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.msg ? '<p class="pr-ok" role="status">' + esc(S.msg) + '</p>' : '') + editorsHtml() + listHtml();
   }
   function render() {
@@ -190,12 +222,14 @@
       if (!S.profile || S.profile.active === false || !can('pricesAudit')) return null;
       var team = can('roleAdmin') ? db.collection('users').get().then(function (q) { var l = []; q.forEach(function (s) { var d = s.data(); if (d.active !== false && /^(manager|ceo|sales_manager)$/.test(window.MSRoles ? window.MSRoles.norm(d.role) : d.role)) l.push({ id: s.id, name: d.name, email: d.email, role: d.role }); }); return l; }, function () { return []; }) : Promise.resolve([]);
       var ed = db.collection('settings').doc('price_editors').get().then(function (s) { return s.exists ? s.data() : null; }, function () { return null; });
-      return Promise.all([catalog, P.load(), db.collection('list_prices').get(), db.collection('item_status').get(), team, ed]).then(function (res) {
+      var mk = db.collection('settings').doc('cheque_markup').get().then(function (s) { return s; }, function () { return null; });
+      return Promise.all([catalog, P.load(), db.collection('list_prices').get(), db.collection('item_status').get(), team, ed, mk]).then(function (res) {
         S.team = res[4]; var e0 = res[5]; S.editors = e0 && Array.isArray(e0.uids) ? { uids: e0.uids.slice(0, 2), names: e0.names || {} } : { uids: [], names: {} }; S.pick1 = S.editors.uids[0] || ''; S.pick2 = S.editors.uids[1] || '';
         S.items = res[0].items;
         var m = {};
-        res[2].forEach(function (s) { var d = s.data(); m[s.id] = { p: d.p || 0, s: d.s || 'p', at: d.at || 0, by: d.byName || '' }; });
+        res[2].forEach(function (s) { var d = s.data(); m[s.id] = { p: d.p || 0, s: d.s || 'p', c: d.c || 0, at: d.at || 0, by: d.byName || '' }; });
         P.setEdits(m);
+        if (res[6] && res[6].exists) P.setMarkup(res[6].data());
         var sm = {};
         res[3].forEach(function (s) { var d = s.data(); sm[s.id] = { rep: d.rep || '', note: d.note || '', at: d.at || 0, by: d.byName || '' }; });
         ST8.setAll(sm);
@@ -206,9 +240,10 @@
     var it = S.items.filter(function (x) { return x.id === id; })[0], d = dval(it), c = cur(id);
     if (d.s === 'p' && !(d.p > 0)) { S.error = 'قیمت را بنویسید یا وضعیت «استعلام» یا «شارژ» را بزنید.'; S.msg = ''; render(); return; }
     var doc = { p: d.s === 'p' ? d.p : 0, s: d.s, at: Date.now(), by: S.user.uid, byName: myName(), prev: c && c.p ? c.p : 0 };
+    if (d.s === 'p' && c && c.c > 0) doc.c = c.c;
     S.error = ''; S.msg = '';
     db.collection('list_prices').doc(id).set(doc).then(function () {
-      P.setOne(id, { p: doc.p, s: doc.s, at: doc.at, by: doc.byName });
+      P.setOne(id, { p: doc.p, s: doc.s, c: doc.c || 0, at: doc.at, by: doc.byName });
       delete S.draft[id];
       S.msg = 'ذخیره شد: ' + it.name;
     }, function (e) { S.error = errText(e); }).then(render);
@@ -250,10 +285,10 @@
   }
   function csv() {
     var q = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
-    var rows = [['کد', 'نام', 'برند', 'قیمت (تومان)', 'وضعیت', 'منبع', 'وضعیت کد'].map(q).join(',')];
+    var rows = [['کد', 'نام', 'برند', 'قیمت نقدی (تومان)', 'قیمت چکی (تومان)', 'وضعیت', 'منبع', 'وضعیت کد'].map(q).join(',')];
     S.items.forEach(function (it) {
       var c = cur(it.id);
-      rows.push([it.code || '', it.name, BR[it.src] || '', c && c.s === 'p' && c.p ? c.p : '', c ? { p: 'قیمت دارد', i: 'استعلام بگیرید', r: 'درحال شارژ' }[c.s] : '', c ? (c.edited ? 'ویرایش' : 'لیست ' + P.date()) : '', ST8.retired(it.id) ? 'کنار گذاشته' : ''].map(q).join(','));
+      rows.push([it.code || '', it.name, BR[it.src] || '', c && c.s === 'p' && c.p ? c.p : '', c && c.s === 'p' && c.p ? P.cheque(c, it.grp) : '', c ? { p: 'قیمت دارد', i: 'استعلام بگیرید', r: 'درحال شارژ', n: 'توافقی' }[c.s] : '', c ? (c.edited ? 'ویرایش' : 'لیست ' + P.date()) : '', ST8.retired(it.id) ? 'کنار گذاشته' : ''].map(q).join(','));
     });
     var blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' }), a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = 'Max_Silver_List_Prices.csv'; document.body.appendChild(a); a.click(); a.remove();
@@ -261,12 +296,13 @@
   }
 
   // ---------- price template: finance audits the prices in an Excel file; the sales manager (or management) uploads it and the prices update
-  var TPL_HEAD = ['شناسه برنامه (تغییر ندهید)', 'کد کالا', 'نام کالا', 'برند', 'دسته', 'قیمت فعلی (تومان)', 'وضعیت فعلی', 'قیمت جدید (تومان)', 'وضعیت جدید', 'توضیح (اختیاری)'];
-  var STT = { p: 'قیمت‌دار', i: 'استعلام', r: 'شارژ' };
+  var TPL_HEAD = ['شناسه برنامه (تغییر ندهید)', 'کد کالا', 'نام کالا', 'برند', 'دسته', 'قیمت نقدی فعلی (تومان)', 'قیمت چکی فعلی (تومان)', 'وضعیت فعلی', 'قیمت نقدی جدید (تومان)', 'قیمت چکی جدید (تومان، اختیاری)', 'وضعیت جدید', 'توضیح (اختیاری)'];
+  var STT = { p: 'نقدی', i: 'استعلام', r: 'شارژ', n: 'توافقی' };
   function parseStatus(v) {
     var k = norm(v).replace(/\s+/g, '');
     if (!k) return '';
-    if (k === 'p' || k.indexOf('قیمت') === 0) return 'p';
+    if (k === 'p' || k.indexOf('قیمت') === 0 || k.indexOf('نقد') === 0) return 'p';
+    if (k === 'n' || k.indexOf('توافق') === 0) return 'n';
     if (k === 'i' || k.indexOf('استعلام') === 0) return 'i';
     if (k === 'r' || k.indexOf('شارژ') === 0 || k.indexOf('مجدد') >= 0) return 'r';
     return '?';
@@ -275,17 +311,19 @@
     var rows = [TPL_HEAD];
     S.items.filter(function (it) { return !ST8.retired(it.id); }).forEach(function (it) {
       var c = cur(it.id);
-      rows.push([it.id, it.code || '', it.name, BR[it.src] || '', it.cat || '', c && c.s === 'p' && c.p ? c.p : '', c ? STT[c.s] : 'بدون قیمت', '', '', '']);
+      rows.push([it.id, it.code || '', it.name, BR[it.src] || '', it.cat || '', c && c.s === 'p' && c.p ? c.p : '', c && c.s === 'p' && c.p ? P.cheque(c, it.grp) : '', c ? STT[c.s] : 'بدون قیمت', '', '', '', '']);
     });
     var guide = [['راهنمای بازبینی قیمت'],
-      ['۱. فقط سه ستون زردرنگ را پر کنید: «قیمت جدید (تومان)»، «وضعیت جدید» و «توضیح». بقیهٔ ستون‌ها را تغییر ندهید؛ ستون اول (شناسه برنامه) کلید کالاست.'],
+      ['این فایل در Google Sheets هم باز می‌شود: آن را در Google Drive بارگذاری کنید، با Google Sheets باز و ویرایش کنید، سپس از «File ← Download ← Microsoft Excel (.xlsx)» دانلود کنید و همین‌جا بارگذاری کنید.'],
+      ['۰. سه نوع قیمت: «نقدی» همان قیمت اصلی است؛ «چکی» به‌طور پیش‌فرض نقدی + درصد گروه است (ستون چکی جدید فقط وقتی قیمت جدا برای یک کالا می‌خواهید پر شود)؛ «توافقی» یعنی عدد ندارد و کارشناس فروش با مشتری توافق می‌کند (در وضعیت جدید بنویسید: توافقی).'],
+      ['۱. فقط ستون‌های زردرنگ را پر کنید: «قیمت جدید (تومان)»، «وضعیت جدید» و «توضیح». بقیهٔ ستون‌ها را تغییر ندهید؛ ستون اول (شناسه برنامه) کلید کالاست.'],
       ['۲. خانهٔ خالی یعنی «تغییری نیست». ردیفی که هر دو خانهٔ قیمت جدید و وضعیت جدید خالی باشد نادیده گرفته می‌شود.'],
       ['۳. «قیمت جدید» را به تومان و فقط به صورت عدد بنویسید (رقم فارسی یا انگلیسی، با یا بدون جداکننده). اگر وضعیت خالی باشد، قیمت‌دار فرض می‌شود.'],
       ['۴. «وضعیت جدید» یکی از این سه است: قیمت‌دار، استعلام، شارژ. برای «استعلام» و «شارژ» قیمت لازم نیست (اگر نوشته شود نادیده گرفته می‌شود).'],
       ['۵. فایل بازبینی‌شده را مدیر فروش یا مدیریت در بخش «قیمت‌ها ← بارگذاری قیمت‌های بازبینی‌شده» می‌دهد؛ پیش‌نمایش تغییرات نشان داده می‌شود و فقط پس از تأیید او اعمال می‌شود.'],
       ['۶. این قالب قیمت لیست فعلی (پایه یا ویرایش‌شده) را نشان می‌دهد. کالاهای کنار گذاشته‌شده در قالب نیستند.']];
     window.MSXlsx.save(window.MSXlsx.blob([
-      { name: 'قیمت‌ها', rows: rows, widths: [24, 14, 46, 14, 22, 18, 14, 18, 14, 30], freeze: true, filter: true, inputCols: [7, 8, 9] },
+      { name: 'قیمت‌ها', rows: rows, widths: [24, 14, 46, 14, 22, 18, 18, 14, 20, 22, 14, 30], freeze: true, filter: true, inputCols: [8, 9, 10, 11] },
       { name: 'راهنما', rows: guide, widths: [120], guide: true }
     ]), 'Max_Silver_Price_Template.xlsx');
   }
@@ -306,23 +344,24 @@
       var hi = -1, i; for (i = 0; i < Math.min(rows.length, 10); i++) if ((rows[i] || []).some(function (c) { return String(c || '').indexOf('شناسه برنامه') >= 0; })) { hi = i; break; }
       if (hi < 0) throw new Error('این فایل قالب بازبینی قیمت نیست (ستون «شناسه برنامه» پیدا نشد). قالب را از همین صفحه دانلود کنید.');
       var H = rows[hi].map(function (c) { return String(c || ''); }), col = function (s) { for (var k = 0; k < H.length; k++) if (H[k].indexOf(s) >= 0) return k; return -1; };
-      var cId = col('شناسه برنامه'), cCode = col('کد کالا'), cP = col('قیمت جدید'), cS = col('وضعیت جدید'), cN = col('توضیح');
+      var cId = col('شناسه برنامه'), cCode = col('کد کالا'), cP = col('قیمت نقدی جدید') >= 0 ? col('قیمت نقدی جدید') : col('قیمت جدید'), cC = col('قیمت چکی جدید'), cS = col('وضعیت جدید'), cN = col('توضیح');
       if (cP < 0 || cS < 0) throw new Error('ستون‌های «قیمت جدید» و «وضعیت جدید» در فایل نیستند.');
       var m = { name: file.name, changes: [], same: 0, errs: [] };
       rows.slice(hi + 1).forEach(function (r, n) {
-        var line = hi + n + 2, pv = r[cP], sv = r[cS];
-        var hasP = pv != null && String(pv).trim() !== '', hasS = sv != null && String(sv).trim() !== '';
-        if (!hasP && !hasS) return;
+        var line = hi + n + 2, pv = r[cP], sv = r[cS], cv = cC >= 0 ? r[cC] : null;
+        var hasP = pv != null && String(pv).trim() !== '', hasS = sv != null && String(sv).trim() !== '', hasC = cv != null && String(cv).trim() !== '';
+        if (!hasP && !hasS && !hasC) return;
         var id = String(r[cId] == null ? '' : r[cId]).trim(), it = itemById(id) || (cCode >= 0 && r[cCode] ? byCode(r[cCode]) : null);
         if (!it) { m.errs.push('ردیف ' + faInt.format(line) + ': کالا پیدا نشد (شناسه یا کد درست نیست).'); return; }
-        var st = parseStatus(sv), price = P.parse(pv);
-        if (st === '?') { m.errs.push('ردیف ' + faInt.format(line) + ' (' + it.name + '): وضعیت «' + sv + '» درست نیست؛ یکی از قیمت‌دار، استعلام، شارژ.'); return; }
+        var st = parseStatus(sv), price = P.parse(pv), chq = hasC ? P.parse(cv) : 0;
+        if (!hasS && !hasP && hasC) { var oc = cur(it.id); st = oc ? oc.s : 'p'; price = oc && oc.p ? oc.p : 0; }
+        if (st === '?') { m.errs.push('ردیف ' + faInt.format(line) + ' (' + it.name + '): وضعیت «' + sv + '» درست نیست؛ یکی از نقدی، استعلام، شارژ، توافقی.'); return; }
         var nw;
-        if (st === 'i' || st === 'r') nw = { p: 0, s: st };
-        else if (price > 0 && price < 100000000000) nw = { p: price, s: 'p' };
+        if (st === 'i' || st === 'r' || st === 'n') nw = { p: 0, s: st };
+        else if (price > 0 && price < 100000000000) { nw = { p: price, s: 'p' }; var oc2 = cur(it.id); if (hasC && chq > 0 && chq < 100000000000) nw.c = chq; else if (oc2 && oc2.c > 0) nw.c = oc2.c; }
         else { m.errs.push('ردیف ' + faInt.format(line) + ' (' + it.name + '): قیمت درست نیست.'); return; }
         var old = cur(it.id);
-        if (old && old.s === nw.s && (old.p || 0) === nw.p) { m.same++; return; }
+        if (old && old.s === nw.s && (old.p || 0) === nw.p && (old.c || 0) === (nw.c || 0)) { m.same++; return; }
         m.changes.push({ it: it, old: old, nw: nw, note: cN >= 0 && r[cN] ? String(r[cN]).slice(0, 200) : '' });
       });
       S.imp = m;
@@ -336,8 +375,8 @@
     function next() {
       if (!list.length) return Promise.resolve();
       var chunk = list.splice(0, 400), b = db.batch();
-      chunk.forEach(function (x) { b.set(db.collection('list_prices').doc(x.it.id), { p: x.nw.p, s: x.nw.s, at: now, by: S.user.uid, byName: myName(), prev: x.old && x.old.p ? x.old.p : 0 }); });
-      return b.commit().then(function () { chunk.forEach(function (x) { P.setOne(x.it.id, { p: x.nw.p, s: x.nw.s, at: now, by: myName() }); }); done += chunk.length; return next(); });
+      chunk.forEach(function (x) { var dd = { p: x.nw.p, s: x.nw.s, at: now, by: S.user.uid, byName: myName(), prev: x.old && x.old.p ? x.old.p : 0 }; if (x.nw.c > 0) dd.c = x.nw.c; b.set(db.collection('list_prices').doc(x.it.id), dd); });
+      return b.commit().then(function () { chunk.forEach(function (x) { P.setOne(x.it.id, { p: x.nw.p, s: x.nw.s, c: x.nw.c || 0, at: now, by: myName() }); }); done += chunk.length; return next(); });
     }
     next().then(function () { S.msg = faInt.format(done) + ' قیمت به‌روز شد.'; S.imp = null; }, function (e) { S.error = errText(e) + (done ? ' (' + faInt.format(done) + ' مورد قبل از خطا اعمال شد.)' : ''); }).then(function () { S.busy = ''; render(); });
   }
@@ -353,6 +392,7 @@
     if (e.target.closest('[data-csv]')) { csv(); return; }
     if (e.target.closest('[data-tpl]')) { downloadTemplate(); return; }
     if (e.target.closest('[data-edsave]')) { saveEditors(); return; }
+    if (e.target.closest('[data-mksave]')) { saveMarkup(); return; }
     if (e.target.closest('[data-pctgo]')) { previewPct(); return; }
     if (e.target.closest('[data-impok]')) { applyImport(); return; }
     if (e.target.closest('[data-impno]')) { S.imp = null; render(); return; }

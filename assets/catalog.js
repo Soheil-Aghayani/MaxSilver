@@ -109,7 +109,8 @@
   // list price of the product (assets/price-list.json, edited prices from Firestore on top); nothing is shown when there is none
   function priceTag(id) {
     var v = window.MSPrices ? window.MSPrices.get(id) : null, t = v ? window.MSPrices.label(v) : '';
-    return t ? '<div class="pc-price" data-s="' + v.s + '">' + esc(t) + '</div>' : '';
+    var ch = v && v.s === 'p' && byId[id] ? window.MSPrices.cheque(v, byId[id].grp) : 0;
+    return t ? '<div class="pc-price" data-s="' + v.s + '">' + esc(t) + '</div>' + (ch && ch !== v.p ? '<div class="pc-cheque">چکی <b>' + esc(window.MSPrices.fmt(ch)) + '</b> تومان</div>' : '') : '';
   }
   // starting price of a proforma line in the proforma's own unit (the list is in toman)
   function listPrice(id) {
@@ -294,7 +295,13 @@
     if (it.grp) rows.push(['گروه', esc(it.grp)]);
     if (it.cat) rows.push(['دسته', esc(it.cat)]);
     var pv = window.MSPrices ? window.MSPrices.get(it.id) : null;
-    if (pv && window.MSPrices.label(pv)) rows.push(['قیمت لیست', esc(window.MSPrices.label(pv)) + (pv.edited ? ' <small>(ویرایش‌شده)</small>' : (window.MSPrices.date() ? ' <small>(لیست ' + esc(window.MSPrices.date()) + ')</small>' : ''))]);
+    if (pv && pv.s === 'p' && pv.p > 0) {
+      var chq = window.MSPrices.cheque(pv, it.grp);
+      rows.push(['قیمت نقدی', esc(window.MSPrices.fmt(pv.p)) + ' تومان']);
+      rows.push(['قیمت چکی', esc(window.MSPrices.fmt(chq)) + ' تومان' + (chq !== pv.p ? ' <small>(' + (pv.c > 0 ? 'قیمت جدا برای این کالا' : window.MSPrices.pct(it.grp) + '٪ بیشتر از نقدی') + ')</small>' : '')]);
+    }
+    if (pv && pv.s === 'n') rows.push(['قیمت', 'توافقی <small>(با کارشناس فروش توافق می‌شود)</small>']);
+    if (pv && window.MSPrices.label(pv) && pv.s !== 'n' && !(pv.s === 'p' && pv.p > 0)) rows.push(['قیمت لیست', esc(window.MSPrices.label(pv)) + (pv.edited ? ' <small>(ویرایش‌شده)</small>' : (window.MSPrices.date() ? ' <small>(لیست ' + esc(window.MSPrices.date()) + ')</small>' : ''))]);
     var d = dimsText(it); if (d) rows.push(['ابعاد (طول × عرض × ارتفاع)', '<span dir="ltr">' + esc(d) + '</span>']);
     if (it.wt) rows.push(['وزن', '<span dir="ltr">' + esc(fa.format(it.wt)) + ' kg</span>']);
     it.specs.forEach(function (s) { rows.push([esc(s[0]), esc(s[1])]); });
@@ -1137,7 +1144,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261360', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261361', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }
