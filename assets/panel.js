@@ -1392,7 +1392,9 @@
     var nav = root.querySelector('.pn-tabs'), act = nav && nav.querySelector('.pn-tab[aria-selected=true]'), pill = nav && nav.querySelector('.pn-pill');
     if (act && pill) { pill.style.transition = 'none'; placePill(nav, { left: act.offsetLeft, width: act.offsetWidth }); }
   });
+  var hashDone = false;
   function render() {
+    if (!hashDone && S.user && S.profile) { hashDone = true; var hk = HASH_TAB[(location.hash || '').slice(1)]; if (hk) { S.tab = hk; S.launcher = false; } }   // a link to a section opens that section
     var prev = tabSnap();
     root.innerHTML = view();
     morphTabs(prev);
