@@ -214,16 +214,12 @@
   function stage(id) {
     var a = ART[id];
     if (!a) return '<span class="pl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CONCEPT_ICON[id] + '</svg></span>';
-    // [image, left, width, rotation, depth]
-    var pos = [[a[1], '0%', '36%', '-6deg', '20px'], [a[2], '64%', '36%', '6deg', '26px'], [a[0], '27%', '46%', '0deg', '72px']];
-    return '<span class="pl-stage" aria-hidden="true">' + pos.map(function (q, i) {
-      return '<span class="pl-pop' + (i === 2 ? ' main' : '') + '" style="--l:' + q[1] + ';--w:' + q[2] + ';--r:' + q[3] + ';--z:' + q[4] + ';--d:' + (i * 0.5) + 's"><i></i><img src="./assets/art/' + q[0] + '.webp" alt="" loading="lazy" decoding="async"></span>';
-    }).join('') + '</span>';
+    return '<img class="pl-one" src="./assets/art/' + a[0] + '.webp" alt="" width="320" height="320" loading="lazy" decoding="async">';
   }
   function stepConcept() {
     return progress(0, 'انتخاب کسب‌وکار') + '<h1>چه کسب‌وکاری می‌خواهید راه بیندازید؟</h1><p class="pl-lead">فقط یک انتخاب. لازم نیست جزئیات فنی بدانید؛ ما قدم‌به‌قدم کمک می‌کنیم.</p>' +
       '<div class="pl-cards">' + CONCEPTS.map(function (c) {
-        return '<button type="button" class="pl-card" data-concept="' + c.id + '" style="--tint:' + TINT[c.id] + '">' + stage(c.id) + '<b>' + c.t + '</b><small>' + c.d + '</small></button>';
+        return '<button type="button" class="pl-card" data-concept="' + c.id + '" title="' + esc(c.d) + '" style="--tint:' + TINT[c.id] + '">' + stage(c.id) + '<b>' + c.t + '</b></button>';
       }).join('') + '</div>';
   }
   function stepQuestions() {

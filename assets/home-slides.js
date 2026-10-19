@@ -74,10 +74,12 @@
       dotsBox.insertBefore(b, pauseBtn);
     }
   }
-  function show(n) {
+  // the page reads right to left: the next slide waits on the left, so it arrives from the left and the old one leaves to the right
+  function show(n, dir) {
     syncEvent();
     syncFairs();
     var list = active();
+    hero.setAttribute('data-dir', dir || (n < i ? 'prev' : 'next'));
     i = (n + list.length) % list.length;
     slides().forEach(function (s) {
       var on = s === list[i];
@@ -96,13 +98,13 @@
   function schedule() {
     clearTimeout(timer);
     if (paused || held || reduce || active().length < 2) return;
-    timer = setTimeout(function () { show(i + 1); schedule(); }, DELAY);
+    timer = setTimeout(function () { show(i + 1, 'next'); schedule(); }, DELAY);
   }
-  function go(n) { show(n); schedule(); }
+  function go(n, dir) { show(n, dir); schedule(); }
 
   hero.addEventListener('click', function (e) {
     var d = e.target.closest('.hs-dot');
-    if (d) { go(Number(d.getAttribute('data-i'))); return; }
+    if (d) { var k = Number(d.getAttribute('data-i')); go(k, k < i ? 'prev' : 'next'); return; }
     var p = e.target.closest('.hs-pause');
     if (p) {
       paused = !paused;
@@ -117,15 +119,15 @@
   hero.addEventListener('focusin', function () { held = true; clearTimeout(timer); });
   hero.addEventListener('focusout', function () { held = false; schedule(); });
   hero.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowLeft') { go(i + 1); e.preventDefault(); }       // in a right-to-left page "next" is to the left
-    else if (e.key === 'ArrowRight') { go(i - 1); e.preventDefault(); }
+    if (e.key === 'ArrowLeft') { go(i + 1, 'next'); e.preventDefault(); }       // in a right-to-left page "next" is to the left
+    else if (e.key === 'ArrowRight') { go(i - 1, 'prev'); e.preventDefault(); }
   });
   var x0 = null;
   hero.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; held = true; clearTimeout(timer); }, { passive: true });
   hero.addEventListener('touchend', function (e) {
     var dx = e.changedTouches[0].clientX - x0;
     held = false;
-    if (x0 !== null && Math.abs(dx) > 40) go(dx < 0 ? i + 1 : i - 1); else schedule();
+    if (x0 !== null && Math.abs(dx) > 40) go(dx > 0 ? i + 1 : i - 1, dx > 0 ? 'next' : 'prev'); else schedule();
     x0 = null;
   }, { passive: true });
   document.addEventListener('visibilitychange', function () { if (document.hidden) clearTimeout(timer); else schedule(); });

@@ -227,7 +227,8 @@
     var names = Object.keys(gn).filter(Boolean).sort(function (a, b) { return gn[b] - gn[a]; });
     var statuses = ['all', 'active', 'new', 'atrisk', 'lost', 'idle'];
     var cnt = function (s) { return s === 'all' ? S.list.length : S.list.filter(function (c) { return c._status === s; }).length; };
-    var tile = function (k, color, label, val) { return '<div style="--c:' + color + '"><span class="cu-kic">' + ic(k) + '</span><div><span>' + label + '</span><b>' + val + '</b></div></div>'; };
+    var KART = { users: 'customers', coins: 'finance-invoices', spark: 'purchase-requests', alert: 'notifications' };
+    var tile = function (k, color, label, val) { return '<div style="--c:' + color + '"><img class="cu-kimg" src="./assets/art/tiles/' + KART[k] + '.webp" alt="" width="96" height="96" decoding="async" onerror="this.remove()"><div><span>' + label + '</span><b>' + val + '</b></div></div>'; };
     var tot = S.list.length || 1, order = ['active', 'new', 'atrisk', 'lost', 'idle'];
     var kpi = '<div class="cu-kpis">' +
       tile('users', '#14804a', 'مشتری فعال ' + faDigits(S.latest || ''), faInt.format(act.length)) +
