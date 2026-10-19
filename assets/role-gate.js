@@ -64,6 +64,8 @@
   }
 
   w.MSGate = { apply: apply };
+  // the menu in the page holds every section until dock.js builds the one for this person; it stays hidden meanwhile (and is shown after 2.5 s whatever happens)
+  setTimeout(function () { document.documentElement.classList.add('ms-nav-on'); }, 2500);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
   // another tab signing in or out, or the profile arriving late
   w.addEventListener('storage', function (e) { if (e.key === 'ms-role') apply(); });

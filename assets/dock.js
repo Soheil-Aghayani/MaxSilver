@@ -140,6 +140,7 @@
       html += link(byId.panel, cur === 'panel');
     }
     nav.innerHTML = html;
+    document.documentElement.classList.add('ms-nav-on');   // the menu is shown only once it holds the right items for this person
     dockMorph();
     if (window.MSNotify && window.MSNotify.paint) { try { window.MSNotify.paint(); } catch (e) { /* ignore */ } }
     if (window.MSUpdates && window.MSUpdates.paintDot) { try { window.MSUpdates.paintDot(); } catch (e) { /* ignore */ } }
