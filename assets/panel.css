@@ -372,3 +372,5 @@
 .pn-back svg{width:16px;height:16px}
 .pn-backbar b{color:var(--ms-navy);font-size:16px}
 @media(prefers-reduced-motion:reduce){.pn-app{transition:none}}
+.pn-apps{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
+@media(min-width:760px){.pn-app{font-size:14px;border-radius:28px}.pn-apps{gap:16px}}
