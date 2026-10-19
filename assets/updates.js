@@ -7,6 +7,9 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'roadmap-timeline', date: '1405/07/27', tag: 'جدید', title: 'نقشهٔ راه: خط زمانی مرحله‌های پروژه', roles: ['manager', 'ceo', 'sales_manager'], feature: 'roadmap',
+      summary: 'صفحهٔ تازهٔ «نقشهٔ راه» (فقط مدیریت، CEO و مدیر فروش): کارت‌های مرحله‌ها روی یک خط زمانی؛ سمت راست انجام‌شده‌ها و سمت چپ پیش رو. صفحه روی مرحلهٔ جاری باز می‌شود. در صفحهٔ اصلی هم بخش خاکستری «به‌زودی» نشان می‌دهد هر بخش آینده با کدام مرحله فعال می‌شود.',
+      details: ['برای دیدن مرحله‌ها یک بار فایل نقشهٔ راه را مدیریت بارگذاری می‌کند؛ محتوا فقط در پایگاه داده است و در کد عمومی سایت نیست.'] },
     { id: 'fairs-visitors-slides-only', date: '1405/07/27', tag: 'بهبود', title: 'نمایشگاه‌ها برای بازدیدکننده‌ها فقط اسلاید است',
       summary: 'کسی که وارد حساب نشده است نمایشگاه‌ها را فقط در اسلایدهای صفحهٔ اصلی می‌بیند؛ دکمه و آیکن نمایشگاه‌ها در منو و نوار پایین نیست و صفحهٔ نمایشگاه‌ها برایش باز نمی‌شود.' },
     { id: 'clay-icons-3', date: '1405/07/27', tag: 'بهبود', title: 'آیکن‌های سه‌بعدی تازه در سراسر برنامه',

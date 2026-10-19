@@ -24,11 +24,12 @@
     { id: 'advertising', label: 'استراتژی تبلیغات', group: 'بازار و رشد', page: 'advertising.html', info: 'درخت رسانه‌ها و اهداف' },
     { id: 'brand', label: 'برندبوک‌ها', group: 'بازار و رشد', page: 'brand-books.html', info: 'هویت چهار برند' },
     { id: 'dashboard', label: 'داشبورد CEO', group: 'مدیریت و تحلیل', page: 'ceo-dashboard.html', info: 'نقشهٔ استان‌ها و مقایسهٔ سال‌ها' },
+    { id: 'roadmap', label: 'نقشهٔ راه', group: 'مدیریت و تحلیل', page: 'roadmap.html', info: 'خط زمانی مرحله‌های پروژه؛ فقط مدیریت، CEO و مدیر فروش' },
     { id: 'analysis', label: 'تحلیل جزئیات فروش', group: 'مدیریت و تحلیل', page: 'sales-analysis.html', info: 'گزارش مشتری و کالا' }
   ];
   // news entries (assets/updates.js) that belong to a part, by id; an entry can also carry feature: '<id>'
   var NEWS = [[/^customers/, 'customers'], [/^competitors/, 'competitors'], [/^fairs|^home-tiles-compact-fairs/, 'fairs'], [/^order-|^crm-|^proforma|^send-to-am|^doc-number/, 'crm'],
-    [/^prices|^retired|^rial-to-toman/, 'prices'], [/^events|^evt-|^lunar/, 'events'], [/^planner/, 'planner'], [/^sales-map/, 'process'], [/^cutout|^art-3d/, 'catalog']];
+    [/^prices|^retired|^rial-to-toman/, 'prices'], [/^events|^evt-|^lunar/, 'events'], [/^planner/, 'planner'], [/^roadmap/, 'roadmap'], [/^sales-map/, 'process'], [/^cutout|^art-3d/, 'catalog']];
 
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
   var state = load(), H = state.hidden || {}, touched = [];

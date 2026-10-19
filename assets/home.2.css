@@ -72,3 +72,14 @@ body{min-height:100vh}
 
 /* visitors: the tiles keep a gap from the banner */
 .portal-grid.anon{margin-top:22px}
+
+/* the sections that are not built yet: grey, each with the milestone that switches it on */
+.soon{cursor:pointer}
+.hm-sec .portal-card.soon{background:linear-gradient(160deg,#f6f7f9,#e8ebf0);box-shadow:none;border-color:#e1e5ec}
+.hm-sec .soon .tile-art{filter:grayscale(1) opacity(.72) drop-shadow(0 6px 8px rgba(7,27,54,.1))}
+.hm-sec .portal-card.soon:hover .tile-art{transform:none;filter:grayscale(.6) opacity(.9) drop-shadow(0 6px 8px rgba(7,27,54,.12))}
+.hm-sec .soon h2{color:#6b7587}
+.hm-sec .soon .soon-code{display:block;margin:2px auto 0;padding:2px 9px;border-radius:999px;background:#fff;border:1px solid #dfe4ec;color:#6b7587;font-size:11px;font-weight:800;text-align:center;width:max-content;max-width:100%}
+.soon .soon-code b{font-weight:800}
+.hm-sec .portal-card.soon.has-art .tile-art{inset:10px 12px 78px;height:calc(100% - 88px)}
+.hm-sec .portal-card.soon.has-art{padding-bottom:10px}

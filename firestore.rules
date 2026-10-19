@@ -388,7 +388,7 @@ service cloud.firestore {
     // only organizational technology and management load or replace it.
     match /intel/{id} {
       allow read: if hasRole(['manager', 'ceo', 'sales_manager']);
-      allow create, update: if hasRole(['manager', 'ceo']) && id == 'competitors' && request.resource.data.title is string;
+      allow create, update: if hasRole(['manager', 'ceo']) && (id == 'competitors' || id == 'roadmap') && request.resource.data.title is string;
       allow delete: if false;
     }
 
