@@ -336,7 +336,17 @@
   }
 
   var UNITS = ['تومان', 'ریال'];
-  function totalsOf(d) { return window.MSMath.totals(d); }
+  // cheque price / cash price of a product from the price list (1 when there is no cash price)
+  function crOf(id) {
+    if (!window.MSPrices || !window.MSPrices.seed()) return null;   // the price list has not been read yet: decide later
+    var v = window.MSPrices.get(id), it = byId[id];
+    if (!v || v.s !== 'p' || !(v.p > 0) || !it) return 1;
+    return Math.max(1, window.MSPrices.cheque(v, it.grp) / v.p);
+  }
+  function totalsOf(d) {
+    (d.lines || []).forEach(function (l) { if (l.cr == null && byId[l.id]) { var c0 = crOf(l.id); if (c0 != null) l.cr = Math.round(c0 * 10000) / 10000; } });
+    return window.MSMath.totals(d);
+  }
   function totals() { return totalsOf(inv); }
   function money(n, unit) { return faInt.format(Math.round(n)) + ' ' + (unit || inv.unit); }
   function today() { try { return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch (e) { return ''; } }
@@ -400,13 +410,16 @@
   function payRender() {
     var box = dialog.querySelector('#payBox');
     if (box) box.innerHTML = payHtml();
+    if (!totalsBusy) { totalsBusy = true; try { invTotalsRender(); } finally { totalsBusy = false; } }   // the cheque surcharge depends on the payment terms
   }
   // keep amounts, dates and the summary in step without rebuilding the fields (the user may be typing in one of them)
+  var totalsBusy = false;   // payRefresh and invTotalsRender call each other once
   function payRefresh() {
     var box = dialog.querySelector('#payBox');
     if (!box) return;
     var p = ensurePay();
     payNormalize();
+    if (!totalsBusy) { totalsBusy = true; try { invTotalsRender(); } finally { totalsBusy = false; } }
     if (p.mode === 'cash') { box.innerHTML = payHtml(); return; }
     var s = paySplit(), sum = box.querySelector('[data-pay-sum]');
     if (sum) sum.innerHTML = (p.mode === 'mixed' ? 'نقد <b>' + money(s.cash) + '</b> · ' : '') + 'چک <b>' + money(s.cheque) + '</b>';
@@ -423,7 +436,7 @@
   }
   function invTotalsRender() {
     var t = totals();
-    Object.keys(t).forEach(function (k) { var el = dialog.querySelector('[data-t=' + k + ']'); if (el) el.textContent = money(t[k]); });
+    Object.keys(t).forEach(function (k) { var el = dialog.querySelector('[data-t=' + k + ']'); if (el) { el.textContent = money(t[k]); if (k === 'chq' && el.parentNode) el.parentNode.hidden = !t.chq; } });
     Array.prototype.forEach.call(dialog.querySelectorAll('.inv-row'), function (row) {
       var l = inv.lines[Number(row.getAttribute('data-i'))];
       if (l) row.querySelector('[data-sum]').textContent = money((l.qty || 0) * (l.price || 0));
@@ -449,7 +462,7 @@
         '<select data-f="discMode" aria-label="نوع تخفیف"><option value="pct"' + (inv.discMode === 'pct' ? ' selected' : '') + '>٪</option><option value="amt"' + (inv.discMode === 'amt' ? ' selected' : '') + '>مبلغ</option></select></span></label>' +
         '<label>مالیات بر ارزش افزوده (٪)<input type="text" inputmode="decimal" data-f="tax" value="' + esc(fa.format(inv.tax || 0)) + '"></label></div>' +
       '<dl class="inv-totals"><div><dt>جمع کل</dt><dd data-t="sub"></dd></div><div><dt>تخفیف</dt><dd data-t="disc"></dd></div><div><dt>پس از تخفیف</dt><dd data-t="net"></dd></div>' +
-        '<div><dt>مالیات</dt><dd data-t="tax"></dd></div></dl>' +
+        '<div><dt>مالیات</dt><dd data-t="tax"></dd></div><div hidden><dt>افزایش قیمت چکی</dt><dd data-t="chq"></dd></div></dl>' +
       '<section class="pay" id="payBox">' + (payNormalize(), payHtml()) + '</section>'
       : '<p class="inv-empty">پیش‌فاکتور خالی است. با دکمهٔ + روی هر محصول، آن را اضافه کنید.</p>';
     var foot = has ? '<div class="inv-foot pf"><p class="inv-msg" id="invMsg" role="status" hidden></p><div class="inv-pay"><span>مبلغ قابل پرداخت</span><b data-t="total"></b></div>' +
@@ -515,7 +528,7 @@
       tax: inv.tax, discount: inv.discount, discMode: inv.discMode, pay: payCopy(),
       lines: inv.lines.filter(function (l) { return byId[l.id]; }).map(function (l) {
         var it = byId[l.id];
-        return { id: l.id, name: it.name, code: it.code, brand: srcLabel(it.src), qty: l.qty || 0, price: l.price || 0 };
+        return { id: l.id, name: it.name, code: it.code, brand: srcLabel(it.src), qty: l.qty || 0, price: l.price || 0, cr: l.cr != null ? l.cr : Math.round((crOf(l.id) || 1) * 10000) / 10000 };
       })
     };
   }
@@ -1144,7 +1157,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261361', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261365', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }

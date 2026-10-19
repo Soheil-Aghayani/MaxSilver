@@ -62,7 +62,7 @@
         (P.issuer ? '<p class="ip-line"><strong>' + P.issuer + '</strong> ' + c.esc(doc.issuer || '—') + '</p>' : '') +
         '<table class="ip-items"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
         (T.totals ? '<table class="ip-totals"><tbody><tr><td>جمع کل</td><td>' + c.money(t.sub, u) + '</td></tr><tr><td>تخفیف</td><td>' + c.money(t.disc, u) + '</td></tr><tr><td>مبلغ پس از تخفیف</td><td>' + c.money(t.net, u) + '</td></tr>' +
-        '<tr><td>مالیات بر ارزش افزوده (' + c.esc(c.fa.format(doc.tax || 0)) + '٪)</td><td>' + c.money(t.tax, u) + '</td></tr><tr class="grand"><td>مبلغ قابل پرداخت</td><td>' + c.money(t.total, u) + '</td></tr></tbody></table>' : '') +
+        '<tr><td>مالیات بر ارزش افزوده (' + c.esc(c.fa.format(doc.tax || 0)) + '٪)</td><td>' + c.money(t.tax, u) + '</td></tr>' + (t.chq > 0 ? '<tr><td>افزایش قیمت بخش چکی</td><td>' + c.money(t.chq, u) + '</td></tr>' : '') + '<tr class="grand"><td>مبلغ قابل پرداخت</td><td>' + c.money(t.total, u) + '</td></tr></tbody></table>' : '') +
         (T.words ? '<p class="ip-words"><strong>مبلغ به حروف:</strong> ' + c.esc(c.numWords(t.total)) + ' ' + c.esc(u) + '</p>' : '') + (T.payment ? c.payPrint(doc) : '') + (T.payment && doc.bank ? bankBlock(doc.bank, c) : '') +
         (T.note ? '<p class="ip-words">' + c.esc(T.note) + '</p>' : '') +
         (T.sign ? '<div class="ip-sign"><div><b>' + T.sign[0] + '</b></div><div><b>' + T.sign[1] + '</b></div></div>' : '') +

@@ -999,7 +999,7 @@
       '<div class="pn-edit">' + box + '<dl class="pn-facts">' + fact('صادرکننده', d.ownerName || d.issuer) + fact('تاریخ', faDigitsStr(d.date || '')) + fact('مشتری', d.customer) + fact('شهر', d.customerCity) +
       fact('تلفن گیرنده', d.customerPhone ? faDigitsStr(d.customerPhone) : '', true) + fact('نشانی', d.customerAddress) + '</dl>' +
       '<div class="pn-tablewrap"><table class="pn-tbl"><thead><tr><th>کالا</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '<dl class="pn-facts">' + fact('جمع کل', money(t.sub, d.unit)) + fact('تخفیف', money(t.disc, d.unit)) + fact('مالیات', money(t.tax, d.unit)) + fact('مبلغ قابل پرداخت', money(t.total, d.unit)) + fact('شرایط پرداخت', pay) + '</dl>' + cheques +
+      '<dl class="pn-facts">' + fact('جمع کل', money(t.sub, d.unit)) + fact('تخفیف', money(t.disc, d.unit)) + fact('مالیات', money(t.tax, d.unit)) + (t.chq > 0 ? fact('افزایش قیمت بخش چکی', money(t.chq, d.unit)) : '') + fact('مبلغ قابل پرداخت', money(t.total, d.unit)) + fact('شرایط پرداخت', pay) + '</dl>' + cheques +
       bankHtml(d, r, arch) + actions + '<p class="pn-err" id="rvErr" role="alert" hidden></p>' +
       (tk && !arch ? '<button type="button" class="pn-secondary" data-tk-open="' + esc(tk.id) + '">باز کردن گفت‌وگو</button>' : '') + '</div>';
     if (!dlg.open) dlg.showModal();
