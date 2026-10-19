@@ -12,7 +12,7 @@
   var faInt = new Intl.NumberFormat('fa-IR'), faDate = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' });
   var BR = { 'max-silver': 'مکث‌سیلور', wintora: 'وینتورا', 'torbo-max': 'توربومکس' };
   var ST = [['p', 'قیمت'], ['i', 'استعلام'], ['r', 'شارژ']];
-  var S = { user: null, profile: null, loading: true, error: '', msg: '', items: [], q: '', brand: 'all', flt: 'all', shown: 60, draft: {}, busy: '', ret: '', repIn: '', noteIn: '', pGrp: '', pCat: '', pBr: 'all', pPct: '', pRound: '0' };
+  var S = { user: null, profile: null, loading: true, error: '', msg: '', items: [], q: '', brand: 'all', flt: 'all', shown: 60, draft: {}, busy: '', ret: '', repIn: '', noteIn: '', pGrp: '', pCat: '', pBr: 'all', pPct: '', pRound: '0', editors: { uids: [], names: {} }, team: [], pick1: '', pick2: '' };
   var I = {
     save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7"/></svg>',
     undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
@@ -31,6 +31,9 @@
     return 'خطا: ' + (c || (e && e.message) || 'نامشخص');
   }
   var can = function (area) { return !!(S.profile && S.profile.active !== false && window.MSRoles && window.MSRoles.can(S.profile.role, area)); };
+  // only the (at most two) people named by management change prices; everyone else with a pricing role sees them read-only
+  var isEditor = function () { return !!(S.user && S.editors.uids.indexOf(S.user.uid) >= 0); };
+  var canEdit = function () { return can('pricesEdit') && isEditor(); };
   var myName = function () { return (S.profile && S.profile.name) || (S.user && S.user.email) || ''; };
   function cur(id) { return P.get(id); }
   function dval(it) { var d = S.draft[it.id], c = cur(it.id); return { p: d && d.p != null ? d.p : (c && c.s === 'p' && c.p ? c.p : 0), s: d && d.s ? d.s : (c ? c.s : 'p') }; }
@@ -60,7 +63,7 @@
   }
   // ---------- one percentage for a whole group (e.g. +10 % on every priced product of «تجهیزات پخت»)
   function pctHtml() {
-    if (!can('pricesEdit')) return '';
+    if (!canEdit()) return '';
     var grps = {}, cats = {};
     S.items.forEach(function (it) { if (it.grp) { grps[it.grp] = true; if (!S.pGrp || it.grp === S.pGrp) cats[it.cat] = true; } });
     var opt = function (v, t, sel) { return '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(t) + '</option>'; };
@@ -96,6 +99,26 @@
     if (!scope) m.errs.push('کالای قیمت‌داری در این گروه و برند نیست.');
     S.imp = m; render();
     var el = root.querySelector('.pr-imp'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
+  }
+  function editorsHtml() {
+    var names = S.editors.uids.map(function (u) { return esc(S.editors.names[u] || u); });
+    var who = names.length ? names.join(' و ') : 'هنوز کسی تعیین نشده است';
+    var out = '<section class="pr-who"><p><b>تغییر قیمت فقط با:</b> ' + who + (canEdit() ? ' <i class="pr-me">شما</i>' : '') + '</p>' +
+      (!canEdit() && can('pricesEdit') ? '<p class="pr-lead">شما قیمت‌ها را می‌بینید ولی تغییرشان با دو نفر تعیین‌شده است.</p>' : '');
+    if (can('roleAdmin')) {
+      var opts = function (sel) { return '<option value="">— انتخاب —</option>' + S.team.map(function (u) { return '<option value="' + esc(u.id) + '"' + (sel === u.id ? ' selected' : '') + '>' + esc(u.name || u.email || u.id) + ' · ' + esc(window.MSRoles ? window.MSRoles.label(u.role) : u.role) + '</option>'; }).join(''); };
+      out += '<details class="pr-pct"><summary>تعیین مسئولان تغییر قیمت (حداکثر دو نفر)</summary><div class="pr-pform"><label>نفر اول<select id="prEd1">' + opts(S.pick1) + '</select></label><label>نفر دوم<select id="prEd2">' + opts(S.pick2) + '</select></label>' +
+        '<button type="button" class="pr-btn" data-edsave>ذخیرهٔ مسئولان</button></div><p class="pr-lead">فقط مدیریت، CEO و مدیر فروش که حساب فعال دارند در فهرست می‌آیند. تا دو نفر تعیین نشوند کسی قیمت را تغییر نمی‌دهد.</p></details>';
+    }
+    return out + '</section>';
+  }
+  function saveEditors() {
+    var u = [S.pick1, S.pick2].filter(function (x, i, a) { return x && a.indexOf(x) === i; });
+    if (!u.length) { S.error = 'دست‌کم یک نفر را انتخاب کنید.'; S.msg = ''; render(); return; }
+    var names = {}; u.forEach(function (id) { var x = S.team.filter(function (t) { return t.id === id; })[0]; names[id] = x ? (x.name || x.email || id) : id; });
+    var doc = { uids: u, names: names, at: Date.now(), by: S.user.uid, byName: myName() };
+    S.error = ''; S.msg = '';
+    db.collection('settings').doc('price_editors').set(doc).then(function () { S.editors = { uids: u, names: names }; S.msg = 'مسئولان تغییر قیمت ذخیره شد.'; }, function (e) { S.error = errText(e); }).then(render);
   }
   function chip(attr, val, on, text, n) { return '<button type="button" class="pr-chip" ' + attr + '="' + val + '" aria-pressed="' + on + '">' + text + (n != null ? ' <b>' + faInt.format(n) + '</b>' : '') + '</button>'; }
 
@@ -133,7 +156,7 @@
     return '<div class="pr-bar"><input id="prQ" type="search" placeholder="جست‌وجوی نام، کد، دسته…" value="' + esc(S.q) + '" autocomplete="off">' +
       '<button type="button" class="pr-ic wide" data-csv title="دانلود قیمت‌ها (CSV)" aria-label="دانلود قیمت‌ها">' + I.csv + '</button></div>' +
       '<div class="pr-tools"><button type="button" class="pr-btn" data-tpl>' + I.csv + 'دانلود قالب بازبینی قیمت (Excel)</button>' +
-      (can('pricesEdit') ? '<label class="pr-btn alt">بارگذاری قیمت‌های بازبینی‌شده<input type="file" id="prFile" accept=".xlsx,.xls" hidden></label>' : '') + '</div>' + pctHtml() + impHtml() +
+      (canEdit() ? '<label class="pr-btn alt">بارگذاری قیمت‌های بازبینی‌شده<input type="file" id="prFile" accept=".xlsx,.xls" hidden></label>' : '') + '</div>' + pctHtml() + impHtml() +
       '<div class="pr-chips" role="group" aria-label="برند">' + chip('data-brand', 'all', S.brand === 'all', 'همه برندها') + Object.keys(BR).map(function (k) { return chip('data-brand', k, S.brand === k, BR[k]); }).join('') + '</div>' +
       '<div class="pr-chips" role="group" aria-label="وضعیت قیمت">' +
       chip('data-flt', 'all', S.flt === 'all', 'همه') + chip('data-flt', 'priced', S.flt === 'priced', 'قیمت‌دار', n.priced) + chip('data-flt', 'none', S.flt === 'none', 'بدون قیمت', n.none) +
@@ -148,12 +171,12 @@
     if (!S.profile || S.profile.active === false) return '<p class="pr-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('pricesAudit')) return '<p class="pr-note">ویرایش قیمت فقط برای مدیر فروش، مدیریت و تکنولوژی ارتباطات سازمانی است. قیمت‌ها را در کاتالوگ می‌بینید.</p>';
     return '<h1>قیمت‌ها</h1><p class="pr-lead">قیمت لیست محصولات به تومان. قیمتی که اینجا ذخیره کنید جای قیمت لیست پایه (مکث‌سیلور، وینتورا و توربومکس، ' + esc(P.date()) + ') را می‌گیرد و در کاتالوگ و پیش‌فاکتور برای همه دیده می‌شود. کدی را که دیگر استفاده نمی‌شود با دکمهٔ ⊘ کنار بگذارید (کد جایگزین اختیاری است).</p>' +
-      (S.error ? '<p class="pr-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.msg ? '<p class="pr-ok" role="status">' + esc(S.msg) + '</p>' : '') + listHtml();
+      (S.error ? '<p class="pr-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.msg ? '<p class="pr-ok" role="status">' + esc(S.msg) + '</p>' : '') + editorsHtml() + listHtml();
   }
   function render() {
     var a = document.activeElement, keepQ = a && a.id === 'prQ' ? a.selectionStart : null;
     root.innerHTML = view();
-    root.classList.toggle('pr-ro', !can('pricesEdit'));
+    root.classList.toggle('pr-ro', !canEdit());
     if (window.MSGate) window.MSGate.apply();
     if (keepQ !== null) { var q = document.getElementById('prQ'); if (q) { q.focus(); try { q.setSelectionRange(keepQ, keepQ); } catch (e) { /* ignore */ } } }
   }
@@ -165,7 +188,10 @@
     db.collection('users').doc(S.user.uid).get().then(function (snap) {
       S.profile = snap.exists ? snap.data() : null;
       if (!S.profile || S.profile.active === false || !can('pricesAudit')) return null;
-      return Promise.all([catalog, P.load(), db.collection('list_prices').get(), db.collection('item_status').get()]).then(function (res) {
+      var team = can('roleAdmin') ? db.collection('users').get().then(function (q) { var l = []; q.forEach(function (s) { var d = s.data(); if (d.active !== false && /^(manager|ceo|sales_manager)$/.test(window.MSRoles ? window.MSRoles.norm(d.role) : d.role)) l.push({ id: s.id, name: d.name, email: d.email, role: d.role }); }); return l; }, function () { return []; }) : Promise.resolve([]);
+      var ed = db.collection('settings').doc('price_editors').get().then(function (s) { return s.exists ? s.data() : null; }, function () { return null; });
+      return Promise.all([catalog, P.load(), db.collection('list_prices').get(), db.collection('item_status').get(), team, ed]).then(function (res) {
+        S.team = res[4]; var e0 = res[5]; S.editors = e0 && Array.isArray(e0.uids) ? { uids: e0.uids.slice(0, 2), names: e0.names || {} } : { uids: [], names: {} }; S.pick1 = S.editors.uids[0] || ''; S.pick2 = S.editors.uids[1] || '';
         S.items = res[0].items;
         var m = {};
         res[2].forEach(function (s) { var d = s.data(); m[s.id] = { p: d.p || 0, s: d.s || 'p', at: d.at || 0, by: d.byName || '' }; });
@@ -326,6 +352,7 @@
     if (e.target.closest('[data-more]')) { S.shown += 60; render(); return; }
     if (e.target.closest('[data-csv]')) { csv(); return; }
     if (e.target.closest('[data-tpl]')) { downloadTemplate(); return; }
+    if (e.target.closest('[data-edsave]')) { saveEditors(); return; }
     if (e.target.closest('[data-pctgo]')) { previewPct(); return; }
     if (e.target.closest('[data-impok]')) { applyImport(); return; }
     if (e.target.closest('[data-impno]')) { S.imp = null; render(); return; }
@@ -346,6 +373,8 @@
   });
   root.addEventListener('change', function (e) {
     if (e.target.id === 'prFile' && e.target.files[0]) { readTemplate(e.target.files[0]); return; }
+    if (e.target.id === 'prEd1') { S.pick1 = e.target.value; return; }
+    if (e.target.id === 'prEd2') { S.pick2 = e.target.value; return; }
     if (e.target.id === 'prGrp') { S.pGrp = e.target.value; S.pCat = ''; render(); return; }
     if (e.target.id === 'prCat') { S.pCat = e.target.value; return; }
     if (e.target.id === 'prPBr') { S.pBr = e.target.value; return; }

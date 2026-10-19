@@ -67,3 +67,7 @@
 .pr-pform label{display:grid;gap:4px;font-size:12.5px;font-weight:700;color:var(--ms-muted)}
 .pr-pform select,.pr-pform input{min-height:44px;padding:0 12px;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);font:700 14px/1 Estedad,Tahoma,sans-serif;width:100%;box-sizing:border-box}
 .pr-pform .pr-btn{min-height:44px}
+
+.pr-who{margin:10px 0;padding:10px 14px;border:1px solid var(--ms-line);border-radius:16px;background:#fff}
+.pr-who p{margin:0 0 6px;color:var(--ms-navy);line-height:1.9}
+.pr-me{padding:2px 9px;border-radius:999px;background:#e3f6ec;color:#0c6b3d;font-style:normal;font-size:12px;font-weight:800}

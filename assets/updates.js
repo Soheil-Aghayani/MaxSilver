@@ -7,6 +7,9 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'price-editors-two', date: '1405/07/27', tag: 'امنیت', title: 'تغییر قیمت فقط با دو نفر تعیین‌شده', roles: ['manager', 'ceo', 'sales_manager', 'finance', 'account_manager'], feature: 'prices',
+      summary: 'از این پس فقط دو نفری که مدیریت یا CEO در صفحهٔ «قیمت‌ها» تعیین می‌کنند می‌توانند قیمت را عوض کنند، فایل بازبینی بارگذاری کنند، درصد گروه را بزنند یا کدی را کنار بگذارند. بقیه قیمت‌ها را فقط می‌بینند.',
+      details: ['این محدودیت در خود پایگاه داده هم اعمال می‌شود، نه فقط روی دکمه‌ها. تا دو نفر تعیین نشوند کسی قیمت را تغییر نمی‌دهد.'] },
     { id: 'prices-mehr-1405-group-percent', date: '1405/07/27', tag: 'جدید', title: 'قیمت‌های مهرماه ۱۴۰۵ و تغییر درصدی قیمت یک گروه', roles: ['manager', 'ceo', 'sales_manager', 'finance', 'account_manager', 'visitor'], feature: 'prices',
       summary: 'قیمت لیست کالاها از فهرست‌های مهرماه مکث‌سیلور، وینتورا و توربومکس به‌روز شد (۱۸۷ کالا) و چند کد توربومکس مطابق فهرست اصلاح شد. در صفحهٔ «قیمت‌ها» می‌توانید یک درصد را روی همهٔ کالاهای یک گروه، نوع کالا یا برند بزنید؛ اول پیش‌نمایش می‌بینید و بعد اعمال می‌کنید.',
       details: ['مثال: گروه «تجهیزات پخت»، درصد ۱۰، گرد کردن به ۱۰٬۰۰۰ تومان ← پیش‌نمایش ← اعمال.', 'کالاهای «استعلام» و «شارژ» تغییر نمی‌کنند و قیمت‌های ویرایش‌شدهٔ قبلی با همین تغییر جدید جایگزین می‌شود.'] },
