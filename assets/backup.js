@@ -15,7 +15,7 @@
     ['inventory', 'موجودی انبار'], ['inventory_claims', 'رزرو موجودی'], ['list_prices', 'قیمت‌ها'], ['public_requests', 'درخواست‌های عمومی'],
     ['tickets', 'گفت‌وگوها', 'messages'], ['job_descriptions', 'شرح وظایف'], ['job_description_log', 'تاریخچهٔ شرح وظایف'],
     ['commission_rates', 'نرخ کمیسیون'], ['commission_results', 'نتیجهٔ کمیسیون'], ['commission_months', 'ماه‌های کمیسیون'], ['commission_month_results', 'نتیجهٔ ماهانهٔ کمیسیون'],
-    ['intel', 'تحلیل رقبا'], ['public_config', 'تنظیمات عمومی'], ['request_counters', 'شمارنده‌های روزانهٔ درخواست']
+    ['intel', 'تحلیل رقبا و نقشهٔ راه'], ['settings', 'مسئولان قیمت و درصد قیمت چکی'], ['item_status', 'کدهای کنار گذاشته‌شده'], ['public_config', 'تنظیمات عمومی'], ['request_counters', 'شمارنده‌های روزانهٔ درخواست']
   ];
   var KEY = 'ms-last-backup';
   var S = { user: null, profile: null, loading: true, running: false, state: {}, history: false, done: '' };

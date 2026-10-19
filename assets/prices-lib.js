@@ -1,4 +1,4 @@
-// List prices of the catalog (toman). A seed file (assets/price-list.json, from the TurboMax price list) is the base;
+// List prices of the catalog (toman). A seed file (assets/price-list.json, from the Mehr 1405 lists of Max Silver, Wintora and TurboMax) is the base;
 // prices edited by sales management, management and organizational technology live in Firestore (list_prices) and win over the seed.
 // The last edits that were read are kept on the device so prices show with no connection.
 (function () {
