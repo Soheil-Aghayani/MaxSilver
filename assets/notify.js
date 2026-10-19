@@ -102,7 +102,7 @@
     return load('./assets/vendor/firebase-app-compat-' + v + '.js')
       .then(function () { return load('./assets/vendor/firebase-auth-compat-' + v + '.js'); })
       .then(function () { return load('./assets/vendor/firebase-firestore-compat-' + v + '.js'); })
-      .then(function () { return w.MS_FIREBASE ? null : load('./assets/firebase-config.js?v=20261328'); });
+      .then(function () { return w.MS_FIREBASE ? null : load('./assets/firebase-config.js?v=20261330'); });
   }
   var db = null, me = '', parts = {}, started = false, unsubs = [], baseline = {};
   var seenMap = j(SEEN, {});
