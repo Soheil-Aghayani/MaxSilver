@@ -27,6 +27,13 @@
     bar.textContent = on ? 'آفلاین هستید؛ تغییرات تا برگشتن اتصال ذخیره نمی‌شود.' : 'دوباره آنلاین شدید.';
     if (!on) hideT = setTimeout(function () { if (bar) { bar.remove(); bar = null; } }, 2500);
   }
+  // Samsung Internet draws its own round "scroll to top" button over the middle of the bottom bar. On that browser the bar is lifted a little
+  // so the button sits below it. ?dockup=1 turns the lift on for any browser (remembered on this device), ?dockup=0 turns it off.
+  (function () {
+    var v = /[?&]dockup=([01])/.exec(location.search), on = false;
+    try { if (v) localStorage.setItem('ms-dockup', v[1]); on = localStorage.getItem('ms-dockup') === '1'; if (localStorage.getItem('ms-dockup') === null) on = /SamsungBrowser/i.test(navigator.userAgent); } catch (e) { on = /SamsungBrowser/i.test(navigator.userAgent); }
+    if (on) document.documentElement.classList.add('ms-dockup');
+  })();
   w.addEventListener('offline', function () { off(true); });
   w.addEventListener('online', function () { off(false); });
   function ready() {
