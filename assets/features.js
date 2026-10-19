@@ -38,10 +38,19 @@
   function hidden(id) { return !!H[id]; }
   function newsHidden(u) {
     var id = u && (u.feature || (function () { for (var i = 0; i < NEWS.length; i++) if (NEWS[i][0].test(u.id || '')) return NEWS[i][1]; return ''; })());
-    return !!(id && H[id]);
+    return !!(id && H[id] && !owner());
   }
-  function hide(el) { touched.push([el, el.hidden, el.style.display]); el.hidden = true; el.style.display = 'none'; }
-  function reset() { touched.forEach(function (t) { t[0].hidden = t[1]; t[0].style.display = t[2]; }); touched = []; }
+  // The owner (role manager, the technology lead) is never locked out: a part that is off disappears for everyone else, and he sees it marked «خاموش برای دیگران».
+  function owner() { try { var r = localStorage.getItem('ms-role') || ''; return (window.MSRoles ? window.MSRoles.norm(r) : r) === 'manager'; } catch (e) { return false; } }
+  var marked = [];
+  function hide(el) {
+    if (owner()) { el.classList.add('ms-feat-off'); marked.push(el); return; }
+    touched.push([el, el.hidden, el.style.display]); el.hidden = true; el.style.display = 'none';
+  }
+  function reset() {
+    touched.forEach(function (t) { t[0].hidden = t[1]; t[0].style.display = t[2]; }); touched = [];
+    marked.forEach(function (el) { el.classList.remove('ms-feat-off'); }); marked = [];
+  }
 
   function apply() {
     if (!document.body) return;
@@ -68,7 +77,19 @@
   // the page of a part that is off
   function gate() {
     var f = byPage(page());
-    var old = document.getElementById('msOff');
+    var old = document.getElementById('msOff'), bar = document.getElementById('msOffBar');
+    if (owner()) {
+      if (old) old.remove();
+      if (!f || !H[f.id]) { if (bar) bar.remove(); return; }
+      if (!bar) {
+        bar = document.createElement('div'); bar.id = 'msOffBar'; bar.setAttribute('role', 'status');
+        bar.style.cssText = 'margin:8px auto 0;width:min(900px,calc(100% - 24px));padding:8px 14px;border-radius:12px;background:#fff4d1;color:#7a4b00;font:800 13px/1.8 Estedad,Tahoma,sans-serif;text-align:center';
+        bar.textContent = 'این بخش برای دیگران خاموش است؛ فقط شما آن را می‌بینید.';
+        var hd = document.querySelector('header.ms-sitebar'); if (hd && hd.parentNode) hd.parentNode.insertBefore(bar, hd.nextSibling); else document.body.insertBefore(bar, document.body.firstChild);
+      }
+      return;
+    }
+    if (bar) bar.remove();
     if (!f || !H[f.id]) { if (old) old.remove(); return; }
     Array.prototype.forEach.call(document.body.children, function (el) { if (!el.matches('header.ms-sitebar, footer, script, link, dialog, style, #msOff, .ms-save, .ms-upd-bar, .ms-pill, nav')) hide(el); });
     if (old) return;

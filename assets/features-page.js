@@ -18,7 +18,7 @@
     var groups = [], by = {};
     F.list.forEach(function (f) { if (!by[f.group]) { by[f.group] = []; groups.push(f.group); } by[f.group].push(f); });
     var offN = Object.keys(S.off).filter(function (k) { return S.off[k]; }).length;
-    return '<h1>ویژگی‌ها</h1><p class="ft-lead">هر بخش را که خاموش کنید برای همه ناپدید می‌شود: کاشی صفحهٔ اصلی، نوار پایین، منو، اسلایدهای بنر، خبرهای «تازه‌ها» و خود صفحه. هر وقت دوباره روشنش کنید همه‌چیز برمی‌گردد و چیزی پاک نمی‌شود.</p>' +
+    return '<h1>ویژگی‌ها</h1><p class="ft-lead">هر بخش را که خاموش کنید برای دیگران ناپدید می‌شود و فقط شما (مسئول فناوری) آن را با برچسب «خاموش برای دیگران» می‌بینید: کاشی صفحهٔ اصلی، نوار پایین، منو، اسلایدهای بنر، خبرهای «تازه‌ها» و خود صفحه. هر وقت دوباره روشنش کنید همه‌چیز برمی‌گردد و چیزی پاک نمی‌شود.</p>' +
       '<p class="ft-sum"><b>' + fa(F.list.length - offN) + '</b> روشن <span></span><b>' + fa(offN) + '</b> خاموش</p>' +
       groups.map(function (g) {
         var GA = { 'فروش و مشتری': 'group-sales-customers', 'انبار و مالی': 'group-warehouse-finance', 'بازار و رشد': 'group-market-growth', 'مدیریت و تحلیل': 'group-management-analysis' };

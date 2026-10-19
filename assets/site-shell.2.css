@@ -198,3 +198,7 @@ html:has(body.ms-portal-body){overflow-x:clip}
 /* no flash of the wrong menu or of the logo's alt text while the page starts */
 html:not(.ms-nav-on) .ms-sitebar nav{visibility:hidden}
 .ms-brand-logo{color:transparent}
+
+/* a part that is switched off for everyone else: the owner still sees it, marked */
+.ms-feat-off{position:relative;opacity:.6;filter:grayscale(.4)}
+.portal-card.ms-feat-off::after{content:"خاموش برای دیگران";position:absolute;top:8px;inset-inline-end:8px;z-index:3;padding:2px 9px;border-radius:999px;background:#071b36;color:#fff;font:800 10.5px/1.6 Estedad,Tahoma,sans-serif}
