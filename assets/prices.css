@@ -59,3 +59,11 @@
 .pr-acts{display:flex;gap:8px;flex-wrap:wrap}
 .pr-roprice{display:none;color:var(--ms-navy);font-weight:800;font-size:14px}
 .pr-ro .pr-edit,.pr-ro .pr-act{display:none}.pr-ro .pr-roprice{display:block}
+
+/* one percentage for a whole group */
+.pr-pct{margin:12px 0;padding:12px 14px;border:1px solid var(--ms-line);border-radius:16px;background:#fff}
+.pr-pct summary{cursor:pointer;font-weight:800;color:var(--ms-navy)}
+.pr-pform{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end;margin-top:10px}
+.pr-pform label{display:grid;gap:4px;font-size:12.5px;font-weight:700;color:var(--ms-muted)}
+.pr-pform select,.pr-pform input{min-height:44px;padding:0 12px;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);font:700 14px/1 Estedad,Tahoma,sans-serif;width:100%;box-sizing:border-box}
+.pr-pform .pr-btn{min-height:44px}

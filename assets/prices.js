@@ -12,7 +12,7 @@
   var faInt = new Intl.NumberFormat('fa-IR'), faDate = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' });
   var BR = { 'max-silver': 'مکث‌سیلور', wintora: 'وینتورا', 'torbo-max': 'توربومکس' };
   var ST = [['p', 'قیمت'], ['i', 'استعلام'], ['r', 'شارژ']];
-  var S = { user: null, profile: null, loading: true, error: '', msg: '', items: [], q: '', brand: 'all', flt: 'all', shown: 60, draft: {}, busy: '', ret: '', repIn: '', noteIn: '' };
+  var S = { user: null, profile: null, loading: true, error: '', msg: '', items: [], q: '', brand: 'all', flt: 'all', shown: 60, draft: {}, busy: '', ret: '', repIn: '', noteIn: '', pGrp: '', pCat: '', pBr: 'all', pPct: '', pRound: '0' };
   var I = {
     save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7"/></svg>',
     undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
@@ -58,6 +58,45 @@
     });
     return n;
   }
+  // ---------- one percentage for a whole group (e.g. +10 % on every priced product of «تجهیزات پخت»)
+  function pctHtml() {
+    if (!can('pricesEdit')) return '';
+    var grps = {}, cats = {};
+    S.items.forEach(function (it) { if (it.grp) { grps[it.grp] = true; if (!S.pGrp || it.grp === S.pGrp) cats[it.cat] = true; } });
+    var opt = function (v, t, sel) { return '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(t) + '</option>'; };
+    return '<details class="pr-pct"' + (S.pPct || S.pGrp ? ' open' : '') + '><summary>تغییر درصدی قیمت یک گروه</summary>' +
+      '<p class="pr-lead">یک درصد برای همهٔ کالاهای قیمت‌دارِ گروه (یا نوع کالا). اول پیش‌نمایش می‌بینید؛ چیزی تا «اعمال» نزنید تغییر نمی‌کند. کالاهای «استعلام» و «شارژ» دست نمی‌خورند.</p>' +
+      '<div class="pr-pform"><label>گروه<select id="prGrp">' + opt('', 'همهٔ گروه‌ها', !S.pGrp) + Object.keys(grps).sort().map(function (g) { return opt(g, g, S.pGrp === g); }).join('') + '</select></label>' +
+      '<label>نوع کالا<select id="prCat">' + opt('', 'همهٔ انواع', !S.pCat) + Object.keys(cats).sort().map(function (c) { return opt(c, c, S.pCat === c); }).join('') + '</select></label>' +
+      '<label>برند<select id="prPBr">' + opt('all', 'همهٔ برندها', S.pBr === 'all') + Object.keys(BR).map(function (k) { return opt(k, BR[k], S.pBr === k); }).join('') + '</select></label>' +
+      '<label>درصد (برای کاهش منفی بنویسید)<input id="prPct" type="text" inputmode="decimal" dir="ltr" autocomplete="off" placeholder="مثلاً 10 یا -5" value="' + esc(S.pPct) + '"></label>' +
+      '<label>گرد کردن<select id="prRound">' + opt('0', 'بدون گرد کردن', S.pRound === '0') + opt('1000', 'به نزدیک‌ترین ۱٬۰۰۰ تومان', S.pRound === '1000') + opt('10000', 'به نزدیک‌ترین ۱۰٬۰۰۰ تومان', S.pRound === '10000') + opt('100000', 'به نزدیک‌ترین ۱۰۰٬۰۰۰ تومان', S.pRound === '100000') + '</select></label>' +
+      '<button type="button" class="pr-btn" data-pctgo>پیش‌نمایش تغییر</button></div></details>';
+  }
+  function previewPct() {
+    var raw = latin(S.pPct).replace(/[٫,]/g, '.').replace(/٪|%|\s/g, ''), pct = parseFloat(raw);
+    S.error = ''; S.msg = '';
+    if (!raw || isNaN(pct)) { S.error = 'درصد را بنویسید؛ مثلاً 10 برای ده درصد افزایش یا -5 برای پنج درصد کاهش.'; render(); return; }
+    if (pct <= -90 || pct > 200) { S.error = 'درصد باید بین ۸۹- و ۲۰۰ باشد.'; render(); return; }
+    var step = Number(S.pRound) || 0, m = { name: '', title: '', changes: [], same: 0, errs: [] }, scope = 0;
+    S.items.forEach(function (it) {
+      if (S.pGrp && it.grp !== S.pGrp) return;
+      if (S.pCat && it.cat !== S.pCat) return;
+      if (S.pBr !== 'all' && it.src !== S.pBr) return;
+      if (ST8.retired(it.id)) return;
+      var c = cur(it.id); if (!c || c.s !== 'p' || !(c.p > 0)) return;
+      scope++;
+      var np = c.p * (1 + pct / 100);
+      np = step ? Math.round(np / step) * step : Math.round(np);
+      if (np < 1) np = 1;
+      if (np === c.p) { m.same++; return; }
+      m.changes.push({ it: it, old: c, nw: { p: np, s: 'p' }, note: '' });
+    });
+    m.title = 'تغییر ' + (pct > 0 ? '+' : '') + faInt.format(pct) + '٪ · ' + (S.pCat || S.pGrp || 'همهٔ گروه‌ها') + (S.pBr !== 'all' ? ' · ' + BR[S.pBr] : '') + ' · ' + faInt.format(scope) + ' کالای قیمت‌دار';
+    if (!scope) m.errs.push('کالای قیمت‌داری در این گروه و برند نیست.');
+    S.imp = m; render();
+    var el = root.querySelector('.pr-imp'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
+  }
   function chip(attr, val, on, text, n) { return '<button type="button" class="pr-chip" ' + attr + '="' + val + '" aria-pressed="' + on + '">' + text + (n != null ? ' <b>' + faInt.format(n) + '</b>' : '') + '</button>'; }
 
   function byCode(code) {
@@ -94,7 +133,7 @@
     return '<div class="pr-bar"><input id="prQ" type="search" placeholder="جست‌وجوی نام، کد، دسته…" value="' + esc(S.q) + '" autocomplete="off">' +
       '<button type="button" class="pr-ic wide" data-csv title="دانلود قیمت‌ها (CSV)" aria-label="دانلود قیمت‌ها">' + I.csv + '</button></div>' +
       '<div class="pr-tools"><button type="button" class="pr-btn" data-tpl>' + I.csv + 'دانلود قالب بازبینی قیمت (Excel)</button>' +
-      (can('pricesEdit') ? '<label class="pr-btn alt">بارگذاری قیمت‌های بازبینی‌شده<input type="file" id="prFile" accept=".xlsx,.xls" hidden></label>' : '') + '</div>' + impHtml() +
+      (can('pricesEdit') ? '<label class="pr-btn alt">بارگذاری قیمت‌های بازبینی‌شده<input type="file" id="prFile" accept=".xlsx,.xls" hidden></label>' : '') + '</div>' + pctHtml() + impHtml() +
       '<div class="pr-chips" role="group" aria-label="برند">' + chip('data-brand', 'all', S.brand === 'all', 'همه برندها') + Object.keys(BR).map(function (k) { return chip('data-brand', k, S.brand === k, BR[k]); }).join('') + '</div>' +
       '<div class="pr-chips" role="group" aria-label="وضعیت قیمت">' +
       chip('data-flt', 'all', S.flt === 'all', 'همه') + chip('data-flt', 'priced', S.flt === 'priced', 'قیمت‌دار', n.priced) + chip('data-flt', 'none', S.flt === 'none', 'بدون قیمت', n.none) +
@@ -108,7 +147,7 @@
     if (!S.user) return '<p class="pr-note">برای ویرایش قیمت‌ها ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="pr-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('pricesAudit')) return '<p class="pr-note">ویرایش قیمت فقط برای مدیر فروش، مدیریت و تکنولوژی ارتباطات سازمانی است. قیمت‌ها را در کاتالوگ می‌بینید.</p>';
-    return '<h1>قیمت‌ها</h1><p class="pr-lead">قیمت لیست محصولات به تومان. قیمتی که اینجا ذخیره کنید جای قیمت لیست پایه (توربومکس، ' + esc(P.date()) + ') را می‌گیرد و در کاتالوگ و پیش‌فاکتور برای همه دیده می‌شود. کدی را که دیگر استفاده نمی‌شود با دکمهٔ ⊘ کنار بگذارید (کد جایگزین اختیاری است).</p>' +
+    return '<h1>قیمت‌ها</h1><p class="pr-lead">قیمت لیست محصولات به تومان. قیمتی که اینجا ذخیره کنید جای قیمت لیست پایه (مکث‌سیلور، وینتورا و توربومکس، ' + esc(P.date()) + ') را می‌گیرد و در کاتالوگ و پیش‌فاکتور برای همه دیده می‌شود. کدی را که دیگر استفاده نمی‌شود با دکمهٔ ⊘ کنار بگذارید (کد جایگزین اختیاری است).</p>' +
       (S.error ? '<p class="pr-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.msg ? '<p class="pr-ok" role="status">' + esc(S.msg) + '</p>' : '') + listHtml();
   }
   function render() {
@@ -227,7 +266,7 @@
   function impHtml() {
     var m = S.imp; if (!m) return '';
     var fmt = function (c) { return c ? (c.s === 'p' ? faInt.format(c.p) : STT[c.s]) : 'بدون قیمت'; };
-    return '<section class="pr-imp"><h2>پیش‌نمایش بارگذاری: ' + esc(m.name) + '</h2><p class="pr-lead">' + faInt.format(m.changes.length) + ' تغییر قیمت یا وضعیت · ' + faInt.format(m.same) + ' ردیف بدون تغییر' + (m.errs.length ? ' · ' + faInt.format(m.errs.length) + ' ردیف دارای خطا' : '') + '</p>' +
+    return '<section class="pr-imp"><h2>' + (m.title ? 'پیش‌نمایش ' + esc(m.title) : 'پیش‌نمایش بارگذاری: ' + esc(m.name)) + '</h2><p class="pr-lead">' + faInt.format(m.changes.length) + ' تغییر قیمت یا وضعیت · ' + faInt.format(m.same) + ' ردیف بدون تغییر' + (m.errs.length ? ' · ' + faInt.format(m.errs.length) + ' ردیف دارای خطا' : '') + '</p>' +
       (m.errs.length ? '<ul class="pr-errs">' + m.errs.slice(0, 30).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + (m.errs.length > 30 ? '<li>…</li>' : '') + '</ul>' : '') +
       (m.changes.length ? '<div class="pr-tw"><table class="pr-tbl"><thead><tr><th>کالا</th><th>قبل</th><th>بعد</th><th>تغییر</th></tr></thead><tbody>' + m.changes.slice(0, 120).map(function (x) {
         var d = x.old && x.old.s === 'p' && x.old.p && x.nw.s === 'p' ? Math.round((x.nw.p - x.old.p) / x.old.p * 1000) / 10 : null;
@@ -287,6 +326,7 @@
     if (e.target.closest('[data-more]')) { S.shown += 60; render(); return; }
     if (e.target.closest('[data-csv]')) { csv(); return; }
     if (e.target.closest('[data-tpl]')) { downloadTemplate(); return; }
+    if (e.target.closest('[data-pctgo]')) { previewPct(); return; }
     if (e.target.closest('[data-impok]')) { applyImport(); return; }
     if (e.target.closest('[data-impno]')) { S.imp = null; render(); return; }
     if ((t = e.target.closest('[data-st]'))) {
@@ -304,9 +344,16 @@
     if ((t = e.target.closest('[data-save]'))) { save(rowOf(t)); return; }
     if ((t = e.target.closest('[data-reset]'))) { if (window.confirm('قیمت ویرایش‌شده حذف شود و قیمت لیست پایه برگردد؟')) reset(rowOf(t)); }
   });
-  root.addEventListener('change', function (e) { if (e.target.id === 'prFile' && e.target.files[0]) readTemplate(e.target.files[0]); });
+  root.addEventListener('change', function (e) {
+    if (e.target.id === 'prFile' && e.target.files[0]) { readTemplate(e.target.files[0]); return; }
+    if (e.target.id === 'prGrp') { S.pGrp = e.target.value; S.pCat = ''; render(); return; }
+    if (e.target.id === 'prCat') { S.pCat = e.target.value; return; }
+    if (e.target.id === 'prPBr') { S.pBr = e.target.value; return; }
+    if (e.target.id === 'prRound') { S.pRound = e.target.value; return; }
+  });
   root.addEventListener('input', function (e) {
     if (e.target.id === 'prQ') { S.q = e.target.value; S.shown = 60; var l = document.getElementById('prList'); if (l) { render(); } return; }
+    if (e.target.id === 'prPct') { S.pPct = e.target.value; return; }
     if (e.target.matches('[data-rep]')) { S.repIn = e.target.value; return; }
     if (e.target.matches('[data-note]')) { S.noteIn = e.target.value; return; }
     if (e.target.matches('[data-in]')) {
