@@ -73,14 +73,41 @@
       serve: [{ id: 'sheet', t: 'خمیر هم‌اندازه و سریع', jobs: ['sheeter'] }, { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'fry', t: 'پیش‌غذای سرخ‌شده', jobs: ['fry'] },
         { id: 'sandwich', t: 'ساندویچ و برگر', jobs: ['burger', 'grill', 'toast'] }, { id: 'deli', t: 'سوسیس و کالباس رویهٔ پیتزا', jobs: ['sausage', 'slicer'] }, { id: 'veg', t: 'سالاد و سبزی تازه', jobs: ['chop'] },
         { id: 'warm', t: 'گرم‌نگهداری و نمایش', jobs: ['warm'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['ice', 'blend'] }] },
-    { id: 'bakery', t: 'شیرینی و نانوایی', d: 'خمیر، پخت و ویترین', sectors: ['نانوایی', 'شیرینی'],
+    { id: 'bakery', t: 'نانوایی', d: 'نان، خمیر و پخت روزانه', sectors: ['نانوایی'],
       core: ['oven', 'dough', 'cake', 'table'],
       serve: [{ id: 'sheet', t: 'نان و خمیر پهن', jobs: ['sheeter'] }, { id: 'breakfast', t: 'صبحانه و ساندویچ', jobs: ['toast'] }, { id: 'coffee', t: 'قهوه و چای', jobs: ['coffee'] },
         { id: 'waffle', t: 'وافل و دسر', jobs: ['waffle'] }, { id: 'cold', t: 'نوشیدنی سرد', jobs: ['blend', 'ice'] }, { id: 'pizza', t: 'پیتزا و نان‌های پرشده', jobs: ['pizza'] }] },
     { id: 'juice', t: 'آبمیوه و نوشیدنی', d: 'آبمیوه، اسموتی و نوشیدنی سرد', sectors: ['آبمیوه سنتی', 'کافه'],
       core: ['blend', 'ice', 'fridge'],
       serve: [{ id: 'fresh', t: 'آبمیوهٔ طبیعی', jobs: ['juice'] }, { id: 'coffee', t: 'قهوه و چای', jobs: ['coffee'] }, { id: 'cake', t: 'کیک و شیرینی', jobs: ['cake'] },
-        { id: 'breakfast', t: 'صبحانه و ساندویچ', jobs: ['toast'] }, { id: 'waffle', t: 'وافل و دسر', jobs: ['waffle'] }, { id: 'veg', t: 'سالاد میوه و خردکردن', jobs: ['chop'] }] }
+        { id: 'breakfast', t: 'صبحانه و ساندویچ', jobs: ['toast'] }, { id: 'waffle', t: 'وافل و دسر', jobs: ['waffle'] }, { id: 'veg', t: 'سالاد میوه و خردکردن', jobs: ['chop'] }] },
+    { id: 'pastry', t: 'قنادی و کیک', d: 'کیک، شیرینی و ویترین سرد', sectors: ['شیرینی', 'قنادی'],
+      core: ['oven', 'dough', 'cake', 'table'],
+      serve: [{ id: 'sheet', t: 'خمیر ورقه‌ای و کلوچه', jobs: ['sheeter'] }, { id: 'coffee', t: 'قهوه و چای کنار شیرینی', jobs: ['coffee'] }, { id: 'waffle', t: 'وافل و دسر گرم', jobs: ['waffle'] },
+        { id: 'cold', t: 'شیک و نوشیدنی سرد', jobs: ['blend', 'ice'] }, { id: 'breakfast', t: 'صبحانه و ساندویچ', jobs: ['toast'] }] },
+    { id: 'icecream', t: 'بستنی و دسر', d: 'بستنی، شیک، وافل و دسر سرد', sectors: ['بستنی', 'کافه', 'شیرینی'],
+      core: ['fridge', 'cake', 'blend', 'table'],
+      serve: [{ id: 'shake', t: 'شیک و اسموتی', jobs: ['blend', 'ice'] }, { id: 'waffle', t: 'وافل و کرپ', jobs: ['waffle'] }, { id: 'coffee', t: 'قهوه و چای', jobs: ['coffee'] }, { id: 'juice', t: 'آبمیوهٔ تازه', jobs: ['juice'] }] },
+    { id: 'kebab', t: 'کبابی و چلوکبابی', d: 'کباب، پلو و غذای گرم', sectors: ['کباب', 'ایرانی', 'رستوران'],
+      core: ['grill', 'bain', 'fridge', 'table'],
+      serve: [{ id: 'hot', t: 'خورش و غذای گرم', jobs: ['stove'] }, { id: 'warm', t: 'گرم‌نگهداری و نمایش', jobs: ['warm'] }, { id: 'meat', t: 'آماده‌سازی گوشت', jobs: ['meatprep', 'marinate'] },
+        { id: 'veg', t: 'سبزی و سالاد', jobs: ['chop'] }, { id: 'bake', t: 'نان تازه', jobs: ['oven', 'dough'] }, { id: 'tea', t: 'چای و نوشیدنی', jobs: ['coffee', 'ice'] }, { id: 'fry', t: 'سرخ‌کردنی', jobs: ['fry'] }] },
+    { id: 'shawarma', t: 'شاورما و کباب ترکی', d: 'دونر، ساندویچ و سیب‌زمینی', sectors: ['فست‌فود'],
+      core: ['doner', 'fridge', 'table'],
+      serve: [{ id: 'sand', t: 'ساندویچ گرم', jobs: ['toast'] }, { id: 'fries', t: 'سیب‌زمینی سرخ‌کرده', jobs: ['fry', 'potato'] }, { id: 'warm', t: 'گرم‌نگهداری', jobs: ['warm'] },
+        { id: 'veg', t: 'سبزی و سالاد', jobs: ['chop'] }, { id: 'meat', t: 'آماده‌سازی گوشت و مرغ', jobs: ['meatprep', 'marinate'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['ice', 'blend'] }] },
+    { id: 'catering', t: 'کترینگ و آشپزخانهٔ مرکزی', d: 'پخت و آماده‌سازی برای تعداد زیاد', sectors: ['کترینگ', 'رستوران', 'ایرانی'],
+      core: ['stove', 'bain', 'fridge', 'table', 'chop', 'hood'],
+      serve: [{ id: 'grill', t: 'کباب و گریل', jobs: ['grill', 'doner'] }, { id: 'rice', t: 'پلو و غذای روزانه', jobs: ['warm'] }, { id: 'meat', t: 'آماده‌سازی گوشت و مرغ', jobs: ['meatprep', 'marinate'] },
+        { id: 'bake', t: 'نان و شیرینی', jobs: ['oven', 'dough'] }, { id: 'fry', t: 'سرخ‌کردنی', jobs: ['fry', 'oilFilter'] }, { id: 'pasta', t: 'پاستا', jobs: ['pasta'] }, { id: 'drinks', t: 'نوشیدنی', jobs: ['coffee', 'ice'] }] },
+    { id: 'breakfast', t: 'چایخانه و صبحانه', d: 'چای، صبحانه و ساندویچ سبک', sectors: ['صبحانه و میان‌وعده', 'کافه'],
+      core: ['coffee', 'toast', 'fridge', 'table'],
+      serve: [{ id: 'cake', t: 'کیک و شیرینی', jobs: ['cake'] }, { id: 'juice', t: 'آبمیوهٔ تازه', jobs: ['juice'] }, { id: 'waffle', t: 'وافل و دسر', jobs: ['waffle'] },
+        { id: 'warm', t: 'غذای گرم صبحانه', jobs: ['warm', 'stove'] }, { id: 'deli', t: 'کالباس و پنیر', jobs: ['slicer'] }] },
+    { id: 'selfservice', t: 'سلف‌سرویس و غذاخوری', d: 'غذای روزانه برای کارکنان و دانشجو', sectors: ['رستوران', 'ایرانی'],
+      core: ['bain', 'warm', 'fridge', 'table', 'wash'],
+      serve: [{ id: 'hot', t: 'پخت خورش و غذای اصلی', jobs: ['stove', 'hood'] }, { id: 'grill', t: 'کباب و گریل', jobs: ['grill'] }, { id: 'chop', t: 'سبزی و سالاد', jobs: ['chop'] },
+        { id: 'drinks', t: 'نوشیدنی', jobs: ['coffee', 'ice'] }, { id: 'cake', t: 'دسر و کیک', jobs: ['cake'] }] }
   ];
   var CONCEPT_ICON = {
     cafe: '<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 10h1.5a2.5 2.5 0 0 1 0 5H17M7 3v2M11 3v2"/>',
@@ -174,10 +201,17 @@
     fastfood: ['fast_food_shawerma_category', 'vertical_shawarma_rotisserie', 'flatbread_griddle'],
     restaurant: ['restaurant_category', 'commercial_range', 'combi_oven'],
     pizza: ['pizza_category', 'pizza_oven', 'spiral_dough_mixer'],
-    bakery: ['bakery_cakes_category', 'deck_oven', 'planetary_mixer'],
+    bakery: ['bread_category', 'deck_oven', 'planetary_mixer'],
+    pastry: ['pastry_category', 'planetary_mixer', 'deck_oven'],
+    icecream: ['icecream_category', 'bar_blender', 'ice_machine'],
+    kebab: ['kebab_category', 'commercial_range', 'vertical_shawarma_rotisserie'],
+    shawarma: ['shawarma_category', 'vertical_shawarma_rotisserie', 'flatbread_griddle'],
+    catering: ['catering_category', 'commercial_range', 'combi_oven'],
+    breakfast: ['breakfast_category', 'espresso_machine', 'burr_grinder'],
+    selfservice: ['selfservice_category', 'combi_oven', 'commercial_range'],
     juice: ['soft_drinks_cocktails_category', 'ice_machine', 'bar_blender']
   };
-  var TINT = { cafe: '#fde8c8', fastfood: '#fddad3', restaurant: '#e1ecfb', pizza: '#fcd9cf', bakery: '#fdf0c4', juice: '#d9f3e4' };
+  var TINT = { cafe: '#fde8c8', fastfood: '#fddad3', restaurant: '#e1ecfb', pizza: '#fcd9cf', bakery: '#fdf0c4', juice: '#d9f3e4', pastry: '#fde0ea', icecream: '#dff1fb', kebab: '#fbd9cc', shawarma: '#fde5c4', catering: '#f3dccd', breakfast: '#fdecc8', selfservice: '#e3ecdc' };
   function stage(id) {
     var a = ART[id];
     if (!a) return '<span class="pl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CONCEPT_ICON[id] + '</svg></span>';
