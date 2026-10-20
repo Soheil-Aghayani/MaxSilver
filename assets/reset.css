@@ -1,0 +1,25 @@
+/* password reset and email-action page: a calm branded card, Estedad font from the site */
+.rs-body{min-height:100vh;background:radial-gradient(900px 420px at 50% -80px,#fff4c7 0,transparent 70%),var(--ms-bg,#f4f6fa)}
+.rs{width:min(440px,100%);margin:0 auto;padding:34px 16px 40px;display:grid;gap:18px;justify-items:center}
+.rs-brand{display:block}.rs-brand img{display:block;width:200px;height:auto}
+.rs-card{width:100%;background:#fff;border:1px solid var(--ms-line,#dfe5ee);border-radius:22px;padding:26px 22px;box-shadow:0 18px 40px rgba(5,25,52,.10);display:grid;gap:14px;animation:rs-in .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rs-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.rs-ico{justify-self:center;width:60px;height:60px;border-radius:18px;display:grid;place-items:center;background:var(--ms-navy,#051934);color:var(--ms-gold,#ffcc2a)}
+.rs-ico svg{width:30px;height:30px}.rs-ico.ok{background:#e9f7ec;color:#1b6b34}.rs-ico.bad{background:#fdecea;color:#b3261e}
+.rs-card h1{margin:0;text-align:center;font-size:21px;color:var(--ms-navy,#051934)}
+.rs-note{margin:0;text-align:center;color:var(--ms-muted,#5d6b82);font-size:14px;line-height:2}
+.rs-mail{justify-self:center;direction:ltr;padding:4px 12px;border-radius:999px;background:#eef2f8;color:var(--ms-navy,#051934);font-weight:700;font-size:13px}
+.rs-card form{display:grid;gap:14px}
+.rs-card label{display:grid;gap:6px;font-weight:700;font-size:13.5px;color:var(--ms-navy,#051934)}
+.rs-field{position:relative;display:block}
+.rs-field input{width:100%;min-height:48px;padding:0 14px 0 46px;border:1.5px solid var(--ms-line,#dfe5ee);border-radius:14px;font:600 15px Estedad,Tahoma,sans-serif;direction:ltr;text-align:left;background:#fbfcfe;color:var(--ms-ink,#101828);transition:border-color .15s,box-shadow .15s}
+.rs-field input:focus{outline:0;border-color:var(--ms-gold,#ffcc2a);box-shadow:0 0 0 4px rgba(255,204,42,.28)}
+.rs-eye{position:absolute;left:6px;top:6px;width:36px;height:36px;border:0;border-radius:10px;background:transparent;color:var(--ms-muted,#5d6b82);cursor:pointer;display:grid;place-items:center}
+.rs-eye:hover{background:#eef2f8}.rs-eye svg{width:20px;height:20px}
+.rs-meter{height:5px;border-radius:99px;background:#e8edf4;overflow:hidden}.rs-meter i{display:block;height:100%;width:0;border-radius:99px;background:#d9534f;transition:width .25s,background .25s}
+.rs-hint{margin:-6px 0 0;font-size:12.5px;color:var(--ms-muted,#5d6b82)}
+.rs-err{margin:0;padding:10px 12px;border-radius:12px;background:#fdecea;color:#b3261e;font-weight:700;font-size:13.5px}
+.rs-btn{min-height:50px;border:0;border-radius:14px;background:var(--ms-gold,#ffcc2a);color:var(--ms-navy,#051934);font:800 16px Estedad,Tahoma,sans-serif;cursor:pointer;text-decoration:none;display:grid;place-items:center;transition:transform .15s,box-shadow .15s}
+.rs-btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(255,204,42,.5)}.rs-btn:disabled{opacity:.55;cursor:wait;transform:none;box-shadow:none}
+.rs-foot{margin:0;text-align:center;font-size:12.5px;color:var(--ms-muted,#5d6b82)}
+@media (prefers-reduced-motion:reduce){.rs-card{animation:none}.rs-btn{transition:none}}

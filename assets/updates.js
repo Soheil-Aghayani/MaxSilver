@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'clean-product-photos', date: '1405/07/30', tag: 'بهبود', title: 'عکس‌های تمیز و بدون پس‌زمینه برای ۱۵۶ کالا', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'عکس کالاهایی که از کاتالوگ و فهرست قیمت گرفته بودیم بازسازی شد: پس‌زمینه برداشته شد و همه هم‌اندازه و وسط‌چین هستند. در فایل‌های اکسل بازبینی قیمت هم همین عکس‌ها می‌آیند. صفحهٔ بازیابی رمز با ظاهر سایت هم آماده است و پس از تنظیم آدرس آن در Firebase کار می‌کند.' },
     { id: 'password-change-reset', date: '1405/07/30', tag: 'جدید', title: 'تغییر رمز و فراموشی رمز', roles: ALL_SALES.concat(['operations', 'marketing', 'hr', 'production', 'service']),
       summary: 'در پنل کاربری، بخش «تغییر رمز عبور» اضافه شد (رمز فعلی، رمز جدید دست‌کم ۸ نویسه و تکرار). در پنجرهٔ ورود هم «رمز عبور را فراموش کرده‌اید؟» هست: ایمیل ورود را بنویسید تا پیوند تغییر رمز برایتان فرستاده شود. اگر ایمیل ورود شما صندوق واقعی ندارد، از مدیر بخواهید رمز را عوض کند.' },
     { id: 'maxi-space-and-starter', date: '1405/07/30', tag: 'جدید', title: 'مکسی: بررسی جا و فهرست شروع کار', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
