@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'maxi-guided-chat', date: '1405/07/30', tag: 'بهبود', title: 'مکسی حالا سؤال می‌پرسد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'وقتی بنویسید «می‌خواهم کافه راه‌اندازی کنم»، مکسی به‌جای یک فهرست آماده چند سؤال کوتاه می‌پرسد (اندازه، منو) با دکمه‌های پاسخ، بعد فهرست تجهیزات با جمع تقریبی و دکمهٔ «افزودن همه به پیش‌فاکتور» می‌دهد. برای پرسش کلی مثل «گریل» هم می‌پرسد کدام برند یا ارزان‌ترین را می‌خواهید.' },
     { id: 'clean-product-photos', date: '1405/07/30', tag: 'بهبود', title: 'عکس‌های تمیز و بدون پس‌زمینه برای ۱۵۶ کالا', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'عکس کالاهایی که از کاتالوگ و فهرست قیمت گرفته بودیم بازسازی شد: پس‌زمینه برداشته شد و همه هم‌اندازه و وسط‌چین هستند. در فایل‌های اکسل بازبینی قیمت هم همین عکس‌ها می‌آیند. صفحهٔ بازیابی رمز با ظاهر سایت هم آماده است و پس از تنظیم آدرس آن در Firebase کار می‌کند.' },
     { id: 'password-change-reset', date: '1405/07/30', tag: 'جدید', title: 'تغییر رمز و فراموشی رمز', roles: ALL_SALES.concat(['operations', 'marketing', 'hr', 'production', 'service']),

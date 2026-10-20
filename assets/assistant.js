@@ -473,28 +473,66 @@
     return list.length ? list[Math.floor((list.length - 1) / 2)] : null;
   }
   function itemsAll() { return Object.keys(itemsById).map(function (k) { return itemsById[k]; }); }
+  // a guided conversation: «کافه می‌خواهم» -> size? -> which menu items? -> the list, with a total and an add-all button.
+  // The state is read from the user's own messages since the flow began, so nothing extra is stored.
+  var SIZE_CHIPS = [['کوچک (تا ۲۰ مشتری)', 'اندازه کوچک'], ['متوسط (۲۰ تا ۵۰ مشتری)', 'اندازه متوسط'], ['بزرگ (بیش از ۵۰ مشتری)', 'اندازه بزرگ']];
+  function sizeOf(s) {
+    var m = s.match(/(\d+)\s*(نفر|مشتری|میز)/);
+    if (m) { var n = parseInt(m[1], 10); return n <= 20 ? 0 : n <= 50 ? 1 : 2; }
+    if (/کوچک/.test(s)) return 0; if (/متوسط/.test(s)) return 1; if (/بزرگ/.test(s)) return 2;
+    return -1;
+  }
+  function conceptOf(s) {
+    var cid = ''; Object.keys(CONCEPT_KEYS).forEach(function (k) { CONCEPT_KEYS[k].forEach(function (w) { if (!cid && s.indexOf(norm(w)) >= 0) cid = k; }); });
+    return cid;
+  }
+  function flowTexts() {
+    var texts = [];
+    for (var i = S.msgs.length - 1; i >= 0; i--) { var m = S.msgs[i]; if (m.role === 'bot' && m.flowDone) break; if (m.role === 'user') texts.unshift(norm(m.text)); }
+    return texts;
+  }
+  function flowActive() { for (var i = S.msgs.length - 1; i >= 0; i--) { var m = S.msgs[i]; if (m.role === 'bot') return !!m.flow && !m.flowDone; } return false; }
   function starter(s) {
     var PL = window.MSPlan; if (!PL || !PL.CONCEPTS.length) return null;
-    if (!/(راه ?اندازی|چی لازم|چه چیز(ی)? لازم|چی میخوام|چی نیازه|چه تجهیزات|چه دستگاه|چه وسایل|لیست تجهیزات|تجهیزات (لازم|مورد نیاز)|شروع کار|باز کنم|بزنم)/.test(s)) return null;
-    var cid = ''; Object.keys(CONCEPT_KEYS).forEach(function (k) { CONCEPT_KEYS[k].forEach(function (w) { if (!cid && s.indexOf(norm(w)) >= 0) cid = k; }); });
+    var intent = /(راه ?اندازی|چی لازم|چه چیز(ی)? لازم|چی میخوام|چی نیازه|چه تجهیزات|چه دستگاه|چه وسایل|لیست تجهیزات|تجهیزات (لازم|مورد نیاز)|شروع کار|باز کنم|بزنم|میخوام|می خوام|راه بندازم|دارم)/;
+    var texts = flowTexts(), cur = conceptOf(s), cont = flowActive();
+    if (!cur && !cont && intent.test(s) && /کسب ?و ?کار|مغازه|مجموعه|بیزنس/.test(s))
+      return { flow: true, ids: [], text: 'عالی. چه نوع کسب‌وکاری؟ یکی را بزنید.', chips: PL.CONCEPTS.slice(0, 9).map(function (x) { return { label: x.t, q: 'می‌خواهم ' + x.t + ' راه‌اندازی کنم' }; }) };
+    if (!(cur && intent.test(s)) && !cont) return null;
+    // the flow starts at the latest message that names a business with an intent; menu answers («منو: ...») never start one
+    var start = 0; for (var i = 0; i < texts.length; i++) if (conceptOf(texts[i]) && intent.test(texts[i]) && !/^منو:/.test(texts[i])) start = i;
+    var run = texts.slice(start), cid = conceptOf(run[0]);
     if (!cid) return null;
     var c = PL.CONCEPTS.filter(function (x) { return x.id === cid; })[0]; if (!c) return null;
-    var m = s.match(/(\d+)\s*(نفر|مشتری|میز)/), n = m ? parseInt(m[1], 10) : 0, size = n ? (n <= 20 ? 0 : n <= 50 ? 1 : 2) : 1;
-    var sz = PL.SIZES[size], t = ['**شروع ' + c.t + '** (' + (n ? 'حدود ' + fmt(n) + ' ' + m[2] + '، اندازهٔ ' : 'اندازهٔ ') + sz.t + (n ? '' : '، چون اندازه نگفتید متوسط فرض شد') + ')', c.d + '.', '', '**تجهیزات اصلی:**'], ids = [];
-    c.core.forEach(function (jid) {
+    var size = -1, menu = [], go = false;
+    run.forEach(function (x) {
+      var z = sizeOf(x); if (z >= 0) size = z;
+      c.serve.forEach(function (o) { if (x.indexOf(norm(o.t)) >= 0 && menu.indexOf(o.id) < 0) menu.push(o.id); });
+      if (/(^| )ادامه|همین ها کافی|همینا کافی|بدون منو|کافیه|کافی است/.test(x)) go = true;
+    });
+    if (size < 0) return { flow: true, ids: [], text: '**' + c.t + '**؛ ' + c.d + '.\n\nبرای اینکه فهرست درست بدهم چند سؤال کوتاه دارم. اول: ظرفیت مجموعه چقدر است؟ (تعداد مشتری هم‌زمان)', chips: SIZE_CHIPS.map(function (x) { return { label: x[0], q: x[1] }; }) };
+    if (!go) {
+      var left = c.serve.filter(function (o) { return menu.indexOf(o.id) < 0; }).slice(0, 8);
+      if (left.length) {
+        var picked = c.serve.filter(function (o) { return menu.indexOf(o.id) >= 0; }).map(function (o) { return o.t; });
+        return { flow: true, ids: [], text: (picked.length ? 'ثبت شد: ' + picked.join('، ') + '.\n\n' : 'اندازهٔ ' + PL.SIZES[size].t + ' را گرفتم.\n\n') + 'منو چه چیزهایی دارد؟ هر چند تا را بزنید، هر وقت تمام شد «همین‌ها کافی است» را انتخاب کنید.',
+          chips: left.map(function (o) { return { label: o.t, q: 'منو: ' + o.t }; }).concat([{ label: 'همین‌ها کافی است', q: 'ادامه' }]) };
+      }
+    }
+    var sz = PL.SIZES[size], jobs = c.core.slice(), t = ['**فهرست پیشنهادی برای ' + c.t + '** (اندازهٔ ' + sz.t + ')', ''];
+    c.serve.forEach(function (o) { if (menu.indexOf(o.id) >= 0) o.jobs.forEach(function (j) { if (jobs.indexOf(j) < 0) jobs.push(j); }); });
+    ['wash', 'hood'].forEach(function (j) { if (jobs.indexOf(j) < 0 && PL.JOBS[j]) jobs.push(j); });
+    var ids = [], cart = [], total = 0, noEx = [];
+    jobs.forEach(function (jid) {
       var job = PL.JOBS[jid]; if (!job) return;
       var q = job.qty[size], ex = exampleFor(job);
       t.push('- **' + job.t + '** × ' + fmt(q) + ': ' + job.why + (ex ? ' (نمونه: ' + ex.name + '، ' + fmt(cashOf(ex)) + ' تومان نقدی)' : ''));
-      if (ex) ids.push(ex.id);
+      if (ex) { ids.push(ex.id); cart.push({ id: ex.id, qty: q }); total += cashOf(ex) * q; } else noEx.push(job.t);
     });
-    if (c.serve.length) {
-      t.push('', '**بسته به منو اضافه می‌شود:**');
-      c.serve.slice(0, 5).forEach(function (x) { t.push('- ' + x.t + ': ' + x.jobs.map(function (j) { return PL.JOBS[j] ? PL.JOBS[j].t : ''; }).filter(Boolean).join('، ')); });
-    }
-    var sup = ['wash', 'hood'].map(function (k) { return PL.JOBS[k]; }).filter(Boolean);
-    if (sup.length) t.push('', '**همیشه لازم است:** ' + sup.map(function (j) { return j.t + ' (' + j.why + ')'; }).join('؛ ') + '.');
-    t.push('', 'این پیشنهاد از قاعده‌های طراح کافه و رستوران است و جای مشاورهٔ فروش را نمی‌گیرد؛ نمونه‌ها کالای میانهٔ قیمت هر دسته‌اند.');
-    return { text: t.join('\n'), ids: ids, links: [{ href: './planner.html', label: 'ساخت طرح کامل در طراح' }] };
+    if (total) t.push('', 'جمع تقریبی نقدی نمونه‌ها: **' + fmt(total) + ' تومان**' + (noEx.length ? ' (بدون ' + noEx.join('، ') + '، که نمونهٔ قیمت‌دار در کاتالوگ ندارد)' : '') + '.');
+    t.push('', 'این پیشنهاد از قاعده‌های طراح کافه و رستوران است و جای مشاورهٔ فروش را نمی‌گیرد؛ نمونه‌ها کالای میانهٔ قیمت هر دسته‌اند. می‌خواهید چیزی را عوض کنیم؟');
+    return { flowDone: true, text: t.join('\n'), ids: ids, cart: cart, links: [{ href: './planner.html', label: 'ساخت طرح کامل در طراح' }],
+      chips: [{ label: 'اندازهٔ دیگر', q: 'می‌خواهم ' + c.t + ' راه‌اندازی کنم' }, { label: 'کسب‌وکار دیگر', q: 'می‌خواهم کسب‌وکار دیگری راه‌اندازی کنم' }] };
   }
   // length and depth in cm: from dims, or from the «طول» / «عرض» spec lines of items that have no height
   function lw(it) {
@@ -532,6 +570,7 @@
   // small follow-up buttons under an answer
   function extras(m) {
     var h = '';
+    if (m.chips && m.chips.length && S.msgs[S.msgs.length - 1] === m) h += '<div class="as-quick as-chips2">' + m.chips.map(function (c) { return '<button type="button" data-q="' + esc(c.q) + '">' + esc(c.label) + '</button>'; }).join('') + '</div>';
     if (m.links && m.links.length) h += '<div class="as-links">' + m.links.map(function (l) { return '<a class="as-go" href="' + esc(l.href) + '">' + esc(l.label) + '</a>'; }).join('') + '</div>';
     if (m.cart && m.cart.length) h += '<div class="as-quick"><button type="button" data-addall="' + esc(JSON.stringify(m.cart)) + '">+ افزودن همهٔ این کالاها به پیش‌فاکتور</button></div>';
     var its = hitsOf(m).filter(function (it) { return !it.faq; });
@@ -554,7 +593,7 @@
     var talk = smallTalk(text);
     if (talk) { S.msgs.push({ role: 'bot', ids: [], text: talk, state: 'done' }); save(); render(); return; }
     var sk = skills(text);
-    if (sk) { S.msgs.push({ role: 'bot', ids: sk.ids || [], text: sk.text, links: sk.links || [], cart: sk.cart || null, state: 'done' }); save(); render(); return; }
+    if (sk) { S.msgs.push({ role: 'bot', ids: sk.ids || [], text: sk.text, links: sk.links || [], cart: sk.cart || null, chips: sk.chips || null, flow: !!sk.flow, flowDone: !!sk.flowDone, state: 'done' }); save(); render(); return; }
     var s2 = smart2(text);
     if (s2) {
       S.msgs.push({ role: 'bot', ids: s2.ids, text: s2.text, note: s2.note, state: s2.text ? 'done' : s2.none ? 'none' : 'cards', nonote: s2.none ? s2.note : '' });
@@ -572,7 +611,7 @@
     var items = hits.map(function (h) { return h.d.it; });
     if (!hits.length) { bot.state = 'none'; logAdd('none', text, []); save(); render(); return; }
     var nw = tokens(text).filter(function (w) { return w.charAt(0) !== '~'; }).length;
-    if (nw <= 1 && !/[0-9]/.test(text) && !hits[0].d.it.faq) bot.note = 'پرسش شما کلی است و کالاهای زیادی دارد. برای نتیجهٔ دقیق‌تر اندازه، نوع (گازی، برقی، ذغالی) یا برند را هم بنویسید. چند نمونه:';
+    if (nw <= 1 && !/[0-9]/.test(text) && !hits[0].d.it.faq) bot.note = 'پرسش شما کلی است و کالاهای زیادی دارد. کدام را می‌خواهید؟ یکی از گزینه‌ها را بزنید یا اندازه و نوع (گازی، برقی، ذغالی) را بنویسید. چند نمونه:'; bot.chips = [{ label: 'مکث‌سیلور', q: text + ' مکث‌سیلور' }, { label: 'وینتورا', q: text + ' وینتورا' }, { label: 'توربومکس', q: text + ' توربومکس' }, { label: 'ارزان‌ترین', q: 'ارزان‌ترین ' + text }];
     if (!relayUrl()) { bot.state = 'cards'; save(); render(); return; }
     bot.state = 'wait'; S.busy = true; render();
     writing(items, text, history, function (acc) { bot.text = acc; bot.state = 'stream'; paintBot(bi, true); }).then(function (a) { bot.text = a; bot.state = 'done'; }, function (e) {
