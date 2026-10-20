@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'photos-from-price-lists-and-trained-assistant', date: '1405/07/30', tag: 'بهبود', title: 'عکس‌های بیشتر از فهرست‌های قیمت و دستیار آموزش‌دیده‌تر', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'عکس کوچک کنار هر ردیف فهرست توربومکس و چند عکس گروهی فهرست وینتورا هم به کالاها اضافه شد. دستیار حالا راهنمای نوع کالاها (گریل روغنی و ذغالی، اندازه‌های بن‌ماری، سرخ‌کن، مرینیتور و ...) و معادل‌های واژه‌ها (فریر، چارکول، ...) را می‌داند. توضیح‌های عمومی با برچسب راهنما نشان داده می‌شوند و مشخصات دقیق هر مدل همچنان در کاتالوگ است.' },
     { id: 'catalog-photos-and-richer-assistant', date: '1405/07/29', tag: 'جدید', title: 'عکس کالاها از کاتالوگ برندها و دستیار دانای‌تر', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'عکس ۳۴۷ کالای فهرست قیمت از کاتالوگ چاپی مکث‌سیلور، وینتورا و توربومکس بریده و در کاتالوگ گذاشته شد. دستیار حالا راهنمای قیمت‌ها، برندها و کدها را هم می‌داند و برای کالاهای مشابه در برندهای دیگر پیشنهاد (احتمالی) می‌دهد. فایل‌های بازبینی قیمت فقط از فهرست‌های قیمت ساخته می‌شوند و عکس کالا کنار هر ردیف است.' },
     { id: 'assistant-claude-style', date: '1405/07/28', tag: 'بهبود', title: 'دستیار مثل گفت‌وگو در Claude شد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
