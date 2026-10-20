@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'assistant-common-sense', date: '1405/07/30', tag: 'بهبود', title: 'دستیار فهمیده‌تر شد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'دستیار حالا به سلام و تشکر جواب می‌دهد، برای «ارزان‌ترین» و «گران‌ترین» کالاها را بر پایهٔ قیمت نقدی مرتب می‌کند، برند نوشته‌شده در پرسش را رعایت می‌کند و برای پرسش کلی مثل «گریل» می‌گوید اندازه، نوع یا برند را هم بنویسید.' },
     { id: 'photos-from-price-lists-and-trained-assistant', date: '1405/07/30', tag: 'بهبود', title: 'عکس‌های بیشتر از فهرست‌های قیمت و دستیار آموزش‌دیده‌تر', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'عکس کوچک کنار هر ردیف فهرست توربومکس و چند عکس گروهی فهرست وینتورا هم به کالاها اضافه شد. دستیار حالا راهنمای نوع کالاها (گریل روغنی و ذغالی، اندازه‌های بن‌ماری، سرخ‌کن، مرینیتور و ...) و معادل‌های واژه‌ها (فریر، چارکول، ...) را می‌داند. توضیح‌های عمومی با برچسب راهنما نشان داده می‌شوند و مشخصات دقیق هر مدل همچنان در کاتالوگ است.' },
     { id: 'catalog-photos-and-richer-assistant', date: '1405/07/29', tag: 'جدید', title: 'عکس کالاها از کاتالوگ برندها و دستیار دانای‌تر', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],

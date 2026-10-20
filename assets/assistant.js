@@ -80,9 +80,9 @@
     return scored.slice(0, k);
   }
   // [] when nothing is a real match: the page then says so instead of showing guesses
-  function retrieve(q, k) {
+  function retrieve(q, k, loose) {
     var hits = search(q, k);
-    if (!hits.length || hits[0].s < MIN_SCORE) return [];
+    if (!hits.length || hits[0].s < (loose ? 2 : MIN_SCORE)) return [];
     var words = Object.keys((function () { var o = {}; tokens(q).forEach(function (t) { if (t.charAt(0) !== '~') o[t] = 1; }); return o; })());
     if (words.length && words.filter(function (w) { return hits[0].d.tf[w]; }).length / words.length < COVER) return [];
     return hits;
@@ -139,7 +139,7 @@
   function hitsOf(m) { return (m.ids || []).map(function (id) { return byId[id]; }).filter(Boolean); }
   function botHtml(m, i) {
     var hits = hitsOf(m), body;
-    if (m.state === 'none') body = '<p>در منابع من پاسخی برای این پرسش نیست.</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید؛ دستیار فقط از کاتالوگ جواب می‌دهد و حدس نمی‌زند.</p>';
+    if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) + ' ' : '') + 'در منابع من پاسخی برای این پرسش نیست.</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید؛ دستیار فقط از کاتالوگ جواب می‌دهد و حدس نمی‌زند.</p>';
     else if (m.state === 'wait') body = '<span class="as-dots" aria-label="در حال نوشتن"><i></i><i></i><i></i></span>';
     else if (m.text) body = md(m.text) + (m.state === 'stream' ? '<span class="as-caret"></span>' : '');
     else body = '<p>' + (m.note ? esc(m.note) : 'نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:') + '</p>';
@@ -211,17 +211,55 @@
     if (EQ[it.id]) parts.push('مشابه در برند دیگر (احتمالی): ' + EQ[it.id].map(function (id) { var o = itemsById[id]; return o ? (BR[o.src] || o.src) + ' ' + o.name + (o.code ? ' کد ' + o.code : '') : ''; }).filter(Boolean).join('، '));
     return parts.filter(Boolean).join(' . ');
   }
+  // ---------- common sense without a model: small talk, cheapest / dearest, a brand named in the question, vague one-word questions
+  var BRAND_WORDS = [['max-silver', ['مکث سیلور', 'مکسیلور', 'مکث‌سیلور', 'max silver']], ['wintora', ['وینتورا', 'wintora']], ['torbo-max', ['توربو مکس', 'توربومکس', 'turbo max', 'turbomax']]];
+  var TALK = [
+    [/^(سلام|درود|وقت بخیر|صبح بخیر|عصر بخیر|شب بخیر|hi|hello)[\s!.؟?]*$/i, 'سلام، خوش آمدید. کدام کالا را لازم دارید؟ نام، اندازه یا کد را بنویسید، مثلاً «گریل ۶۰ ذغالی».'],
+    [/^(ممنون|مرسی|سپاس|تشکر|دستت درد نکنه|متشکرم|thanks)[\s!.]*$/i, 'خواهش می‌کنم. اگر کالای دیگری لازم بود بنویسید.'],
+    [/(تو کی|شما کی|کی هستی|چه کار(ی)? (می‌?کنی|می‌?توانی|بلدی)|چیکار(ا)? (می‌?کنی|بلدی)|چه کمکی)/, 'من دستیار کاتالوگ مکث‌سیلور هستم. کالا، کد و قیمت نقدی و اعتباری (چکی) را از کاتالوگ پیدا می‌کنم، کالاهای مشابه برندهای دیگر را (به‌صورت احتمالی) پیشنهاد می‌دهم و معنی واژه‌های کاتالوگ را توضیح می‌دهم. از بیرون از کاتالوگ جواب نمی‌دهم و حدس نمی‌زنم.'],
+    [/^(خداحافظ|فعلا|بای|bye)[\s!.]*$/i, 'موفق باشید.']
+  ];
+  function smallTalk(q) { var s = norm(q).trim(); for (var i = 0; i < TALK.length; i++) if (TALK[i][0].test(s)) return TALK[i][1]; return ''; }
+  function brandOf(q) { var s = norm(q); for (var i = 0; i < BRAND_WORDS.length; i++) for (var k = 0; k < BRAND_WORDS[i][1].length; k++) if (s.indexOf(norm(BRAND_WORDS[i][1][k])) >= 0) return BRAND_WORDS[i][0]; return ''; }
+  function stripBrand(q) { var s = norm(q); BRAND_WORDS.forEach(function (b) { b[1].forEach(function (w) { s = s.split(norm(w)).join(' '); }); }); return s; }
+  function cashOf(it) { var P = window.MSPrices, v = P && P.get ? P.get(it.id) : null; return v && v.s === 'p' && v.p > 0 ? v.p : 0; }
+  // returns { hits, note } or null when the question is plain
+  function smart(q) {
+    var s = norm(q), cheap = /ارزان ?ترین|کم ?ترین قیمت|ارزونترین|اقتصادی ?ترین/.test(s), dear = /گران ?ترین|بیشترین قیمت|گرونترین/.test(s), br = brandOf(q);
+    if (!cheap && !dear && !br) return null;
+    var topic = stripBrand(q).replace(/ارزان ?ترین|کم ?ترین قیمت|ارزونترین|اقتصادی ?ترین|گران ?ترین|بیشترین قیمت|گرونترین/g, ' ');
+    var hits = retrieve(topic, 40);
+    if (!hits.length) return null;
+    var list = hits.map(function (h) { return h.d.it; }).filter(function (it) { return !it.faq; });
+    if (br) { var f = list.filter(function (it) { return it.src === br; }); if (!f.length) return { none: true, note: 'در برند ' + BR[br] + ' کالایی با این مشخصات پیدا نکردم. ' }; list = f; }
+    if (cheap || dear) {
+      var priced = list.filter(cashOf);
+      if (!priced.length) return { hits: list.slice(0, 5), note: 'برای این کالاها قیمت نقدی ثبت نشده و نمی‌توانم ارزان‌ترین را تعیین کنم. نزدیک‌ترین‌ها:' };
+      priced.sort(function (a, b) { return cheap ? cashOf(a) - cashOf(b) : cashOf(b) - cashOf(a); });
+      return { hits: priced.slice(0, 3), note: (cheap ? 'ارزان‌ترین' : 'گران‌ترین') + ' گزینه‌ها بر پایهٔ قیمت نقدی، از میان کالاهای نزدیک به پرسش' + (br ? ' در برند ' + BR[br] : '') + ' (قیمت‌ها را پیش از پیش‌فاکتور در کاتالوگ ببینید):' };
+    }
+    return { hits: list.slice(0, 5), note: 'نزدیک‌ترین کالاها در برند ' + BR[br] + ':' };
+  }
   function ask(text) {
     text = String(text || '').trim(); if (!text || !S.ready || S.busy) return;
     var prevQ = null; for (var i = S.msgs.length - 1; i >= 0; i--) if (S.msgs[i].role === 'user') { prevQ = S.msgs[i].text; break; }
     var history = S.msgs.filter(function (m) { return m.role === 'user' || (m.role === 'bot' && m.text); }).slice(-8).map(function (m) { return { role: m.role === 'bot' ? 'assistant' : 'user', content: m.text }; });
     S.msgs.push({ role: 'user', text: text });
+    var talk = smallTalk(text);
+    if (talk) { S.msgs.push({ role: 'bot', ids: [], text: talk, state: 'done' }); save(); render(); return; }
+    var sm = smart(text);
+    if (sm) {
+      S.msgs.push({ role: 'bot', ids: (sm.hits || []).map(function (it) { return it.id; }), note: sm.note, state: sm.none ? 'none' : 'cards', nonote: sm.none ? sm.note : '' });
+      save(); render(); return;
+    }
     // a short follow-up («و ۹۰ تا؟») is searched together with the previous question
-    var hits = retrieve(text, 5); if (!hits.length && prevQ) hits = retrieve(prevQ + ' ' + text, 5);
+    var hits = retrieve(text, 5); if (!hits.length && tokens(text).filter(function (w) { return w.charAt(0) !== '~'; }).length <= 2) hits = retrieve(text, 5, true); if (!hits.length && prevQ) hits = retrieve(prevQ + ' ' + text, 5);
     var bot = { role: 'bot', ids: hits.map(function (h) { return h.d.it.id; }) }, bi = S.msgs.length;
     S.msgs.push(bot);
     var items = hits.map(function (h) { return h.d.it; });
     if (!hits.length) { bot.state = 'none'; save(); render(); return; }
+    var nw = tokens(text).filter(function (w) { return w.charAt(0) !== '~'; }).length;
+    if (nw <= 1 && !/[0-9]/.test(text) && !hits[0].d.it.faq) bot.note = 'پرسش شما کلی است و کالاهای زیادی دارد. برای نتیجهٔ دقیق‌تر اندازه، نوع (گازی، برقی، ذغالی) یا برند را هم بنویسید. چند نمونه:';
     if (!relayUrl()) { bot.state = 'cards'; save(); render(); return; }
     bot.state = 'wait'; S.busy = true; render();
     writing(items, text, history, function (acc) { bot.text = acc; bot.state = 'stream'; paintBot(bi, true); }).then(function (a) { bot.text = a; bot.state = 'done'; }, function (e) {
