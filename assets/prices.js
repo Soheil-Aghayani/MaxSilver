@@ -296,7 +296,7 @@
   }
 
   // ---------- price template: finance audits the prices in an Excel file; the sales manager (or management) uploads it and the prices update
-  var TPL_HEAD = ['شناسه برنامه (تغییر ندهید)', 'کد کالا', 'نام کالا', 'برند', 'دسته', 'قیمت نقدی فعلی (تومان)', 'قیمت اعتباری فعلی (تومان)', 'وضعیت فعلی', 'قیمت نقدی جدید (تومان)', 'قیمت اعتباری جدید (تومان، اختیاری)', 'وضعیت جدید', 'توضیح (اختیاری)'];
+  var TPL_HEAD = ['شناسه برنامه (تغییر ندهید)', 'کد کالا', 'نام کالا', 'برند', 'دسته', 'قیمت (تومان)', 'توضیح (اختیاری)'];   // one price column, edited in place
   var STT = { p: 'نقدی', i: 'استعلام', r: 'شارژ', n: 'توافقی' };
   function parseStatus(v) {
     var k = norm(v).replace(/\s+/g, '');
@@ -311,19 +311,18 @@
     var rows = [TPL_HEAD];
     S.items.filter(function (it) { return !ST8.retired(it.id); }).forEach(function (it) {
       var c = cur(it.id);
-      rows.push([it.id, it.code || '', it.name, BR[it.src] || '', it.cat || '', c && c.s === 'p' && c.p ? c.p : '', c && c.s === 'p' && c.p ? P.cheque(c, it.grp) : '', c ? STT[c.s] : 'بدون قیمت', '', '', '', '']);
+      rows.push([it.id, it.code || '', it.name, BR[it.src] || '', it.cat || '', c ? (c.s === 'p' ? (c.p || '') : STT[c.s]) : '', '']);
     });
     var guide = [['راهنمای بازبینی قیمت'],
       ['این فایل در Google Sheets هم باز می‌شود: آن را در Google Drive بارگذاری کنید، با Google Sheets باز و ویرایش کنید، سپس از «File ← Download ← Microsoft Excel (.xlsx)» دانلود کنید و همین‌جا بارگذاری کنید.'],
-      ['۰. سه نوع قیمت: «نقدی» همان قیمت اصلی است؛ «اعتباری (چکی)» به‌طور پیش‌فرض نقدی + درصد گروه است (ستون «اعتباری جدید» فقط وقتی قیمت جدا برای یک کالا می‌خواهید پر شود)؛ «توافقی» یعنی عدد ندارد و کارشناس فروش با مشتری توافق می‌کند (در وضعیت جدید بنویسید: توافقی).'],
-      ['۱. فقط ستون‌های زردرنگ را پر کنید: «قیمت جدید (تومان)»، «وضعیت جدید» و «توضیح». بقیهٔ ستون‌ها را تغییر ندهید؛ ستون اول (شناسه برنامه) کلید کالاست.'],
-      ['۲. خانهٔ خالی یعنی «تغییری نیست». ردیفی که هر دو خانهٔ قیمت جدید و وضعیت جدید خالی باشد نادیده گرفته می‌شود.'],
-      ['۳. «قیمت جدید» را به تومان و فقط به صورت عدد بنویسید (رقم فارسی یا انگلیسی، با یا بدون جداکننده). اگر وضعیت خالی باشد، قیمت‌دار فرض می‌شود.'],
-      ['۴. «وضعیت جدید» یکی از این سه است: قیمت‌دار، استعلام، شارژ. برای «استعلام» و «شارژ» قیمت لازم نیست (اگر نوشته شود نادیده گرفته می‌شود).'],
-      ['۵. فایل بازبینی‌شده را مدیر فروش یا مدیریت در بخش «قیمت‌ها ← بارگذاری قیمت‌های بازبینی‌شده» می‌دهد؛ پیش‌نمایش تغییرات نشان داده می‌شود و فقط پس از تأیید او اعمال می‌شود.'],
+      ['۱. فقط یک ستون قیمت هست: «قیمت (تومان)». قیمت نقدی فعلی هر کالا در آن نوشته شده؛ برای تغییر، همان خانه را ویرایش کنید. قیمت اعتباری (چکی) را خود سایت با درصد گروه حساب می‌کند.'],
+      ['۲. به‌جای عدد می‌توانید یکی از این کلمه‌ها را بنویسید: توافقی، استعلام، شارژ. «توافقی» یعنی عدد ندارد و کارشناس فروش با مشتری توافق می‌کند.'],
+      ['۳. قیمت را به تومان و فقط به صورت عدد بنویسید (رقم فارسی یا انگلیسی، با یا بدون جداکننده). خانهٔ خالی یعنی «تغییری نیست»؛ ردیفی که قیمتش عوض نشده نادیده گرفته می‌شود.'],
+      ['۴. ستون‌های دیگر (به‌ویژه ستون اول، شناسه برنامه) را تغییر ندهید؛ «توضیح» اختیاری است.'],
+      ['۵. فایل بازبینی‌شده را فقط افراد مجاز به تغییر قیمت در بخش «قیمت‌ها ← بارگذاری قیمت‌های بازبینی‌شده» می‌دهند؛ پیش‌نمایش تغییرات نشان داده می‌شود و فقط پس از تأیید اعمال می‌شود.'],
       ['۶. این قالب قیمت لیست فعلی (پایه یا ویرایش‌شده) را نشان می‌دهد. کالاهای کنار گذاشته‌شده در قالب نیستند.']];
     window.MSXlsx.save(window.MSXlsx.blob([
-      { name: 'قیمت‌ها', rows: rows, widths: [24, 14, 46, 14, 22, 18, 18, 14, 20, 22, 14, 30], freeze: true, filter: true, inputCols: [8, 9, 10, 11] },
+      { name: 'قیمت‌ها', rows: rows, widths: [24, 14, 46, 14, 22, 20, 30], freeze: true, filter: true, inputCols: [6, 7] },
       { name: 'راهنما', rows: guide, widths: [120], guide: true }
     ]), 'Max_Silver_Price_Template.xlsx');
   }
@@ -345,8 +344,30 @@
       if (hi < 0) throw new Error('این فایل قالب بازبینی قیمت نیست (ستون «شناسه برنامه» پیدا نشد). قالب را از همین صفحه دانلود کنید.');
       var H = rows[hi].map(function (c) { return String(c || ''); }), col = function (s) { for (var k = 0; k < H.length; k++) if (H[k].indexOf(s) >= 0) return k; return -1; };
       var cId = col('شناسه برنامه'), cCode = col('کد کالا'), cP = col('قیمت نقدی جدید') >= 0 ? col('قیمت نقدی جدید') : col('قیمت جدید'), cC = col('قیمت اعتباری جدید') >= 0 ? col('قیمت اعتباری جدید') : col('قیمت چکی جدید'), cS = col('وضعیت جدید'), cN = col('توضیح');
-      if (cP < 0 || cS < 0) throw new Error('ستون‌های «قیمت جدید» و «وضعیت جدید» در فایل نیستند.');
+      var cOne = col('قیمت (تومان)');   // one price column, edited in place
       var m = { name: file.name, changes: [], same: 0, errs: [] };
+      if (cOne >= 0 && cP < 0) {
+        rows.slice(hi + 1).forEach(function (r, n) {
+          var line = hi + n + 2, v = r[cOne], txt = v == null ? '' : String(v).trim();
+          if (!txt) return;
+          var id = String(r[cId] == null ? '' : r[cId]).trim(), it = itemById(id) || (cCode >= 0 && r[cCode] ? byCode(r[cCode]) : null);
+          if (!it) { m.errs.push('ردیف ' + faInt.format(line) + ': کالا پیدا نشد (شناسه یا کد درست نیست).'); return; }
+          var old = cur(it.id), nw, num = /[0-9۰-۹٠-٩]/.test(txt) ? P.parse(txt) : 0;
+          if (num > 0) {
+            if (num >= 100000000000) { m.errs.push('ردیف ' + faInt.format(line) + ' (' + it.name + '): قیمت درست نیست.'); return; }
+            nw = { p: num, s: 'p' }; if (old && old.c > 0) nw.c = old.c;
+          } else {
+            var st = parseStatus(txt);
+            if (txt.replace(/\s+/g, '') === 'بدونقیمت' || st === 'p') return;
+            if (st === '?') { m.errs.push('ردیف ' + faInt.format(line) + ' (' + it.name + '): «' + txt + '» درست نیست؛ عدد یا یکی از توافقی، استعلام، شارژ بنویسید.'); return; }
+            nw = { p: 0, s: st };
+          }
+          if (old && old.s === nw.s && (old.p || 0) === nw.p && (old.c || 0) === (nw.c || 0)) { m.same++; return; }
+          m.changes.push({ it: it, old: old, nw: nw, note: cN >= 0 && r[cN] ? String(r[cN]).slice(0, 200) : '' });
+        });
+        S.imp = m; return;
+      }
+      if (cP < 0 || cS < 0) throw new Error('ستون «قیمت (تومان)» در فایل نیست. قالب را از همین صفحه دانلود کنید.');
       rows.slice(hi + 1).forEach(function (r, n) {
         var line = hi + n + 2, pv = r[cP], sv = r[cS], cv = cC >= 0 ? r[cC] : null;
         var hasP = pv != null && String(pv).trim() !== '', hasS = sv != null && String(sv).trim() !== '', hasC = cv != null && String(cv).trim() !== '';

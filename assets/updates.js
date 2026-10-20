@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'price-template-one-column', date: '1405/07/28', tag: 'بهبود', title: 'قالب قیمت فقط یک ستون قیمت دارد', roles: ['manager', 'sales_manager'],
+      summary: 'فایل بازبینی قیمت حالا یک ستون «قیمت (تومان)» دارد که قیمت فعلی در آن نوشته شده و همان‌جا ویرایش می‌شود؛ به‌جای عدد می‌توانید توافقی، استعلام یا شارژ بنویسید. قیمت اعتباری (چکی) را سایت خودش حساب می‌کند. فایل‌های قدیمی با ستون‌های «جدید» هم هنوز بارگذاری می‌شوند.' },
     { id: 'catalog-from-price-lists', date: '1405/07/28', tag: 'جدید', title: '۴۲۱ کالای تازه از فهرست‌های قیمت به کاتالوگ اضافه شد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'سینک، میز و کابینت، گریل و اجاق، بن‌ماری و یخچال و فریزرهای فهرست قیمت مهر ۱۴۰۵ که در کاتالوگ نبودند حالا با کد و قیمت در کاتالوگ و فایل بازبینی قیمت هستند. تصویر و مشخصات بیشتر آن‌ها هنوز نیامده؛ اگر کالایی با یک کالای دیگر تکراری است، یکی را از صفحهٔ قیمت‌ها کنار بگذارید.' },
     { id: 'credit-price-name', date: '1405/07/28', tag: 'بهبود', title: 'نام «قیمت چکی» شد «قیمت اعتباری (چکی)»', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],
