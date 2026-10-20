@@ -93,12 +93,29 @@
   // the address comes from assistant-config.js; a test address in localStorage is honoured only on localhost, so a token never goes to an address someone typed in
   function relayUrl() { try { if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return localStorage.getItem('ms-assistant-relay') || CFG.relay || ''; } catch (e) { /* ignore */ } return CFG.relay || ''; }
   var KEY = 'ms-assistant-chat-v1';
-  var S = { ready: false, error: '', msgs: [], busy: false };
+  var S = { ready: false, error: '', msgs: [], busy: false, listening: false };
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null;
+  function listen() {
+    if (!SR || !S.ready) return;
+    if (rec) { try { rec.stop(); } catch (e) { /* ignore */ } return; }
+    var q = document.getElementById('asQ'), base = q ? q.value : '';
+    rec = new SR(); rec.lang = 'fa-IR'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    rec.onresult = function (ev) {
+      var t = ''; for (var i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+      var box = document.getElementById('asQ'); if (box) { box.value = (base ? base + ' ' : '') + t; grow(box); }
+    };
+    function done() { rec = null; S.listening = false; var m = document.getElementById('asMic'); if (m) m.classList.remove('on'); var b = document.getElementById('asQ'); if (b) b.focus(); }
+    rec.onerror = done; rec.onend = done;
+    try { rec.start(); S.listening = true; var m = document.getElementById('asMic'); if (m) m.classList.add('on'); } catch (e) { done(); }
+  }
   var SUGGEST = ['گریل ۶۰ ذغالی چنده؟', 'سینک ۱۰۰ سانت دو لگن دارید؟', 'بویلر ۲۵ لیتر BUNN', 'سرخ‌کن گازی ۱۸ لیتری', 'یخچال زیر گریل ۱۸۰'];
   var ICON = {
     spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" opacity=".7"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+    mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11v9H4v-9zM7 11l4-8c1.5 0 2.5 1 2.2 2.6L12.8 9H19a2 2 0 0 1 2 2.4l-1.2 6A2 2 0 0 1 17.8 19H7"/></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 13V4H4v9zM7 13l4 8c1.5 0 2.5-1 2.2-2.6L12.8 15H19a2 2 0 0 0 2-2.4l-1.2-6A2 2 0 0 0 17.8 5H7"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>'
   };
   function price(it) {
@@ -136,30 +153,47 @@
     flushP(); flushL();
     return out.join('');
   }
+  var LOGK = 'ms-assistant-log-v1';
+  function logRead() { try { var a = JSON.parse(localStorage.getItem(LOGK) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function logAdd(kind, q, ids) {
+    if (!q) return;
+    var a = logRead(); a.push({ t: new Date().toISOString(), kind: kind, q: String(q).slice(0, 300), ids: (ids || []).slice(0, 5) });
+    try { localStorage.setItem(LOGK, JSON.stringify(a.slice(-300))); } catch (e) { /* ignore */ }
+  }
+  function logExport() {
+    var a = logRead(); if (!a.length) return;
+    var blob = new Blob([JSON.stringify({ app: 'maxi', exported: new Date().toISOString(), note: 'پرسش‌های بی‌پاسخ و بازخورد؛ برای آموزش مکسی', items: a }, null, 1)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob), l = document.createElement('a'); l.href = url; l.download = 'maxi-questions-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+  function fbHtml(m, i) {
+    if (m.state === 'wait' || m.state === 'stream' || m.state === 'none' && false) return '';
+    return '<span class="as-fb"><button type="button" data-fb="up" data-i="' + i + '" class="' + (m.fb === 'up' ? 'on' : '') + '" aria-label="پاسخ خوب بود" aria-pressed="' + (m.fb === 'up') + '">' + ICON.up + '</button>' +
+      '<button type="button" data-fb="down" data-i="' + i + '" class="' + (m.fb === 'down' ? 'on' : '') + '" aria-label="پاسخ خوب نبود" aria-pressed="' + (m.fb === 'down') + '">' + ICON.down + '</button></span>';
+  }
   function hitsOf(m) { return (m.ids || []).map(function (id) { return byId[id]; }).filter(Boolean); }
   function botHtml(m, i) {
     var hits = hitsOf(m), body;
-    if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) : 'در منابع من پاسخی برای این پرسش نیست.') + '</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید؛ دستیار فقط از کاتالوگ جواب می‌دهد و حدس نمی‌زند.</p>';
+    if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) : 'در منابع من پاسخی برای این پرسش نیست.') + '</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید یا بپرسید «چطور …»؛ مکسی حدس نمی‌زند.</p>';
     else if (m.state === 'wait') body = '<span class="as-dots" aria-label="در حال نوشتن"><i></i><i></i><i></i></span>';
     else if (m.text) body = md(m.text) + (m.state === 'stream' ? '<span class="as-caret"></span>' : '');
     else body = '<p>' + (m.note ? esc(m.note) : 'نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:') + '</p>';
     var showSrc = hits.length && m.state !== 'wait' && m.state !== 'none';
     return '<div class="as-msg bot" data-i="' + i + '"><span class="as-av' + (m.state === 'wait' || m.state === 'stream' ? ' busy' : '') + '"><i class="as-ring"></i>' + ICON.spark + '</span><div class="as-col"><div class="as-md">' + body + '</div>' + extras(m) +
       (showSrc ? '<details class="as-src"' + (m.text ? '' : ' open') + '><summary>' + (m.text ? 'منابع این پاسخ' : 'کالاهای پیدا‌شده') + ' (' + fa.format(hits.length) + ')</summary><div class="as-cards">' + hits.map(function (it, k) { return card(it, m.text ? k + 1 : 0); }).join('') + '</div></details>' : '') +
-      (m.text && m.state === 'done' ? '<div class="as-acts"><button type="button" data-copy="' + i + '" aria-label="کپی پاسخ">' + ICON.copy + '<span>کپی</span></button></div>' : '') + '</div></div>';
+      '<div class="as-acts">' + (m.text && m.state === 'done' ? '<button type="button" data-copy="' + i + '" aria-label="کپی پاسخ">' + ICON.copy + '<span>کپی</span></button>' : '') + fbHtml(m, i) + '</div></div></div>';
   }
   function userHtml(m) { return '<div class="as-msg me"><p>' + esc(m.text) + '</p></div>'; }
   function view() {
     if (S.error) return '<p class="as-err" role="alert">' + esc(S.error) + '</p>';
     var empty = !S.msgs.length;
-    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکسی</span></h1><button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></header>' +
-      (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من مکسی‌ام! چه کمکی از دستم برمی‌آید؟</h2><p>دربارهٔ کالاها، کدها و قیمت‌ها بپرسید. فقط از کاتالوگ جواب می‌دهم و اگر ندانم همین را می‌گویم.' +
+    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکسی</span></h1><span class="as-tools">' + (logRead().length ? '<button type="button" class="as-new as-log" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش مکسی">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></span></header>' +
+      (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من مکسی‌ام! چه کمکی از دستم برمی‌آید؟</h2><p>دربارهٔ کالاها، قیمت‌ها، بخش‌های سایت و پیش‌فاکتور بپرسید. اگر ندانم همین را می‌گویم و حدس نمی‌زنم.' +
         (relayUrl() ? '' : '<br><span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهم؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p>' +
         '<div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div></div>' :
         '<div class="as-log" id="asLog" aria-live="polite">' + S.msgs.map(function (m, i) { return m.role === 'user' ? userHtml(m) : botHtml(m, i); }).join('') + '</div>') +
       '<form class="as-form' + (empty ? ' empty' : '') + '" id="asForm"><div class="as-box"><textarea id="asQ" rows="1" maxlength="600" enterkeyhint="send" placeholder="' + (S.ready ? 'پیام خود را بنویسید…' : 'در حال آماده‌کردن کاتالوگ…') + '" aria-label="پیام"' + (S.ready ? '' : ' disabled') + '></textarea>' +
-      '<button type="submit" class="as-send" aria-label="ارسال"' + (S.ready && !S.busy ? '' : ' disabled') + '>' + ICON.send + '</button></div>' +
-      '<p class="as-fine">دستیار فقط از کاتالوگ جواب می‌دهد و ممکن است اشتباه کند؛ کد و قیمت را پیش از پیش‌فاکتور در کاتالوگ ببینید.</p></form>';
+      (SR ? '<button type="button" class="as-mic' + (S.listening ? ' on' : '') + '" id="asMic" aria-label="گفتن پیام با صدا" title="گفتن پیام با صدا"' + (S.ready ? '' : ' disabled') + '>' + ICON.mic + '</button>' : '') + '<button type="submit" class="as-send" aria-label="ارسال"' + (S.ready && !S.busy ? '' : ' disabled') + '>' + ICON.send + '</button></div>' +
+      '<p class="as-fine">مکسی ممکن است اشتباه کند؛ کد، قیمت و اندازه را پیش از پیش‌فاکتور در کاتالوگ ببینید.</p></form>';
   }
   function grow(q) { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 168) + 'px'; }
   function save() { try { sessionStorage.setItem(KEY, JSON.stringify(S.msgs.slice(-30).map(function (m) { return m.state === 'wait' || m.state === 'stream' ? Object.assign({}, m, { state: m.text ? 'done' : 'cards' }) : m; }))); } catch (e) { /* ignore */ } }
@@ -363,10 +397,10 @@
   var PF = 'ms-proforma-v1';
   function pfRead() { try { var v = JSON.parse(localStorage.getItem(PF) || 'null'); return v && Array.isArray(v.lines) ? v : { lines: [] }; } catch (e) { return { lines: [] }; } }
   function inProforma(id) { return pfRead().lines.some(function (l) { return l.id === id; }); }
-  function addProforma(id) {
+  function addProforma(id, qty) {
     var inv = pfRead(); if (inv.lines.some(function (l) { return l.id === id; })) return false;
     var P = window.MSPrices, v = P && P.get ? P.get(id) : null, unit = inv.unit || 'تومان';
-    inv.lines.push({ id: id, qty: 1, price: v && v.s === 'p' && v.p > 0 ? v.p * (unit === 'ریال' ? 10 : 1) : 0 });
+    inv.lines.push({ id: id, qty: qty || 1, price: v && v.s === 'p' && v.p > 0 ? v.p * (unit === 'ریال' ? 10 : 1) : 0 });
     try { localStorage.setItem(PF, JSON.stringify(inv)); } catch (e) { return false; }
     return true;
   }
@@ -382,13 +416,53 @@
     var ok = addProforma(it.id);
     return { text: ok ? '«' + it.name + '» به پیش‌فاکتور شما اضافه شد. تعداد و مشتری را در سبد پیش‌فاکتور کاتالوگ تنظیم کنید.' : '«' + it.name + '» از قبل در پیش‌فاکتور شما هست.', links: [{ href: './product-catalog.html', label: 'باز کردن کاتالوگ و سبد' }], ids: [it.id] };
   }
-  function skills(q) { var s = norm(q); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || pageGuide(s); }
+  // ---------- quote calculator: «3 گریل ۶۰ روغنی و 2 سرخ کن گازی، با مالیات»
+  var WORDNUM = { 'یک': 1, 'دو': 2, 'سه': 3, 'چهار': 4, 'پنج': 5, 'شش': 6, 'هفت': 7, 'هشت': 8, 'نه': 9, 'ده': 10 };
+  function quote(s) {
+    var asks = /(جمع|مجموع|محاسبه|حساب کن|برآورد|برآورد|قیمت کل|جمعا|روی هم)/.test(s);
+    var parts = s.replace(/(جمع|مجموع|محاسبه|حساب کن|برآورد|قیمت کل|جمعا|روی هم|چقدر میشه|چند میشه|با مالیات|بدون مالیات|مالیات|ارزش افزوده|لطفا)/g, ' ')
+      .split(/\s+و\s+|[،,+\n]|\s+با\s+(?=\d)/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var segs = [];
+    parts.forEach(function (p) {
+      var m = p.match(/^(\d+)\s*(?:تا|عدد|دستگاه|دست)?\s+(.+)$/), w = p.match(/^(یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده)\s*(?:تا|عدد|دستگاه)?\s+(.+)$/);
+      if (m) segs.push({ qty: parseInt(m[1], 10), topic: m[2] }); else if (w) segs.push({ qty: WORDNUM[w[1]], topic: w[2] });
+      else segs.push({ qty: 0, topic: p });
+    });
+    var numbered = segs.filter(function (x) { return x.qty > 0; }).length;
+    if (!(asks && segs.length >= 1 && numbered >= 1) && !(segs.length >= 2 && numbered === segs.length)) return null;
+    var rows = [], lost = [], P = window.MSPrices, pf = pfRead(), taxPct = pf.tax != null ? pf.tax : 10, cart = [];
+    segs.forEach(function (g) {
+      var qty = g.qty > 0 ? g.qty : 1, h = retrieve(g.topic, 4).filter(function (x) { return !x.d.it.faq; });
+      if (!h.length) { lost.push(g.topic); return; }
+      var pick = h.filter(function (x) { return cashOf(x.d.it); })[0] || h[0], it = pick.d.it, v = P && P.get ? P.get(it.id) : null, cash = v && v.s === 'p' && v.p > 0 ? v.p : 0, ch = cash && P.cheque ? (P.cheque(v, it.grp) || cash) : 0;
+      rows.push({ it: it, qty: qty, cash: cash, ch: ch }); cart.push({ id: it.id, qty: qty });
+    });
+    if (!rows.length) return { text: 'کالاهای این فهرست را در کاتالوگ پیدا نکردم. هر کالا را با تعداد و نام بنویسید، مثل «۳ گریل ۶۰ روغنی و ۲ سرخ‌کن گازی».', links: [] };
+    var tc = 0, tch = 0, noPrice = [];
+    var lines = rows.map(function (r) {
+      if (!r.cash) { noPrice.push(r.it.name); return '- ' + fmt(r.qty) + ' × **' + r.it.name + '**: قیمت ثبت نشده'; }
+      tc += r.cash * r.qty; tch += (r.ch || r.cash) * r.qty;
+      return '- ' + fmt(r.qty) + ' × **' + r.it.name + '**: ' + fmt(r.cash) + ' تومان → ' + fmt(r.cash * r.qty) + ' تومان';
+    });
+    var t = ['**برآورد قیمت از کاتالوگ:**', ''].concat(lines, ['']);
+    if (tc) {
+      t.push('جمع نقدی: **' + fmt(tc) + ' تومان**');
+      if (tch && tch !== tc) t.push('جمع اعتباری (چکی): **' + fmt(tch) + ' تومان**');
+      if (/(مالیات|ارزش افزوده)/.test(s) && !/بدون مالیات/.test(s)) t.push('مالیات بر ارزش افزوده (' + fmt(taxPct) + '٪، طبق تنظیم پیش‌فاکتور): ' + fmt(Math.round(tc * taxPct / 100)) + ' تومان؛ جمع نقدی با مالیات: **' + fmt(Math.round(tc * (1 + taxPct / 100))) + ' تومان**');
+    }
+    if (noPrice.length) t.push('', 'برای ' + fmt(noPrice.length) + ' کالا قیمت ثبت نشده و در جمع نیامده است.');
+    if (lost.length) t.push('', 'این موارد را پیدا نکردم: ' + lost.join('، ') + '.');
+    t.push('', 'این فقط برآورد است؛ تخفیف و شرایط پرداخت در پیش‌فاکتور تعیین می‌شود. کالاها را بررسی کنید: اگر نام اشتباهی انتخاب شده، دقیق‌تر بنویسید.');
+    return { text: t.join('\n'), ids: rows.map(function (r) { return r.it.id; }), cart: cart, links: [] };
+  }
+  function skills(q) { var s = norm(q); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || quote(s) || pageGuide(s); }
   // small follow-up buttons under an answer
   function extras(m) {
     var h = '';
     if (m.links && m.links.length) h += '<div class="as-links">' + m.links.map(function (l) { return '<a class="as-go" href="' + esc(l.href) + '">' + esc(l.label) + '</a>'; }).join('') + '</div>';
+    if (m.cart && m.cart.length) h += '<div class="as-quick"><button type="button" data-addall="' + esc(JSON.stringify(m.cart)) + '">+ افزودن همهٔ این کالاها به پیش‌فاکتور</button></div>';
     var its = hitsOf(m).filter(function (it) { return !it.faq; });
-    if (its.length && (m.state === 'cards' || m.state === 'done') && !m.links) {
+    if (its.length && !m.cart && (m.state === 'cards' || m.state === 'done') && !m.links) {
       var it = its[0], c = [];
       if (its.length === 1 || m.text) {
         if (!m.text || !/ابعاد/.test(m.text)) c.push('<button type="button" data-q="' + esc('ابعاد ' + it.name) + '">ابعاد و مشخصات</button>');
@@ -407,7 +481,7 @@
     var talk = smallTalk(text);
     if (talk) { S.msgs.push({ role: 'bot', ids: [], text: talk, state: 'done' }); save(); render(); return; }
     var sk = skills(text);
-    if (sk) { S.msgs.push({ role: 'bot', ids: sk.ids || [], text: sk.text, links: sk.links || [], state: 'done' }); save(); render(); return; }
+    if (sk) { S.msgs.push({ role: 'bot', ids: sk.ids || [], text: sk.text, links: sk.links || [], cart: sk.cart || null, state: 'done' }); save(); render(); return; }
     var s2 = smart2(text);
     if (s2) {
       S.msgs.push({ role: 'bot', ids: s2.ids, text: s2.text, note: s2.note, state: s2.text ? 'done' : s2.none ? 'none' : 'cards', nonote: s2.none ? s2.note : '' });
@@ -423,7 +497,7 @@
     var bot = { role: 'bot', q: text, ids: hits.map(function (h) { return h.d.it.id; }) }, bi = S.msgs.length;
     S.msgs.push(bot);
     var items = hits.map(function (h) { return h.d.it; });
-    if (!hits.length) { bot.state = 'none'; save(); render(); return; }
+    if (!hits.length) { bot.state = 'none'; logAdd('none', text, []); save(); render(); return; }
     var nw = tokens(text).filter(function (w) { return w.charAt(0) !== '~'; }).length;
     if (nw <= 1 && !/[0-9]/.test(text) && !hits[0].d.it.faq) bot.note = 'پرسش شما کلی است و کالاهای زیادی دارد. برای نتیجهٔ دقیق‌تر اندازه، نوع (گازی، برقی، ذغالی) یا برند را هم بنویسید. چند نمونه:';
     if (!relayUrl()) { bot.state = 'cards'; save(); render(); return; }
@@ -440,6 +514,19 @@
   root.addEventListener('keydown', function (e) { if (e.target.id === 'asQ' && e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.matchMedia('(hover:hover)').matches) { e.preventDefault(); submitBox(); } });
   root.addEventListener('click', function (e) {
     var c;
+    if (e.target.closest('#asLog2')) { logExport(); return; }
+    if ((c = e.target.closest('[data-fb]'))) {
+      var mi = Number(c.getAttribute('data-i')), mm = S.msgs[mi], kind = c.getAttribute('data-fb');
+      if (mm) { var prev = S.msgs[mi - 1], same = mm.fb === kind; mm.fb = same ? '' : kind; if (!same) logAdd(kind === 'up' ? 'up' : 'down', prev && prev.text, mm.ids); save(); render(true); }
+      return;
+    }
+    if (e.target.closest('#asMic')) { listen(); return; }
+    if ((c = e.target.closest('[data-addall]'))) {
+      var cart = []; try { cart = JSON.parse(c.getAttribute('data-addall')); } catch (x) { cart = []; }
+      var n = 0; cart.forEach(function (l) { if (addProforma(l.id, l.qty)) n++; });
+      c.classList.add('on'); c.textContent = n ? '✓ ' + fmt(n) + ' کالا به پیش‌فاکتور اضافه شد' : '✓ از قبل در پیش‌فاکتور بودند';
+      return;
+    }
     if ((c = e.target.closest('[data-addinv]'))) {
       var id = c.getAttribute('data-addinv'), was = inProforma(id);
       if (!was) addProforma(id);

@@ -110,3 +110,15 @@
 .as-add{margin-top:8px;margin-inline-start:8px;min-height:32px;padding:0 12px;border:1px solid var(--ms-gold);border-radius:999px;background:#fff8e1;color:var(--ms-navy);font:800 12px/1 Estedad,Tahoma,sans-serif;cursor:pointer}
 .as-quick{animation:as-rise .4s .1s both}
 @media (prefers-reduced-motion:reduce){.as-quick{animation:none}}
+
+.as-tools{display:inline-flex;gap:8px}
+.as-log{font-weight:700}
+.as-mic{flex:none;width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:var(--ms-navy);display:inline-grid;place-items:center;cursor:pointer;transition:background .15s,color .15s}
+.as-mic svg{width:20px;height:20px}.as-mic:hover{background:#fff8e1}
+.as-mic.on{background:#c0392b;color:#fff;animation:as-rec 1.1s ease-out infinite}
+@keyframes as-rec{0%{box-shadow:0 0 0 0 rgba(192,57,43,.5)}100%{box-shadow:0 0 0 14px rgba(192,57,43,0)}}
+.as-acts{display:flex;align-items:center;gap:8px;margin-top:6px}
+.as-fb{display:inline-flex;gap:2px;margin-inline-start:auto;opacity:.55;transition:opacity .15s}.as-msg.bot:hover .as-fb,.as-fb:focus-within{opacity:1}
+.as-fb button{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--ms-muted);display:inline-grid;place-items:center;cursor:pointer}
+.as-fb svg{width:17px;height:17px}.as-fb button:hover{background:#eef2f8;color:var(--ms-navy)}.as-fb button.on{color:#1b6b34;background:#e9f7ec}.as-fb button[data-fb=down].on{color:#b3261e;background:#fdecea}
+@media (prefers-reduced-motion:reduce){.as-mic.on{animation:none}}

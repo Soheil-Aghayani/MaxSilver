@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'maxi-quote-voice-feedback', date: '1405/07/30', tag: 'جدید', title: 'مکسی: برآورد قیمت، گفتن با صدا و بازخورد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'بنویسید «۳ گریل ۶۰ روغنی و ۲ سرخ‌کن گازی جمع با مالیات» تا مکسی جمع نقدی و اعتباری را حساب کند و همه را یک‌جا به پیش‌فاکتور بفرستد. دکمهٔ میکروفون پیام را فارسی می‌نویسد (در Chrome و Edge). زیر هر پاسخ می‌توانید بپسندید یا نپسندید؛ پرسش‌های بی‌پاسخ در همین مرورگر می‌مانند و با دکمهٔ «پرسش‌ها» به‌صورت فایل برای آموزش مکسی گرفته می‌شوند.' },
     { id: 'maxi-skills', date: '1405/07/30', tag: 'جدید', title: 'مکسی کارهای تازه یاد گرفت', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'مکسی حالا راه رسیدن به بخش‌های سایت را نشان می‌دهد (مثلاً «چطور پیش‌فاکتور بسازم»)، مناسبت‌های پیش رو و پیش‌نویس پیام تبریک را می‌دهد، کارهای منتظر شما را می‌خواند، پیش‌نویس پیام پیگیری و تشکر می‌نویسد و با دکمهٔ «افزودن به پیش‌فاکتور» کالا را در سبد پیش‌فاکتور می‌گذارد. هیچ پیامی خودش نمی‌فرستد و فقط بخش‌هایی را نشان می‌دهد که نقش شما اجازه دارد.' },
     { id: 'maxi-general-assistant', date: '1405/07/30', tag: 'بهبود', title: 'مکسی دستیار عمومی مکث‌سیلور شد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
