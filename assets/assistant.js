@@ -152,7 +152,7 @@
   function view() {
     if (S.error) return '<p class="as-err" role="alert">' + esc(S.error) + '</p>';
     var empty = !S.msgs.length;
-    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکسی</span><small>دستیار هوشمند مکث‌سیلور</small></h1><button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></header>' +
+    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکسی</span></h1><button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></header>' +
       (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من مکسی‌ام! چه کمکی از دستم برمی‌آید؟</h2><p>دربارهٔ کالاها، کدها و قیمت‌ها بپرسید. فقط از کاتالوگ جواب می‌دهم و اگر ندانم همین را می‌گویم.' +
         (relayUrl() ? '' : '<br><span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهم؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p>' +
         '<div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div></div>' :
