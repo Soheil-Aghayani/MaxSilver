@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'assistant-search', date: '1405/07/28', tag: 'جدید', title: 'دستیار کاتالوگ: بپرسید، نزدیک‌ترین کالا را با قیمت می‌گیرید', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'کاشی «دستیار کاتالوگ» در صفحهٔ اصلی: نام کالا، اندازه یا کد را بنویسید و نزدیک‌ترین کالاها را با کد، قیمت نقدی و اعتباری می‌بینید. اگر چیزی پیدا نکند صادقانه می‌گوید پاسخی ندارد و حدس نمی‌زند. فعلاً متن نمی‌نویسد؛ پاسخ نوشته‌شده با مدل زبانی مرحلهٔ بعد است.' },
     { id: 'price-template-one-column', date: '1405/07/28', tag: 'بهبود', title: 'قالب قیمت فقط یک ستون قیمت دارد', roles: ['manager', 'sales_manager'],
       summary: 'فایل بازبینی قیمت حالا یک ستون «قیمت (تومان)» دارد که قیمت فعلی در آن نوشته شده و همان‌جا ویرایش می‌شود؛ به‌جای عدد می‌توانید توافقی، استعلام یا شارژ بنویسید. قیمت اعتباری (چکی) را سایت خودش حساب می‌کند. فایل‌های قدیمی با ستون‌های «جدید» هم هنوز بارگذاری می‌شوند.' },
     { id: 'catalog-from-price-lists', date: '1405/07/28', tag: 'جدید', title: '۴۲۱ کالای تازه از فهرست‌های قیمت به کاتالوگ اضافه شد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],

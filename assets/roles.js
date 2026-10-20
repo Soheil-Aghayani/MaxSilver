@@ -38,6 +38,7 @@
     features: ['manager'],                                                              // switches parts of the site on and off (technology lead only)
     roadmapEdit: ['manager'],                                                           // loads or replaces the roadmap (the owner, or people he names on «دسترسی‌ها»)
     competitorsEdit: ['manager'],                                                       // loads or replaces the competitor file (same)
+    assistant: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],   // the catalog assistant (asks about products)
     roadmap: ['manager', 'ceo', 'sales_manager'],                                       // the milestone timeline (management, CEO, sales manager)
     backup: ['manager', 'ceo'],                                                         // downloads a backup of the database (management only)
     competitors: ['manager', 'ceo', 'sales_manager'],                                   // competitor analysis (staff only)

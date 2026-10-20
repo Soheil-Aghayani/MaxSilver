@@ -24,7 +24,7 @@
   var fa = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 });
   var faInt = new Intl.NumberFormat('fa-IR');
   var data = null, items = [], byId = {}, filtered = [], shown = PAGE;
-  var state = { q: '', src: '', grp: '', sec: '', sort: 'name' };
+  var state = { q: (function () { try { return new URLSearchParams(location.search).get('q') || ''; } catch (e) { return ''; } })(), src: '', grp: '', sec: '', sort: 'name' };   // ?q= opens the catalog already searching (the assistant links here)
   var compare = [];
   var STORE = 'ms-proforma-v1';
   var inv = { lines: [], docNo: '', issuer: '', customer: '', custCity: '', custPhone: '', custAddr: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان', pay: { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false } };
@@ -1073,6 +1073,7 @@
   function syncMenus() { menus.forEach(syncMenu); }
 
   var timer = 0;
+  if (state.q) $('catSearch').value = state.q;
   $('catSearch').addEventListener('input', function (e) { clearTimeout(timer); timer = setTimeout(function () { state.q = e.target.value; apply(); }, 120); });
   $('catGroup').addEventListener('change', function (e) { state.grp = e.target.value; apply(); });
   $('catSector').addEventListener('change', function (e) { state.sec = e.target.value; apply(); });
@@ -1157,7 +1158,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261382', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261384', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }
