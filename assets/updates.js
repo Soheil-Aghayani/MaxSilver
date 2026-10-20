@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'assistant-claude-style', date: '1405/07/28', tag: 'بهبود', title: 'دستیار مثل گفت‌وگو در Claude شد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'پاسخ‌ها به‌صورت متن خوانا و قدم‌به‌قدم نوشته می‌شوند، کادر پیام خودبه‌خود بزرگ می‌شود (Enter ارسال، Shift+Enter خط تازه)، دکمهٔ «گفت‌وگوی تازه» و «کپی» دارد و منبع‌ها زیر هر پاسخ جمع شده‌اند. نوشتن پاسخ با اتصال به مدل زبانی فعال می‌شود.' },
     { id: 'assistant-chat', date: '1405/07/28', tag: 'بهبود', title: 'دستیار حالا شکل گفت‌وگو دارد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'صفحهٔ دستیار حالا مثل یک گفت‌وگوست: پرسش‌های پشت‌سرهم، «و مدل ۹۰ چطور؟» هم فهمیده می‌شود. تا زمانی که به مدل زبانی وصل نشده، نزدیک‌ترین کالاها را نشان می‌دهد؛ با اتصال، پاسخ نوشته‌شده با ذکر منبع می‌دهد.' },
     { id: 'assistant-search', date: '1405/07/28', tag: 'جدید', title: 'دستیار کاتالوگ: بپرسید، نزدیک‌ترین کالا را با قیمت می‌گیرید', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],

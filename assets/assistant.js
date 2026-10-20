@@ -78,12 +78,19 @@
     return hits;
   }
 
-  // ---------- chat
+  // ---------- chat (laid out like a Claude conversation: your message, then the answer as plain text that types out)
   var CFG = window.MS_ASSISTANT || {};
   // the address comes from assistant-config.js; a test address in localStorage is honoured only on localhost, so a token never goes to an address someone typed in
   function relayUrl() { try { if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return localStorage.getItem('ms-assistant-relay') || CFG.relay || ''; } catch (e) { /* ignore */ } return CFG.relay || ''; }
+  var KEY = 'ms-assistant-chat-v1';
   var S = { ready: false, error: '', msgs: [], busy: false };
   var SUGGEST = ['گریل ۶۰ ذغالی چنده؟', 'سینک ۱۰۰ سانت دو لگن دارید؟', 'بویلر ۲۵ لیتر BUNN', 'سرخ‌کن گازی ۱۸ لیتری', 'یخچال زیر گریل ۱۸۰'];
+  var ICON = {
+    spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" opacity=".7"/></svg>',
+    send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>'
+  };
   function price(it) {
     var P = window.MSPrices, v = P && P.get ? P.get(it.id) : null;
     if (!v) return '<span class="as-p none">قیمت ثبت نشده</span>';
@@ -93,8 +100,7 @@
     }
     return '<span class="as-p none">' + esc(P && P.label ? P.label(v) : '') + '</span>';
   }
-  function card(h, n) {
-    var it = h.d.it;
+  function card(it, n) {
     return '<article class="as-card"><div class="as-img">' + (it.img ? '<img src="' + esc(it.img) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">' : '') + '</div>' +
       '<div class="as-body"><h3>' + (n ? '<span class="as-n">' + fa.format(n) + '</span>' : '') + esc(it.name) + '</h3><p class="as-meta"><span class="as-br" data-brand="' + esc(it.src) + '"><i></i>' + esc(BR[it.src] || it.src) + '</span>' +
       (it.code ? '<span>کد <b dir="ltr">' + esc(it.code) + '</b></span>' : '') + (it.cat ? '<span>' + esc(it.cat) + '</span>' : '') + '</p>' +
@@ -102,43 +108,83 @@
       (it.pl ? '<p class="as-note">این کالا از فهرست قیمت آمده؛ تصویر و مشخصات آن هنوز در کاتالوگ نیست.</p>' : '') +
       '<a class="as-open" href="./product-catalog.html?q=' + encodeURIComponent(it.code || it.name) + '">نمایش در کاتالوگ</a></div></article>';
   }
-  // **bold** and line breaks only; everything else is shown as plain text
-  function textHtml(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'); }
-  function bubble(m) {
-    if (m.role === 'user') return '<div class="as-row me"><p class="as-b me">' + esc(m.text) + '</p></div>';
-    var inner;
-    if (m.state === 'wait') inner = '<span class="as-dots" aria-label="در حال نوشتن"><i></i><i></i><i></i></span>';
-    else if (m.state === 'none') inner = '<p class="as-none">در منابع من پاسخی برای این پرسش نیست.</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید؛ دستیار فقط از کاتالوگ جواب می‌دهد و حدس نمی‌زند.</p>';
-    else {
-      inner = (m.text ? '<p class="as-txt">' + textHtml(m.text) + '</p>' : '<p class="as-lead">نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:</p>') +
-        (m.note ? '<p class="as-hint">' + esc(m.note) + '</p>' : '') +
-        '<details class="as-src"' + (m.text ? '' : ' open') + '><summary>' + (m.text ? 'منابع این پاسخ (' + fa.format(m.hits.length) + ')' : 'کالاهای پیدا‌شده (' + fa.format(m.hits.length) + ')') + '</summary><div class="as-cards">' + m.hits.map(function (h, i) { return card(h, m.text ? i + 1 : 0); }).join('') + '</div></details>';
-    }
-    return '<div class="as-row"><div class="as-b bot">' + inner + '</div></div>';
+  // a small Markdown subset: paragraphs, - and 1. lists, # headings, **bold**, `code`. Everything is escaped first.
+  function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>'); }
+  function md(text) {
+    var out = [], list = null, para = [];
+    function flushP() { if (para.length) { out.push('<p>' + para.map(inline).join('<br>') + '</p>'); para = []; } }
+    function flushL() { if (list) { out.push('<' + list.t + '>' + list.items.map(function (x) { return '<li>' + inline(x) + '</li>'; }).join('') + '</' + list.t + '>'); list = null; } }
+    String(text || '').split('\n').forEach(function (line) {
+      var m;
+      if ((m = line.match(/^\s*[-*•]\s+(.*)$/))) { flushP(); if (!list || list.t !== 'ul') { flushL(); list = { t: 'ul', items: [] }; } list.items.push(m[1]); }
+      else if ((m = line.match(/^\s*[0-9۰-۹]+[.)]\s+(.*)$/))) { flushP(); if (!list || list.t !== 'ol') { flushL(); list = { t: 'ol', items: [] }; } list.items.push(m[1]); }
+      else if ((m = line.match(/^#{1,4}\s+(.*)$/))) { flushP(); flushL(); out.push('<h4>' + inline(m[1]) + '</h4>'); }
+      else if (!line.trim()) { flushP(); flushL(); }
+      else { flushL(); para.push(line); }
+    });
+    flushP(); flushL();
+    return out.join('');
   }
+  function hitsOf(m) { return (m.ids || []).map(function (id) { return byId[id]; }).filter(Boolean); }
+  function botHtml(m, i) {
+    var hits = hitsOf(m), body;
+    if (m.state === 'none') body = '<p>در منابع من پاسخی برای این پرسش نیست.</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید؛ دستیار فقط از کاتالوگ جواب می‌دهد و حدس نمی‌زند.</p>';
+    else if (m.state === 'wait') body = '<span class="as-dots" aria-label="در حال نوشتن"><i></i><i></i><i></i></span>';
+    else if (m.text) body = md(m.text) + (m.state === 'stream' ? '<span class="as-caret"></span>' : '');
+    else body = '<p>' + (m.note ? esc(m.note) : 'نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:') + '</p>';
+    var showSrc = hits.length && m.state !== 'wait' && m.state !== 'none';
+    return '<div class="as-msg bot" data-i="' + i + '"><span class="as-av">' + ICON.spark + '</span><div class="as-col"><div class="as-md">' + body + '</div>' +
+      (showSrc ? '<details class="as-src"' + (m.text ? '' : ' open') + '><summary>' + (m.text ? 'منابع این پاسخ' : 'کالاهای پیدا‌شده') + ' (' + fa.format(hits.length) + ')</summary><div class="as-cards">' + hits.map(function (it, k) { return card(it, m.text ? k + 1 : 0); }).join('') + '</div></details>' : '') +
+      (m.text && m.state === 'done' ? '<div class="as-acts"><button type="button" data-copy="' + i + '" aria-label="کپی پاسخ">' + ICON.copy + '<span>کپی</span></button></div>' : '') + '</div></div>';
+  }
+  function userHtml(m) { return '<div class="as-msg me"><p>' + esc(m.text) + '</p></div>'; }
   function view() {
     if (S.error) return '<p class="as-err" role="alert">' + esc(S.error) + '</p>';
-    var live = !!relayUrl();
-    return '<div class="as-top"><h1>دستیار</h1><p class="as-intro">دربارهٔ کالاها، کدها و قیمت‌ها گفت‌وگو کنید. دستیار فقط از کاتالوگ جواب می‌دهد و اگر نداند همین را می‌گوید.' +
-      (live ? '' : ' <span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهد؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p></div>' +
-      '<div class="as-log" id="asLog" aria-live="polite">' + (S.msgs.length ? S.msgs.map(bubble).join('') :
-        '<div class="as-empty"><p>سلام. چه کالایی لازم دارید؟</p><div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div></div>') + '</div>' +
-      '<form class="as-form" id="asForm" role="search"><input id="asQ" type="text" autocomplete="off" enterkeyhint="send" placeholder="' + (S.ready ? 'بنویسید…' : 'در حال آماده‌کردن کاتالوگ…') + '" aria-label="پیام" maxlength="400"' + (S.ready ? '' : ' disabled') + '>' +
-      '<button type="submit" aria-label="ارسال"' + (S.ready && !S.busy ? '' : ' disabled') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg></button></form>';
+    var empty = !S.msgs.length;
+    return '<header class="as-head"><h1>دستیار</h1><button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></header>' +
+      (empty ? '<div class="as-hello"><span class="as-av big">' + ICON.spark + '</span><h2>سلام، چه کمکی از دستم برمی‌آید؟</h2><p>دربارهٔ کالاها، کدها و قیمت‌ها بپرسید. فقط از کاتالوگ جواب می‌دهم و اگر ندانم همین را می‌گویم.' +
+        (relayUrl() ? '' : '<br><span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهم؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p>' +
+        '<div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div></div>' :
+        '<div class="as-log" id="asLog" aria-live="polite">' + S.msgs.map(function (m, i) { return m.role === 'user' ? userHtml(m) : botHtml(m, i); }).join('') + '</div>') +
+      '<form class="as-form' + (empty ? ' empty' : '') + '" id="asForm"><div class="as-box"><textarea id="asQ" rows="1" maxlength="600" enterkeyhint="send" placeholder="' + (S.ready ? 'پیام خود را بنویسید…' : 'در حال آماده‌کردن کاتالوگ…') + '" aria-label="پیام"' + (S.ready ? '' : ' disabled') + '></textarea>' +
+      '<button type="submit" class="as-send" aria-label="ارسال"' + (S.ready && !S.busy ? '' : ' disabled') + '>' + ICON.send + '</button></div>' +
+      '<p class="as-fine">دستیار فقط از کاتالوگ جواب می‌دهد و ممکن است اشتباه کند؛ کد و قیمت را پیش از پیش‌فاکتور در کاتالوگ ببینید.</p></form>';
   }
-  function scrollEnd() { var l = document.getElementById('asLog'); if (l && l.lastElementChild) { try { l.lastElementChild.scrollIntoView({ block: 'end', behavior: 'smooth' }); } catch (e) { l.lastElementChild.scrollIntoView(); } } }
-  function render(keepScroll) {
+  function grow(q) { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 168) + 'px'; }
+  function save() { try { sessionStorage.setItem(KEY, JSON.stringify(S.msgs.slice(-30).map(function (m) { return m.state === 'wait' || m.state === 'stream' ? Object.assign({}, m, { state: m.text ? 'done' : 'cards' }) : m; }))); } catch (e) { /* ignore */ } }
+  function restore() { try { var a = JSON.parse(sessionStorage.getItem(KEY) || '[]'); if (Array.isArray(a)) S.msgs = a; } catch (e) { S.msgs = []; } }
+  function scrollEnd(smooth) { var l = document.getElementById('asLog'); if (l && l.lastElementChild) { try { l.lastElementChild.scrollIntoView({ block: 'end', behavior: smooth ? 'smooth' : 'auto' }); } catch (e) { l.lastElementChild.scrollIntoView(); } } }
+  function render(keep) {
     var q = document.getElementById('asQ'), v = q ? q.value : '', had = q && document.activeElement === q;
-    root.innerHTML = view(); q = document.getElementById('asQ'); if (q) { q.value = v; if (had) q.focus(); }
-    if (!keepScroll) scrollEnd();
+    root.innerHTML = view(); q = document.getElementById('asQ'); if (q) { q.value = v; grow(q); if (had) q.focus(); }
+    if (!keep) scrollEnd(true);
   }
-  function writing(hits, text, history) {
+  // only the last answer is redrawn while it types, so nothing else flickers
+  function paintBot(i, follow) {
+    var el = root.querySelector('.as-msg.bot[data-i="' + i + '"]'); if (!el) { render(); return; }
+    var tmp = document.createElement('div'); tmp.innerHTML = botHtml(S.msgs[i], i); el.replaceWith(tmp.firstChild);
+    if (follow) scrollEnd(false);
+  }
+  function writing(hits, text, history, onChunk) {
     var url = relayUrl();
     if (!url || !window.MSSync || !window.MSSync.idToken) return Promise.reject({ code: 'no-relay' });
     return window.MSSync.idToken().then(function (tok) {
       return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
-        body: JSON.stringify({ question: text, history: history, sources: hits.map(function (h) { var it = h.d.it; return { title: it.name, text: sourceText(it) }; }) }) });
-    }).then(function (r) { if (!r.ok) throw { code: 'relay-' + r.status }; return r.json(); }).then(function (j) { if (!j || !j.answer) throw { code: 'empty' }; return j.answer; });
+        body: JSON.stringify({ stream: true, question: text, history: history, sources: hits.map(function (it) { return { title: it.name, text: sourceText(it) }; }) }) });
+    }).then(function (r) {
+      if (!r.ok) throw { code: 'relay-' + r.status };
+      var type = r.headers.get('Content-Type') || '';
+      if (/json/.test(type) || !r.body || !r.body.getReader) return r.json().then(function (j) { if (!j || !j.answer) throw { code: 'empty' }; return typeOut(j.answer, onChunk); });
+      var rd = r.body.getReader(), dec = new TextDecoder('utf-8'), acc = '';
+      return (function pump() { return rd.read().then(function (x) { if (x.done) { acc += dec.decode(); if (!acc.trim()) throw { code: 'empty' }; return acc; } acc += dec.decode(x.value, { stream: true }); onChunk(acc); return pump(); }); })();
+    });
+  }
+  // an answer that arrives whole is still revealed word by word, so it reads like it is being written
+  function typeOut(full, onChunk) {
+    return new Promise(function (ok) {
+      var words = full.split(/(\s+)/), i = 0, acc = '';
+      (function step() { var n = Math.max(1, Math.ceil(words.length / 60)); acc += words.slice(i, i + n).join(''); i += n; onChunk(acc); if (i >= words.length) ok(full); else setTimeout(step, 28); })();
+    });
   }
   // the item as plain text for the model: the same fields the index was built from, plus the prices the person sees now
   function sourceText(it) {
@@ -159,20 +205,31 @@
     S.msgs.push({ role: 'user', text: text });
     // a short follow-up («و ۹۰ تا؟») is searched together with the previous question
     var hits = retrieve(text, 5); if (!hits.length && prevQ) hits = retrieve(prevQ + ' ' + text, 5);
-    var bot = { role: 'bot', hits: hits };
+    var bot = { role: 'bot', ids: hits.map(function (h) { return h.d.it.id; }) }, bi = S.msgs.length;
     S.msgs.push(bot);
-    if (!hits.length) { bot.state = 'none'; render(); return; }
-    if (!relayUrl()) { bot.state = 'cards'; render(); return; }
+    var items = hits.map(function (h) { return h.d.it; });
+    if (!hits.length) { bot.state = 'none'; save(); render(); return; }
+    if (!relayUrl()) { bot.state = 'cards'; save(); render(); return; }
     bot.state = 'wait'; S.busy = true; render();
-    writing(hits, text, history).then(function (a) { bot.text = a; bot.state = 'done'; }, function (e) {
-      bot.state = 'cards'; bot.note = e && /relay-40[13]/.test(e.code || '') ? 'برای گفت‌وگو باید وارد حساب خود شده باشید و نقش شما اجازه داشته باشد؛ نزدیک‌ترین کالاها:' : 'پاسخ نوشته‌شده الان در دسترس نیست؛ نزدیک‌ترین کالاها:';
-    }).then(function () { S.busy = false; var q = document.getElementById('asQ'); if (q) q.value = ''; render(); });
-    var q = document.getElementById('asQ'); if (q) q.value = '';
+    writing(items, text, history, function (acc) { bot.text = acc; bot.state = 'stream'; paintBot(bi, true); }).then(function (a) { bot.text = a; bot.state = 'done'; }, function (e) {
+      bot.text = ''; bot.state = 'cards';
+      bot.note = e && /relay-40[13]/.test(e.code || '') ? 'برای گفت‌وگو باید وارد حساب خود شده باشید و نقش شما اجازه داشته باشد. نزدیک‌ترین کالاها:' : 'پاسخ نوشته‌شده الان در دسترس نیست. نزدیک‌ترین کالاها:';
+    }).then(function () { S.busy = false; save(); render(true); scrollEnd(true); var q = document.getElementById('asQ'); if (q && !('ontouchstart' in window)) q.focus(); });
   }
-  root.addEventListener('submit', function (e) { if (e.target.id === 'asForm') { e.preventDefault(); var q = document.getElementById('asQ'); var v = q.value; q.value = ''; ask(v); } });
-  root.addEventListener('click', function (e) { var c = e.target.closest('[data-q]'); if (c) ask(c.getAttribute('data-q')); });
+  function submitBox() { var q = document.getElementById('asQ'); if (!q) return; var v = q.value; q.value = ''; grow(q); ask(v); }
+  root.addEventListener('submit', function (e) { if (e.target.id === 'asForm') { e.preventDefault(); submitBox(); } });
+  root.addEventListener('input', function (e) { if (e.target.id === 'asQ') grow(e.target); });
+  // Enter sends on a computer (Shift+Enter is a new line); on a phone Enter is a new line and the arrow sends
+  root.addEventListener('keydown', function (e) { if (e.target.id === 'asQ' && e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.matchMedia('(hover:hover)').matches) { e.preventDefault(); submitBox(); } });
+  root.addEventListener('click', function (e) {
+    var c;
+    if ((c = e.target.closest('[data-q]'))) { ask(c.getAttribute('data-q')); return; }
+    if (e.target.closest('#asNew')) { if (!S.busy) { S.msgs = []; save(); render(true); } return; }
+    if ((c = e.target.closest('[data-copy]'))) { var m = S.msgs[Number(c.getAttribute('data-copy'))]; try { navigator.clipboard.writeText(m.text).then(function () { c.querySelector('span').textContent = 'کپی شد'; setTimeout(function () { c.querySelector('span').textContent = 'کپی'; }, 1400); }); } catch (x) { /* ignore */ } }
+  });
   window.MSAssistant = { retrieve: function (q, k) { return retrieve(q, k || 5).map(function (h) { return { id: h.d.it.id, name: h.d.it.name, score: Math.round(h.s * 100) / 100 }; }); }, size: function () { return docs.length; }, ask: ask };
-  render();
+  restore();
+  render(true);
   fetch('./assets/catalog.json?v=' + ((document.currentScript && document.currentScript.src.split('v=')[1]) || '')).then(function (r) { if (!r.ok) throw new Error('catalog'); return r.json(); }).then(function (c) {
     build(c.items || []); S.ready = true;
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(true); }, function () { render(true); }); window.MSPrices.onChange(function () { render(true); }); }
