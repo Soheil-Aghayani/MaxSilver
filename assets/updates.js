@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'password-change-reset', date: '1405/07/30', tag: 'جدید', title: 'تغییر رمز و فراموشی رمز', roles: ALL_SALES.concat(['operations', 'marketing', 'hr', 'production', 'service']),
+      summary: 'در پنل کاربری، بخش «تغییر رمز عبور» اضافه شد (رمز فعلی، رمز جدید دست‌کم ۸ نویسه و تکرار). در پنجرهٔ ورود هم «رمز عبور را فراموش کرده‌اید؟» هست: ایمیل ورود را بنویسید تا پیوند تغییر رمز برایتان فرستاده شود. اگر ایمیل ورود شما صندوق واقعی ندارد، از مدیر بخواهید رمز را عوض کند.' },
     { id: 'maxi-space-and-starter', date: '1405/07/30', tag: 'جدید', title: 'مکسی: بررسی جا و فهرست شروع کار', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'بپرسید «میز کار ۱۵۰ و گریل ۶۰ در ۲٫۵ متر جا می‌شود؟» تا مکسی طول کنار هم را از ابعاد کاتالوگ جمع کند و بگوید چند سانتی‌متر می‌ماند یا کم است. بنویسید «برای راه‌اندازی کافه ۱۵ نفره چه لازم دارم؟» تا فهرست تجهیزات اصلی را از قاعده‌های طراح کافه و رستوران بدهد، با نمونهٔ میانهٔ قیمت و دکمهٔ رفتن به طراح. فضای عبور و تهویه را جدا در نظر بگیرید.' },
     { id: 'maxi-quote-voice-feedback', date: '1405/07/30', tag: 'جدید', title: 'مکسی: برآورد قیمت، گفتن با صدا و بازخورد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],

@@ -321,7 +321,7 @@
       return head + '<form class="acc-body" id="accForm"><p class="acc-note">با ورود، پیش‌فاکتورها و قیمت‌های شما بین دستگاه‌ها همگام می‌شود. بدون ورود هم همه‌چیز روی همین دستگاه کار می‌کند. ورود فقط بار اول به اینترنت بدون محدودیت یا VPN نیاز دارد.</p>' +
         '<label>ایمیل<input type="email" name="email" dir="ltr" autocomplete="username" required></label>' +
         '<label>رمز عبور<input type="password" name="password" dir="ltr" autocomplete="current-password" required></label>' + err +
-        '<button type="submit" class="acc-primary"' + (S.signing ? ' disabled' : '') + '>' + (S.signing ? 'در حال ورود…' : 'ورود') + '</button></form>';
+        (S.resetMsg ? '<p class="acc-note" role="status">' + esc(S.resetMsg) + '</p>' : '') + '<button type="submit" class="acc-primary"' + (S.signing ? ' disabled' : '') + '>' + (S.signing ? 'در حال ورود…' : 'ورود') + '</button><button type="button" class="acc-forgot" data-acc-forgot>رمز عبور را فراموش کرده‌اید؟</button></form>';
     }
     if (S.user && !p && !cached) {
       return head + '<div class="acc-body"><p class="acc-note">ورود انجام شد، اما حساب شما هنوز توسط مدیر فعال نشده است یا اتصال برقرار نیست. این شناسه را به مدیر بدهید:</p>' +
@@ -350,6 +350,14 @@
     if (e.target === dlg || e.target.closest('[data-acc-close]')) { dlg.close(); return; }
     if (e.target.closest('[data-acc-sync]')) sync();
     if (e.target.closest('[data-acc-retry]')) { S.error = ''; boot().then(null, function () { /* shown in the sheet */ }); }
+    if (e.target.closest('[data-acc-forgot]') && auth) {
+      var af = document.getElementById('accForm'), ad = af ? af.elements.email.value.trim() : '';
+      S.error = ''; S.resetMsg = '';
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ad)) { S.error = 'ابتدا ایمیل ورودتان را در کادر ایمیل بنویسید.'; render(); return; }
+      withTimeout(auth.sendPasswordResetEmail(ad), 25000).then(function () { S.resetMsg = 'اگر این ایمیل در سامانه ثبت باشد، پیوند تغییر رمز برایش فرستاده شد. پوشهٔ اسپم را هم ببینید. اگر ایمیل ورود شما صندوق واقعی ندارد، از مدیر بخواهید رمز را عوض کند.'; },
+        function (err) { if (/user-not-found/.test((err && err.code) || '')) S.resetMsg = 'اگر این ایمیل در سامانه ثبت باشد، پیوند تغییر رمز برایش فرستاده شد. پوشهٔ اسپم را هم ببینید. اگر ایمیل ورود شما صندوق واقعی ندارد، از مدیر بخواهید رمز را عوض کند.'; else S.error = errText(err); }).then(function () { render(); });
+      return;
+    }
     if (e.target.closest('[data-acc-out]')) { if (auth) auth.signOut(); else { cached = null; S.profile = null; clearIdentity(); render(); } }
   });
   dlg.addEventListener('submit', function (e) {

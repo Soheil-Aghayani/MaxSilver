@@ -20,6 +20,8 @@
     if (/network|unavailable|deadline|timeout/.test(c)) return 'اتصال به سرویس برقرار نشد (اینترنت یا VPN). اطلاعات ذخیره‌شدهٔ این دستگاه نمایش داده می‌شود.';
     if (/permission-denied/.test(c)) return 'اجازهٔ انجام این کار را ندارید.';
     if (/too-many-requests/.test(c)) return 'تلاش‌های زیاد؛ چند دقیقه بعد دوباره امتحان کنید.';
+    if (/requires-recent-login/.test(c)) return 'برای امنیت یک بار خارج شوید، دوباره وارد شوید و تکرار کنید.';
+    if (/weak-password/.test(c)) return 'رمز جدید ضعیف است؛ دست‌کم ۸ نویسه بگذارید.';
     return 'خطا: ' + (c || (e && e.message) || 'نامشخص');
   }
   function monthKey(ms) {
@@ -872,7 +874,16 @@
       '<p class="pn-note">این موارد قفل است و روی پیش‌فاکتور می‌آید؛ برای اصلاح، با منابع انسانی یا مدیریت تماس بگیرید.</p>' +
       '<form id="meForm"><label>ایمیل من (برای تماس)<input type="email" name="contactEmail" dir="ltr" value="' + esc(p.contactEmail || '') + '" maxlength="80" autocomplete="email" placeholder="name@example.com"></label>' +
       (S.msg ? '<p class="pn-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
-      '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ذخیرهٔ ایمیل</button></form></section>';
+      '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ذخیرهٔ ایمیل</button></form></section>' + pwView();
+  }
+  function pwView() {
+    return '<section class="pn-card pn-person"><h2>تغییر رمز عبور</h2>' +
+      '<form id="pwForm"><label>رمز فعلی<input type="password" name="cur" dir="ltr" autocomplete="current-password" required></label>' +
+      '<label>رمز جدید (دست‌کم ۸ نویسه)<input type="password" name="nw" dir="ltr" autocomplete="new-password" minlength="8" required></label>' +
+      '<label>تکرار رمز جدید<input type="password" name="rp" dir="ltr" autocomplete="new-password" minlength="8" required></label>' +
+      (S.pwMsg ? '<p class="pn-ok" role="status">' + esc(S.pwMsg) + '</p>' : '') + (S.pwErr ? '<p class="pn-err" role="alert">' + esc(S.pwErr) + '</p>' : '') +
+      '<button type="submit" class="pn-primary"' + (S.pwBusy ? ' disabled' : '') + '>' + (S.pwBusy ? 'در حال تغییر…' : 'تغییر رمز') + '</button>' +
+      '<button type="button" class="pn-link" data-forgot-me>رمز فعلی را فراموش کرده‌ام؛ پیوند تغییر به ایمیل ورودم برسد</button></form></section>';
   }
   var TAB_ICON = {
     home: '<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',
@@ -1246,8 +1257,9 @@
         '<h2>ورود به حساب</h2><p class="pn-note">با ایمیل و رمزی که مدیر برای شما ساخته وارد شوید.</p>' +
         '<label>ایمیل<input type="email" name="email" dir="ltr" autocomplete="username" required></label>' +
         '<label>رمز عبور<input type="password" name="password" dir="ltr" autocomplete="current-password" required></label>' +
-        (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') +
-        '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ورود</button></form>';
+        (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.pwMsg ? '<p class="pn-ok" role="status">' + esc(S.pwMsg) + '</p>' : '') +
+        '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ورود</button>' +
+        '<button type="button" class="pn-link" data-forgot>رمز عبور را فراموش کرده‌اید؟</button></form>';
     }
     if (!S.profile || !active()) {
       return '<div class="pn-card"><h2>حساب فعال نیست</h2><p class="pn-note">' +
@@ -1404,6 +1416,15 @@
   // ----- actions
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-out]')) { auth.signOut(); return; }
+    if (e.target.closest('[data-forgot]') || e.target.closest('[data-forgot-me]')) {
+      var me = !!e.target.closest('[data-forgot-me]'), lf = document.getElementById('loginForm');
+      var addr = me && S.user ? S.user.email : (lf ? lf.elements.email.value.trim() : '');
+      S.error = ''; S.pwMsg = ''; S.pwErr = '';
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) { S.error = 'ابتدا ایمیل ورودتان را در کادر ایمیل بنویسید.'; render(); return; }
+      auth.sendPasswordResetEmail(addr).then(function () { S.pwMsg = 'اگر این ایمیل در سامانه ثبت باشد، پیوند تغییر رمز برایش فرستاده شد. پوشهٔ اسپم را هم ببینید. اگر ایمیل ورود شما صندوق واقعی ندارد، از مدیر بخواهید رمز را عوض کند.'; },
+        function (err) { if (/user-not-found/.test((err && err.code) || '')) S.pwMsg = 'اگر این ایمیل در سامانه ثبت باشد، پیوند تغییر رمز برایش فرستاده شد. پوشهٔ اسپم را هم ببینید. اگر ایمیل ورود شما صندوق واقعی ندارد، از مدیر بخواهید رمز را عوض کند.'; else S.pwErr = S.error = errText(err); }).then(function () { render(); });
+      return;
+    }
     var bp = e.target.closest('[data-bank-pick]'); if (bp) { pickBank(bp.getAttribute('data-bank-pick')); return; }
     if (e.target.closest('[data-rv-approve]')) { reviewDoc('approved'); return; }
     if (e.target.closest('[data-rv-refuse]')) { var rb = dlg.querySelector('#rvBox'); if (rb) { rb.hidden = !rb.hidden; var rr = dlg.querySelector('#rvReason'); if (rr && !rb.hidden) rr.focus(); } return; }
@@ -1537,7 +1558,21 @@
     var f = e.target, v = function (n) { return f.elements[n].value.trim(); };
     if (f.id === 'jdForm') { jdSave(f); return; }
     S.error = ''; S.msg = '';
+    if (f.id === 'pwForm') {
+      var cur = f.elements.cur.value, nw = f.elements.nw.value, rp = f.elements.rp.value;
+      S.pwMsg = ''; S.pwErr = '';
+      if (nw.length < 8) S.pwErr = 'رمز جدید دست‌کم ۸ نویسه باشد.';
+      else if (nw !== rp) S.pwErr = 'رمز جدید و تکرارش یکی نیست.';
+      else if (nw === cur) S.pwErr = 'رمز جدید باید با رمز فعلی فرق کند.';
+      if (S.pwErr) { render(); return; }
+      S.pwBusy = true; render();
+      var cred = firebase.auth.EmailAuthProvider.credential(S.user.email, cur);
+      S.user.reauthenticateWithCredential(cred).then(function () { return S.user.updatePassword(nw); }).then(function () { S.pwMsg = 'رمز عبور تغییر کرد. دفعهٔ بعد با رمز تازه وارد شوید.'; },
+        function (err) { S.pwErr = /wrong-password|invalid-credential/.test((err && err.code) || '') ? 'رمز فعلی درست نیست.' : errText(err); }).then(function () { S.pwBusy = false; render(); });
+      return;
+    }
     if (f.id === 'loginForm') {
+      S.pwMsg = '';
       S.busy = true; render();
       auth.signInWithEmailAndPassword(v('email'), f.elements.password.value).then(null, function (err) { S.error = errText(err); S.busy = false; S.loading = false; render(); });
     } else if (f.id === 'meForm') {
