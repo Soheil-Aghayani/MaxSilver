@@ -31,7 +31,7 @@
   }
   function priceCard() {
     var ed = S.editors.uids, cur = Array.isArray(S.draft.price) ? S.draft.price : ed;
-    return '<section class="pm-card"><h2>تغییر قیمت</h2><p class="pm-d">حداکثر دو نفر قیمت‌ها را تغییر می‌دهند، فایل قیمت بارگذاری می‌کنند، درصد گروه و درصد قیمت چکی را می‌زنند و کدی را کنار می‌گذارند. تا دو نفر تعیین نشوند کسی قیمت را تغییر نمی‌دهد.</p>' +
+    return '<section class="pm-card"><h2>تغییر قیمت</h2><p class="pm-d">حداکثر دو نفر قیمت‌ها را تغییر می‌دهند، فایل قیمت بارگذاری می‌کنند، درصد گروه و درصد قیمت اعتباری (چکی) را می‌زنند و کدی را کنار می‌گذارند. تا دو نفر تعیین نشوند کسی قیمت را تغییر نمی‌دهد.</p>' +
       '<p class="pm-who"><b>الان:</b> ' + esc(ed.length ? ed.map(function (id) { return (S.editors.names && S.editors.names[id]) || nameOf(id); }).join(' و ') : 'هنوز کسی تعیین نشده است') + '</p>' +
       '<details><summary>انتخاب (حداکثر دو نفر)</summary><div class="pm-list">' + S.team.filter(function (u) { return /^(manager|ceo|sales_manager)$/.test(window.MSRoles.norm(u.role)); }).map(function (u) { return person('price', u, cur.indexOf(u.id) >= 0); }).join('') + '</div>' +
       '<div class="pm-acts"><button type="button" class="pm-btn" data-save="price"' + (S.busy ? ' disabled' : '') + '>ذخیره</button></div></details></section>';

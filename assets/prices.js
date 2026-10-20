@@ -129,7 +129,7 @@
     var mk = P.markup(), grps = {};
     S.items.forEach(function (it) { if (it.grp) grps[it.grp] = true; });
     var inp = function (id, v) { return '<input type="text" inputmode="decimal" dir="ltr" autocomplete="off" data-mk="' + esc(id) + '" value="' + (v == null ? '' : esc(String(v))) + '" placeholder="پیش‌فرض">'; };
-    return '<details class="pr-pct"><summary>قیمت چکی: درصد بیشتر از نقدی</summary><p class="pr-lead">قیمت چکی هر کالا = قیمت نقدی + این درصد (به نزدیک‌ترین ۱٬۰۰۰ تومان). برای هر گروه می‌توانید درصد جدا بگذارید؛ خالی یعنی همان پیش‌فرض. قیمت توافقی عدد ندارد: کارشناس فروش با مشتری توافق می‌کند.</p>' +
+    return '<details class="pr-pct"><summary>قیمت اعتباری (چکی): درصد بیشتر از نقدی</summary><p class="pr-lead">قیمت اعتباری (چکی) هر کالا = قیمت نقدی + این درصد (به نزدیک‌ترین ۱٬۰۰۰ تومان). برای هر گروه می‌توانید درصد جدا بگذارید؛ خالی یعنی همان پیش‌فرض. قیمت توافقی عدد ندارد: کارشناس فروش با مشتری توافق می‌کند.</p>' +
       '<div class="pr-pform"><label>پیش‌فرض همهٔ گروه‌ها (٪)<input type="text" inputmode="decimal" dir="ltr" autocomplete="off" id="prMkDef" value="' + esc(String(mk.def || 0)) + '"></label>' +
       Object.keys(grps).sort().map(function (g) { return '<label>' + esc(g) + ' (٪)' + inp(g, typeof mk.byGrp[g] === 'number' ? mk.byGrp[g] : null) + '</label>'; }).join('') +
       '<button type="button" class="pr-btn" data-mksave>ذخیرهٔ درصدها</button></div></details>';
@@ -145,7 +145,7 @@
     if (bad) { S.error = 'درصد هر گروه باید بین ۰ و ۱۰۰ باشد.'; S.msg = ''; render(); return; }
     var doc = { def: def, byGrp: byGrp, at: Date.now(), by: S.user.uid, byName: myName() };
     S.error = ''; S.msg = '';
-    db.collection('settings').doc('cheque_markup').set(doc).then(function () { P.setMarkup(doc); S.msg = 'درصد قیمت چکی ذخیره شد.'; }, function (e) { S.error = errText(e); }).then(render);
+    db.collection('settings').doc('cheque_markup').set(doc).then(function () { P.setMarkup(doc); S.msg = 'درصد قیمت اعتباری ذخیره شد.'; }, function (e) { S.error = errText(e); }).then(render);
   }
   function chip(attr, val, on, text, n) { return '<button type="button" class="pr-chip" ' + attr + '="' + val + '" aria-pressed="' + on + '">' + text + (n != null ? ' <b>' + faInt.format(n) + '</b>' : '') + '</button>'; }
 
@@ -167,7 +167,7 @@
   function chequeLine(it, c) {
     if (!c || c.s !== 'p' || !(c.p > 0)) return '';
     var ch = P.cheque(c, it.grp);
-    return '<small class="pr-chq">چکی: <b>' + faInt.format(ch) + '</b>' + (c.c > 0 ? ' (قیمت جدا)' : ch !== c.p ? ' (' + faInt.format(P.pct(it.grp)) + '٪ بیشتر)' : '') + '</small>';
+    return '<small class="pr-chq">اعتباری: <b>' + faInt.format(ch) + '</b>' + (c.c > 0 ? ' (قیمت جدا)' : ch !== c.p ? ' (' + faInt.format(P.pct(it.grp)) + '٪ بیشتر)' : '') + '</small>';
   }
   function row(it) {
     var c = cur(it.id), d = dval(it), dirty = !!S.draft[it.id], rt = ST8.retired(it.id);
@@ -202,7 +202,7 @@
     if (!S.user) return '<p class="pr-note">برای ویرایش قیمت‌ها ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="pr-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('pricesAudit')) return '<p class="pr-note">ویرایش قیمت فقط برای مدیر فروش، مدیریت و تکنولوژی ارتباطات سازمانی است. قیمت‌ها را در کاتالوگ می‌بینید.</p>';
-    return '<h1>قیمت‌ها</h1><p class="pr-lead">قیمت لیست محصولات به تومان (نقدی، چکی و توافقی). قیمتی که اینجا ذخیره کنید جای قیمت لیست پایه (مکث‌سیلور، وینتورا و توربومکس، ' + esc(P.date()) + ') را می‌گیرد و در کاتالوگ و پیش‌فاکتور برای همه دیده می‌شود. کدی را که دیگر استفاده نمی‌شود با دکمهٔ ⊘ کنار بگذارید (کد جایگزین اختیاری است).</p>' +
+    return '<h1>قیمت‌ها</h1><p class="pr-lead">قیمت لیست محصولات به تومان (نقدی، اعتباری (چکی) و توافقی). قیمتی که اینجا ذخیره کنید جای قیمت لیست پایه (مکث‌سیلور، وینتورا و توربومکس، ' + esc(P.date()) + ') را می‌گیرد و در کاتالوگ و پیش‌فاکتور برای همه دیده می‌شود. کدی را که دیگر استفاده نمی‌شود با دکمهٔ ⊘ کنار بگذارید (کد جایگزین اختیاری است).</p>' +
       (S.error ? '<p class="pr-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.msg ? '<p class="pr-ok" role="status">' + esc(S.msg) + '</p>' : '') + editorsHtml() + listHtml();
   }
   function render() {
@@ -285,7 +285,7 @@
   }
   function csv() {
     var q = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
-    var rows = [['کد', 'نام', 'برند', 'قیمت نقدی (تومان)', 'قیمت چکی (تومان)', 'وضعیت', 'منبع', 'وضعیت کد'].map(q).join(',')];
+    var rows = [['کد', 'نام', 'برند', 'قیمت نقدی (تومان)', 'قیمت اعتباری (تومان)', 'وضعیت', 'منبع', 'وضعیت کد'].map(q).join(',')];
     S.items.forEach(function (it) {
       var c = cur(it.id);
       rows.push([it.code || '', it.name, BR[it.src] || '', c && c.s === 'p' && c.p ? c.p : '', c && c.s === 'p' && c.p ? P.cheque(c, it.grp) : '', c ? { p: 'قیمت دارد', i: 'استعلام بگیرید', r: 'درحال شارژ', n: 'توافقی' }[c.s] : '', c ? (c.edited ? 'ویرایش' : 'لیست ' + P.date()) : '', ST8.retired(it.id) ? 'کنار گذاشته' : ''].map(q).join(','));
@@ -296,7 +296,7 @@
   }
 
   // ---------- price template: finance audits the prices in an Excel file; the sales manager (or management) uploads it and the prices update
-  var TPL_HEAD = ['شناسه برنامه (تغییر ندهید)', 'کد کالا', 'نام کالا', 'برند', 'دسته', 'قیمت نقدی فعلی (تومان)', 'قیمت چکی فعلی (تومان)', 'وضعیت فعلی', 'قیمت نقدی جدید (تومان)', 'قیمت چکی جدید (تومان، اختیاری)', 'وضعیت جدید', 'توضیح (اختیاری)'];
+  var TPL_HEAD = ['شناسه برنامه (تغییر ندهید)', 'کد کالا', 'نام کالا', 'برند', 'دسته', 'قیمت نقدی فعلی (تومان)', 'قیمت اعتباری فعلی (تومان)', 'وضعیت فعلی', 'قیمت نقدی جدید (تومان)', 'قیمت اعتباری جدید (تومان، اختیاری)', 'وضعیت جدید', 'توضیح (اختیاری)'];
   var STT = { p: 'نقدی', i: 'استعلام', r: 'شارژ', n: 'توافقی' };
   function parseStatus(v) {
     var k = norm(v).replace(/\s+/g, '');
@@ -315,7 +315,7 @@
     });
     var guide = [['راهنمای بازبینی قیمت'],
       ['این فایل در Google Sheets هم باز می‌شود: آن را در Google Drive بارگذاری کنید، با Google Sheets باز و ویرایش کنید، سپس از «File ← Download ← Microsoft Excel (.xlsx)» دانلود کنید و همین‌جا بارگذاری کنید.'],
-      ['۰. سه نوع قیمت: «نقدی» همان قیمت اصلی است؛ «چکی» به‌طور پیش‌فرض نقدی + درصد گروه است (ستون چکی جدید فقط وقتی قیمت جدا برای یک کالا می‌خواهید پر شود)؛ «توافقی» یعنی عدد ندارد و کارشناس فروش با مشتری توافق می‌کند (در وضعیت جدید بنویسید: توافقی).'],
+      ['۰. سه نوع قیمت: «نقدی» همان قیمت اصلی است؛ «اعتباری (چکی)» به‌طور پیش‌فرض نقدی + درصد گروه است (ستون «اعتباری جدید» فقط وقتی قیمت جدا برای یک کالا می‌خواهید پر شود)؛ «توافقی» یعنی عدد ندارد و کارشناس فروش با مشتری توافق می‌کند (در وضعیت جدید بنویسید: توافقی).'],
       ['۱. فقط ستون‌های زردرنگ را پر کنید: «قیمت جدید (تومان)»، «وضعیت جدید» و «توضیح». بقیهٔ ستون‌ها را تغییر ندهید؛ ستون اول (شناسه برنامه) کلید کالاست.'],
       ['۲. خانهٔ خالی یعنی «تغییری نیست». ردیفی که هر دو خانهٔ قیمت جدید و وضعیت جدید خالی باشد نادیده گرفته می‌شود.'],
       ['۳. «قیمت جدید» را به تومان و فقط به صورت عدد بنویسید (رقم فارسی یا انگلیسی، با یا بدون جداکننده). اگر وضعیت خالی باشد، قیمت‌دار فرض می‌شود.'],
@@ -344,7 +344,7 @@
       var hi = -1, i; for (i = 0; i < Math.min(rows.length, 10); i++) if ((rows[i] || []).some(function (c) { return String(c || '').indexOf('شناسه برنامه') >= 0; })) { hi = i; break; }
       if (hi < 0) throw new Error('این فایل قالب بازبینی قیمت نیست (ستون «شناسه برنامه» پیدا نشد). قالب را از همین صفحه دانلود کنید.');
       var H = rows[hi].map(function (c) { return String(c || ''); }), col = function (s) { for (var k = 0; k < H.length; k++) if (H[k].indexOf(s) >= 0) return k; return -1; };
-      var cId = col('شناسه برنامه'), cCode = col('کد کالا'), cP = col('قیمت نقدی جدید') >= 0 ? col('قیمت نقدی جدید') : col('قیمت جدید'), cC = col('قیمت چکی جدید'), cS = col('وضعیت جدید'), cN = col('توضیح');
+      var cId = col('شناسه برنامه'), cCode = col('کد کالا'), cP = col('قیمت نقدی جدید') >= 0 ? col('قیمت نقدی جدید') : col('قیمت جدید'), cC = col('قیمت اعتباری جدید') >= 0 ? col('قیمت اعتباری جدید') : col('قیمت چکی جدید'), cS = col('وضعیت جدید'), cN = col('توضیح');
       if (cP < 0 || cS < 0) throw new Error('ستون‌های «قیمت جدید» و «وضعیت جدید» در فایل نیستند.');
       var m = { name: file.name, changes: [], same: 0, errs: [] };
       rows.slice(hi + 1).forEach(function (r, n) {

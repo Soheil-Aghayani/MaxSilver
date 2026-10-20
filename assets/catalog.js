@@ -110,7 +110,7 @@
   function priceTag(id) {
     var v = window.MSPrices ? window.MSPrices.get(id) : null, t = v ? window.MSPrices.label(v) : '';
     var ch = v && v.s === 'p' && byId[id] ? window.MSPrices.cheque(v, byId[id].grp) : 0;
-    return t ? '<div class="pc-price" data-s="' + v.s + '">' + esc(t) + '</div>' + (ch && ch !== v.p ? '<div class="pc-cheque">چکی <b>' + esc(window.MSPrices.fmt(ch)) + '</b> تومان</div>' : '') : '';
+    return t ? '<div class="pc-price" data-s="' + v.s + '">' + esc(t) + '</div>' + (ch && ch !== v.p ? '<div class="pc-cheque">اعتباری <b>' + esc(window.MSPrices.fmt(ch)) + '</b> تومان</div>' : '') : '';
   }
   // starting price of a proforma line in the proforma's own unit (the list is in toman)
   function listPrice(id) {
@@ -382,12 +382,12 @@
     var diff = s.cheque - sum;
     return diff === 0
       ? '<p class="pay-ok">مجموع چک‌ها با سهم چکی برابر است.</p>'
-      : '<p class="pay-warn">مجموع چک‌ها ' + money(sum) + ' است و ' + money(Math.abs(diff)) + (diff > 0 ? ' کمتر' : ' بیشتر') + ' از سهم چکی (' + money(s.cheque) + ') است.' +
+      : '<p class="pay-warn">مجموع چک‌ها ' + money(sum) + ' است و ' + money(Math.abs(diff)) + (diff > 0 ? ' کمتر' : ' بیشتر') + ' از سهم اعتباری (' + money(s.cheque) + ') است.' +
         ' <button type="button" class="pay-link" data-pay-equal>تقسیم مساوی</button></p>';
   }
   function payHtml() {
     var p = ensurePay(), s = paySplit(), isMixed = p.mode === 'mixed', hasCheque = p.mode !== 'cash';
-    var seg = [['cash', 'نقدی'], ['cheque', 'چکی'], ['mixed', 'نقد و چک']].map(function (m) {
+    var seg = [['cash', 'نقدی'], ['cheque', 'اعتباری (چکی)'], ['mixed', 'نقد و چک']].map(function (m) {
       return '<label><input type="radio" name="payMode" value="' + m[0] + '" data-pay-mode' + (p.mode === m[0] ? ' checked' : '') + '><span>' + m[1] + '</span></label>';
     }).join('');
     var h = '<h3>شرایط پرداخت</h3><div class="pay-seg" role="radiogroup" aria-label="نوع پرداخت">' + seg + '</div>';
@@ -462,7 +462,7 @@
         '<select data-f="discMode" aria-label="نوع تخفیف"><option value="pct"' + (inv.discMode === 'pct' ? ' selected' : '') + '>٪</option><option value="amt"' + (inv.discMode === 'amt' ? ' selected' : '') + '>مبلغ</option></select></span></label>' +
         '<label>مالیات بر ارزش افزوده (٪)<input type="text" inputmode="decimal" data-f="tax" value="' + esc(fa.format(inv.tax || 0)) + '"></label></div>' +
       '<dl class="inv-totals"><div><dt>جمع کل</dt><dd data-t="sub"></dd></div><div><dt>تخفیف</dt><dd data-t="disc"></dd></div><div><dt>پس از تخفیف</dt><dd data-t="net"></dd></div>' +
-        '<div><dt>مالیات</dt><dd data-t="tax"></dd></div><div hidden><dt>افزایش قیمت چکی</dt><dd data-t="chq"></dd></div></dl>' +
+        '<div><dt>مالیات</dt><dd data-t="tax"></dd></div><div hidden><dt>افزایش قیمت اعتباری</dt><dd data-t="chq"></dd></div></dl>' +
       '<section class="pay" id="payBox">' + (payNormalize(), payHtml()) + '</section>'
       : '<p class="inv-empty">پیش‌فاکتور خالی است. با دکمهٔ + روی هر محصول، آن را اضافه کنید.</p>';
     var foot = has ? '<div class="inv-foot pf"><p class="inv-msg" id="invMsg" role="status" hidden></p><div class="inv-pay"><span>مبلغ قابل پرداخت</span><b data-t="total"></b></div>' +
@@ -1157,7 +1157,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261379', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261380', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }
