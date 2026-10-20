@@ -13,7 +13,7 @@
   // ---------- normalising and tokens (same rules as 06_RAG/rag/norm.py)
   var VARIANTS = [['رو میزی', 'رومیزی'], ['زغال', 'ذغال'], ['سرخ کن', 'سرخکن'], ['یخ ساز', 'یخساز'], ['بن ماری', 'بنماری'], ['همبرگر زن', 'همبرگرزن'], ['پوست کن', 'پوستکن'], ['خمیر گیر', 'خمیرگیر'],
     ['خمیر پهن کن', 'خمیرپهنکن'], ['آب میوه', 'آبمیوه'], ['مخلوط کن', 'مخلوطکن'], ['ساندویچ ساز', 'ساندویچساز'], ['سوسیس پر کن', 'سوسیسپرکن'], ['وافل ساز', 'وافلساز'], ['کباب ترکی', 'کبابترکی'],
-    ['دیس پلی', 'دیسپلی'], ['شو کیک', 'شوکیک'], ['زیر گریل', 'زیرگریل'], ['پاستا پز', 'پاستاپز'],
+    ['دیس پلی', 'دیسپلی'], ['شو کیک', 'شوکیک'], ['شو کیس', 'شوکیس'], ['زیر گریل', 'زیرگریل'], ['پاستا پز', 'پاستاپز'],
     ['فریر', 'سرخکن'], ['فرایر', 'سرخکن'], ['چارکول', 'ذغالی'], ['چارگریل', 'گریل ذغالی'], ['مارینیتور', 'مرینیتور'], ['ریفریجراتور', 'یخچال'], ['گریدل', 'گریل روغنی'], ['ماریناتور', 'مرینیتور']];
   var STOP = {};
   ('و در به از که را این آن با برای است شد می یک بر هم یا تا اما نیز باید شده های ها ای ی چگونه چه چند کدام آیا کنیم کنید کردن کرد دارد دارم لطفا ' +
@@ -116,7 +116,7 @@
       '<div class="as-body"><h3>' + (n ? '<span class="as-n">' + fa.format(n) + '</span>' : '') + esc(it.name) + '</h3><p class="as-meta"><span class="as-br" data-brand="' + esc(it.src) + '"><i></i>' + esc(BR[it.src] || it.src) + '</span>' +
       (it.code ? '<span>کد <b dir="ltr">' + esc(it.code) + '</b></span>' : '') + (it.cat ? '<span>' + esc(it.cat) + '</span>' : '') + '</p>' +
       '<div class="as-prices">' + price(it) + '</div>' +
-      (it.pl ? '<p class="as-note">این کالا از فهرست قیمت آمده؛ تصویر و مشخصات آن هنوز در کاتالوگ نیست.</p>' : '') +
+      (it.pl && !(it.dims || (it.specs && it.specs.length)) ? '<p class="as-note">این کالا از فهرست قیمت آمده؛ مشخصات آن هنوز در کاتالوگ نیست.</p>' : '') +
       '<a class="as-open" href="./product-catalog.html?q=' + encodeURIComponent(it.code || it.name) + '">نمایش در کاتالوگ</a></div></article>';
   }
   // a small Markdown subset: paragraphs, - and 1. lists, # headings, **bold**, `code`. Everything is escaped first.
@@ -139,7 +139,7 @@
   function hitsOf(m) { return (m.ids || []).map(function (id) { return byId[id]; }).filter(Boolean); }
   function botHtml(m, i) {
     var hits = hitsOf(m), body;
-    if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) + ' ' : '') + 'در منابع من پاسخی برای این پرسش نیست.</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید؛ دستیار فقط از کاتالوگ جواب می‌دهد و حدس نمی‌زند.</p>';
+    if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) : 'در منابع من پاسخی برای این پرسش نیست.') + '</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید؛ دستیار فقط از کاتالوگ جواب می‌دهد و حدس نمی‌زند.</p>';
     else if (m.state === 'wait') body = '<span class="as-dots" aria-label="در حال نوشتن"><i></i><i></i><i></i></span>';
     else if (m.text) body = md(m.text) + (m.state === 'stream' ? '<span class="as-caret"></span>' : '');
     else body = '<p>' + (m.note ? esc(m.note) : 'نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:') + '</p>';
@@ -240,6 +240,45 @@
     }
     return { hits: list.slice(0, 5), note: 'نزدیک‌ترین کالاها در برند ' + BR[br] + ':' };
   }
+  function fmt(n) { return fa.format(n); }
+  function dimsText(it) { var d = it.dims; return d && d.l && d.w && d.h ? fmt(d.l) + '×' + fmt(d.w) + '×' + fmt(d.h) + ' سانتی‌متر (طول × عرض × ارتفاع)' : ''; }
+  function facts(it) {
+    var P = window.MSPrices, v = P && P.get ? P.get(it.id) : null, a = [];
+    var dt = dimsText(it); if (dt) a.push('ابعاد ' + dt);
+    if (it.wt) a.push('وزن ' + fmt(it.wt) + ' کیلوگرم');
+    (it.specs || []).forEach(function (s) { a.push(s[0] + ': ' + s[1]); });
+    if (v && v.s === 'p' && v.p > 0) a.push('قیمت نقدی ' + fmt(v.p) + ' تومان');
+    else a.push('قیمت ثبت نشده');
+    return a.join('، ');
+  }
+  // «مقایسه A و B», budget («زیر ۵۰ میلیون») and size questions («ابعاد ...») are answered from the catalog fields only
+  function smart2(q) {
+    var s = norm(q), m;
+    if ((m = s.match(/(?:مقایسه|فرق|تفاوت)\s+(.+?)\s+(?:با|و|یا|بین)\s+(.+)$/))) {
+      var a = retrieve(m[1], 1), b = retrieve(m[2].replace(/^بین\s+/, ''), 1);
+      if (a.length && b.length && !a[0].d.it.faq && !b[0].d.it.faq && a[0].d.it.id !== b[0].d.it.id) {
+        var x = a[0].d.it, y = b[0].d.it, pa = cashOf(x), pb = cashOf(y), t = ['**مقایسه دو کالا از کاتالوگ:**', '', '1. **' + x.name + '** (' + (BR[x.src] || x.src) + (x.code ? '، کد ' + x.code : '') + '): ' + facts(x), '2. **' + y.name + '** (' + (BR[y.src] || y.src) + (y.code ? '، کد ' + y.code : '') + '): ' + facts(y)];
+        if (pa && pb) t.push('', 'اختلاف قیمت نقدی: ' + fmt(Math.abs(pa - pb)) + ' تومان؛ ارزان‌تر ' + (pa < pb ? 'مورد اول' : pb < pa ? 'مورد دوم' : 'هر دو برابر') + ' است.');
+        return { ids: [x.id, y.id], text: t.join('\n') };
+      }
+    }
+    var bud = s.match(/(?:زیر|حداکثر|تا|کمتر از|نهایتا)\s*([0-9][0-9.,٫]*)\s*(میلیون|هزار)?/);
+    if (bud) {
+      var val = parseFloat(bud[1].replace(/[,٫]/g, '').replace(/\.(?=\d{3}\b)/g, '')), mult = bud[2] === 'میلیون' ? 1e6 : bud[2] === 'هزار' ? 1e3 : 1;
+      var topic = s.replace(bud[0], ' ').replace(/(بودجه|قیمت|تومان|کالا|دارید|هست|میخوام|می‌خواهم)/g, ' ');
+      if (val && mult > 1 && tokens(topic).length) {
+        var lim = val * mult, br = brandOf(q), list = retrieve(stripBrand(topic), 40).map(function (h) { return h.d.it; }).filter(function (it) { return !it.faq && (!br || it.src === br) && cashOf(it); });
+        var ok = list.filter(function (it) { return cashOf(it) <= lim; }).sort(function (a, b) { return cashOf(b) - cashOf(a); });
+        if (!list.length) return null;
+        return ok.length ? { ids: ok.slice(0, 5).map(function (it) { return it.id; }), note: 'گزینه‌های نزدیک به پرسش با قیمت نقدی تا ' + fmt(lim) + ' تومان (گران‌ترین در بودجه اول):' } : { ids: [], none: true, note: 'برای این کالا گزینه‌ای تا ' + fmt(lim) + ' تومان پیدا نکردم؛ ارزان‌ترین گزینهٔ نزدیک ' + fmt(Math.min.apply(null, list.map(cashOf))) + ' تومان است.' };
+      }
+    }
+    if (/(ابعاد|اندازه|وزن|ظرفیت|مشخصات)/.test(s) && !relayUrl()) {
+      var h = retrieve(s.replace(/(ابعاد|اندازه|وزن|ظرفیت|مشخصات|چقدر|چنده|چیست|چیه|است)/g, ' '), 1);
+      if (h.length && !h[0].d.it.faq && (h[0].d.it.dims || (h[0].d.it.specs && h[0].d.it.specs.length))) { var z = h[0].d.it; return { ids: [z.id], text: '**' + z.name + '**: ' + facts(z) + '.' }; }
+    }
+    return null;
+  }
   function ask(text) {
     text = String(text || '').trim(); if (!text || !S.ready || S.busy) return;
     var prevQ = null; for (var i = S.msgs.length - 1; i >= 0; i--) if (S.msgs[i].role === 'user') { prevQ = S.msgs[i].text; break; }
@@ -247,6 +286,11 @@
     S.msgs.push({ role: 'user', text: text });
     var talk = smallTalk(text);
     if (talk) { S.msgs.push({ role: 'bot', ids: [], text: talk, state: 'done' }); save(); render(); return; }
+    var s2 = smart2(text);
+    if (s2) {
+      S.msgs.push({ role: 'bot', ids: s2.ids, text: s2.text, note: s2.note, state: s2.text ? 'done' : s2.none ? 'none' : 'cards', nonote: s2.none ? s2.note : '' });
+      save(); render(); return;
+    }
     var sm = smart(text);
     if (sm) {
       S.msgs.push({ role: 'bot', ids: (sm.hits || []).map(function (it) { return it.id; }), note: sm.note, state: sm.none ? 'none' : 'cards', nonote: sm.none ? sm.note : '' });
