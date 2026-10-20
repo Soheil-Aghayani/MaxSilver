@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'maxi-space-and-starter', date: '1405/07/30', tag: 'جدید', title: 'مکسی: بررسی جا و فهرست شروع کار', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'بپرسید «میز کار ۱۵۰ و گریل ۶۰ در ۲٫۵ متر جا می‌شود؟» تا مکسی طول کنار هم را از ابعاد کاتالوگ جمع کند و بگوید چند سانتی‌متر می‌ماند یا کم است. بنویسید «برای راه‌اندازی کافه ۱۵ نفره چه لازم دارم؟» تا فهرست تجهیزات اصلی را از قاعده‌های طراح کافه و رستوران بدهد، با نمونهٔ میانهٔ قیمت و دکمهٔ رفتن به طراح. فضای عبور و تهویه را جدا در نظر بگیرید.' },
     { id: 'maxi-quote-voice-feedback', date: '1405/07/30', tag: 'جدید', title: 'مکسی: برآورد قیمت، گفتن با صدا و بازخورد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'بنویسید «۳ گریل ۶۰ روغنی و ۲ سرخ‌کن گازی جمع با مالیات» تا مکسی جمع نقدی و اعتباری را حساب کند و همه را یک‌جا به پیش‌فاکتور بفرستد. دکمهٔ میکروفون پیام را فارسی می‌نویسد (در Chrome و Edge). زیر هر پاسخ می‌توانید بپسندید یا نپسندید؛ پرسش‌های بی‌پاسخ در همین مرورگر می‌مانند و با دکمهٔ «پرسش‌ها» به‌صورت فایل برای آموزش مکسی گرفته می‌شوند.' },
     { id: 'maxi-skills', date: '1405/07/30', tag: 'جدید', title: 'مکسی کارهای تازه یاد گرفت', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],

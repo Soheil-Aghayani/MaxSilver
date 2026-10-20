@@ -418,6 +418,15 @@
   }
   // ---------- quote calculator: «3 گریل ۶۰ روغنی و 2 سرخ کن گازی، با مالیات»
   var WORDNUM = { 'یک': 1, 'دو': 2, 'سه': 3, 'چهار': 4, 'پنج': 5, 'شش': 6, 'هفت': 7, 'هشت': 8, 'نه': 9, 'ده': 10 };
+  function bestOf(h, topic, pref) {
+    var ws = tokens(topic).filter(function (w) { return w.charAt(0) !== '~'; });
+    function sc(x) {
+      var n = norm(x.d.it.name), toks = n.split(/\s+/).filter(Boolean), m = ws.filter(function (w) { return n.indexOf(w) >= 0; }).length;
+      return m * 10 - Math.max(0, toks.length - m) * 0.7 + (pref(x.d.it) ? 5 : 0);
+    }
+    var best = h[0], bs = -1e9; h.forEach(function (x, i) { var v = sc(x) - i * 0.01; if (v > bs) { bs = v; best = x; } });
+    return best;
+  }
   function quote(s) {
     var asks = /(جمع|مجموع|محاسبه|حساب کن|برآورد|برآورد|قیمت کل|جمعا|روی هم)/.test(s);
     var parts = s.replace(/(جمع|مجموع|محاسبه|حساب کن|برآورد|قیمت کل|جمعا|روی هم|چقدر میشه|چند میشه|با مالیات|بدون مالیات|مالیات|ارزش افزوده|لطفا)/g, ' ')
@@ -434,7 +443,7 @@
     segs.forEach(function (g) {
       var qty = g.qty > 0 ? g.qty : 1, h = retrieve(g.topic, 4).filter(function (x) { return !x.d.it.faq; });
       if (!h.length) { lost.push(g.topic); return; }
-      var pick = h.filter(function (x) { return cashOf(x.d.it); })[0] || h[0], it = pick.d.it, v = P && P.get ? P.get(it.id) : null, cash = v && v.s === 'p' && v.p > 0 ? v.p : 0, ch = cash && P.cheque ? (P.cheque(v, it.grp) || cash) : 0;
+      var pick = bestOf(h, g.topic, cashOf), it = pick.d.it, v = P && P.get ? P.get(it.id) : null, cash = v && v.s === 'p' && v.p > 0 ? v.p : 0, ch = cash && P.cheque ? (P.cheque(v, it.grp) || cash) : 0;
       rows.push({ it: it, qty: qty, cash: cash, ch: ch }); cart.push({ id: it.id, qty: qty });
     });
     if (!rows.length) return { text: 'کالاهای این فهرست را در کاتالوگ پیدا نکردم. هر کالا را با تعداد و نام بنویسید، مثل «۳ گریل ۶۰ روغنی و ۲ سرخ‌کن گازی».', links: [] };
@@ -455,7 +464,71 @@
     t.push('', 'این فقط برآورد است؛ تخفیف و شرایط پرداخت در پیش‌فاکتور تعیین می‌شود. کالاها را بررسی کنید: اگر نام اشتباهی انتخاب شده، دقیق‌تر بنویسید.');
     return { text: t.join('\n'), ids: rows.map(function (r) { return r.it.id; }), cart: cart, links: [] };
   }
-  function skills(q) { var s = norm(q); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || quote(s) || pageGuide(s); }
+  // ---------- kitchen starter list (from the planner's own knowledge) and space fit
+  var CONCEPT_KEYS = { cafe: ['کافه', 'کافی شاپ', 'کافیشاپ'], fastfood: ['فست فود', 'فستفود', 'برگری', 'همبرگر'], restaurant: ['رستوران'], pizza: ['پیتزا'], bakery: ['نانوایی'], juice: ['آبمیوه'], pastry: ['قنادی', 'شیرینی فروشی'], icecream: ['بستنی'], kebab: ['کبابی', 'چلوکبابی'], shawarma: ['شاورما'], catering: ['کترینگ'], breakfast: ['چایخانه', 'صبحانه'], selfservice: ['سلف'] };
+  function exampleFor(job) {
+    var cats = job.cats || [], list = [];
+    itemsAll().forEach(function (it) { if (cats.indexOf(it.cat) >= 0 && cashOf(it)) list.push(it); });
+    list.sort(function (a, b) { return cashOf(a) - cashOf(b); });
+    return list.length ? list[Math.floor((list.length - 1) / 2)] : null;
+  }
+  function itemsAll() { return Object.keys(itemsById).map(function (k) { return itemsById[k]; }); }
+  function starter(s) {
+    var PL = window.MSPlan; if (!PL || !PL.CONCEPTS.length) return null;
+    if (!/(راه ?اندازی|چی لازم|چه چیز(ی)? لازم|چی میخوام|چی نیازه|چه تجهیزات|چه دستگاه|چه وسایل|لیست تجهیزات|تجهیزات (لازم|مورد نیاز)|شروع کار|باز کنم|بزنم)/.test(s)) return null;
+    var cid = ''; Object.keys(CONCEPT_KEYS).forEach(function (k) { CONCEPT_KEYS[k].forEach(function (w) { if (!cid && s.indexOf(norm(w)) >= 0) cid = k; }); });
+    if (!cid) return null;
+    var c = PL.CONCEPTS.filter(function (x) { return x.id === cid; })[0]; if (!c) return null;
+    var m = s.match(/(\d+)\s*(نفر|مشتری|میز)/), n = m ? parseInt(m[1], 10) : 0, size = n ? (n <= 20 ? 0 : n <= 50 ? 1 : 2) : 1;
+    var sz = PL.SIZES[size], t = ['**شروع ' + c.t + '** (' + (n ? 'حدود ' + fmt(n) + ' ' + m[2] + '، اندازهٔ ' : 'اندازهٔ ') + sz.t + (n ? '' : '، چون اندازه نگفتید متوسط فرض شد') + ')', c.d + '.', '', '**تجهیزات اصلی:**'], ids = [];
+    c.core.forEach(function (jid) {
+      var job = PL.JOBS[jid]; if (!job) return;
+      var q = job.qty[size], ex = exampleFor(job);
+      t.push('- **' + job.t + '** × ' + fmt(q) + ': ' + job.why + (ex ? ' (نمونه: ' + ex.name + '، ' + fmt(cashOf(ex)) + ' تومان نقدی)' : ''));
+      if (ex) ids.push(ex.id);
+    });
+    if (c.serve.length) {
+      t.push('', '**بسته به منو اضافه می‌شود:**');
+      c.serve.slice(0, 5).forEach(function (x) { t.push('- ' + x.t + ': ' + x.jobs.map(function (j) { return PL.JOBS[j] ? PL.JOBS[j].t : ''; }).filter(Boolean).join('، ')); });
+    }
+    var sup = ['wash', 'hood'].map(function (k) { return PL.JOBS[k]; }).filter(Boolean);
+    if (sup.length) t.push('', '**همیشه لازم است:** ' + sup.map(function (j) { return j.t + ' (' + j.why + ')'; }).join('؛ ') + '.');
+    t.push('', 'این پیشنهاد از قاعده‌های طراح کافه و رستوران است و جای مشاورهٔ فروش را نمی‌گیرد؛ نمونه‌ها کالای میانهٔ قیمت هر دسته‌اند.');
+    return { text: t.join('\n'), ids: ids, links: [{ href: './planner.html', label: 'ساخت طرح کامل در طراح' }] };
+  }
+  // length and depth in cm: from dims, or from the «طول» / «عرض» spec lines of items that have no height
+  function lw(it) {
+    if (it.dims && it.dims.l && it.dims.w) return { l: it.dims.l, w: it.dims.w };
+    var l = 0, w = 0; (it.specs || []).forEach(function (sp) { var n = parseFloat(norm(sp[1]).replace(/[^0-9.]/g, '')); if (sp[0] === 'طول') l = n; else if (sp[0] === 'عرض') w = n; });
+    return l && w ? { l: l, w: w } : null;
+  }
+  function spaceFit(s) {
+    if (!/(جا (می‌?شه|می‌?شود|می‌?گیره|می‌?گیرند|بشه|بشن|میشن)|جا میگیر|جا بگیر|جا میشه|کنار هم|فضا)/.test(s.replace(/\u200c/g, ' ')) && !/جا/.test(s)) return null;
+    var t0 = s.replace(/(\d)[٫,](\d)/g, '$1.$2'), m = t0.match(/(?:در|تو|توی|فضای|فضا|به طول|طول|دیوار|ضلع)\s*(\d+(?:\.\d+)?)\s*(متر|سانتی ?متر|سانت|cm)/);
+    if (!m || !/جا|فضا|کنار هم/.test(t0)) return null;
+    var space = parseFloat(m[1]) * (m[2] === 'متر' ? 100 : 1);
+    var rest = t0.replace(m[0], ' ').replace(/(جا (می‌?شه|می‌?شود|می‌?گیره|می‌?گیرند|بشه|بشن|میشن)|جا میشه|جا میگیره|جا بگیره|کنار هم|آیا|هست|میشه|چک کن)/g, ' ');
+    var parts = rest.split(/\s+و\s+|[،,+\n]|\s+با\s+(?=\d)/).map(function (x) { return x.trim(); }).filter(Boolean), rows = [], lost = [], unknown = [], sum = 0, depth = 0;
+    parts.forEach(function (p) {
+      var q = p.match(/^(\d+)\s*(?:تا|عدد|دستگاه)?\s+(.+)$/), w = p.match(/^(یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده)\s*(?:تا|عدد|دستگاه)?\s+(.+)$/), qty = 1, topic = p;
+      if (q) { qty = parseInt(q[1], 10); topic = q[2]; } else if (w) { qty = WORDNUM[w[1]]; topic = w[2]; }
+      var h = retrieve(topic, 6).filter(function (x) { return !x.d.it.faq; });
+      if (!h.length) { lost.push(topic); return; }
+      var pick = bestOf(h, topic, function (it) { return lw(it); }), it = pick.d.it, d = lw(it);
+      if (!d) { unknown.push(it.name); return; }
+      rows.push({ it: it, qty: qty, d: d }); sum += d.l * qty; depth = Math.max(depth, d.w);
+    });
+    if (!rows.length) return { text: 'کالایی با اندازهٔ ثبت‌شده برای محاسبه پیدا نکردم. بنویسید مثلاً «میز کار ۱۵۰ و گریل ۶۰ در ۲٫۵ متر جا می‌شود؟».', links: [] };
+    var gap = space - sum, t = ['**بررسی جا در ' + fmt(space) + ' سانتی‌متر (طول کنار هم):**', ''];
+    rows.forEach(function (r) { t.push('- ' + fmt(r.qty) + ' × **' + r.it.name + '**: طول ' + fmt(r.d.l) + '، عمق ' + fmt(r.d.w) + ' سانتی‌متر'); });
+    t.push('', 'جمع طول: **' + fmt(sum) + ' سانتی‌متر**؛ عمق بیشترین کالا: ' + fmt(depth) + ' سانتی‌متر.');
+    t.push(gap >= 0 ? 'نتیجه: **جا می‌شود** و ' + fmt(gap) + ' سانتی‌متر باقی می‌ماند.' : 'نتیجه: **جا نمی‌شود**؛ ' + fmt(-gap) + ' سانتی‌متر کم است.');
+    if (unknown.length) t.push('', 'ابعاد این کالاها ثبت نشده و در محاسبه نیامد: ' + unknown.join('، ') + '.');
+    if (lost.length) t.push('', 'این موارد را پیدا نکردم: ' + lost.join('، ') + '.');
+    t.push('', 'فقط طول کنار هم حساب شده است؛ فضای عبور، فاصله از دیوار و تهویه را جدا در نظر بگیرید و با کارشناس فروش هماهنگ کنید.');
+    return { text: t.join('\n'), ids: rows.map(function (r) { return r.it.id; }), links: [] };
+  }
+  function skills(q) { var s = norm(q); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || starter(s) || spaceFit(s) || quote(s) || pageGuide(s); }
   // small follow-up buttons under an answer
   function extras(m) {
     var h = '';
