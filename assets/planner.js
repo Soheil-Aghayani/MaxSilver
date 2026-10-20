@@ -156,7 +156,7 @@
   function spaceRank(it) { var f = footprint(it); return f && f > SPACES[S.space].cap ? 1 : 0; }
   function candidates(job, cid) {
     var cats = JOBS[job].cats.map(nz), secs = conceptOf(cid || S.concept).sectors;
-    var list = CAT.items.filter(function (it) { return cats.indexOf(nz(it.cat)) >= 0 && !(window.MSStatus && window.MSStatus.retired(it.id)) && !PUBRET[it.id]; });
+    var list = CAT.items.filter(function (it) { return cats.indexOf(nz(it.cat)) >= 0 && !it.pl && !(window.MSStatus && window.MSStatus.retired(it.id)) && !PUBRET[it.id]; });   // products added from the price lists have no picture or size yet: the public planner does not offer them
     var fp = function (it) { return it.dims ? (it.dims.l || 0) * (it.dims.w || 0) : 0; };
     list.sort(function (a, b) {
       var ia = cats.indexOf(nz(a.cat)) - cats.indexOf(nz(b.cat));
