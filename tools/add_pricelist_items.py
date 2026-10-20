@@ -1,10 +1,12 @@
 # Adds the price-list rows that have no product in assets/catalog.json as catalog products, with their Mehr 1405 prices.
-# Usage:  python tools/add_pricelist_items.py <price_reference_1405_07.json> assets/catalog.json assets/price-list.json
+# Usage:  python tools/add_pricelist_items.py <price_reference_1405_07.json> assets/catalog.json assets/price-list.json [<crops_result.json>]
+# With the optional crops_result.json (made by extract_catalog_images.py) each added item gets the catalog photo found for its price-list row (assets/products/pl/<file>).
 # Safe to run again: earlier additions (items with "pl": 1) are removed first. A new item has no picture, size or specs
 # (the price lists do not carry them), and its description names the price-list group. Rows that look like an existing
 # catalog product are listed in the description so the owner can retire one of the two (prices page, «کنار گذاشتن کد»).
 import sys, io, json, re, collections
 ref, cat_path, pl_path = sys.argv[1], sys.argv[2], sys.argv[3]
+photos = json.load(io.open(sys.argv[4], encoding='utf-8'))['rows'] if len(sys.argv) > 4 else {}
 d = json.load(io.open(ref, encoding='utf-8'))['items']
 c = json.load(io.open(cat_path, encoding='utf-8'))
 pl = json.load(io.open(pl_path, encoding='utf-8'))
@@ -53,12 +55,12 @@ for n, r in enumerate(d):
         continue
     seen.add(key)
     iid = '%s:pl-%d' % (r['brand'], n)
-    desc = 'از فهرست قیمت مهر ۱۴۰۵' + (' (گروه: %s)' % r['group'] if r.get('group') else '') + '. تصویر و مشخصات این کالا هنوز در کاتالوگ نیست.'
+    desc = 'از فهرست قیمت مهر ۱۴۰۵' + (' (گروه: %s)' % r['group'] if r.get('group') else '') + ('. تصویر از کاتالوگ برند؛ مشخصات بیشتر هنوز در کاتالوگ سایت نیست.' if str(n) in photos else '. تصویر و مشخصات این کالا هنوز در کاتالوگ نیست.')
     t = twin(r)
     if t:
         desc += ' ممکن است همان «%s» در کاتالوگ باشد.' % t['name']
     items.append({'id': iid, 'src': r['brand'], 'name': r['name'], 'code': r['code'] or '', 'grp': grp(r['cat']), 'cat': r['cat'],
-                  'sec': [], 'img': '', 'url': '', 'desc': desc, 'dims': None, 'wt': None, 'specs': [], 'pl': 1})
+                  'sec': [], 'img': ('./assets/products/pl/' + photos[str(n)]) if str(n) in photos else '', 'url': '', 'desc': desc, 'dims': None, 'wt': None, 'specs': [], 'pl': 1})
     added += 1
     f, p = r['flag'], r['price']
     if f == 'p' and p and p > 0:

@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'catalog-photos-and-richer-assistant', date: '1405/07/29', tag: 'جدید', title: 'عکس کالاها از کاتالوگ برندها و دستیار دانای‌تر', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'عکس ۳۴۷ کالای فهرست قیمت از کاتالوگ چاپی مکث‌سیلور، وینتورا و توربومکس بریده و در کاتالوگ گذاشته شد. دستیار حالا راهنمای قیمت‌ها، برندها و کدها را هم می‌داند و برای کالاهای مشابه در برندهای دیگر پیشنهاد (احتمالی) می‌دهد. فایل‌های بازبینی قیمت فقط از فهرست‌های قیمت ساخته می‌شوند و عکس کالا کنار هر ردیف است.' },
     { id: 'assistant-claude-style', date: '1405/07/28', tag: 'بهبود', title: 'دستیار مثل گفت‌وگو در Claude شد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'پاسخ‌ها به‌صورت متن خوانا و قدم‌به‌قدم نوشته می‌شوند، کادر پیام خودبه‌خود بزرگ می‌شود (Enter ارسال، Shift+Enter خط تازه)، دکمهٔ «گفت‌وگوی تازه» و «کپی» دارد و منبع‌ها زیر هر پاسخ جمع شده‌اند. نوشتن پاسخ با اتصال به مدل زبانی فعال می‌شود.' },
     { id: 'assistant-chat', date: '1405/07/28', tag: 'بهبود', title: 'دستیار حالا شکل گفت‌وگو دارد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],

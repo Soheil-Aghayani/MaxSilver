@@ -16,7 +16,7 @@
     ['دیس پلی', 'دیسپلی'], ['شو کیک', 'شوکیک'], ['زیر گریل', 'زیرگریل'], ['پاستا پز', 'پاستاپز']];
   var STOP = {};
   ('و در به از که را این آن با برای است شد می یک بر هم یا تا اما نیز باید شده های ها ای ی چگونه چه چند کدام آیا کنیم کنید کردن کرد دارد دارم لطفا ' +
-    'قیمت تومان چقدر چنده هزینه').split(' ').forEach(function (w) { if (w) STOP[w] = 1; });
+    'هایی ترین قیمت تومان چقدر چنده هزینه').split(' ').forEach(function (w) { if (w) STOP[w] = 1; });
   function norm(s) {
     var t = String(s == null ? '' : s).normalize('NFKC')
       .replace(/[۰-۹]/g, function (d) { return d.charCodeAt(0) - 1776; }).replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; })
@@ -38,13 +38,22 @@
   // ---------- index over the catalog (same ranking as 06_RAG/rag/search.py)
   var K1 = 1.4, B = 0.75, MIN_SCORE = 6, COVER = 0.5;
   var docs = [], df = {}, avg = 0, byId = {};
-  function build(items) {
+  var EQ = {}, itemsById = {};
+  function build(items, kb, eq) {
+    EQ = eq || {}; items.forEach(function (x) { itemsById[x.id] = x; });
+    (kb || []).forEach(function (g) {
+      var it = { id: g.id, name: g.title, faq: true, text: g.text }, tk = tokens(g.title + ' ' + g.text), tf = {};
+      tk.forEach(function (x) { tf[x] = (tf[x] || 0) + 1; });
+      Object.keys(tf).forEach(function (x) { df[x] = (df[x] || 0) + 1; });
+      docs.push({ it: it, len: tk.length, tf: tf }); byId[it.id] = it;
+    });
     items.forEach(function (it) {
       var d = it.dims, parts = [it.name, it.code ? 'کد ' + it.code : '', 'برند ' + (BR[it.src] || it.src), 'دسته ' + (it.cat || ''), 'گروه ' + (it.grp || '')];
       if (d && d.l && d.w && d.h) parts.push('ابعاد ' + d.l + '×' + d.w + '×' + d.h + ' سانتی‌متر');
       if (it.wt) parts.push('وزن ' + it.wt + ' کیلوگرم');
       (it.specs || []).forEach(function (s) { parts.push(s[0] + ': ' + s[1]); });
       if (it.desc) parts.push(it.desc);
+      if (EQ[it.id]) parts.push('مشابه در برند دیگر (احتمالی): ' + EQ[it.id].map(function (id) { var o = itemsById[id]; return o ? (BR[o.src] || o.src) + ' ' + o.name : ''; }).filter(Boolean).join('، '));
       var tk = tokens(it.name + ' ' + parts.join(' . ')), tf = {};
       tk.forEach(function (t) { tf[t] = (tf[t] || 0) + 1; });
       Object.keys(tf).forEach(function (t) { df[t] = (df[t] || 0) + 1; });
@@ -101,6 +110,7 @@
     return '<span class="as-p none">' + esc(P && P.label ? P.label(v) : '') + '</span>';
   }
   function card(it, n) {
+    if (it.faq) return '<article class="as-card as-guide"><div class="as-body"><h3>' + (n ? '<span class="as-n">' + fa.format(n) + '</span>' : '') + esc(it.name) + '</h3><p class="as-note">' + esc(it.text) + '</p></div></article>';
     return '<article class="as-card"><div class="as-img">' + (it.img ? '<img src="' + esc(it.img) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">' : '') + '</div>' +
       '<div class="as-body"><h3>' + (n ? '<span class="as-n">' + fa.format(n) + '</span>' : '') + esc(it.name) + '</h3><p class="as-meta"><span class="as-br" data-brand="' + esc(it.src) + '"><i></i>' + esc(BR[it.src] || it.src) + '</span>' +
       (it.code ? '<span>کد <b dir="ltr">' + esc(it.code) + '</b></span>' : '') + (it.cat ? '<span>' + esc(it.cat) + '</span>' : '') + '</p>' +
@@ -188,6 +198,7 @@
   }
   // the item as plain text for the model: the same fields the index was built from, plus the prices the person sees now
   function sourceText(it) {
+    if (it.faq) return it.text;
     var P = window.MSPrices, v = P && P.get ? P.get(it.id) : null, parts = ['برند ' + (BR[it.src] || it.src), it.code ? 'کد ' + it.code : '', it.cat ? 'دسته ' + it.cat : ''];
     if (v && v.s === 'p' && v.p > 0) { parts.push('قیمت نقدی ' + fa.format(v.p) + ' تومان'); var ch = P.cheque ? P.cheque(v, it.grp) : 0; if (ch && ch !== v.p) parts.push('قیمت اعتباری (چکی) ' + fa.format(ch) + ' تومان'); }
     else if (v) parts.push('قیمت: ' + (P.label ? P.label(v) : ''));
@@ -196,6 +207,7 @@
     if (it.wt) parts.push('وزن ' + it.wt + ' کیلوگرم');
     (it.specs || []).forEach(function (s) { parts.push(s[0] + ': ' + s[1]); });
     if (it.desc) parts.push(it.desc);
+    if (EQ[it.id]) parts.push('مشابه در برند دیگر (احتمالی): ' + EQ[it.id].map(function (id) { var o = itemsById[id]; return o ? (BR[o.src] || o.src) + ' ' + o.name + (o.code ? ' کد ' + o.code : '') : ''; }).filter(Boolean).join('، '));
     return parts.filter(Boolean).join(' . ');
   }
   function ask(text) {
@@ -230,8 +242,10 @@
   window.MSAssistant = { retrieve: function (q, k) { return retrieve(q, k || 5).map(function (h) { return { id: h.d.it.id, name: h.d.it.name, score: Math.round(h.s * 100) / 100 }; }); }, size: function () { return docs.length; }, ask: ask };
   restore();
   render(true);
-  fetch('./assets/catalog.json?v=' + ((document.currentScript && document.currentScript.src.split('v=')[1]) || '')).then(function (r) { if (!r.ok) throw new Error('catalog'); return r.json(); }).then(function (c) {
-    build(c.items || []); S.ready = true;
+  var VER = (document.currentScript && document.currentScript.src.split('v=')[1]) || '';
+  function load(name, fallback) { return fetch('./assets/' + name + '.json?v=' + VER).then(function (r) { if (!r.ok) throw new Error(name); return r.json(); }).catch(function () { return fallback; }); }
+  Promise.all([fetch('./assets/catalog.json?v=' + VER).then(function (r) { if (!r.ok) throw new Error('catalog'); return r.json(); }), load('knowledge', []), load('equivalents', {})]).then(function (all) {
+    build(all[0].items || [], all[1], all[2]); S.ready = true;
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(true); }, function () { render(true); }); window.MSPrices.onChange(function () { render(true); }); }
     render(true);
     var q = new URLSearchParams(location.search).get('q'); if (q) ask(q);
