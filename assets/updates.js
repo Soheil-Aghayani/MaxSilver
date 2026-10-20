@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'maxi-general-assistant', date: '1405/07/30', tag: 'بهبود', title: 'مکسی دستیار عمومی مکث‌سیلور شد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'عنوان «دستیار کاتالوگ» برداشته شد؛ مکسی دستیار هوشمند مکث‌سیلور است. فعلاً در کالا، قیمت، ابعاد و مقایسه کمک می‌کند و کارهای بیشتر به‌تدریج اضافه می‌شود.' },
     { id: 'maxi-name-and-motion', date: '1405/07/30', tag: 'جدید', title: 'دستیار حالا «مکسی» است', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'دستیار کاتالوگ نام تازه و ظاهر زنده‌تری گرفته: آواتار درخشان، حلقهٔ چرخان هنگام نوشتن، ورود نرم پیام‌ها و کالاها. اگر دستگاه شما حرکت کمتر را خواسته باشد، انیمیشن‌ها خودکار خاموش می‌شوند.' },
     { id: 'catalog-specs-from-tables', date: '1405/07/30', tag: 'بهبود', title: 'ابعاد و مشخصات کالاهای فهرست قیمت', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],

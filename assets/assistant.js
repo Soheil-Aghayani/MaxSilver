@@ -152,7 +152,7 @@
   function view() {
     if (S.error) return '<p class="as-err" role="alert">' + esc(S.error) + '</p>';
     var empty = !S.msgs.length;
-    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکسی</span><small>دستیار کاتالوگ</small></h1><button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></header>' +
+    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکسی</span><small>دستیار هوشمند مکث‌سیلور</small></h1><button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></header>' +
       (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من مکسی‌ام! چه کمکی از دستم برمی‌آید؟</h2><p>دربارهٔ کالاها، کدها و قیمت‌ها بپرسید. فقط از کاتالوگ جواب می‌دهم و اگر ندانم همین را می‌گویم.' +
         (relayUrl() ? '' : '<br><span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهم؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p>' +
         '<div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div></div>' :
@@ -216,7 +216,7 @@
   var TALK = [
     [/^(سلام|درود|وقت بخیر|صبح بخیر|عصر بخیر|شب بخیر|hi|hello)[\s!.؟?]*$/i, 'سلام، خوش آمدید. کدام کالا را لازم دارید؟ نام، اندازه یا کد را بنویسید، مثلاً «گریل ۶۰ ذغالی».'],
     [/^(ممنون|مرسی|سپاس|تشکر|دستت درد نکنه|متشکرم|thanks)[\s!.]*$/i, 'خواهش می‌کنم. اگر کالای دیگری لازم بود بنویسید.'],
-    [/(تو کی|شما کی|کی هستی|چه کار(ی)? (می‌?کنی|می‌?توانی|بلدی)|چیکار(ا)? (می‌?کنی|بلدی)|چه کمکی)/, 'من دستیار کاتالوگ مکث‌سیلور هستم. کالا، کد و قیمت نقدی و اعتباری (چکی) را از کاتالوگ پیدا می‌کنم، کالاهای مشابه برندهای دیگر را (به‌صورت احتمالی) پیشنهاد می‌دهم و معنی واژه‌های کاتالوگ را توضیح می‌دهم. از بیرون از کاتالوگ جواب نمی‌دهم و حدس نمی‌زنم.'],
+    [/(تو کی|شما کی|کی هستی|چه کار(ی)? (می‌?کنی|می‌?توانی|بلدی)|چیکار(ا)? (می‌?کنی|بلدی)|چه کمکی)/, 'من مکسی، دستیار هوشمند مکث‌سیلور هستم. فعلاً کالا، کد، قیمت نقدی و اعتباری (چکی) و ابعاد را پیدا می‌کنم، دو کالا را مقایسه می‌کنم، کالاهای مشابه برندهای دیگر را (احتمالی) پیشنهاد می‌دهم و معنی واژه‌های کاتالوگ را می‌گویم. کارهای بیشتر در راه است؛ آنچه در منابعم نباشد را حدس نمی‌زنم.'],
     [/^(خداحافظ|فعلا|بای|bye)[\s!.]*$/i, 'موفق باشید.']
   ];
   function smallTalk(q) { var s = norm(q).trim(); for (var i = 0; i < TALK.length; i++) if (TALK[i][0].test(s)) return TALK[i][1]; return ''; }
