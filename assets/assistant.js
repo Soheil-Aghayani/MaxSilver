@@ -117,7 +117,7 @@
       (it.code ? '<span>کد <b dir="ltr">' + esc(it.code) + '</b></span>' : '') + (it.cat ? '<span>' + esc(it.cat) + '</span>' : '') + '</p>' +
       '<div class="as-prices">' + price(it) + '</div>' +
       (it.pl && !(it.dims || (it.specs && it.specs.length)) ? '<p class="as-note">این کالا از فهرست قیمت آمده؛ مشخصات آن هنوز در کاتالوگ نیست.</p>' : '') +
-      '<a class="as-open" href="./product-catalog.html?q=' + encodeURIComponent(it.code || it.name) + '">نمایش در کاتالوگ</a></div></article>';
+      '<a class="as-open" href="./product-catalog.html?q=' + encodeURIComponent(it.code || it.name) + '">نمایش در کاتالوگ</a>' + addBtn(it) + '</div></article>';
   }
   // a small Markdown subset: paragraphs, - and 1. lists, # headings, **bold**, `code`. Everything is escaped first.
   function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>'); }
@@ -144,7 +144,7 @@
     else if (m.text) body = md(m.text) + (m.state === 'stream' ? '<span class="as-caret"></span>' : '');
     else body = '<p>' + (m.note ? esc(m.note) : 'نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:') + '</p>';
     var showSrc = hits.length && m.state !== 'wait' && m.state !== 'none';
-    return '<div class="as-msg bot" data-i="' + i + '"><span class="as-av' + (m.state === 'wait' || m.state === 'stream' ? ' busy' : '') + '"><i class="as-ring"></i>' + ICON.spark + '</span><div class="as-col"><div class="as-md">' + body + '</div>' +
+    return '<div class="as-msg bot" data-i="' + i + '"><span class="as-av' + (m.state === 'wait' || m.state === 'stream' ? ' busy' : '') + '"><i class="as-ring"></i>' + ICON.spark + '</span><div class="as-col"><div class="as-md">' + body + '</div>' + extras(m) +
       (showSrc ? '<details class="as-src"' + (m.text ? '' : ' open') + '><summary>' + (m.text ? 'منابع این پاسخ' : 'کالاهای پیدا‌شده') + ' (' + fa.format(hits.length) + ')</summary><div class="as-cards">' + hits.map(function (it, k) { return card(it, m.text ? k + 1 : 0); }).join('') + '</div></details>' : '') +
       (m.text && m.state === 'done' ? '<div class="as-acts"><button type="button" data-copy="' + i + '" aria-label="کپی پاسخ">' + ICON.copy + '<span>کپی</span></button></div>' : '') + '</div></div>';
   }
@@ -279,6 +279,126 @@
     }
     return null;
   }
+  // ---------- skills beyond the catalog: page guide, occasions, my tasks, message drafts, add to proforma
+  var NAV = [
+    { id: 'catalog', label: 'کاتالوگ محصولات', href: './product-catalog.html', page: 'product-catalog.html', keys: ['کاتالوگ', 'محصولات'], how: 'کالاها را جست‌وجو و مقایسه کنید. با دکمهٔ + کنار هر کالا آن را به پیش‌فاکتور اضافه کنید.' },
+    { id: 'invoices', label: 'پیش‌فاکتورها', href: './panel.html#invoices', area: 'invoices', keys: ['پیش فاکتور', 'پیشفاکتور', 'پیش‌فاکتور', 'فاکتور'], how: 'پیش‌فاکتور از کاتالوگ ساخته می‌شود: کالاها را با + اضافه کنید، سبد پیش‌فاکتور را باز کنید، مشتری و تعداد را بنویسید. فهرست پیش‌فاکتورها در همین صفحه است.' },
+    { id: 'customers', label: 'مشتریان', href: './customers.html', area: 'customers', page: 'customers.html', keys: ['مشتری', 'مشتریان'], how: 'پایگاه مشتریان؛ هر نقش فقط مشتریان مجاز خودش را می‌بیند.' },
+    { id: 'prices', label: 'قیمت‌ها', href: './prices.html', area: 'pricesAudit', page: 'prices.html', keys: ['قیمت ها', 'قیمت‌ها', 'لیست قیمت', 'فهرست قیمت', 'بارگذاری قیمت', 'آپلود قیمت'], how: 'قیمت‌های کاتالوگ را ببینید و با فایل اکسل قالب قیمت (یک ستون قیمت) به‌روز کنید.' },
+    { id: 'events', label: 'مناسبت‌ها', href: './events.html', area: 'events', page: 'events.html', keys: ['مناسبت', 'مناسبتها'], how: 'تقویم مناسبت‌ها و ایدهٔ پیام و کمپین هر مناسبت.' },
+    { id: 'warehouse', label: 'انبار و موجودی', href: './warehouse.html', area: 'warehouse', page: 'warehouse.html', keys: ['انبار', 'موجودی'], how: 'موجودی انبار.' },
+    { id: 'banks', label: 'حساب‌های بانکی', href: './banks.html', area: 'bankAccounts', page: 'banks.html', keys: ['حساب بانکی', 'حساب های بانکی', 'شماره حساب'], how: 'حساب‌هایی که روی پیش‌فاکتور می‌آیند.' },
+    { id: 'crm', label: 'درخواست‌های خرید', href: './crm.html', area: 'crm', page: 'crm.html', keys: ['درخواست خرید', 'درخواست های خرید', 'سرنخ'], how: 'درخواست‌های خرید و پیگیری فروش.' },
+    { id: 'process', label: 'نقشهٔ فروش', href: './sales-process.html', page: 'sales-process.html', keys: ['نقشه فروش', 'مراحل فروش', 'فرایند فروش'], how: 'مراحل فروش، مسئول هر مرحله و کنترل‌ها.' },
+    { id: 'planner', label: 'طراح کافه و رستوران', href: './planner.html', page: 'planner.html', keys: ['طراح', 'طراحی کافه', 'چیدمان'], how: 'برای مشتری لیست تجهیزات پیشنهادی بسازید.' },
+    { id: 'fairs', label: 'نمایشگاه‌ها', href: './fairs.html', page: 'fairs.html', keys: ['نمایشگاه'], how: 'اطلاعات نمایشگاه‌ها.' },
+    { id: 'panel', label: 'حساب من', href: './panel.html', page: 'panel.html', keys: ['حساب من', 'پروفایل', 'رمز عبور', 'اطلاعات من'], how: 'اطلاعات حساب و درخواست‌های شما.' },
+    { id: 'tickets', label: 'گفت‌وگوها', href: './panel.html#tickets', keys: ['گفتگو', 'گفت وگو', 'گفت‌وگو', 'پیام به'], how: 'پیام و درخواست به واحدها و همکاران.' },
+    { id: 'dashboard', label: 'داشبورد CEO', href: './ceo-dashboard.html', area: 'dashboard', page: 'ceo-dashboard.html', keys: ['داشبورد'], how: 'نمای کلی فروش.' },
+    { id: 'analysis', label: 'تحلیل جزئیات فروش', href: './sales-analysis.html', area: 'analysis', page: 'sales-analysis.html', keys: ['تحلیل فروش', 'گزارش فروش'], how: 'فروش به تفکیک مشتری و کالا.' },
+    { id: 'competitors', label: 'تحلیل رقبا', href: './competitors.html', area: 'competitors', page: 'competitors.html', keys: ['رقبا', 'رقیب'], how: 'تحلیل رقبا.' },
+    { id: 'advertising', label: 'استراتژی تبلیغات', href: './advertising.html', area: 'advertising', page: 'advertising.html', keys: ['تبلیغات', 'تبلیغ'], how: 'درخت استراتژی تبلیغات.' },
+    { id: 'brand', label: 'برندبوک‌ها', href: './brand-books.html', area: 'brand', page: 'brand-books.html', keys: ['برندبوک', 'برند بوک', 'هویت بصری'], how: 'راهنمای هویت بصری برندها.' },
+    { id: 'roadmap', label: 'نقشهٔ راه', href: './roadmap.html', area: 'roadmap', page: 'roadmap.html', keys: ['نقشه راه', 'مایلستون'], how: 'خط زمانی کارهای آیندهٔ سامانه.' },
+    { id: 'backup', label: 'نسخهٔ پشتیبان', href: './backup.html', area: 'backup', page: 'backup.html', keys: ['پشتیبان', 'بکاپ'], how: 'دانلود نسخهٔ پشتیبان.' },
+    { id: 'permissions', label: 'دسترسی‌ها', href: './permissions.html', area: 'roleAdmin', page: 'permissions.html', keys: ['دسترسی'], how: 'تعیین دسترسی نقش‌ها.' },
+    { id: 'features', label: 'ویژگی‌ها', href: './features.html', area: 'features', page: 'features.html', keys: ['ویژگی', 'روشن و خاموش'], how: 'روشن و خاموش کردن بخش‌های سایت.' },
+    { id: 'contact', label: 'تماس با ما', href: './contact.html', page: 'contact.html', keys: ['تماس با ما'], how: 'راه‌های تماس.' }
+  ];
+  function myRole() { try { return localStorage.getItem('ms-role') || ''; } catch (e) { return ''; } }
+  function navAllowed(n) {
+    var R = window.MSRoles, F = window.MSFeatures;
+    if (n.area && R && !R.can(myRole(), n.area)) return false;
+    if (F && n.page) { var f = F.list.filter(function (x) { return x.page === n.page; })[0]; if (f && F.hidden(f.id) && !(F.owner && F.owner())) return false; }
+    return true;
+  }
+  function pageGuide(s) {
+    if (!/(کجا|چطور|چگونه|چه جوری|چجوری|باز کن|صفحه|بخش|ببرم|برو|راهنما|آموزش|بسازم|ثبت کنم)/.test(s)) return null;
+    var best = null, bs = 0;
+    NAV.forEach(function (n) { var c = 0; n.keys.forEach(function (k) { if (s.indexOf(norm(k)) >= 0) c += k.length; }); if (c > bs) { bs = c; best = n; } });
+    if (!best) return null;
+    if (/پیش.?فاکتور/.test(s) && /(بساز|ایجاد|چطور|چگونه|ثبت)/.test(s)) best = NAV[1];
+    if (!navAllowed(best)) return { text: 'بخش «' + best.label + '» برای نقش شما فعال نیست. اگر لازم است از مدیر سامانه بخواهید دسترسی را بدهد.', links: [] };
+    var links = [{ href: best.href, label: 'باز کردن ' + best.label }];
+    if (best.id === 'invoices') links.push({ href: './product-catalog.html', label: 'رفتن به کاتالوگ' });
+    return { text: '**' + best.label + '**: ' + best.how, links: links };
+  }
+  function myTasks(s) {
+    if (!/(کارهای من|کار دارم|چه کاری|وظایف|وظیفه|اعلان|منتظر من|امروز چه)/.test(s)) return null;
+    var list = []; try { list = (JSON.parse(localStorage.getItem('ms-notify-v1') || '{}') || {}).items || []; } catch (e) { list = []; }
+    var F = window.MSFeatures;
+    list = list.filter(function (x) {
+      if (!x || !x.text) return false;
+      var h = x.href || './panel.html', p = String(h).replace(/^\.\//, '').split('#')[0], f = F && F.list.filter(function (z) { return z.page === p; })[0];
+      return !(f && F.hidden(f.id) && !(F.owner && F.owner()));
+    });
+    if (!myRole()) return { text: 'برای دیدن کارهایتان باید وارد حساب خود شوید.', links: [{ href: './panel.html', label: 'ورود' }] };
+    if (!list.length) return { text: 'فعلاً کاری منتظر شما نیست.', links: [] };
+    return { text: '**کارهای منتظر شما (' + fmt(list.length) + '):**\n\n' + list.slice(0, 8).map(function (x) { return '- ' + x.text; }).join('\n'), links: list.slice(0, 4).map(function (x) { return { href: x.href || './panel.html', label: String(x.text).slice(0, 34) }; }) };
+  }
+  function occasions(s) {
+    if (!/(مناسبت|کمپین|تبریک)/.test(s)) return null;
+    var E = window.MSEvents; if (!E) return null;
+    var list = E.upcoming(45).slice(0, 4);
+    if (!list.length) return { text: 'در ۴۵ روز آینده مناسبتی در تقویم ثبت نشده است.', links: [{ href: './events.html', label: 'تقویم مناسبت‌ها' }] };
+    var x = list[0];
+    if (/(کمپین|تبریک|پیام|متن)/.test(s)) {
+      return { text: '**نزدیک‌ترین مناسبت: ' + x.title + '** (' + x.when + '، ' + x.weekday + ' ' + x.jalali + ')\n' + (x.idea ? '\nایدهٔ ثبت‌شده در تقویم: ' + x.idea + '\n' : '') +
+        '\n**پیش‌نویس پیام (برای بازبینی):**\n\nسلام و احترام؛ به مناسبت ' + x.title + ' از طرف مجموعهٔ مکث‌سیلور صمیمانه تبریک می‌گوییم. [پیشنهاد یا تخفیف ویژه: نیاز به تأیید مدیر فروش]\n\nپیش از انتشار، متن و هر پیشنهاد قیمتی را مدیر فروش تأیید کند.', links: [{ href: './events.html', label: 'تقویم مناسبت‌ها' }] };
+    }
+    return { text: '**مناسبت‌های پیش رو:**\n\n' + list.map(function (e) { return '- ' + e.title + ': ' + e.when + ' (' + e.weekday + ' ' + e.jalali + ')'; }).join('\n') + '\n\nبرای پیش‌نویس تبریک بنویسید «کمپین ' + x.title + '».', links: [{ href: './events.html', label: 'تقویم مناسبت‌ها' }] };
+  }
+  var DRAFTS = [
+    [/پیگیری/, '**پیش‌نویس پیگیری پیش‌فاکتور:**\n\nسلام [نام مشتری] عزیز، وقت شما بخیر. پیش‌فاکتور شمارهٔ [شمارهٔ پیش‌فاکتور] را برایتان فرستاده‌ایم. اگر نکته‌ای دربارهٔ کالاها، قیمت یا شرایط پرداخت هست در خدمتیم. [تاریخ اعتبار پیش‌فاکتور: نیاز به تأیید]\n\nبا احترام، [نام شما]، مکث‌سیلور'],
+    [/تشکر|سپاس/, '**پیش‌نویس تشکر از خرید:**\n\nسلام [نام مشتری] عزیز، از اعتماد شما به مکث‌سیلور سپاسگزاریم. اگر در نصب یا استفاده از [نام کالا] پرسشی داشتید در خدمتیم.\n\nبا احترام، [نام شما]'],
+    [/اطلاع|تغییر قیمت|قیمت جدید/, '**پیش‌نویس اطلاع‌رسانی قیمت:**\n\nسلام [نام مشتری] عزیز، فهرست قیمت‌های تازه آماده است. برای دریافت قیمت [نام کالا یا گروه] پیام بدهید تا پیش‌فاکتور برایتان صادر شود. [تاریخ اجرای قیمت‌ها: نیاز به تأیید]\n\nبا احترام، [نام شما]، مکث‌سیلور'],
+    [/معرفی/, '**پیش‌نویس معرفی:**\n\nسلام [نام مشتری] عزیز، [نام شما] از مکث‌سیلور هستم. مجموعهٔ ما تجهیزات آشپزخانهٔ صنعتی ارائه می‌کند. اگر مایلید فهرست کالاهای مناسب [نوع کسب‌وکار شما] را برایتان بفرستم.\n\nبا احترام، [نام شما]']
+  ];
+  function drafts(s) {
+    if (!/(پیش ?نویس|بنویس|متن|پیام)/.test(s)) return null;
+    for (var i = 0; i < DRAFTS.length; i++) if (DRAFTS[i][0].test(s)) return { text: DRAFTS[i][1] + '\n\nاین فقط پیش‌نویس است؛ جاهای داخل [ ] را پر کنید و پیش از ارسال بخوانید. من پیامی نمی‌فرستم.', links: [] };
+    return null;
+  }
+  // proforma draft shared with the catalog page (same key and shape)
+  var PF = 'ms-proforma-v1';
+  function pfRead() { try { var v = JSON.parse(localStorage.getItem(PF) || 'null'); return v && Array.isArray(v.lines) ? v : { lines: [] }; } catch (e) { return { lines: [] }; } }
+  function inProforma(id) { return pfRead().lines.some(function (l) { return l.id === id; }); }
+  function addProforma(id) {
+    var inv = pfRead(); if (inv.lines.some(function (l) { return l.id === id; })) return false;
+    var P = window.MSPrices, v = P && P.get ? P.get(id) : null, unit = inv.unit || 'تومان';
+    inv.lines.push({ id: id, qty: 1, price: v && v.s === 'p' && v.p > 0 ? v.p * (unit === 'ریال' ? 10 : 1) : 0 });
+    try { localStorage.setItem(PF, JSON.stringify(inv)); } catch (e) { return false; }
+    return true;
+  }
+  function addBtn(it) {
+    if (it.faq) return '';
+    var on = inProforma(it.id);
+    return '<button type="button" class="as-add' + (on ? ' on' : '') + '" data-addinv="' + esc(it.id) + '">' + (on ? '✓ در پیش‌فاکتور' : '+ افزودن به پیش‌فاکتور') + '</button>';
+  }
+  function lastItem() { for (var i = S.msgs.length - 1; i >= 0; i--) { var m = S.msgs[i]; if (m.role === 'bot' && m.ids && m.ids.length) { var it = byId[m.ids[0]]; if (it && !it.faq) return it; } } return null; }
+  function addToLast(s) {
+    if (!/(اضافه|بذار|بگذار|بزن).*(پیش ?فاکتور|سبد)|(پیش ?فاکتور|سبد).*(اضافه|بذار|بگذار)/.test(s)) return null;
+    var it = lastItem(); if (!it) return { text: 'ابتدا کالایی را پیدا کنید تا به پیش‌فاکتور اضافه کنم.', links: [] };
+    var ok = addProforma(it.id);
+    return { text: ok ? '«' + it.name + '» به پیش‌فاکتور شما اضافه شد. تعداد و مشتری را در سبد پیش‌فاکتور کاتالوگ تنظیم کنید.' : '«' + it.name + '» از قبل در پیش‌فاکتور شما هست.', links: [{ href: './product-catalog.html', label: 'باز کردن کاتالوگ و سبد' }], ids: [it.id] };
+  }
+  function skills(q) { var s = norm(q); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || pageGuide(s); }
+  // small follow-up buttons under an answer
+  function extras(m) {
+    var h = '';
+    if (m.links && m.links.length) h += '<div class="as-links">' + m.links.map(function (l) { return '<a class="as-go" href="' + esc(l.href) + '">' + esc(l.label) + '</a>'; }).join('') + '</div>';
+    var its = hitsOf(m).filter(function (it) { return !it.faq; });
+    if (its.length && (m.state === 'cards' || m.state === 'done') && !m.links) {
+      var it = its[0], c = [];
+      if (its.length === 1 || m.text) {
+        if (!m.text || !/ابعاد/.test(m.text)) c.push('<button type="button" data-q="' + esc('ابعاد ' + it.name) + '">ابعاد و مشخصات</button>');
+        if (EQ[it.id] && EQ[it.id].length && itemsById[EQ[it.id][0]]) c.push('<button type="button" data-q="' + esc('مقایسه ' + it.name + ' و ' + itemsById[EQ[it.id][0]].name) + '">مقایسه با برند دیگر</button>');
+      } else if (m.q) c.push('<button type="button" data-q="' + esc('ارزان‌ترین ' + m.q) + '">ارزان‌ترین گزینه</button>');
+      c.push('<button type="button" data-addinv="' + esc(it.id) + '" class="' + (inProforma(it.id) ? 'on' : '') + '">' + (inProforma(it.id) ? '✓ در پیش‌فاکتور' : '+ افزودن به پیش‌فاکتور') + '</button>');
+      h += '<div class="as-quick">' + c.join('') + '</div>';
+    }
+    return h;
+  }
   function ask(text) {
     text = String(text || '').trim(); if (!text || !S.ready || S.busy) return;
     var prevQ = null; for (var i = S.msgs.length - 1; i >= 0; i--) if (S.msgs[i].role === 'user') { prevQ = S.msgs[i].text; break; }
@@ -286,6 +406,8 @@
     S.msgs.push({ role: 'user', text: text });
     var talk = smallTalk(text);
     if (talk) { S.msgs.push({ role: 'bot', ids: [], text: talk, state: 'done' }); save(); render(); return; }
+    var sk = skills(text);
+    if (sk) { S.msgs.push({ role: 'bot', ids: sk.ids || [], text: sk.text, links: sk.links || [], state: 'done' }); save(); render(); return; }
     var s2 = smart2(text);
     if (s2) {
       S.msgs.push({ role: 'bot', ids: s2.ids, text: s2.text, note: s2.note, state: s2.text ? 'done' : s2.none ? 'none' : 'cards', nonote: s2.none ? s2.note : '' });
@@ -298,7 +420,7 @@
     }
     // a short follow-up («و ۹۰ تا؟») is searched together with the previous question
     var hits = retrieve(text, 5); if (!hits.length && tokens(text).filter(function (w) { return w.charAt(0) !== '~'; }).length <= 2) hits = retrieve(text, 5, true); if (!hits.length && prevQ) hits = retrieve(prevQ + ' ' + text, 5);
-    var bot = { role: 'bot', ids: hits.map(function (h) { return h.d.it.id; }) }, bi = S.msgs.length;
+    var bot = { role: 'bot', q: text, ids: hits.map(function (h) { return h.d.it.id; }) }, bi = S.msgs.length;
     S.msgs.push(bot);
     var items = hits.map(function (h) { return h.d.it; });
     if (!hits.length) { bot.state = 'none'; save(); render(); return; }
@@ -318,6 +440,12 @@
   root.addEventListener('keydown', function (e) { if (e.target.id === 'asQ' && e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.matchMedia('(hover:hover)').matches) { e.preventDefault(); submitBox(); } });
   root.addEventListener('click', function (e) {
     var c;
+    if ((c = e.target.closest('[data-addinv]'))) {
+      var id = c.getAttribute('data-addinv'), was = inProforma(id);
+      if (!was) addProforma(id);
+      root.querySelectorAll('[data-addinv="' + id + '"]').forEach(function (b) { b.classList.add('on'); b.textContent = '✓ در پیش‌فاکتور'; });
+      return;
+    }
     if ((c = e.target.closest('[data-q]'))) { ask(c.getAttribute('data-q')); return; }
     if (e.target.closest('#asNew')) { if (!S.busy) { S.msgs = []; save(); render(true); } return; }
     if ((c = e.target.closest('[data-copy]'))) { var m = S.msgs[Number(c.getAttribute('data-copy'))]; try { navigator.clipboard.writeText(m.text).then(function () { c.querySelector('span').textContent = 'کپی شد'; setTimeout(function () { c.querySelector('span').textContent = 'کپی'; }, 1400); }); } catch (x) { /* ignore */ } }
