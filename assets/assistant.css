@@ -71,3 +71,33 @@
 @media (min-width:1101px){.as-form{bottom:12px}}
 @media (max-width:520px){.as-img{width:60px;height:60px}.as-hello{padding-top:22px}.as-new span{display:none}.as-new{padding:0 10px}}
 @media (prefers-reduced-motion:reduce){.as-msg,.as-caret,.as-dots i{animation:none}}
+
+/* Maxi: name, glowing avatar, staged entrance */
+.as-name{display:flex;align-items:center;gap:9px;font-size:20px}
+.as-name small{font:600 12px/1 Estedad,Tahoma,sans-serif;color:var(--ms-muted);align-self:flex-end;margin-bottom:5px}
+.as-logo{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:10px;background:var(--ms-navy);color:var(--ms-gold)}
+.as-logo svg{width:18px;height:18px;animation:as-twinkle 3.2s ease-in-out infinite}
+.as-shim{background:linear-gradient(100deg,var(--ms-navy) 30%,#b8860b 48%,#ffcc2a 52%,var(--ms-navy) 70%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:as-shim 5s ease-in-out infinite}
+@keyframes as-shim{0%,60%{background-position:120% 0}100%{background-position:-60% 0}}
+@keyframes as-twinkle{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.18) rotate(18deg)}}
+.as-av{position:relative}
+.as-ring{position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 60%,rgba(255,204,42,.95) 85%,transparent);opacity:0;-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px))}
+.as-av.busy .as-ring,.as-av.big .as-ring{opacity:1;animation:as-spin 1.6s linear infinite}
+.as-av.big{box-shadow:0 0 0 0 rgba(255,204,42,.55);animation:as-glow 2.8s ease-out infinite}
+.as-av.big .as-ring{animation-duration:4s}
+.as-av svg{animation:as-twinkle 3.2s ease-in-out infinite}
+.as-av.busy svg{animation-duration:.9s}
+@keyframes as-spin{to{transform:rotate(360deg)}}
+@keyframes as-glow{0%{box-shadow:0 0 0 0 rgba(255,204,42,.5)}70%,100%{box-shadow:0 0 0 22px rgba(255,204,42,0)}}
+.as-hello h2,.as-hello p,.as-chips button{opacity:0;animation:as-rise .55s cubic-bezier(.2,.8,.2,1) forwards}
+.as-hello h2{animation-delay:.15s}.as-hello p{animation-delay:.3s}
+.as-chips button:nth-child(1){animation-delay:.45s}.as-chips button:nth-child(2){animation-delay:.52s}.as-chips button:nth-child(3){animation-delay:.59s}.as-chips button:nth-child(4){animation-delay:.66s}.as-chips button:nth-child(5){animation-delay:.73s}
+.as-chips button{transition:transform .18s,box-shadow .18s,border-color .18s,background .18s}
+.as-chips button:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(5,25,52,.12)}
+@keyframes as-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.as-msg.bot .as-col{animation:as-pop .4s cubic-bezier(.2,.8,.2,1) both}
+@keyframes as-pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+.as-card{animation:as-rise .45s cubic-bezier(.2,.8,.2,1) both}
+.as-card:nth-child(2){animation-delay:.07s}.as-card:nth-child(3){animation-delay:.14s}.as-card:nth-child(4){animation-delay:.21s}.as-card:nth-child(5){animation-delay:.28s}
+.as-send{transition:transform .15s,box-shadow .15s}.as-send:not(:disabled):hover{transform:scale(1.08);box-shadow:0 4px 12px rgba(255,204,42,.55)}.as-send:not(:disabled):active{transform:scale(.94)}
+@media (prefers-reduced-motion:reduce){.as-logo svg,.as-shim,.as-av svg,.as-av.big,.as-ring,.as-hello h2,.as-hello p,.as-chips button,.as-msg.bot .as-col,.as-card{animation:none!important;opacity:1}.as-shim{color:var(--ms-navy);background:none}}

@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'maxi-name-and-motion', date: '1405/07/30', tag: 'جدید', title: 'دستیار حالا «مکسی» است', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
+      summary: 'دستیار کاتالوگ نام تازه و ظاهر زنده‌تری گرفته: آواتار درخشان، حلقهٔ چرخان هنگام نوشتن، ورود نرم پیام‌ها و کالاها. اگر دستگاه شما حرکت کمتر را خواسته باشد، انیمیشن‌ها خودکار خاموش می‌شوند.' },
     { id: 'catalog-specs-from-tables', date: '1405/07/30', tag: 'بهبود', title: 'ابعاد و مشخصات کالاهای فهرست قیمت', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],
       summary: 'دستیار حالا دو کالا را مقایسه می‌کند («مقایسه A و B»)، به «زیر ۵۰ میلیون» و «ابعاد ...» جواب می‌دهد. برای بیش از ۳۰۰ کالای فهرست قیمت، ابعاد (طول، عرض، ارتفاع)، وزن، سوخت، ولتاژ و ظرفیت از جدول‌های چاپی کاتالوگ مکث‌سیلور، وینتورا و توربومکس به کاتالوگ سایت و دستیار اضافه شد. مقدارهای اندازهٔ ظروف بن‌ماری از اندازه‌های استاندارد ظرف است و کالاهایی که جدولشان در کاتالوگ چاپی نبود بدون مشخصات ماندند. پیش از پیش‌فاکتور اندازه را با کاتالوگ چاپی برند تطبیق دهید.' },
     { id: 'assistant-common-sense', date: '1405/07/30', tag: 'بهبود', title: 'دستیار فهمیده‌تر شد', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],

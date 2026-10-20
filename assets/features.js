@@ -12,7 +12,7 @@
     { id: 'customers', label: 'مشتریان', group: 'فروش و مشتری', page: 'customers.html', info: 'پایگاه مشتریان و صفحهٔ هر مشتری' },
     { id: 'crm', label: 'درخواست‌های خرید', group: 'فروش و مشتری', page: 'crm.html', info: 'پیگیری درخواست‌ها، مرحله‌ها و تحویل' },
     { id: 'catalog', label: 'کاتالوگ محصولات', group: 'فروش و مشتری', page: 'product-catalog.html', info: 'جست‌وجو، مقایسه و ساخت پیش‌فاکتور' },
-    { id: 'assistant', label: 'دستیار کاتالوگ', group: 'فروش و مشتری', page: 'assistant.html', info: 'پرسش دربارهٔ کالا و پیدا کردن نزدیک‌ترین کالاها با قیمت' },
+    { id: 'assistant', label: 'مکسی (دستیار کاتالوگ)', group: 'فروش و مشتری', page: 'assistant.html', info: 'پرسش دربارهٔ کالا و پیدا کردن نزدیک‌ترین کالاها با قیمت' },
     { id: 'process', label: 'نقشهٔ فروش', group: 'فروش و مشتری', page: 'sales-process.html', info: 'نه مرحلهٔ فروش و مسئول هر مرحله' },
     { id: 'planner', label: 'طراح کافه و رستوران', group: 'فروش و مشتری', page: 'planner.html', info: 'فرم عمومی مشتری؛ اگر خاموش شود مشتری‌ها نمی‌توانند درخواست بدهند' },
     { id: 'track', label: 'پیگیری درخواست', group: 'فروش و مشتری', page: 'track.html', info: 'صفحهٔ عمومی پیگیری با کد' },
