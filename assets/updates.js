@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'future-tile-c7', date: '1405/07/28', tag: 'جدید', title: 'کاشی «پایش دامنه و سرور» در به‌زودی', roles: ['manager', 'ceo', 'sales_manager'],
+      summary: 'یک کاشی تازه با آیکن سه‌بعدی برای پایش دامنه و سرور (فعال‌سازی در C7) به بخش «به‌زودی» اضافه شد.' },
     { id: 'footer-grouped', date: '1405/07/28', tag: 'بهبود', title: 'پایین صفحه‌های عمومی مرتب‌تر شد', quiet: true,
       summary: 'لینک‌های قوانین حالا در سه گروه «قوانین»، «سفارش» و «شرکت» آمده‌اند و لوگو بالای آن‌هاست؛ «تماس با ما» هم اضافه شد.' },
     { id: 'no-download-popup', date: '1405/07/28', tag: 'اصلاح', title: 'دیگر هنگام باز کردن برنامه پنجرهٔ دانلود باز نمی‌شود', quiet: true,
