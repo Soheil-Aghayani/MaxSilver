@@ -262,6 +262,8 @@
   }
 
   window.MSSync = {
+    // the Firebase sign-in token of the person (the assistant relay checks it); rejects when nobody is signed in
+    idToken: function () { return boot().then(function () { return whenUser(); }).then(function (u) { return u.getIdToken(); }); },
     uid: function () { return approved() ? currentUid() : ''; },
     code: function () { var p = activeProfile(); return approved() ? String(p.code || currentUid().slice(0, 3)).toUpperCase().replace(/[^A-Z0-9]/g, '') : ''; },
     push: function () {
