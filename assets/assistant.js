@@ -804,6 +804,9 @@
   window.MSAssistant = { retrieve: function (q, k) { return retrieve(q, k || 5).map(function (h) { return { id: h.d.it.id, name: h.d.it.name, score: Math.round(h.s * 100) / 100 }; }); }, size: function () { return docs.length; }, ask: ask, fix: function (q) { return correct(q); } };
   // public: the product codes the sales team took out of use (the same list the public planner reads)
   function loadPubRet() {
+    if (window.MSApi && window.MSApi.enabled()) {
+      return window.MSApi.publicConfig('retired').then(function (d) { PUBRET = {}; (d.ids || []).forEach(function (id) { PUBRET[id] = true; }); }, function () { /* offline: nothing is hidden */ });
+    }
     var c = window.MS_FIREBASE; if (!c || !c.projectId || !window.fetch) return Promise.resolve();
     var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 4000);
     return fetch('https://firestore.googleapis.com/v1/projects/' + c.projectId + '/databases/(default)/documents/public_config/retired?key=' + encodeURIComponent(c.apiKey || ''), ctl ? { signal: ctl.signal } : {})

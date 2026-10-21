@@ -85,6 +85,7 @@
   function errText(e) {
     var c = e && e.code || '';
     if (/operation-not-allowed|admin-restricted/.test(c)) return 'ثبت درخواست هنوز فعال نشده است. لطفاً با فروش تماس بگیرید. (' + c + ')';
+    if (c === 'rate-limited') return 'تعداد ارسال‌ها از حد مجاز گذشته است؛ کمی بعد دوباره تلاش کنید یا با فروش تماس بگیرید.';
     if (/network|unavailable|timeout/.test(c)) return 'اتصال برقرار نشد. اینترنت (یا VPN) را بررسی و دوباره تلاش کنید.';
     if (/permission-denied/.test(c)) return 'درخواست پذیرفته نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.';
     return 'ثبت درخواست انجام نشد (' + (c || (e && e.message) || 'خطای نامشخص') + ').';
@@ -93,6 +94,13 @@
   // sign in anonymously only for the send, take the day's next number and write the request in one transaction,
   // then sign out again so no other page takes the visitor for a user
   function submit(payload) {
+    // the Max Silver server, when its address is set; otherwise Firebase as before
+    if (window.MSApi && window.MSApi.enabled()) {
+      var d = Object.assign({ city_code: cityCode(payload.customer.city) }, payload);
+      return window.MSApi.submitRequest(d).then(function (r) { return r.code; }, function (e) {
+        throw { code: e.status === 0 ? 'network' : e.status === 429 ? 'rate-limited' : e.status === 422 ? 'permission-denied' : 'server-' + e.status, message: e.message };
+      });
+    }
     var fb = window.firebase, cfg = window.MS_FIREBASE;
     if (!fb || !cfg) return Promise.reject({ code: 'unavailable' });
     var app = fb.apps.length ? fb.app() : fb.initializeApp(cfg), auth = fb.auth(app), db = fb.firestore(app);

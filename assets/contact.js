@@ -70,6 +70,12 @@
       if (!/^0\d{10}$/.test(contact)) { state.error = 'شمارهٔ تلفن باید ۱۱ رقم، فقط عدد و بدون کد کشور باشد (یا یک ایمیل بنویسید).'; render(true); return; }
     }
     if (!name || contact.length < 3 || !text) { state.error = 'نام، راه تماس و پیام را کامل کنید.'; render(true); return; }
+    if (window.MSApi && window.MSApi.enabled()) {
+      state.error = ''; state.busy = true; render(true);
+      window.MSApi.sendMessage({ name: name, contact: contact, to: state.to, text: text }).then(function () { state.busy = false; state.done = true; render(false); },
+        function (err) { state.busy = false; state.error = err.status === 429 ? 'تعداد ارسال‌ها از حد مجاز گذشته است؛ کمی بعد دوباره امتحان کنید.' : err.status === 0 ? 'اتصال برقرار نشد؛ دوباره امتحان کنید.' : 'ارسال انجام نشد؛ اطلاعات را بررسی کنید.'; render(true); });
+      return;
+    }
     if (!window.firebase || !cfg) { state.error = 'سرویس در دسترس نیست. صفحه را دوباره باز کنید.'; render(true); return; }
     state.error = ''; state.busy = true; render(true);
     try {

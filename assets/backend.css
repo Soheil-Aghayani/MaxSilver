@@ -1,0 +1,21 @@
+/* staff sign-in and accounts against the Laravel backend */
+.bk{width:min(760px,100%);margin:0 auto;padding:18px 16px 64px;display:grid;gap:14px}
+.bk-card{display:grid;gap:12px;padding:20px 22px;border:1px solid var(--ms-line);border-radius:18px;background:#fff}
+.bk-card h1{margin:0;color:var(--ms-navy);font-size:22px}.bk-card h2{margin:0;color:var(--ms-navy);font-size:17px}
+.bk-sub{margin:0;color:var(--ms-muted);font-size:13.5px;line-height:1.9}
+.bk-card form{display:grid;gap:12px}.bk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.bk-card label{display:grid;gap:5px;font-size:13px;font-weight:700;color:var(--ms-navy)}
+.bk-card input,.bk-card select{min-height:44px;padding:0 12px;border:1px solid var(--ms-line);border-radius:12px;font:600 14px Estedad,Tahoma,sans-serif;background:#fff;color:var(--ms-ink)}
+.bk-btn{min-height:44px;padding:0 18px;border:0;border-radius:12px;background:var(--ms-navy);color:#fff;font:800 13.5px Estedad,Tahoma,sans-serif;cursor:pointer;align-self:end}
+.bk-btn.ghost{background:#fff;color:var(--ms-navy);border:1px solid var(--ms-line)}.bk-btn[disabled]{opacity:.6;cursor:wait}
+.bk-link{border:0;background:none;color:#1746b5;font:inherit;cursor:pointer;padding:0;text-decoration:underline}
+.bk-row,.bk-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.bk-err{margin:0;padding:10px 12px;border-radius:12px;background:#fdecec;color:#8a1f1f;font-size:13.5px}
+.bk-ok{margin:0;padding:10px 12px;border-radius:12px;background:#e8f6ec;color:#17613a;font-size:13.5px}
+.bk-qr{width:220px;max-width:100%;margin:0 auto;padding:10px;border:1px solid var(--ms-line);border-radius:14px;background:#fff}.bk-qr svg{width:100%;height:auto;display:block}
+.bk-secret{margin:6px 0 0;font:700 14px monospace;word-break:break-all;letter-spacing:.06em}
+.bk-table{display:grid;gap:6px}
+.bk-tr{display:grid;grid-template-columns:1.6fr 1.6fr .8fr 1fr;gap:8px;align-items:center;padding:8px 4px;border-top:1px solid #eef2f8;font-size:13.5px}
+.bk-th{border-top:0;color:var(--ms-muted);font-size:12px;font-weight:800}.bk-tr small{display:block;color:var(--ms-muted);font-size:12px}
+.bk :focus-visible{outline:3px solid #1746b5;outline-offset:2px}
+@media(max-width:620px){.bk-grid{grid-template-columns:1fr}.bk-tr{grid-template-columns:1fr 1fr}.bk-th{display:none}}

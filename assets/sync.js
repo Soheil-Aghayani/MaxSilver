@@ -51,6 +51,7 @@
   function approved() { return !!(currentUid() && activeProfile()); }
   function live() { return !!(db && S.user); }
   function hasSession() {
+    if (window.MSApi && window.MSApi.signedIn()) return true;
     try { for (var i = 0; i < localStorage.length; i++) if (/^firebase:authUser:/.test(localStorage.key(i))) return true; } catch (e) { /* ignore */ }
     return false;
   }
@@ -243,7 +244,7 @@
   function boot() {
     if (bootPromise) return bootPromise;
     S.booting = true; render();
-    bootPromise = SDK.reduce(function (p, src) { return p.then(function () { return loadScript(src); }); }, Promise.resolve()).then(function () {
+    bootPromise = (window.firebase && window.firebase.__msShim ? Promise.resolve() : SDK.reduce(function (p, src) { return p.then(function () { return loadScript(src); }); }, Promise.resolve())).then(function () {
       firebase.initializeApp(cfg);
       auth = firebase.auth();
       db = firebase.firestore();

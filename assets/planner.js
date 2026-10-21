@@ -490,6 +490,9 @@
   });
   // public: the retired product ids, so the public list never offers a code that is out of use
   function loadPubRet() {
+    if (PUBLIC && window.MSApi && window.MSApi.enabled()) {
+      return window.MSApi.publicConfig('retired').then(function (d) { PUBRET = {}; (d.ids || []).forEach(function (id) { PUBRET[id] = true; }); }, function () { /* nothing is hidden */ });
+    }
     if (!PUBLIC || !window.firebase || !window.MS_FIREBASE) return Promise.resolve();
     var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(window.MS_FIREBASE);
     return Promise.race([window.firebase.firestore(app).collection('public_config').doc('retired').get(), new Promise(function (ok) { setTimeout(ok, 4000); })]).then(function (s) {

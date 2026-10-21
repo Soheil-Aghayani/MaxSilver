@@ -6,9 +6,11 @@
   var cfg = window.MS_FIREBASE, root = document.getElementById('pr'), P = window.MSPrices, ST8 = window.MSStatus;
   var VER = (document.currentScript && /[?&]v=(\d+)/.exec(document.currentScript.src) || [])[1] || '';
   if (!root) return;
-  if (!cfg || !window.firebase || !P || !ST8) { root.innerHTML = '<p class="pr-note">سرویس در دسترس نیست. صفحه را دوباره باز کنید.</p>'; return; }
-  firebase.initializeApp(cfg);
-  var auth = firebase.auth(), db = firebase.firestore();
+  // with the Max Silver server on and a staff sign-in there, prices go through it; otherwise Firebase as before
+  var API = !!(window.MSApi && window.MSApi.enabled() && window.MSApi.token());
+  if (!P || !ST8 || (!API && (!cfg || !window.firebase))) { root.innerHTML = '<p class="pr-note">سرویس در دسترس نیست. صفحه را دوباره باز کنید.</p>'; return; }
+  if (!API) firebase.initializeApp(cfg);
+  var auth = API ? null : firebase.auth(), db = API ? null : firebase.firestore();
   var faInt = new Intl.NumberFormat('fa-IR'), faDate = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' });
   var BR = { 'max-silver': 'مکث‌سیلور', wintora: 'وینتورا', 'torbo-max': 'توربومکس' };
   var ST = [['p', 'نقدی'], ['i', 'استعلام'], ['r', 'شارژ'], ['n', 'توافقی']];
@@ -26,6 +28,7 @@
   function norm(s) { return latin(String(s == null ? '' : s).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[‌‏‎]/g, ' ').replace(/\s+/g, ' ').trim()).toLowerCase(); }
   function errText(e) {
     var c = e && e.code || '';
+    if (e && typeof e.status === 'number') return e.status === 0 ? 'اتصال به سرور برقرار نشد.' : e.status === 401 ? 'نشست شما تمام شده است؛ دوباره وارد شوید.' : e.status === 403 ? 'اجازهٔ این کار را ندارید (فقط مسئولان تعیین‌شدهٔ قیمت).' : (e.message || 'خطای سرور');
     if (/permission-denied/.test(c)) return 'اجازهٔ ذخیرهٔ قیمت را ندارید (یا قوانین پایگاه داده هنوز منتشر نشده است).';
     if (/network|unavailable|deadline|timeout/.test(c)) return 'اتصال برقرار نشد (اینترنت یا VPN).';
     return 'خطا: ' + (c || (e && e.message) || 'نامشخص');
@@ -121,7 +124,7 @@
     var names = {}; u.forEach(function (id) { var x = S.team.filter(function (t) { return t.id === id; })[0]; names[id] = x ? (x.name || x.email || id) : id; });
     var doc = { uids: u, names: names, at: Date.now(), by: S.user.uid, byName: myName() };
     S.error = ''; S.msg = '';
-    db.collection('settings').doc('price_editors').set(doc).then(function () { S.editors = { uids: u, names: names }; S.msg = 'مسئولان تغییر قیمت ذخیره شد.'; }, function (e) { S.error = errText(e); }).then(render);
+    (API ? window.MSApi.putSetting('price_editors', { uids: u.map(Number), names: u.map(function (id) { return String(names[id]).slice(0, 80); }) }) : db.collection('settings').doc('price_editors').set(doc)).then(function () { S.editors = { uids: u, names: names }; S.msg = 'مسئولان تغییر قیمت ذخیره شد.'; }, function (e) { S.error = errText(e); }).then(render);
   }
   // ---------- cheque price = cash + a percentage
   function markupHtml() {
@@ -145,7 +148,7 @@
     if (bad) { S.error = 'درصد هر گروه باید بین ۰ و ۱۰۰ باشد.'; S.msg = ''; render(); return; }
     var doc = { def: def, byGrp: byGrp, at: Date.now(), by: S.user.uid, byName: myName() };
     S.error = ''; S.msg = '';
-    db.collection('settings').doc('cheque_markup').set(doc).then(function () { P.setMarkup(doc); S.msg = 'درصد قیمت اعتباری ذخیره شد.'; }, function (e) { S.error = errText(e); }).then(render);
+    (API ? window.MSApi.putSetting('cheque_markup', { def: def, byGrp: byGrp }) : db.collection('settings').doc('cheque_markup').set(doc)).then(function () { P.setMarkup(doc); S.msg = 'درصد قیمت اعتباری ذخیره شد.'; }, function (e) { S.error = errText(e); }).then(render);
   }
   function chip(attr, val, on, text, n) { return '<button type="button" class="pr-chip" ' + attr + '="' + val + '" aria-pressed="' + on + '">' + text + (n != null ? ' <b>' + faInt.format(n) + '</b>' : '') + '</button>'; }
 
@@ -201,6 +204,7 @@
   // ---------- history of every price change (collection price_log). Written after a price is saved; a failure here never blocks the price itself.
   var faDT = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' });
   function logChanges(list, src) {
+    if (API) { S.log = null; if (S.histOpen) loadLog(); return; }   // the server writes the history line in the same step as the price
     try {
       var b = db.batch(), now = Date.now();
       list.forEach(function (x) {
@@ -212,6 +216,7 @@
   }
   function loadLog() {
     S.logBusy = true; S.logErr = '';
+    if (API) { window.MSApi.priceLog().then(function (l) { S.log = l; }, function () { S.log = []; S.logErr = 'تاریخچه در دسترس نیست یا اجازه ندارید.'; }).then(function () { S.logBusy = false; render(); }); return; }
     db.collection('price_log').orderBy('at', 'desc').limit(300).get().then(function (q) { var l = []; q.forEach(function (s) { l.push(s.data()); }); S.log = l; },
       function () { S.log = []; S.logErr = 'تاریخچه هنوز در دسترس نیست (قاعده‌های پایگاه داده باید منتشر شوند) یا اجازه ندارید.'; }).then(function () { S.logBusy = false; render(); });
   }
@@ -252,8 +257,33 @@
   }
 
   // ---------- data
+  function loadApi() {
+    var catalog = fetch('./assets/catalog.json' + (VER ? '?v=' + VER : '')).then(function (r) { return r.json(); });
+    var A = window.MSApi;
+    A.me().then(function (u) {
+      S.user = { uid: String(u.id), email: u.email };
+      S.profile = { role: u.role, name: u.name, active: true };
+      if (!can('pricesAudit')) return null;
+      var team = can('roleAdmin') ? A.priceCandidates().then(function (l) { return l.map(function (x) { return { id: String(x.id), name: x.name, role: x.role }; }); }, function () { return []; }) : Promise.resolve([]);
+      return Promise.all([catalog, P.load(), A.pricesState(), team]).then(function (res) {
+        var st = res[2], e0 = st.price_editors;
+        S.team = res[3];
+        S.editors = e0 && Array.isArray(e0.uids) ? { uids: e0.uids.slice(0, 2).map(String), names: {} } : { uids: [], names: {} };
+        S.editors.uids.forEach(function (id, i) { S.editors.names[id] = (e0.names && e0.names[i]) || id; });
+        S.pick1 = S.editors.uids[0] || ''; S.pick2 = S.editors.uids[1] || '';
+        S.items = res[0].items;
+        var m = {}, sm = {};
+        Object.keys(st.list_prices).forEach(function (id) { var d = st.list_prices[id]; m[id] = { p: d.p || 0, s: d.s || 'p', c: d.c || 0, at: d.at || 0, by: d.byName || '' }; });
+        P.setEdits(m);
+        if (st.cheque_markup) P.setMarkup(st.cheque_markup);
+        Object.keys(st.item_status).forEach(function (id) { var d = st.item_status[id]; sm[id] = { rep: d.rep || '', note: d.note || '', at: d.at || 0, by: d.byName || '' }; });
+        ST8.setAll(sm);
+      });
+    }).then(null, function (e) { S.error = errText(e); if (e && e.status === 401) S.user = null; }).then(function () { S.loading = false; render(); });
+  }
   function load() {
     S.loading = true; render();
+    if (API) return loadApi();
     var catalog = fetch('./assets/catalog.json' + (VER ? '?v=' + VER : '')).then(function (r) { return r.json(); });
     db.collection('users').doc(S.user.uid).get().then(function (snap) {
       S.profile = snap.exists ? snap.data() : null;
@@ -280,7 +310,7 @@
     var doc = { p: d.s === 'p' ? d.p : 0, s: d.s, at: Date.now(), by: S.user.uid, byName: myName(), prev: c && c.p ? c.p : 0 };
     if (d.s === 'p' && c && c.c > 0) doc.c = c.c;
     S.error = ''; S.msg = '';
-    db.collection('list_prices').doc(id).set(doc).then(function () {
+    (API ? window.MSApi.putPrice(id, { p: doc.p, s: doc.s, c: doc.c || null, name: String(it.name || '').slice(0, 120), code: String(it.code || '').slice(0, 30), brand: it.src || '', old: c && c.p ? c.p : 0, oldS: c ? (c.s || 'p') : '', src: 'site' }) : db.collection('list_prices').doc(id).set(doc)).then(function () {
       P.setOne(id, { p: doc.p, s: doc.s, c: doc.c || 0, at: doc.at, by: doc.byName });
       logChanges([{ it: it, old: c, nw: { p: doc.p, s: doc.s }, at: doc.at }], 'site');
       delete S.draft[id];
@@ -289,14 +319,14 @@
   }
   function reset(id) {
     S.error = ''; S.msg = '';
-    db.collection('list_prices').doc(id).delete().then(function () {
+    (API ? window.MSApi.deletePrice(id) : db.collection('list_prices').doc(id).delete()).then(function () {
       P.setOne(id, null); delete S.draft[id];
       S.msg = 'قیمت لیست پایه برگشت.';
     }, function (e) { S.error = errText(e); }).then(render);
   }
   // the ids of the retired products, readable without sign-in, for the public planner
   function publishRetired() {
-    db.collection('public_config').doc('retired').set({ ids: Object.keys(ST8.all()).slice(0, 500), at: Date.now() }).then(null, function () { /* the staff list still works; the public list updates on the next change */ });
+    (API ? window.MSApi.putConfig('retired', { ids: Object.keys(ST8.all()).slice(0, 500) }) : db.collection('public_config').doc('retired').set({ ids: Object.keys(ST8.all()).slice(0, 500), at: Date.now() })).then(null, function () { /* the staff list still works; the public list updates on the next change */ });
   }
   function retire(id) {
     var it = itemById(id), code = S.repIn.trim(), rep = '';
@@ -309,7 +339,7 @@
     }
     var doc = { rep: rep, note: S.noteIn.trim().slice(0, 200), at: Date.now(), by: S.user.uid, byName: myName() };
     S.error = ''; S.msg = '';
-    db.collection('item_status').doc(id).set(doc).then(function () {
+    (API ? window.MSApi.putStatus(id, { rep: doc.rep, note: doc.note }) : db.collection('item_status').doc(id).set(doc)).then(function () {
       ST8.setOne(id, { rep: doc.rep, note: doc.note, at: doc.at, by: doc.byName });
       publishRetired();
       S.ret = ''; S.repIn = ''; S.noteIn = '';
@@ -318,7 +348,7 @@
   }
   function unretire(id) {
     S.error = ''; S.msg = '';
-    db.collection('item_status').doc(id).delete().then(function () {
+    (API ? window.MSApi.deleteStatus(id) : db.collection('item_status').doc(id).delete()).then(function () {
       ST8.setOne(id, null); publishRetired(); S.msg = 'کد دوباره در استفاده است.';
     }, function (e) { S.error = errText(e); }).then(render);
   }
@@ -441,7 +471,12 @@
     var now = Date.now(), list = m.changes.slice(), done = 0;
     function next() {
       if (!list.length) return Promise.resolve();
-      var chunk = list.splice(0, 400), b = db.batch();
+      var chunk = list.splice(0, API ? 500 : 400);
+      if (API) {
+        return window.MSApi.batchPrices(chunk.map(function (x) { return { id: x.it.id, p: x.nw.p, s: x.nw.s, c: x.nw.c > 0 ? x.nw.c : null, name: String(x.it.name || '').slice(0, 120), code: String(x.it.code || '').slice(0, 30), brand: x.it.src || '', old: x.old && x.old.p ? x.old.p : 0, oldS: x.old ? (x.old.s || 'p') : '', src: 'excel' }; }))
+          .then(function () { chunk.forEach(function (x) { P.setOne(x.it.id, { p: x.nw.p, s: x.nw.s, c: x.nw.c || 0, at: now, by: myName() }); }); S.log = null; done += chunk.length; return next(); });
+      }
+      var b = db.batch();
       chunk.forEach(function (x) { var dd = { p: x.nw.p, s: x.nw.s, at: now, by: S.user.uid, byName: myName(), prev: x.old && x.old.p ? x.old.p : 0 }; if (x.nw.c > 0) dd.c = x.nw.c; b.set(db.collection('list_prices').doc(x.it.id), dd); });
       return b.commit().then(function () { chunk.forEach(function (x) { P.setOne(x.it.id, { p: x.nw.p, s: x.nw.s, c: x.nw.c || 0, at: now, by: myName() }); }); logChanges(chunk.map(function (x) { return { it: x.it, old: x.old, nw: x.nw, at: now }; }), 'excel'); done += chunk.length; return next(); });
     }
@@ -510,7 +545,7 @@
   });
   ST8.onChange(function () { if (S.user && S.profile && !document.activeElement.matches('[data-in],[data-rep],[data-note]')) render(); });
   P.onChange(function () { if (S.user && S.profile && !document.activeElement.matches('[data-in]')) render(); });
-  auth.onAuthStateChanged(function (u) {
+  if (API) { S.items = []; load(); } else auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.items = [];
     if (!u) { S.loading = false; render(); return; }
     load();

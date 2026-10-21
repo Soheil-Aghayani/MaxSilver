@@ -48,6 +48,13 @@
     S.code = raw; S.res = null; S.err = '';
     var code = codeOf(raw);
     if (!code) { S.err = 'کد پیگیری درست نیست؛ با CON شروع می‌شود، سه حرف شهر، تاریخ و چهار رقم.'; render(); return; }
+    if (window.MSApi && window.MSApi.enabled()) {
+      S.busy = true; render();
+      window.MSApi.track(code).then(function (d) { S.res = { code: code, stage: d.stage, updatedAt: d.updatedAt }; }, function (e) {
+        S.err = e.status === 404 ? 'کدی با این شماره پیدا نشد. اگر کد را درست نوشته‌اید، با فروش مکث‌سیلور تماس بگیرید.' : e.status === 0 ? 'اتصال برقرار نشد؛ کمی بعد دوباره تلاش کنید.' : 'پیگیری انجام نشد. کمی بعد دوباره امتحان کنید.';
+      }).then(function () { S.busy = false; render(); });
+      return;
+    }
     if (!cfg || !window.firebase) { S.err = 'سرویس در دسترس نیست. صفحه را دوباره باز کنید.'; render(); return; }
     S.busy = true; render();
     var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(cfg);

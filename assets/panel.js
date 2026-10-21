@@ -75,7 +75,7 @@
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
-    if (!u) { try { localStorage.removeItem('ms-role'); } catch (x) { /* ignore */ } if (window.MSGate) window.MSGate.apply(); S.loading = false; render(); return; }
+    if (!u) { if (!(window.MSApi && window.MSApi.signedIn())) { try { localStorage.removeItem('ms-role'); } catch (x) { /* ignore */ } } if (window.MSGate) window.MSGate.apply(); S.loading = false; render(); return; }
     load();
   });
 
@@ -1257,6 +1257,8 @@
         '<h2>ورود به حساب</h2><p class="pn-note">با ایمیل و رمزی که مدیر برای شما ساخته وارد شوید.</p>' +
         '<label>ایمیل<input type="email" name="email" dir="ltr" autocomplete="username" required></label>' +
         '<label>رمز عبور<input type="password" name="password" dir="ltr" autocomplete="current-password" required></label>' +
+        (S.needCode ? '<label>کد شش‌رقمی برنامهٔ احراز هویت<input type="text" name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required autofocus></label>' : '') +
+        (S.enroll ? '<p class="pn-note">ورود دومرحله‌ای برای نقش شما الزامی است. یک بار آن را در <a href="./backend.html">صفحهٔ ورود به سرور</a> فعال کنید و دوباره بیایید.</p>' : '') +
         (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.pwMsg ? '<p class="pn-ok" role="status">' + esc(S.pwMsg) + '</p>' : '') +
         '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ورود</button>' +
         '<button type="button" class="pn-link" data-forgot>رمز عبور را فراموش کرده‌اید؟</button></form>';
@@ -1574,7 +1576,12 @@
     if (f.id === 'loginForm') {
       S.pwMsg = '';
       S.busy = true; render();
-      auth.signInWithEmailAndPassword(v('email'), f.elements.password.value).then(null, function (err) { S.error = errText(err); S.busy = false; S.loading = false; render(); });
+      S.enroll = false;
+      auth.signInWithEmailAndPassword(v('email'), f.elements.password.value, f.elements.code ? v('code') : undefined).then(function () { S.needCode = false; }, function (err) {
+        var c = (err && err.code) || '';
+        if (c === 'auth/code-required') { S.needCode = true; S.error = ''; } else if (c === 'auth/enroll-2fa') { S.enroll = true; S.error = ''; } else S.error = errText(err);
+        S.busy = false; S.loading = false; render();
+      });
     } else if (f.id === 'meForm') {
       var em = v('contactEmail').toLowerCase();
       if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { S.error = 'نشانی ایمیل درست نیست.'; render(); return; }
