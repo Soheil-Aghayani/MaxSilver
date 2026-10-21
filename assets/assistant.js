@@ -15,15 +15,16 @@
     ['خمیر پهن کن', 'خمیرپهنکن'], ['آب میوه', 'آبمیوه'], ['مخلوط کن', 'مخلوطکن'], ['ساندویچ ساز', 'ساندویچساز'], ['سوسیس پر کن', 'سوسیسپرکن'], ['وافل ساز', 'وافلساز'], ['کباب ترکی', 'کبابترکی'],
     ['دیس پلی', 'دیسپلی'], ['شو کیک', 'شوکیک'], ['شو کیس', 'شوکیس'], ['زیر گریل', 'زیرگریل'], ['پاستا پز', 'پاستاپز'],
     ['فریر', 'سرخکن'], ['فرایر', 'سرخکن'], ['چارکول', 'ذغالی'], ['چارگریل', 'گریل ذغالی'], ['مارینیتور', 'مرینیتور'], ['ریفریجراتور', 'یخچال'], ['گریدل', 'گریل روغنی'], ['ماریناتور', 'مرینیتور']];
+  var NUM_WORDS = { 'صفر': '0', 'یک': '1', 'دو': '2', 'سه': '3', 'چهار': '4', 'پنج': '5', 'شش': '6', 'هفت': '7', 'هشت': '8', 'نه': '9', 'ده': '10' };
   var STOP = {};
-  ('و در به از که را این آن با برای است شد می یک بر هم یا تا اما نیز باید شده های ها ای ی چگونه چه چند کدام آیا کنیم کنید کردن کرد دارد دارم لطفا ' +
-    'هایی ترین قیمت تومان چقدر چنده هزینه').split(' ').forEach(function (w) { if (w) STOP[w] = 1; });
+  ('و در به از که را این آن با برای است شد می یک بر هم یا تا اما نیز باید شده های ها ای ی چگونه چه چند کدام آیا کنیم کنید کردن کرد دارد دارم است؟ لطفا').split(' ').forEach(function (w) { if (w) STOP[w] = 1; });
   function norm(s) {
     var t = String(s == null ? '' : s).normalize('NFKC')
       .replace(/[۰-۹]/g, function (d) { return d.charCodeAt(0) - 1776; }).replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; })
       .replace(/ي/g, 'ی').replace(/ى/g, 'ی').replace(/ك/g, 'ک').replace(/ۀ/g, 'ه').replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/أ/g, 'ا').replace(/إ/g, 'ا').replace(/ٱ/g, 'ا')
       .replace(/‌/g, ' ').replace(/[ً-ٰٟ‍‎‏؜]/g, '').toLowerCase();
     VARIANTS.forEach(function (v) { t = t.split(v[0]).join(v[1]); });
+    t = t.replace(/(^|[^\p{L}\p{N}_])(صفر|یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده)(?=$|[^\p{L}\p{N}_])/gu, function (_, sep, word) { return sep + NUM_WORDS[word]; });
     return t;
   }
   function tokens(s) {
@@ -63,10 +64,27 @@
     });
     avg = docs.reduce(function (a, d) { return a + d.len; }, 0) / Math.max(1, docs.length);
   }
+  function hasExact(text, code) {
+    var from = 0, at = text.indexOf(code, from);
+    while (at >= 0) {
+      var before = at ? text.charAt(at - 1) : '', after = text.charAt(at + code.length);
+      if ((!/[a-z0-9]/.test(before)) && (!/[a-z0-9]/.test(after))) return true;
+      from = at + 1; at = text.indexOf(code, from);
+    }
+    return false;
+  }
+  function queryCodes(q) {
+    var qn = norm(q), out = [];
+    Object.keys(itemsById).forEach(function (id) {
+      var code = norm(String(itemsById[id].code || ''));
+      if (code.length >= 4 && hasExact(qn, code) && out.indexOf(code) < 0) out.push(code);
+    });
+    return out;
+  }
   function search(q, k) {
     var n = docs.length, qt = {};
     tokens(q).forEach(function (t) { qt[t] = 1; });
-    var qs = Object.keys(qt), scored = [];
+    var qs = Object.keys(qt), codes = queryCodes(q), scored = [];
     docs.forEach(function (d) {
       var s = 0;
       qs.forEach(function (t) {
@@ -74,6 +92,10 @@
         var idf = Math.log(1 + (n - (df[t] || 0) + 0.5) / ((df[t] || 0) + 0.5));
         s += idf * f * (K1 + 1) / (f + K1 * (1 - B + B * d.len / avg));
       });
+      if (codes.length && d.it.faq) {
+        var src = norm(d.it.name + ' ' + d.it.text);
+        if (codes.some(function (c) { return hasExact(src, c); })) s += 50;
+      } else if (codes.length && !d.it.faq && codes.indexOf(norm(String(d.it.code || ''))) >= 0) s += 40;
       if (s > 0) scored.push({ s: s, d: d });
     });
     scored.sort(function (a, b) { return b.s - a.s; });
@@ -81,10 +103,18 @@
   }
   // [] when nothing is a real match: the page then says so instead of showing guesses
   function retrieve(q, k, loose) {
-    var hits = search(q, k);
+    var qn = norm(q), blocked = ['موجودی', 'انبار', 'تخفیف', 'تحویل', 'ارسال', 'ضمانت', 'گارانتی', 'مرجوعی', 'نصب', 'ایمنی', 'قانون'];
+    if (blocked.some(function (term) { return qn.indexOf(term) >= 0; })) return [];
+    var hits = search(q, k), codes = queryCodes(q);
+    if (codes.length) hits = hits.filter(function (h) {
+      if (!h.d.it.faq) return codes.indexOf(norm(String(h.d.it.code || ''))) >= 0;
+      var src = norm(h.d.it.name + ' ' + h.d.it.text);
+      return codes.some(function (c) { return hasExact(src, c); });
+    });
     if (!hits.length || hits[0].s < (loose ? 2 : MIN_SCORE)) return [];
-    var words = Object.keys((function () { var o = {}; tokens(q).forEach(function (t) { if (t.charAt(0) !== '~') o[t] = 1; }); return o; })());
-    if (words.length && words.filter(function (w) { return hits[0].d.tf[w]; }).length / words.length < COVER) return [];
+    var words = Object.keys((function () { var o = {}; tokens(q).forEach(function (t) { if (t.charAt(0) !== '~') o[t] = 1; }); return o; })()), covered = {};
+    hits.forEach(function (h) { Object.keys(h.d.tf).forEach(function (t) { covered[t] = 1; }); });
+    if (words.length && words.filter(function (w) { return covered[w]; }).length / words.length < COVER) return [];
     return hits;
   }
 
@@ -162,7 +192,7 @@
   }
   function logExport() {
     var a = logRead(); if (!a.length) return;
-    var blob = new Blob([JSON.stringify({ app: 'maxi', exported: new Date().toISOString(), note: 'پرسش‌های بی‌پاسخ و بازخورد؛ برای آموزش مکسی', items: a }, null, 1)], { type: 'application/json' });
+    var blob = new Blob([JSON.stringify({ app: 'maxi', exported: new Date().toISOString(), note: 'پرسش‌های بی‌پاسخ و بازخورد؛ برای آموزش آریا', items: a }, null, 1)], { type: 'application/json' });
     var url = URL.createObjectURL(blob), l = document.createElement('a'); l.href = url; l.download = 'maxi-questions-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
   }
   function fbHtml(m, i) {
@@ -173,7 +203,7 @@
   function hitsOf(m) { return (m.ids || []).map(function (id) { return byId[id]; }).filter(Boolean); }
   function botHtml(m, i) {
     var hits = hitsOf(m), body;
-    if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) : 'در منابع من پاسخی برای این پرسش نیست.') + '</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید یا بپرسید «چطور …»؛ مکسی حدس نمی‌زند.</p>';
+    if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) : 'در منابع من پاسخی برای این پرسش نیست.') + '</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید یا بپرسید «چطور …»؛ آریا حدس نمی‌زند.</p>';
     else if (m.state === 'wait') body = '<span class="as-dots" aria-label="در حال نوشتن"><i></i><i></i><i></i></span>';
     else if (m.text) body = md(m.text) + (m.state === 'stream' ? '<span class="as-caret"></span>' : '');
     else body = '<p>' + (m.note ? esc(m.note) : 'نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:') + '</p>';
@@ -186,14 +216,14 @@
   function view() {
     if (S.error) return '<p class="as-err" role="alert">' + esc(S.error) + '</p>';
     var empty = !S.msgs.length;
-    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکسی</span></h1><span class="as-tools">' + (logRead().length ? '<button type="button" class="as-new as-qlog" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش مکسی">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></span></header>' +
-      (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من مکسی‌ام! چه کمکی از دستم برمی‌آید؟</h2><p>دربارهٔ کالاها، قیمت‌ها، بخش‌های سایت و پیش‌فاکتور بپرسید. اگر ندانم همین را می‌گویم و حدس نمی‌زنم.' +
+    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">آریا</span></h1><span class="as-tools">' + (logRead().length ? '<button type="button" class="as-new as-qlog" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش آریا">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></span></header>' +
+      (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من آریا هستم! چه کمکی از دستم برمی‌آید؟</h2><p>دربارهٔ کالاها، قیمت‌ها، بخش‌های سایت و پیش‌فاکتور بپرسید. اگر ندانم همین را می‌گویم و حدس نمی‌زنم.' +
         (relayUrl() ? '' : '<br><span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهم؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p>' +
         '<div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div></div>' :
         '<div class="as-log" id="asLog" aria-live="polite">' + S.msgs.map(function (m, i) { return m.role === 'user' ? userHtml(m) : botHtml(m, i); }).join('') + '</div>') +
       '<form class="as-form' + (empty ? ' empty' : '') + '" id="asForm"><div class="as-box"><textarea id="asQ" rows="1" maxlength="600" enterkeyhint="send" placeholder="' + (S.ready ? 'پیام خود را بنویسید…' : 'در حال آماده‌کردن کاتالوگ…') + '" aria-label="پیام"' + (S.ready ? '' : ' disabled') + '></textarea>' +
       (SR ? '<button type="button" class="as-mic' + (S.listening ? ' on' : '') + '" id="asMic" aria-label="گفتن پیام با صدا" title="گفتن پیام با صدا"' + (S.ready ? '' : ' disabled') + '>' + ICON.mic + '</button>' : '') + '<button type="submit" class="as-send" aria-label="ارسال"' + (S.ready && !S.busy ? '' : ' disabled') + '>' + ICON.send + '</button></div>' +
-      '<p class="as-fine">مکسی ممکن است اشتباه کند؛ کد، قیمت و اندازه را پیش از پیش‌فاکتور در کاتالوگ ببینید.</p></form>';
+      '<p class="as-fine">آریا ممکن است اشتباه کند؛ کد، قیمت و اندازه را پیش از پیش‌فاکتور در کاتالوگ ببینید.</p></form>';
   }
   function grow(q) { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 168) + 'px'; }
   function save() { try { sessionStorage.setItem(KEY, JSON.stringify(S.msgs.slice(-30).map(function (m) { return m.state === 'wait' || m.state === 'stream' ? Object.assign({}, m, { state: m.text ? 'done' : 'cards' }) : m; }))); } catch (e) { /* ignore */ } }
@@ -250,7 +280,7 @@
   var TALK = [
     [/^(سلام|درود|وقت بخیر|صبح بخیر|عصر بخیر|شب بخیر|hi|hello)[\s!.؟?]*$/i, 'سلام، خوش آمدید. کدام کالا را لازم دارید؟ نام، اندازه یا کد را بنویسید، مثلاً «گریل ۶۰ ذغالی».'],
     [/^(ممنون|مرسی|سپاس|تشکر|دستت درد نکنه|متشکرم|thanks)[\s!.]*$/i, 'خواهش می‌کنم. اگر کالای دیگری لازم بود بنویسید.'],
-    [/(تو کی|شما کی|کی هستی|چه کار(ی)? (می‌?کنی|می‌?توانی|بلدی)|چیکار(ا)? (می‌?کنی|بلدی)|چه کمکی)/, 'من مکسی، دستیار هوشمند مکث‌سیلور هستم. فعلاً کالا، کد، قیمت نقدی و اعتباری (چکی) و ابعاد را پیدا می‌کنم، دو کالا را مقایسه می‌کنم، کالاهای مشابه برندهای دیگر را (احتمالی) پیشنهاد می‌دهم و معنی واژه‌های کاتالوگ را می‌گویم. کارهای بیشتر در راه است؛ آنچه در منابعم نباشد را حدس نمی‌زنم.'],
+    [/(تو کی|شما کی|کی هستی|چه کار(ی)? (می‌?کنی|می‌?توانی|بلدی)|چیکار(ا)? (می‌?کنی|بلدی)|چه کمکی)/, 'من آریا، دستیار هوشمند مکث‌سیلور هستم. فعلاً کالا، کد، قیمت نقدی و اعتباری (چکی) و ابعاد را پیدا می‌کنم، دو کالا را مقایسه می‌کنم، کالاهای مشابه برندهای دیگر را (احتمالی) پیشنهاد می‌دهم و معنی واژه‌های کاتالوگ را می‌گویم. کارهای بیشتر در راه است؛ آنچه در منابعم نباشد را حدس نمی‌زنم.'],
     [/^(خداحافظ|فعلا|بای|bye)[\s!.]*$/i, 'موفق باشید.']
   ];
   function smallTalk(q) { var s = norm(q).trim(); for (var i = 0; i < TALK.length; i++) if (TALK[i][0].test(s)) return TALK[i][1]; return ''; }

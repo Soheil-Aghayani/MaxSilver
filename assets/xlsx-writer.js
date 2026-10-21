@@ -95,7 +95,7 @@
     ].concat(files));
   }
   function save(b, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000); }
-  // reads the first sheet of an .xlsx/.xls File with the bundled SheetJS (assets/vendor/xlsx.full.min.js) -> array of rows
+  // reads the sheet «Price Changes» if the workbook has one, else the first sheet, of an .xlsx/.xls File with the bundled SheetJS (assets/vendor/xlsx.full.min.js) -> array of rows
   function load() {
     if (w.XLSX) return Promise.resolve(w.XLSX);
     return new Promise(function (ok, bad) {
@@ -104,7 +104,11 @@
     });
   }
   function read(file) {
-    return load().then(function (X) { return file.arrayBuffer().then(function (buf) { var wb = X.read(buf, { type: 'array', codepage: 65001 }); return X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: null, blankrows: false }); }); });
+    return load().then(function (X) { return file.arrayBuffer().then(function (buf) { var wb = X.read(buf, { type: 'array', codepage: 65001 }); var name = wb.SheetNames.filter(function (n) { return /^price changes$/i.test(String(n).trim()); })[0] || wb.SheetNames[0]; return X.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: null, blankrows: false }); }); });
   }
-  w.MSXlsx = { blob: blob, save: save, read: read };
+  // every sheet: [{ name, rows }]
+  function readAll(file) {
+    return load().then(function (X) { return file.arrayBuffer().then(function (buf) { var wb = X.read(buf, { type: 'array', codepage: 65001 }); return wb.SheetNames.map(function (n) { return { name: n, rows: X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: null, blankrows: false }) }; }); }); });
+  }
+  w.MSXlsx = { blob: blob, save: save, read: read, readAll: readAll };
 })(window);

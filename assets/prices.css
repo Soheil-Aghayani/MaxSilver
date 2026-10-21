@@ -73,3 +73,5 @@
 .pr-me{padding:2px 9px;border-radius:999px;background:#e3f6ec;color:#0c6b3d;font-style:normal;font-size:12px;font-weight:800}
 
 .pr-chq{display:block;color:var(--ms-muted);font-size:12px;font-weight:700}.pr-chq b{color:var(--ms-navy)}
+
+.pr-hist{display:grid;gap:10px;margin:10px 0}.pr-hist .pr-tw{max-height:420px;overflow:auto}

@@ -288,6 +288,16 @@ service cloud.firestore {
         && request.resource.data.byGrp is map && request.resource.data.by == request.auth.uid;
       allow delete: if false;
     }
+    // one line per price change (product, before, after, who, when). Written by the price editors; never edited or deleted.
+    match /price_log/{id} {
+      allow read: if hasRole(['manager', 'ceo', 'sales_manager', 'finance']);   // the same roles that open the prices page
+      allow create: if priceEditor()
+        && request.resource.data.keys().hasOnly(['id', 'name', 'code', 'brand', 'old', 'oldS', 'p', 's', 'at', 'by', 'byName', 'src'])
+        && request.resource.data.s in ['p', 'i', 'r', 'n']
+        && request.resource.data.p is number && request.resource.data.p >= 0 && request.resource.data.p < 100000000000
+        && request.resource.data.by == request.auth.uid;
+      allow update, delete: if false;
+    }
     match /list_prices/{id} {
       allow read: if approved();
       allow create, update: if priceEditor()

@@ -12,7 +12,7 @@
   var LIST = [
     ['users', 'کاربران و نقش‌ها'], ['customers', 'مشتریان'], ['customer_groups', 'گروه‌های مشتری'], ['requests', 'درخواست‌های خرید', 'log'], ['fulfilment', 'آماده‌سازی انبار و تولید'],
     ['invoices', 'پیش‌فاکتورها'], ['invoice_archive', 'بایگانی پیش‌فاکتورها'], ['proforma_numbers', 'شمارهٔ پیش‌فاکتورها'], ['bank_accounts', 'حساب‌های بانکی'],
-    ['inventory', 'موجودی انبار'], ['inventory_claims', 'رزرو موجودی'], ['list_prices', 'قیمت‌ها'], ['public_requests', 'درخواست‌های عمومی'],
+    ['inventory', 'موجودی انبار'], ['inventory_claims', 'رزرو موجودی'], ['list_prices', 'قیمت‌ها'], ['price_log', 'تاریخچهٔ تغییر قیمت'], ['public_requests', 'درخواست‌های عمومی'],
     ['tickets', 'گفت‌وگوها', 'messages'], ['job_descriptions', 'شرح وظایف'], ['job_description_log', 'تاریخچهٔ شرح وظایف'],
     ['commission_rates', 'نرخ کمیسیون'], ['commission_results', 'نتیجهٔ کمیسیون'], ['commission_months', 'ماه‌های کمیسیون'], ['commission_month_results', 'نتیجهٔ ماهانهٔ کمیسیون'],
     ['intel', 'تحلیل رقبا و نقشهٔ راه'], ['settings', 'مسئولان قیمت و درصد قیمت اعتباری (چکی)'], ['item_status', 'کدهای کنار گذاشته‌شده'], ['public_config', 'تنظیمات عمومی'], ['request_counters', 'شمارنده‌های روزانهٔ درخواست']

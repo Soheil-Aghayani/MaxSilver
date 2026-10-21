@@ -197,13 +197,51 @@
       (list.length > S.shown ? '<button type="button" class="pr-more" data-more>نمایش بیشتر (' + faInt.format(list.length - S.shown) + ')</button>' : '') +
       (list.length ? '' : '<p class="pr-note ms-empty"><img class="ms-empty-img" src="./assets/art/tiles/no-results.webp" alt="" width="96" height="96" decoding="async"><span>محصولی پیدا نشد.</span></p>');
   }
+
+  // ---------- history of every price change (collection price_log). Written after a price is saved; a failure here never blocks the price itself.
+  var faDT = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' });
+  function logChanges(list, src) {
+    try {
+      var b = db.batch(), now = Date.now();
+      list.forEach(function (x) {
+        b.set(db.collection('price_log').doc(), { id: x.it.id, name: String(x.it.name || '').slice(0, 120), code: String(x.it.code || '').slice(0, 30), brand: x.it.src || '',
+          old: x.old && x.old.p ? x.old.p : 0, oldS: x.old ? (x.old.s || 'p') : '', p: x.nw.p || 0, s: x.nw.s || 'p', at: x.at || now, by: S.user.uid, byName: myName(), src: src });
+      });
+      b.commit().then(function () { S.log = null; if (S.histOpen) loadLog(); }, function () { /* the log is optional until the rules are published */ });
+    } catch (e) { /* ignore */ }
+  }
+  function loadLog() {
+    S.logBusy = true; S.logErr = '';
+    db.collection('price_log').orderBy('at', 'desc').limit(300).get().then(function (q) { var l = []; q.forEach(function (s) { l.push(s.data()); }); S.log = l; },
+      function () { S.log = []; S.logErr = 'تاریخچه هنوز در دسترس نیست (قاعده‌های پایگاه داده باید منتشر شوند) یا اجازه ندارید.'; }).then(function () { S.logBusy = false; render(); });
+  }
+  function histHtml() {
+    var open = !!S.histOpen;
+    var h = '<section class="pr-hist"><button type="button" class="pr-btn" data-hist aria-expanded="' + open + '">' + (open ? 'بستن' : 'تاریخچهٔ تغییر قیمت‌ها') + '</button>';
+    if (open) {
+      if (S.logBusy || S.log == null) h += '<p class="pr-note">در حال بارگذاری…</p>';
+      else if (S.logErr) h += '<p class="pr-err">' + esc(S.logErr) + '</p>';
+      else if (!S.log.length) h += '<p class="pr-note">هنوز تغییری ثبت نشده است. هر تغییر قیمت از این پس با تاریخ، قیمت قبل و بعد و نام تغییردهنده اینجا می‌آید.</p>';
+      else {
+        var f = function (p, s) { return s && s !== 'p' ? STT[s] : (p ? faInt.format(p) : 'بدون قیمت'); };
+        h += '<div class="pr-tools"><button type="button" class="pr-btn alt" data-histx>' + I.csv + 'دانلود تاریخچه (Excel)</button></div><div class="pr-tw"><table class="pr-tbl"><thead><tr><th>تاریخ</th><th>کالا</th><th>قبل</th><th>بعد</th><th>تغییردهنده</th></tr></thead><tbody>' +
+          S.log.map(function (x) { return '<tr><td>' + esc(faDT.format(new Date(x.at))) + '</td><td>' + esc(x.name) + (x.code ? ' <code>' + esc(x.code) + '</code>' : '') + '</td><td>' + f(x.old, x.oldS) + '</td><td>' + f(x.p, x.s) + '</td><td>' + esc(x.byName || '') + (x.src === 'excel' ? ' (Excel)' : '') + '</td></tr>'; }).join('') + '</tbody></table></div>';
+      }
+    }
+    return h + '</section>';
+  }
+  function exportLog() {
+    var rows = [['تاریخ', 'کد کالا', 'نام کالا', 'قیمت قبل (تومان)', 'قیمت بعد (تومان)', 'تغییردهنده', 'روش']];
+    (S.log || []).forEach(function (x) { rows.push([faDT.format(new Date(x.at)), x.code || '', x.name, x.oldS && x.oldS !== 'p' ? STT[x.oldS] : (x.old || ''), x.s !== 'p' ? STT[x.s] : (x.p || ''), x.byName || '', x.src === 'excel' ? 'Excel' : 'سایت']); });
+    window.MSXlsx.save(window.MSXlsx.blob([{ name: 'تاریخچه', rows: rows, widths: [20, 14, 50, 18, 18, 22, 10], freeze: true, filter: true }]), 'Max_Silver_Price_History.xlsx');
+  }
   function view() {
     if (S.loading) return (window.MSSkel ? window.MSSkel() : '<p class="pr-note">در حال بارگذاری…</p>');
     if (!S.user) return '<p class="pr-note">برای ویرایش قیمت‌ها ابتدا <a href="./panel.html">وارد حساب خود شوید</a>.</p>';
     if (!S.profile || S.profile.active === false) return '<p class="pr-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('pricesAudit')) return '<p class="pr-note">ویرایش قیمت فقط برای مدیر فروش، مدیریت و تکنولوژی ارتباطات سازمانی است. قیمت‌ها را در کاتالوگ می‌بینید.</p>';
     return '<h1>قیمت‌ها</h1><p class="pr-lead">قیمت لیست محصولات به تومان (نقدی، اعتباری (چکی) و توافقی). قیمتی که اینجا ذخیره کنید جای قیمت لیست پایه (مکث‌سیلور، وینتورا و توربومکس، ' + esc(P.date()) + ') را می‌گیرد و در کاتالوگ و پیش‌فاکتور برای همه دیده می‌شود. کدی را که دیگر استفاده نمی‌شود با دکمهٔ ⊘ کنار بگذارید (کد جایگزین اختیاری است).</p>' +
-      (S.error ? '<p class="pr-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.msg ? '<p class="pr-ok" role="status">' + esc(S.msg) + '</p>' : '') + editorsHtml() + listHtml();
+      (S.error ? '<p class="pr-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.msg ? '<p class="pr-ok" role="status">' + esc(S.msg) + '</p>' : '') + editorsHtml() + histHtml() + listHtml();
   }
   function render() {
     var a = document.activeElement, keepQ = a && a.id === 'prQ' ? a.selectionStart : null;
@@ -244,6 +282,7 @@
     S.error = ''; S.msg = '';
     db.collection('list_prices').doc(id).set(doc).then(function () {
       P.setOne(id, { p: doc.p, s: doc.s, c: doc.c || 0, at: doc.at, by: doc.byName });
+      logChanges([{ it: it, old: c, nw: { p: doc.p, s: doc.s }, at: doc.at }], 'site');
       delete S.draft[id];
       S.msg = 'ذخیره شد: ' + it.name;
     }, function (e) { S.error = errText(e); }).then(render);
@@ -337,35 +376,34 @@
       }).join('') + '</tbody></table></div>' + (m.changes.length > 120 ? '<p class="pr-note">و ' + faInt.format(m.changes.length - 120) + ' تغییر دیگر.</p>' : '') : '') +
       '<div class="pr-acts"><button type="button" class="pr-btn" data-impok' + (m.changes.length && !S.busy ? '' : ' disabled') + '>اعمال ' + faInt.format(m.changes.length) + ' تغییر</button><button type="button" class="pr-btn alt" data-impno>انصراف</button></div></section>';
   }
-  function readTemplate(file) {
-    S.error = ''; S.msg = ''; S.imp = null;
-    window.MSXlsx.read(file).then(function (rows) {
+  // one sheet of a revised price file; the price book has one sheet per brand and every sheet with the «شناسه برنامه» header is read
+  function readSheet(rows, m, tag) {
+      var pre = tag ? tag + '، ' : '', err = function (s) { m.errs.push(pre + s); };
       var hi = -1, i; for (i = 0; i < Math.min(rows.length, 10); i++) if ((rows[i] || []).some(function (c) { return String(c || '').indexOf('شناسه برنامه') >= 0; })) { hi = i; break; }
-      if (hi < 0) throw new Error('این فایل قالب بازبینی قیمت نیست (ستون «شناسه برنامه» پیدا نشد). قالب را از همین صفحه دانلود کنید.');
+      if (hi < 0) return false;
       var H = rows[hi].map(function (c) { return String(c || ''); }), col = function (s) { for (var k = 0; k < H.length; k++) if (H[k].indexOf(s) >= 0) return k; return -1; };
       var cId = col('شناسه برنامه'), cCode = col('کد کالا'), cP = col('قیمت نقدی جدید') >= 0 ? col('قیمت نقدی جدید') : col('قیمت جدید'), cC = col('قیمت اعتباری جدید') >= 0 ? col('قیمت اعتباری جدید') : col('قیمت چکی جدید'), cS = col('وضعیت جدید'), cN = col('توضیح');
-      var cOne = col('قیمت (تومان)');   // one price column, edited in place
-      var m = { name: file.name, changes: [], same: 0, errs: [] };
-      if (cOne >= 0 && cP < 0) {
+      var cNew = col('قیمت جدید (تومان)'), cOne = cNew >= 0 ? cNew : (col('قیمت نقدی (تومان)') >= 0 ? col('قیمت نقدی (تومان)') : col('قیمت (تومان)'));   // one price column (the price book's «Price Changes» sheet or the old template)
+      if (cOne >= 0 && (cP < 0 || cNew >= 0)) {
         rows.slice(hi + 1).forEach(function (r, n) {
           var line = hi + n + 2, v = r[cOne], txt = v == null ? '' : String(v).trim();
           if (!txt) return;
           var id = String(r[cId] == null ? '' : r[cId]).trim(), it = itemById(id) || (cCode >= 0 && r[cCode] ? byCode(r[cCode]) : null);
-          if (!it) { m.errs.push('ردیف ' + faInt.format(line) + ': کالا پیدا نشد (شناسه یا کد درست نیست).'); return; }
+          if (!it) { err('ردیف ' + faInt.format(line) + ': کالا پیدا نشد (شناسه یا کد درست نیست).'); return; }
           var old = cur(it.id), nw, num = /[0-9۰-۹٠-٩]/.test(txt) ? P.parse(txt) : 0;
           if (num > 0) {
-            if (num >= 100000000000) { m.errs.push('ردیف ' + faInt.format(line) + ' (' + it.name + '): قیمت درست نیست.'); return; }
+            if (num >= 100000000000) { err('ردیف ' + faInt.format(line) + ' (' + it.name + '): قیمت درست نیست.'); return; }
             nw = { p: num, s: 'p' }; if (old && old.c > 0) nw.c = old.c;
           } else {
             var st = parseStatus(txt);
             if (txt.replace(/\s+/g, '') === 'بدونقیمت' || st === 'p') return;
-            if (st === '?') { m.errs.push('ردیف ' + faInt.format(line) + ' (' + it.name + '): «' + txt + '» درست نیست؛ عدد یا یکی از توافقی، استعلام، شارژ بنویسید.'); return; }
+            if (st === '?') { err('ردیف ' + faInt.format(line) + ' (' + it.name + '): «' + txt + '» درست نیست؛ عدد یا یکی از توافقی، استعلام، شارژ بنویسید.'); return; }
             nw = { p: 0, s: st };
           }
           if (old && old.s === nw.s && (old.p || 0) === nw.p && (old.c || 0) === (nw.c || 0)) { m.same++; return; }
           m.changes.push({ it: it, old: old, nw: nw, note: cN >= 0 && r[cN] ? String(r[cN]).slice(0, 200) : '' });
         });
-        S.imp = m; return;
+        return true;
       }
       if (cP < 0 || cS < 0) throw new Error('ستون «قیمت (تومان)» در فایل نیست. قالب را از همین صفحه دانلود کنید.');
       rows.slice(hi + 1).forEach(function (r, n) {
@@ -373,18 +411,26 @@
         var hasP = pv != null && String(pv).trim() !== '', hasS = sv != null && String(sv).trim() !== '', hasC = cv != null && String(cv).trim() !== '';
         if (!hasP && !hasS && !hasC) return;
         var id = String(r[cId] == null ? '' : r[cId]).trim(), it = itemById(id) || (cCode >= 0 && r[cCode] ? byCode(r[cCode]) : null);
-        if (!it) { m.errs.push('ردیف ' + faInt.format(line) + ': کالا پیدا نشد (شناسه یا کد درست نیست).'); return; }
+        if (!it) { err('ردیف ' + faInt.format(line) + ': کالا پیدا نشد (شناسه یا کد درست نیست).'); return; }
         var st = parseStatus(sv), price = P.parse(pv), chq = hasC ? P.parse(cv) : 0;
         if (!hasS && !hasP && hasC) { var oc = cur(it.id); st = oc ? oc.s : 'p'; price = oc && oc.p ? oc.p : 0; }
-        if (st === '?') { m.errs.push('ردیف ' + faInt.format(line) + ' (' + it.name + '): وضعیت «' + sv + '» درست نیست؛ یکی از نقدی، استعلام، شارژ، توافقی.'); return; }
+        if (st === '?') { err('ردیف ' + faInt.format(line) + ' (' + it.name + '): وضعیت «' + sv + '» درست نیست؛ یکی از نقدی، استعلام، شارژ، توافقی.'); return; }
         var nw;
         if (st === 'i' || st === 'r' || st === 'n') nw = { p: 0, s: st };
         else if (price > 0 && price < 100000000000) { nw = { p: price, s: 'p' }; var oc2 = cur(it.id); if (hasC && chq > 0 && chq < 100000000000) nw.c = chq; else if (oc2 && oc2.c > 0) nw.c = oc2.c; }
-        else { m.errs.push('ردیف ' + faInt.format(line) + ' (' + it.name + '): قیمت درست نیست.'); return; }
+        else { err('ردیف ' + faInt.format(line) + ' (' + it.name + '): قیمت درست نیست.'); return; }
         var old = cur(it.id);
         if (old && old.s === nw.s && (old.p || 0) === nw.p && (old.c || 0) === (nw.c || 0)) { m.same++; return; }
         m.changes.push({ it: it, old: old, nw: nw, note: cN >= 0 && r[cN] ? String(r[cN]).slice(0, 200) : '' });
       });
+      return true;
+  }
+  function readTemplate(file) {
+    S.error = ''; S.msg = ''; S.imp = null;
+    window.MSXlsx.readAll(file).then(function (sheets) {
+      var m = { name: file.name, changes: [], same: 0, errs: [] }, found = 0;
+      sheets.forEach(function (sh) { if (readSheet(sh.rows, m, sheets.length > 1 ? sh.name : '')) found++; });
+      if (!found) throw new Error('این فایل قالب بازبینی قیمت نیست (ستون «شناسه برنامه» پیدا نشد). قالب یا کتاب قیمت را از همین‌جا یا از مدیر بگیرید.');
       S.imp = m;
     }).then(null, function (e) { S.error = e && e.message ? e.message : errText(e); }).then(render);
   }
@@ -397,7 +443,7 @@
       if (!list.length) return Promise.resolve();
       var chunk = list.splice(0, 400), b = db.batch();
       chunk.forEach(function (x) { var dd = { p: x.nw.p, s: x.nw.s, at: now, by: S.user.uid, byName: myName(), prev: x.old && x.old.p ? x.old.p : 0 }; if (x.nw.c > 0) dd.c = x.nw.c; b.set(db.collection('list_prices').doc(x.it.id), dd); });
-      return b.commit().then(function () { chunk.forEach(function (x) { P.setOne(x.it.id, { p: x.nw.p, s: x.nw.s, c: x.nw.c || 0, at: now, by: myName() }); }); done += chunk.length; return next(); });
+      return b.commit().then(function () { chunk.forEach(function (x) { P.setOne(x.it.id, { p: x.nw.p, s: x.nw.s, c: x.nw.c || 0, at: now, by: myName() }); }); logChanges(chunk.map(function (x) { return { it: x.it, old: x.old, nw: x.nw, at: now }; }), 'excel'); done += chunk.length; return next(); });
     }
     next().then(function () { S.msg = faInt.format(done) + ' قیمت به‌روز شد.'; S.imp = null; }, function (e) { S.error = errText(e) + (done ? ' (' + faInt.format(done) + ' مورد قبل از خطا اعمال شد.)' : ''); }).then(function () { S.busy = ''; render(); });
   }
@@ -410,6 +456,8 @@
     if ((t = e.target.closest('[data-brand]'))) { S.brand = t.getAttribute('data-brand'); S.shown = 60; render(); return; }
     if ((t = e.target.closest('[data-flt]'))) { S.flt = t.getAttribute('data-flt'); S.shown = 60; render(); return; }
     if (e.target.closest('[data-more]')) { S.shown += 60; render(); return; }
+    if (e.target.closest('[data-hist]')) { S.histOpen = !S.histOpen; if (S.histOpen && S.log == null) loadLog(); else render(); return; }
+    if (e.target.closest('[data-histx]')) { exportLog(); return; }
     if (e.target.closest('[data-csv]')) { csv(); return; }
     if (e.target.closest('[data-tpl]')) { downloadTemplate(); return; }
     if (e.target.closest('[data-edsave]')) { saveEditors(); return; }
