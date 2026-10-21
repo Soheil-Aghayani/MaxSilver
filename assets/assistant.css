@@ -134,7 +134,7 @@ body.as-page .as-log{min-height:0;padding:4px 0}
 body.as-page .as-hello{padding-top:18px}
 body.as-page .as-form,body.as-page .as-form.empty{flex:none;position:static;margin:0;padding:8px 0 calc(10px + env(safe-area-inset-bottom));background:#f4f6f9}
 body.as-page .as-fine{margin-top:6px}
-.as-x{position:fixed;top:6px;left:66px;z-index:1001;width:44px;height:44px;border-radius:14px;background:#fff;color:#071b36;display:grid;place-items:center;text-decoration:none;box-shadow:0 4px 14px rgba(7,27,54,.14)}
+.as-x{position:fixed;top:24px;left:72px;z-index:1600;border:1px solid #dfe5ee;width:44px;height:44px;border-radius:14px;background:#fff;color:#071b36;display:grid;place-items:center;text-decoration:none;box-shadow:0 4px 14px rgba(7,27,54,.14)}
 .as-x svg{width:22px;height:22px}.as-x:hover{background:#fff8e1}
 .as-reqbar{flex:none;display:flex;align-items:center;gap:10px;margin:0 0 8px;padding:9px 12px;border:1px solid #f3e3a6;border-radius:16px;background:#fffdf3;font-size:13.5px;font-weight:700;color:#071b36}
 .as-reqbar span{flex:1}.as-reqbar a{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:12px;background:#071b36;color:#fff;text-decoration:none;font-weight:800;font-size:13px}
@@ -150,3 +150,6 @@ body.as-page :focus-visible{outline:3px solid #1746b5;outline-offset:2px;border-
 
 /* a message animates once, when it first appears; repainting it while it types must not replay the entrance */
 .as-msg:not(.fresh),.as-msg:not(.fresh) .as-col,.as-msg:not(.fresh) .as-card,.as-msg:not(.fresh) .as-quick{animation:none!important}
+
+@media (max-width:560px){.as-x{top:13px;left:60px}}
+@media (max-width:1100px){.as-x{top:13px}}

@@ -814,7 +814,7 @@
   // the chat is exactly as tall as what is visible (the keyboard and the address bar change it), so the message box never hides behind anything
   function fit() {
     var as = document.getElementById('as'), hd = document.querySelector('header.ms-sitebar'); if (!as) return;
-    var vv = window.visualViewport, top = hd ? hd.offsetHeight : 56, h = vv ? vv.height : window.innerHeight, off = vv ? vv.offsetTop : 0;
+    var vv = window.visualViewport, top = hd ? Math.round(hd.getBoundingClientRect().bottom) + 8 : 64, h = vv ? vv.height : window.innerHeight, off = vv ? vv.offsetTop : 0;
     as.style.top = (top + off) + 'px'; as.style.height = Math.max(240, h - top) + 'px';
   }
   window.addEventListener('resize', fit); window.addEventListener('orientationchange', fit);
