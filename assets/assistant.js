@@ -63,6 +63,44 @@
       byId[it.id] = it;
     });
     avg = docs.reduce(function (a, d) { return a + d.len; }, 0) / Math.max(1, docs.length);
+    VOCAB = {}; Object.keys(df).forEach(function (w) { if (w.charAt(0) !== '~' && /^[آ-ی]{3,}$/.test(w)) VOCAB[w] = df[w]; });
+    PROTECT.forEach(function (w) { tokens(w).forEach(function (x) { if (x.charAt(0) !== '~') VOCAB[x] = (VOCAB[x] || 0) + 1000; }); });
+    VKEYS = Object.keys(VOCAB);
+  }
+  var VOCAB = {}, VKEYS = [];
+  // words people use around the product names; they must never be «corrected» into catalog words
+  var PROTECT = ['تماس', 'باما', 'تحویل', 'ارسال', 'ضمانت', 'گارانتی', 'نصب', 'مرجوعی', 'موجودی', 'میخوام', 'می‌خوام', 'بخرم', 'بندازم', 'راه‌اندازی', 'لازم', 'چطور', 'چگونه', 'کجا', 'بسازم', 'سفارش', 'درخواست', 'خرید', 'پیش‌فاکتور', 'مقایسه', 'ابعاد', 'اندازه', 'وزن', 'ظرفیت', 'مشخصات', 'اضافه', 'مناسبت', 'کمپین', 'تبریک', 'پیگیری', 'تشکر', 'معرفی', 'بودجه', 'میلیون', 'تومان', 'ارزان‌ترین', 'گران‌ترین', 'مالیات', 'جمع', 'نفره', 'کسب‌وکار', 'می‌شود', 'میشه', 'جا', 'فضا', 'متر', 'سانتی‌متر', 'کافه', 'رستوران', 'فست‌فود', 'پیتزا', 'نانوایی', 'قنادی', 'آبمیوه', 'بستنی', 'کبابی', 'شاورما', 'کترینگ', 'تجهیزات', 'دستگاه', 'وسایل', 'دارید', 'دارم', 'هستند', 'چیست', 'چیه'];
+  // Damerau-Levenshtein distance with a cutoff (adjacent swaps count as one mistake)
+  function dist(a, b, max) {
+    var la = a.length, lb = b.length; if (Math.abs(la - lb) > max) return max + 1;
+    var p2 = null, p1 = [], i, j;
+    for (j = 0; j <= lb; j++) p1[j] = j;
+    for (i = 1; i <= la; i++) {
+      var cur = [i], best = i;
+      for (j = 1; j <= lb; j++) {
+        var c = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1, v = Math.min(p1[j] + 1, cur[j - 1] + 1, p1[j - 1] + c);
+        if (p2 && i > 1 && j > 1 && a.charAt(i - 1) === b.charAt(j - 2) && a.charAt(i - 2) === b.charAt(j - 1)) v = Math.min(v, p2[j - 2] + 1);
+        cur[j] = v; if (v < best) best = v;
+      }
+      if (best > max) return max + 1;
+      p2 = p1; p1 = cur;
+    }
+    return p1[lb];
+  }
+  // «گریل ذغالی» spelled «گیرل ذقالی» -> the catalog words nearest to each unknown word (only used when the plain question found nothing)
+  function correct(q) {
+    var changed = [], parts = norm(q).split(/(\s+)/).map(function (w) {
+      if (!/^[آ-ی]{4,}$/.test(w) || VOCAB[w] || STOP[w]) return w;
+      var max = w.length >= 7 ? 2 : 1, best = null, bd = 9, bf = 0;
+      for (var i = 0; i < VKEYS.length; i++) {
+        var v = VKEYS[i]; if (Math.abs(v.length - w.length) > max) continue;
+        var d = dist(w, v, max); if (d > max) continue;
+        if (d < bd || (d === bd && VOCAB[v] > bf)) { best = v; bd = d; bf = VOCAB[v]; }
+      }
+      if (best) { changed.push([w, best]); return best; }
+      return w;
+    });
+    return { q: changed.length ? parts.join('') : q, changed: changed };
   }
   function hasExact(text, code) {
     var from = 0, at = text.indexOf(code, from);
@@ -86,6 +124,7 @@
     tokens(q).forEach(function (t) { qt[t] = 1; });
     var qs = Object.keys(qt), codes = queryCodes(q), scored = [];
     docs.forEach(function (d) {
+      if (PUBLIC && PUBRET[d.it.id]) return;
       var s = 0;
       qs.forEach(function (t) {
         var f = d.tf[t]; if (!f) return;
@@ -121,9 +160,23 @@
   // ---------- chat (laid out like a Claude conversation: your message, then the answer as plain text that types out)
   var CFG = window.MS_ASSISTANT || {};
   // the address comes from assistant-config.js; a test address in localStorage is honoured only on localhost, so a token never goes to an address someone typed in
-  function relayUrl() { try { if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return localStorage.getItem('ms-assistant-relay') || CFG.relay || ''; } catch (e) { /* ignore */ } return CFG.relay || ''; }
+  function relayUrl() { if (PUBLIC) return ''; try { if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return localStorage.getItem('ms-assistant-relay') || CFG.relay || ''; } catch (e) { /* ignore */ } return CFG.relay || ''; }
   var KEY = 'ms-assistant-chat-v1';
-  var S = { ready: false, error: '', msgs: [], busy: false, listening: false };
+  var S = { ready: false, error: '', msgs: [], busy: false, listening: false, fresh: 0 };
+  // staff (a role with the «assistant» area) see prices and the pre-invoice tools; everyone else gets the public version: no prices,
+  // and a purchase request that goes to sales through the same request sheet as the public planner (same checks and same terms)
+  var STAFF = (function () { try { var r = localStorage.getItem('ms-role') || '', R = window.MSRoles; return !!r && !!R && R.can(r, 'assistant'); } catch (e) { return false; } })(), PUBLIC = !STAFF;
+  var REDUCE = false; try { REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* ignore */ }
+  var PUBK = 'ms-aria-pub-v1', PUBRET = {}, RECK = 'ms-aria-recent-v1';
+  var PRICEQ = /(قیمت|چنده|چند تومان|چقدر|ارزان|گران|بودجه|میلیون|تخفیف|تومان|هزینه|اعتباری|چکی|نقدی|تقسیط|قسط)/;
+  var T_ADD = PUBLIC ? '+ افزودن به درخواست خرید' : '+ افزودن به پیش‌فاکتور', T_IN = PUBLIC ? '✓ در درخواست خرید' : '✓ در پیش‌فاکتور', T_ALL = PUBLIC ? '+ افزودن همهٔ این کالاها به درخواست خرید' : '+ افزودن همهٔ این کالاها به پیش‌فاکتور';
+  function pubRead() { try { var a = JSON.parse(localStorage.getItem(PUBK) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function pubAdd(id, qty) {
+    var a = pubRead(); if (a.some(function (x) { return x.id === id; }) || a.length >= 40) return false;
+    a.push({ id: id, qty: Math.max(1, Math.min(20, Number(qty) || 1)) });
+    try { localStorage.setItem(PUBK, JSON.stringify(a)); } catch (e) { return false; }
+    return true;
+  }
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null;
   function listen() {
     if (!SR || !S.ready) return;
@@ -138,7 +191,7 @@
     rec.onerror = done; rec.onend = done;
     try { rec.start(); S.listening = true; var m = document.getElementById('asMic'); if (m) m.classList.add('on'); } catch (e) { done(); }
   }
-  var SUGGEST = ['گریل ۶۰ ذغالی چنده؟', 'سینک ۱۰۰ سانت دو لگن دارید؟', 'بویلر ۲۵ لیتر BUNN', 'سرخ‌کن گازی ۱۸ لیتری', 'یخچال زیر گریل ۱۸۰'];
+  var SUGGEST = PUBLIC ? ['می‌خواهم کافه راه‌اندازی کنم', 'گریل ۶۰ سانت ذغالی', 'سینک ۱۰۰ سانت دو لگن', 'سرخ‌کن گازی ۱۸ لیتری', 'درخواست خرید چطور است؟'] : ['گریل ۶۰ ذغالی چنده؟', 'سینک ۱۰۰ سانت دو لگن دارید؟', 'بویلر ۲۵ لیتر BUNN', 'سرخ‌کن گازی ۱۸ لیتری', 'یخچال زیر گریل ۱۸۰'];
   var ICON = {
     spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" opacity=".7"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
@@ -149,6 +202,7 @@
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>'
   };
   function price(it) {
+    if (PUBLIC) return '<span class="as-p none">قیمت را کارشناس فروش در تماس اعلام می‌کند</span>';
     var P = window.MSPrices, v = P && P.get ? P.get(it.id) : null;
     if (!v) return '<span class="as-p none">قیمت ثبت نشده</span>';
     if (v.s === 'p' && v.p > 0) {
@@ -203,35 +257,50 @@
   function hitsOf(m) { return (m.ids || []).map(function (id) { return byId[id]; }).filter(Boolean); }
   function botHtml(m, i) {
     var hits = hitsOf(m), body;
-    if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) : 'در منابع من پاسخی برای این پرسش نیست.') + '</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید یا بپرسید «چطور …»؛ آریا حدس نمی‌زند.</p>';
+    if (m.state === 'typing') body = '<p>' + esc(m.typed || '') + '<span class="as-caret"></span></p>';
+    else if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) : 'در منابع من پاسخی برای این پرسش نیست.') + '</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید یا بپرسید «چطور …»؛ آریا حدس نمی‌زند.</p>';
     else if (m.state === 'wait') body = '<span class="as-dots" aria-label="در حال نوشتن"><i></i><i></i><i></i></span>';
     else if (m.text) body = md(m.text) + (m.state === 'stream' ? '<span class="as-caret"></span>' : '');
     else body = '<p>' + (m.note ? esc(m.note) : 'نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:') + '</p>';
-    var showSrc = hits.length && m.state !== 'wait' && m.state !== 'none';
-    return '<div class="as-msg bot" data-i="' + i + '"><span class="as-av' + (m.state === 'wait' || m.state === 'stream' ? ' busy' : '') + '"><i class="as-ring"></i>' + ICON.spark + '</span><div class="as-col"><div class="as-md">' + body + '</div>' + extras(m) +
+    if (m.fixed && m.fixed.length && m.state !== 'wait' && m.state !== 'typing' && m.state !== 'stream') body += '<p class="as-fix">منظورتان «' + esc(m.fixed.map(function (f) { return f[1]; }).join('، ')) + '» بود؟ (به‌جای «' + esc(m.fixed.map(function (f) { return f[0]; }).join('، ')) + '»)</p>';
+    var showSrc = hits.length && m.state !== 'wait' && m.state !== 'none' && m.state !== 'typing';
+    return '<div class="as-msg bot' + (i >= S.fresh || m.reveal ? ' fresh' : '') + '" data-i="' + i + '"><span class="as-av' + (m.state === 'wait' || m.state === 'stream' || m.state === 'typing' ? ' busy' : '') + '"><i class="as-ring"></i>' + ICON.spark + '</span><div class="as-col"><div class="as-md">' + body + '</div>' + extras(m) +
       (showSrc ? '<details class="as-src"' + (m.text ? '' : ' open') + '><summary>' + (m.text ? 'منابع این پاسخ' : 'کالاهای پیدا‌شده') + ' (' + fa.format(hits.length) + ')</summary><div class="as-cards">' + hits.map(function (it, k) { return card(it, m.text ? k + 1 : 0); }).join('') + '</div></details>' : '') +
       '<div class="as-acts">' + (m.text && m.state === 'done' ? '<button type="button" data-copy="' + i + '" aria-label="کپی پاسخ">' + ICON.copy + '<span>کپی</span></button>' : '') + fbHtml(m, i) + '</div></div></div>';
   }
-  function userHtml(m) { return '<div class="as-msg me"><p>' + esc(m.text) + '</p></div>'; }
+  function recRead() { try { var a = JSON.parse(localStorage.getItem(RECK) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function recSave() {
+    var first = S.msgs.filter(function (m) { return m.role === 'user'; })[0]; if (!first || S.msgs.length < 2) return;
+    var keep = S.msgs.slice(-30).map(function (m) { return m.state === 'wait' || m.state === 'stream' || m.state === 'typing' ? Object.assign({}, m, { state: m.text ? 'done' : 'cards' }) : m; });
+    var a = recRead().filter(function (x) { return x.t !== first.text.slice(0, 60); }); a.unshift({ t: first.text.slice(0, 60), msgs: keep });
+    try { localStorage.setItem(RECK, JSON.stringify(a.slice(0, 6))); } catch (e) { /* ignore */ }
+  }
+  function recentsHtml() {
+    var a = recRead(); if (!a.length) return '';
+    return '<div class="as-recent"><h3>گفت‌وگوهای اخیر</h3>' + a.map(function (x, i) { return '<button type="button" data-recent="' + i + '">' + esc(x.t) + '</button>'; }).join('') + '<button type="button" data-recent-clear>پاک کردن این فهرست</button></div>';
+  }
+  function userHtml(m, i) { return '<div class="as-msg me' + (i >= S.fresh ? ' fresh' : '') + '"><p>' + esc(m.text) + '</p></div>'; }
   function view() {
     if (S.error) return '<p class="as-err" role="alert">' + esc(S.error) + '</p>';
     var empty = !S.msgs.length;
-    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">آریا</span></h1><span class="as-tools">' + (logRead().length ? '<button type="button" class="as-new as-qlog" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش آریا">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></span></header>' +
-      (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من آریا هستم! چه کمکی از دستم برمی‌آید؟</h2><p>دربارهٔ کالاها، قیمت‌ها، بخش‌های سایت و پیش‌فاکتور بپرسید. اگر ندانم همین را می‌گویم و حدس نمی‌زنم.' +
-        (relayUrl() ? '' : '<br><span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهم؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p>' +
-        '<div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div></div>' :
-        '<div class="as-log" id="asLog" aria-live="polite">' + S.msgs.map(function (m, i) { return m.role === 'user' ? userHtml(m) : botHtml(m, i); }).join('') + '</div>') +
-      '<form class="as-form' + (empty ? ' empty' : '') + '" id="asForm"><div class="as-box"><textarea id="asQ" rows="1" maxlength="600" enterkeyhint="send" placeholder="' + (S.ready ? 'پیام خود را بنویسید…' : 'در حال آماده‌کردن کاتالوگ…') + '" aria-label="پیام"' + (S.ready ? '' : ' disabled') + '></textarea>' +
+    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">آریا</span></h1><span class="as-tools">' + (STAFF && logRead().length ? '<button type="button" class="as-new as-qlog" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش آریا">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></span></header>' +
+      '<div class="as-scroll" id="asScroll" role="log" aria-live="polite" aria-relevant="additions text" aria-label="گفت‌وگو با آریا" aria-busy="' + !!S.busy + '">' + (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من آریا هستم! چه کمکی از دستم برمی‌آید؟</h2><p>' + (PUBLIC ? 'دربارهٔ کالاها بپرسید یا بگویید چه کسب‌وکاری می‌خواهید راه بیندازید تا فهرست تجهیزات را پیشنهاد بدهم و درخواست خرید شما را آماده کنم. قیمت را کارشناس فروش در تماس اعلام می‌کند.' : 'دربارهٔ کالاها، قیمت‌ها، بخش‌های سایت و پیش‌فاکتور بپرسید.') + ' اگر ندانم همین را می‌گویم و حدس نمی‌زنم.' +
+        (relayUrl() || PUBLIC ? '' : '<br><span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهم؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p>' +
+        '<div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' + recentsHtml() + '</div>' :
+        '<div class="as-log" id="asLog">' + S.msgs.map(function (m, i) { return m.role === 'user' ? userHtml(m, i) : botHtml(m, i); }).join('') + '</div>') + '</div>' + (PUBLIC && pubRead().length ? '<div class="as-reqbar" role="status"><span>درخواست خرید شما: ' + fmt(pubRead().length) + ' کالا</span><a href="./planner.html?public=1&from=aria">مشاهده و ارسال</a></div>' : '') +
+      '<form class="as-form' + (empty ? ' empty' : '') + '" id="asForm" aria-label="ارسال پیام به آریا"><div class="as-box"><textarea id="asQ" rows="1" maxlength="600" enterkeyhint="send" placeholder="' + (S.ready ? 'پیام خود را بنویسید…' : 'در حال آماده‌کردن کاتالوگ…') + '" aria-label="پیام"' + (S.ready ? '' : ' disabled') + '></textarea>' +
       (SR ? '<button type="button" class="as-mic' + (S.listening ? ' on' : '') + '" id="asMic" aria-label="گفتن پیام با صدا" title="گفتن پیام با صدا"' + (S.ready ? '' : ' disabled') + '>' + ICON.mic + '</button>' : '') + '<button type="submit" class="as-send" aria-label="ارسال"' + (S.ready && !S.busy ? '' : ' disabled') + '>' + ICON.send + '</button></div>' +
-      '<p class="as-fine">آریا ممکن است اشتباه کند؛ کد، قیمت و اندازه را پیش از پیش‌فاکتور در کاتالوگ ببینید.</p></form>';
+      '<p class="as-fine">' + (PUBLIC ? 'آریا ممکن است اشتباه کند؛ قیمت و شرایط را کارشناس فروش در تماس اعلام می‌کند.' : 'آریا ممکن است اشتباه کند؛ کد، قیمت و اندازه را پیش از پیش‌فاکتور در کاتالوگ ببینید.') + '</p></form>';
   }
   function grow(q) { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 168) + 'px'; }
-  function save() { try { sessionStorage.setItem(KEY, JSON.stringify(S.msgs.slice(-30).map(function (m) { return m.state === 'wait' || m.state === 'stream' ? Object.assign({}, m, { state: m.text ? 'done' : 'cards' }) : m; }))); } catch (e) { /* ignore */ } }
+  function save() { try { sessionStorage.setItem(KEY, JSON.stringify(S.msgs.slice(-30).map(function (m) { return m.state === 'wait' || m.state === 'stream' || m.state === 'typing' ? Object.assign({}, m, { state: m.text ? 'done' : 'cards' }) : m; }))); } catch (e) { /* ignore */ } }
   function restore() { try { var a = JSON.parse(sessionStorage.getItem(KEY) || '[]'); if (Array.isArray(a)) S.msgs = a; } catch (e) { S.msgs = []; } }
   function scrollEnd(smooth) { var l = document.getElementById('asLog'); if (l && l.lastElementChild) { try { l.lastElementChild.scrollIntoView({ block: 'end', behavior: smooth ? 'smooth' : 'auto' }); } catch (e) { l.lastElementChild.scrollIntoView(); } } }
   function render(keep) {
-    var q = document.getElementById('asQ'), v = q ? q.value : '', had = q && document.activeElement === q;
+    var q = document.getElementById('asQ'), v = q ? q.value : '', had = q && document.activeElement === q, sc = document.getElementById('asScroll'), st = sc ? sc.scrollTop : 0;
     root.innerHTML = view(); q = document.getElementById('asQ'); if (q) { q.value = v; grow(q); if (had) q.focus(); }
+    sc = document.getElementById('asScroll'); if (sc) sc.scrollTop = st;
+    S.fresh = S.msgs.length;
     if (!keep) scrollEnd(true);
   }
   // only the last answer is redrawn while it types, so nothing else flickers
@@ -286,10 +355,11 @@
   function smallTalk(q) { var s = norm(q).trim(); for (var i = 0; i < TALK.length; i++) if (TALK[i][0].test(s)) return TALK[i][1]; return ''; }
   function brandOf(q) { var s = norm(q); for (var i = 0; i < BRAND_WORDS.length; i++) for (var k = 0; k < BRAND_WORDS[i][1].length; k++) if (s.indexOf(norm(BRAND_WORDS[i][1][k])) >= 0) return BRAND_WORDS[i][0]; return ''; }
   function stripBrand(q) { var s = norm(q); BRAND_WORDS.forEach(function (b) { b[1].forEach(function (w) { s = s.split(norm(w)).join(' '); }); }); return s; }
-  function cashOf(it) { var P = window.MSPrices, v = P && P.get ? P.get(it.id) : null; return v && v.s === 'p' && v.p > 0 ? v.p : 0; }
+  function cashOf(it) { if (PUBLIC) return 0; var P = window.MSPrices, v = P && P.get ? P.get(it.id) : null; return v && v.s === 'p' && v.p > 0 ? v.p : 0; }
   // returns { hits, note } or null when the question is plain
   function smart(q) {
     var s = norm(q), cheap = /ارزان ?ترین|کم ?ترین قیمت|ارزونترین|اقتصادی ?ترین/.test(s), dear = /گران ?ترین|بیشترین قیمت|گرونترین/.test(s), br = brandOf(q);
+    if (PUBLIC) cheap = dear = false;
     if (!cheap && !dear && !br) return null;
     var topic = stripBrand(q).replace(/ارزان ?ترین|کم ?ترین قیمت|ارزونترین|اقتصادی ?ترین|گران ?ترین|بیشترین قیمت|گرونترین/g, ' ');
     var hits = retrieve(topic, 40);
@@ -311,8 +381,7 @@
     var dt = dimsText(it); if (dt) a.push('ابعاد ' + dt);
     if (it.wt) a.push('وزن ' + fmt(it.wt) + ' کیلوگرم');
     (it.specs || []).forEach(function (s) { a.push(s[0] + ': ' + s[1]); });
-    if (v && v.s === 'p' && v.p > 0) a.push('قیمت نقدی ' + fmt(v.p) + ' تومان');
-    else a.push('قیمت ثبت نشده');
+    if (!PUBLIC) { if (v && v.s === 'p' && v.p > 0) a.push('قیمت نقدی ' + fmt(v.p) + ' تومان'); else a.push('قیمت ثبت نشده'); }
     return a.join('، ');
   }
   // «مقایسه A و B», budget («زیر ۵۰ میلیون») and size questions («ابعاد ...») are answered from the catalog fields only
@@ -322,12 +391,12 @@
       var a = retrieve(m[1], 1), b = retrieve(m[2].replace(/^بین\s+/, ''), 1);
       if (a.length && b.length && !a[0].d.it.faq && !b[0].d.it.faq && a[0].d.it.id !== b[0].d.it.id) {
         var x = a[0].d.it, y = b[0].d.it, pa = cashOf(x), pb = cashOf(y), t = ['**مقایسه دو کالا از کاتالوگ:**', '', '1. **' + x.name + '** (' + (BR[x.src] || x.src) + (x.code ? '، کد ' + x.code : '') + '): ' + facts(x), '2. **' + y.name + '** (' + (BR[y.src] || y.src) + (y.code ? '، کد ' + y.code : '') + '): ' + facts(y)];
-        if (pa && pb) t.push('', 'اختلاف قیمت نقدی: ' + fmt(Math.abs(pa - pb)) + ' تومان؛ ارزان‌تر ' + (pa < pb ? 'مورد اول' : pb < pa ? 'مورد دوم' : 'هر دو برابر') + ' است.');
+        if (pa && pb && !PUBLIC) t.push('', 'اختلاف قیمت نقدی: ' + fmt(Math.abs(pa - pb)) + ' تومان؛ ارزان‌تر ' + (pa < pb ? 'مورد اول' : pb < pa ? 'مورد دوم' : 'هر دو برابر') + ' است.');
         return { ids: [x.id, y.id], text: t.join('\n') };
       }
     }
     var bud = s.match(/(?:زیر|حداکثر|تا|کمتر از|نهایتا)\s*([0-9][0-9.,٫]*)\s*(میلیون|هزار)?/);
-    if (bud) {
+    if (bud && !PUBLIC) {
       var val = parseFloat(bud[1].replace(/[,٫]/g, '').replace(/\.(?=\d{3}\b)/g, '')), mult = bud[2] === 'میلیون' ? 1e6 : bud[2] === 'هزار' ? 1e3 : 1;
       var topic = s.replace(bud[0], ' ').replace(/(بودجه|قیمت|تومان|کالا|دارید|هست|میخوام|می‌خواهم)/g, ' ');
       if (val && mult > 1 && tokens(topic).length) {
@@ -367,10 +436,14 @@
     { id: 'backup', label: 'نسخهٔ پشتیبان', href: './backup.html', area: 'backup', page: 'backup.html', keys: ['پشتیبان', 'بکاپ'], how: 'دانلود نسخهٔ پشتیبان.' },
     { id: 'permissions', label: 'دسترسی‌ها', href: './permissions.html', area: 'roleAdmin', page: 'permissions.html', keys: ['دسترسی'], how: 'تعیین دسترسی نقش‌ها.' },
     { id: 'features', label: 'ویژگی‌ها', href: './features.html', area: 'features', page: 'features.html', keys: ['ویژگی', 'روشن و خاموش'], how: 'روشن و خاموش کردن بخش‌های سایت.' },
+    { id: 'track', label: 'پیگیری درخواست', href: './track.html', page: 'track.html', keys: ['پیگیری', 'کد پیگیری', 'وضعیت درخواست'], how: 'با کد پیگیری ببینید درخواست شما به کجا رسیده است.' },
+    { id: 'legal', label: 'قوانین', href: './legal.html', page: 'legal.html', keys: ['قوانین', 'شرایط و ضوابط', 'حریم خصوصی'], how: 'شرایط و ضوابط و حریم خصوصی.' },
     { id: 'contact', label: 'تماس با ما', href: './contact.html', page: 'contact.html', keys: ['تماس با ما'], how: 'راه‌های تماس.' }
   ];
   function myRole() { try { return localStorage.getItem('ms-role') || ''; } catch (e) { return ''; } }
+  var PUB_PAGES = { planner: 1, contact: 1, track: 1, legal: 1, panel: 1 };
   function navAllowed(n) {
+    if (PUBLIC) return !!PUB_PAGES[n.id];
     var R = window.MSRoles, F = window.MSFeatures;
     if (n.area && R && !R.can(myRole(), n.area)) return false;
     if (F && n.page) { var f = F.list.filter(function (x) { return x.page === n.page; })[0]; if (f && F.hidden(f.id) && !(F.owner && F.owner())) return false; }
@@ -426,8 +499,9 @@
   // proforma draft shared with the catalog page (same key and shape)
   var PF = 'ms-proforma-v1';
   function pfRead() { try { var v = JSON.parse(localStorage.getItem(PF) || 'null'); return v && Array.isArray(v.lines) ? v : { lines: [] }; } catch (e) { return { lines: [] }; } }
-  function inProforma(id) { return pfRead().lines.some(function (l) { return l.id === id; }); }
+  function inProforma(id) { return (PUBLIC ? pubRead() : pfRead().lines).some(function (l) { return l.id === id; }); }
   function addProforma(id, qty) {
+    if (PUBLIC) return pubAdd(id, qty);
     var inv = pfRead(); if (inv.lines.some(function (l) { return l.id === id; })) return false;
     var P = window.MSPrices, v = P && P.get ? P.get(id) : null, unit = inv.unit || 'تومان';
     inv.lines.push({ id: id, qty: qty || 1, price: v && v.s === 'p' && v.p > 0 ? v.p * (unit === 'ریال' ? 10 : 1) : 0 });
@@ -437,13 +511,14 @@
   function addBtn(it) {
     if (it.faq) return '';
     var on = inProforma(it.id);
-    return '<button type="button" class="as-add' + (on ? ' on' : '') + '" data-addinv="' + esc(it.id) + '">' + (on ? '✓ در پیش‌فاکتور' : '+ افزودن به پیش‌فاکتور') + '</button>';
+    return '<button type="button" class="as-add' + (on ? ' on' : '') + '" data-addinv="' + esc(it.id) + '">' + (on ? T_IN : T_ADD) + '</button>';
   }
   function lastItem() { for (var i = S.msgs.length - 1; i >= 0; i--) { var m = S.msgs[i]; if (m.role === 'bot' && m.ids && m.ids.length) { var it = byId[m.ids[0]]; if (it && !it.faq) return it; } } return null; }
   function addToLast(s) {
-    if (!/(اضافه|بذار|بگذار|بزن).*(پیش ?فاکتور|سبد)|(پیش ?فاکتور|سبد).*(اضافه|بذار|بگذار)/.test(s)) return null;
+    if (!/(اضافه|بذار|بگذار|بزن).*(پیش ?فاکتور|سبد|درخواست|خرید)|(پیش ?فاکتور|سبد|درخواست|خرید).*(اضافه|بذار|بگذار)/.test(s)) return null;
     var it = lastItem(); if (!it) return { text: 'ابتدا کالایی را پیدا کنید تا به پیش‌فاکتور اضافه کنم.', links: [] };
     var ok = addProforma(it.id);
+    if (PUBLIC) return { text: ok ? '«' + it.name + '» به درخواست خرید شما اضافه شد. برای ارسال به کارشناس، دکمهٔ «مشاهده و ارسال» را بزنید.' : '«' + it.name + '» از قبل در درخواست خرید شما هست.', links: [{ href: './planner.html?public=1&from=aria', label: 'مشاهده و ارسال درخواست خرید' }], ids: [it.id] };
     return { text: ok ? '«' + it.name + '» به پیش‌فاکتور شما اضافه شد. تعداد و مشتری را در سبد پیش‌فاکتور کاتالوگ تنظیم کنید.' : '«' + it.name + '» از قبل در پیش‌فاکتور شما هست.', links: [{ href: './product-catalog.html', label: 'باز کردن کاتالوگ و سبد' }], ids: [it.id] };
   }
   // ---------- quote calculator: «3 گریل ۶۰ روغنی و 2 سرخ کن گازی، با مالیات»
@@ -596,13 +671,21 @@
     t.push('', 'فقط طول کنار هم حساب شده است؛ فضای عبور، فاصله از دیوار و تهویه را جدا در نظر بگیرید و با کارشناس فروش هماهنگ کنید.');
     return { text: t.join('\n'), ids: rows.map(function (r) { return r.it.id; }), links: [] };
   }
-  function skills(q) { var s = norm(q); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || starter(s) || spaceFit(s) || quote(s) || pageGuide(s); }
+  function reqHelp(s) {
+    if (!/(درخواست خرید|ثبت سفارش|سفارش|بخرم|خرید|میخوام بخرم|پیگیری درخواست)/.test(s)) return null;
+    var n = pubRead().length, links = [];
+    if (/پیگیری/.test(s)) return { text: 'با کد پیگیری که هنگام ثبت درخواست گرفته‌اید می‌توانید وضعیت درخواست را ببینید.', links: [{ href: './track.html', label: 'پیگیری درخواست' }] };
+    if (n) links.push({ href: './planner.html?public=1&from=aria', label: 'مشاهده و ارسال درخواست خرید (' + fmt(n) + ' کالا)' });
+    return { text: '**درخواست خرید:** کالاهای مورد نظر را با دکمهٔ «+ افزودن به درخواست خرید» زیر هر کالا (یا بنویسید «اضافه کن») در لیست بگذارید، بعد «مشاهده و ارسال» را بزنید و مشخصات خود را بنویسید. کارشناس فروش با شما تماس می‌گیرد و قیمت و شرایط را همان‌جا اعلام می‌کند. قیمت و پرداخت اینجا انجام نمی‌شود.' + (n ? '\n\nاکنون ' + fmt(n) + ' کالا در درخواست شما هست.' : ''), links: links };
+  }
+  function skills(q) { var s = norm(q); if (PUBLIC) return addToLast(s) || starter(s) || spaceFit(s) || pageGuide(s) || reqHelp(s); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || starter(s) || spaceFit(s) || quote(s) || pageGuide(s); }
   // small follow-up buttons under an answer
   function extras(m) {
     var h = '';
+    if (m.state === 'wait' || m.state === 'stream' || m.state === 'typing') return '';
     if (m.chips && m.chips.length && S.msgs[S.msgs.length - 1] === m) h += '<div class="as-quick as-chips2">' + m.chips.map(function (c) { return '<button type="button" data-q="' + esc(c.q) + '">' + esc(c.label) + '</button>'; }).join('') + '</div>';
     if (m.links && m.links.length) h += '<div class="as-links">' + m.links.map(function (l) { return '<a class="as-go" href="' + esc(l.href) + '">' + esc(l.label) + '</a>'; }).join('') + '</div>';
-    if (m.cart && m.cart.length) h += '<div class="as-quick"><button type="button" data-addall="' + esc(JSON.stringify(m.cart)) + '">+ افزودن همهٔ این کالاها به پیش‌فاکتور</button></div>';
+    if (m.cart && m.cart.length) h += '<div class="as-quick"><button type="button" data-addall="' + esc(JSON.stringify(m.cart)) + '">' + T_ALL + '</button></div>';
     var its = hitsOf(m).filter(function (it) { return !it.faq; });
     if (its.length && !m.cart && (m.state === 'cards' || m.state === 'done') && !m.links) {
       var it = its[0], c = [];
@@ -610,44 +693,81 @@
         if (!m.text || !/ابعاد/.test(m.text)) c.push('<button type="button" data-q="' + esc('ابعاد ' + it.name) + '">ابعاد و مشخصات</button>');
         if (EQ[it.id] && EQ[it.id].length && itemsById[EQ[it.id][0]]) c.push('<button type="button" data-q="' + esc('مقایسه ' + it.name + ' و ' + itemsById[EQ[it.id][0]].name) + '">مقایسه با برند دیگر</button>');
       } else if (m.q) c.push('<button type="button" data-q="' + esc('ارزان‌ترین ' + m.q) + '">ارزان‌ترین گزینه</button>');
-      c.push('<button type="button" data-addinv="' + esc(it.id) + '" class="' + (inProforma(it.id) ? 'on' : '') + '">' + (inProforma(it.id) ? '✓ در پیش‌فاکتور' : '+ افزودن به پیش‌فاکتور') + '</button>');
+      c.push('<button type="button" data-addinv="' + esc(it.id) + '" class="' + (inProforma(it.id) ? 'on' : '') + '">' + (inProforma(it.id) ? T_IN : T_ADD) + '</button>');
       h += '<div class="as-quick">' + c.join('') + '</div>';
     }
     return h;
+  }
+  // what a bot message is made of; null when nothing in the catalog answers the question
+  function noteOf(m) { return m.nonote || m.note || ('نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:'); }
+  function resolve(q, prevQ) {
+    var talk = smallTalk(q); if (talk) return { ids: [], text: talk, state: 'done' };
+    var sk = skills(q);
+    if (sk) return { ids: sk.ids || [], text: sk.text, links: sk.links || [], cart: sk.cart || null, chips: sk.chips || null, flow: !!sk.flow, flowDone: !!sk.flowDone, state: 'done' };
+    var s2 = smart2(q);
+    if (s2) return { ids: s2.ids, text: s2.text, note: s2.note, state: s2.text ? 'done' : s2.none ? 'none' : 'cards', nonote: s2.none ? s2.note : '' };
+    var sm = smart(q);
+    if (sm) return { ids: (sm.hits || []).map(function (it) { return it.id; }), note: sm.note, state: sm.none ? 'none' : 'cards', nonote: sm.none ? sm.note : '' };
+    // a short follow-up («و ۹۰ تا؟») is searched together with the previous question
+    var short = tokens(q).filter(function (w) { return w.charAt(0) !== '~'; }).length;
+    var hits = retrieve(q, 5); if (!hits.length && short <= 2) hits = retrieve(q, 5, true); if (!hits.length && prevQ) hits = retrieve(prevQ + ' ' + q, 5);
+    if (!hits.length) {
+      if (PUBLIC && PRICEQ.test(norm(q))) return { ids: [], text: 'قیمت و شرایط پرداخت را فقط کارشناس فروش مکث‌سیلور در تماس اعلام می‌کند. اگر کالای مورد نظرتان را بنویسید، پیدایش می‌کنم و به درخواست خرید شما اضافه می‌کنم.', state: 'done' };
+      return null;
+    }
+    var bot = { q: q, main: true, ids: hits.map(function (h) { return h.d.it.id; }), state: 'cards' };
+    if (short <= 1 && !/[0-9]/.test(q) && !hits[0].d.it.faq) {
+      bot.note = 'پرسش شما کلی است و کالاهای زیادی دارد. کدام را می‌خواهید؟ یکی از گزینه‌ها را بزنید یا اندازه و نوع (گازی، برقی، ذغالی) را بنویسید. چند نمونه:';
+      bot.chips = [{ label: 'مکث‌سیلور', q: q + ' مکث‌سیلور' }, { label: 'وینتورا', q: q + ' وینتورا' }, { label: 'توربومکس', q: q + ' توربومکس' }].concat(PUBLIC ? [] : [{ label: 'ارزان‌ترین', q: 'ارزان‌ترین ' + q }]);
+    }
+    if (PUBLIC && PRICEQ.test(norm(q))) bot.note = 'قیمت را فقط کارشناس فروش مکث‌سیلور در تماس اعلام می‌کند. این کالاها را پیدا کردم؛ هر کدام را می‌خواهید به «درخواست خرید» اضافه کنید.';
+    return bot;
+  }
+  // a short «thinking» pause (the dots), then the answer is typed out; with reduced motion it just appears
+  function deliver(bot) {
+    bot.role = 'bot';
+    var bi = S.msgs.length; S.msgs.push(bot);
+    var final = bot.state || (bot.text ? 'done' : 'cards');
+    if (REDUCE || S.busy) { bot.state = final; save(); render(); return; }
+    var full = bot.text || '', typed = full ? '' : (final === 'none' ? (bot.nonote || 'در منابع من پاسخی برای این پرسش نیست.') : noteOf(bot)), src = full || typed;
+    S.busy = true; bot.state = 'wait'; bot.text = ''; render();
+    var think = 380 + Math.min(700, src.length * 2.2) + Math.random() * 260;
+    setTimeout(function () {
+      var total = Math.min(2600, Math.max(500, src.length * 13)), steps = Math.max(1, Math.round(total / 26)), per = Math.max(1, Math.ceil(src.length / steps)), at = 0;
+      bot.state = full ? 'stream' : 'typing';
+      (function tick() {
+        at = Math.min(src.length, at + per);
+        while (at < src.length && !/\s/.test(src.charAt(at - 1))) at++;
+        if (full) bot.text = src.slice(0, at); else bot.typed = src.slice(0, at);
+        paintBot(bi, true);
+        if (at < src.length) setTimeout(tick, 26);
+        else { bot.text = full; delete bot.typed; bot.state = final; S.busy = false; save(); bot.reveal = true; render(true); delete bot.reveal; scrollEnd(true); }
+      })();
+    }, think);
   }
   function ask(text) {
     text = String(text || '').trim(); if (!text || !S.ready || S.busy) return;
     var prevQ = null; for (var i = S.msgs.length - 1; i >= 0; i--) if (S.msgs[i].role === 'user') { prevQ = S.msgs[i].text; break; }
     var history = S.msgs.filter(function (m) { return m.role === 'user' || (m.role === 'bot' && m.text); }).slice(-8).map(function (m) { return { role: m.role === 'bot' ? 'assistant' : 'user', content: m.text }; });
     S.msgs.push({ role: 'user', text: text });
-    var talk = smallTalk(text);
-    if (talk) { S.msgs.push({ role: 'bot', ids: [], text: talk, state: 'done' }); save(); render(); return; }
-    var sk = skills(text);
-    if (sk) { S.msgs.push({ role: 'bot', ids: sk.ids || [], text: sk.text, links: sk.links || [], cart: sk.cart || null, chips: sk.chips || null, flow: !!sk.flow, flowDone: !!sk.flowDone, state: 'done' }); save(); render(); return; }
-    var s2 = smart2(text);
-    if (s2) {
-      S.msgs.push({ role: 'bot', ids: s2.ids, text: s2.text, note: s2.note, state: s2.text ? 'done' : s2.none ? 'none' : 'cards', nonote: s2.none ? s2.note : '' });
-      save(); render(); return;
+    var r = resolve(text, prevQ);
+    if (!r || r.state === 'none') {
+      var cx = correct(text);
+      if (cx.changed.length) { var r2 = resolve(cx.q, prevQ); if (r2 && r2.state !== 'none') { r = r2; r.fixed = cx.changed; } }
     }
-    var sm = smart(text);
-    if (sm) {
-      S.msgs.push({ role: 'bot', ids: (sm.hits || []).map(function (it) { return it.id; }), note: sm.note, state: sm.none ? 'none' : 'cards', nonote: sm.none ? sm.note : '' });
-      save(); render(); return;
+    if (!r) { r = { q: text, ids: [], state: 'none' }; logAdd('none', text, []); }
+    else if (r.state === 'none' && r.main) logAdd('none', text, []);
+    if (r.main && relayUrl() && r.ids.length && r.state === 'cards') {
+      var bot = r, bi = S.msgs.length, items = r.ids.map(function (id) { return byId[id]; }).filter(Boolean);
+      bot.role = 'bot'; S.msgs.push(bot);
+      bot.state = 'wait'; S.busy = true; render();
+      writing(items, text, history, function (acc) { bot.text = acc; bot.state = 'stream'; paintBot(bi, true); }).then(function (a) { bot.text = a; bot.state = 'done'; }, function (e) {
+        bot.text = ''; bot.state = 'cards';
+        bot.note = e && /relay-40[13]/.test(e.code || '') ? 'برای گفت‌وگو باید وارد حساب خود شده باشید و نقش شما اجازه داشته باشد. نزدیک‌ترین کالاها:' : 'پاسخ نوشته‌شده الان در دسترس نیست. نزدیک‌ترین کالاها:';
+      }).then(function () { S.busy = false; save(); render(true); scrollEnd(true); var q = document.getElementById('asQ'); if (q && !('ontouchstart' in window)) q.focus(); });
+      return;
     }
-    // a short follow-up («و ۹۰ تا؟») is searched together with the previous question
-    var hits = retrieve(text, 5); if (!hits.length && tokens(text).filter(function (w) { return w.charAt(0) !== '~'; }).length <= 2) hits = retrieve(text, 5, true); if (!hits.length && prevQ) hits = retrieve(prevQ + ' ' + text, 5);
-    var bot = { role: 'bot', q: text, ids: hits.map(function (h) { return h.d.it.id; }) }, bi = S.msgs.length;
-    S.msgs.push(bot);
-    var items = hits.map(function (h) { return h.d.it; });
-    if (!hits.length) { bot.state = 'none'; logAdd('none', text, []); save(); render(); return; }
-    var nw = tokens(text).filter(function (w) { return w.charAt(0) !== '~'; }).length;
-    if (nw <= 1 && !/[0-9]/.test(text) && !hits[0].d.it.faq) bot.note = 'پرسش شما کلی است و کالاهای زیادی دارد. کدام را می‌خواهید؟ یکی از گزینه‌ها را بزنید یا اندازه و نوع (گازی، برقی، ذغالی) را بنویسید. چند نمونه:'; bot.chips = [{ label: 'مکث‌سیلور', q: text + ' مکث‌سیلور' }, { label: 'وینتورا', q: text + ' وینتورا' }, { label: 'توربومکس', q: text + ' توربومکس' }, { label: 'ارزان‌ترین', q: 'ارزان‌ترین ' + text }];
-    if (!relayUrl()) { bot.state = 'cards'; save(); render(); return; }
-    bot.state = 'wait'; S.busy = true; render();
-    writing(items, text, history, function (acc) { bot.text = acc; bot.state = 'stream'; paintBot(bi, true); }).then(function (a) { bot.text = a; bot.state = 'done'; }, function (e) {
-      bot.text = ''; bot.state = 'cards';
-      bot.note = e && /relay-40[13]/.test(e.code || '') ? 'برای گفت‌وگو باید وارد حساب خود شده باشید و نقش شما اجازه داشته باشد. نزدیک‌ترین کالاها:' : 'پاسخ نوشته‌شده الان در دسترس نیست. نزدیک‌ترین کالاها:';
-    }).then(function () { S.busy = false; save(); render(true); scrollEnd(true); var q = document.getElementById('asQ'); if (q && !('ontouchstart' in window)) q.focus(); });
+    deliver(r);
   }
   function submitBox() { var q = document.getElementById('asQ'); if (!q) return; var v = q.value; q.value = ''; grow(q); ask(v); }
   root.addEventListener('submit', function (e) { if (e.target.id === 'asForm') { e.preventDefault(); submitBox(); } });
@@ -666,26 +786,48 @@
     if ((c = e.target.closest('[data-addall]'))) {
       var cart = []; try { cart = JSON.parse(c.getAttribute('data-addall')); } catch (x) { cart = []; }
       var n = 0; cart.forEach(function (l) { if (addProforma(l.id, l.qty)) n++; });
-      c.classList.add('on'); c.textContent = n ? '✓ ' + fmt(n) + ' کالا به پیش‌فاکتور اضافه شد' : '✓ از قبل در پیش‌فاکتور بودند';
+      c.classList.add('on'); c.textContent = n ? '✓ ' + fmt(n) + ' کالا ' + (PUBLIC ? 'به درخواست خرید' : 'به پیش‌فاکتور') + ' اضافه شد' : '✓ از قبل در لیست بودند'; if (PUBLIC) render(true);
       return;
     }
     if ((c = e.target.closest('[data-addinv]'))) {
       var id = c.getAttribute('data-addinv'), was = inProforma(id);
       if (!was) addProforma(id);
-      root.querySelectorAll('[data-addinv="' + id + '"]').forEach(function (b) { b.classList.add('on'); b.textContent = '✓ در پیش‌فاکتور'; });
+      root.querySelectorAll('[data-addinv="' + id + '"]').forEach(function (b) { b.classList.add('on'); b.textContent = T_IN; });
       return;
     }
     if ((c = e.target.closest('[data-q]'))) { ask(c.getAttribute('data-q')); return; }
-    if (e.target.closest('#asNew')) { if (!S.busy) { S.msgs = []; save(); render(true); } return; }
+    if ((c = e.target.closest('[data-recent]'))) { var rr = recRead()[Number(c.getAttribute('data-recent'))]; if (rr && !S.busy) { S.msgs = rr.msgs; save(); render(); } return; }
+    if (e.target.closest('[data-recent-clear]')) { try { localStorage.removeItem(RECK); } catch (x) { /* ignore */ } render(true); return; }
+    if (e.target.closest('#asNew')) { if (!S.busy) { recSave(); S.msgs = []; save(); render(true); } return; }
     if ((c = e.target.closest('[data-copy]'))) { var m = S.msgs[Number(c.getAttribute('data-copy'))]; try { navigator.clipboard.writeText(m.text).then(function () { c.querySelector('span').textContent = 'کپی شد'; setTimeout(function () { c.querySelector('span').textContent = 'کپی'; }, 1400); }); } catch (x) { /* ignore */ } }
   });
-  window.MSAssistant = { retrieve: function (q, k) { return retrieve(q, k || 5).map(function (h) { return { id: h.d.it.id, name: h.d.it.name, score: Math.round(h.s * 100) / 100 }; }); }, size: function () { return docs.length; }, ask: ask };
+  window.MSAssistant = { retrieve: function (q, k) { return retrieve(q, k || 5).map(function (h) { return { id: h.d.it.id, name: h.d.it.name, score: Math.round(h.s * 100) / 100 }; }); }, size: function () { return docs.length; }, ask: ask, fix: function (q) { return correct(q); } };
+  // public: the product codes the sales team took out of use (the same list the public planner reads)
+  function loadPubRet() {
+    var c = window.MS_FIREBASE; if (!c || !c.projectId || !window.fetch) return Promise.resolve();
+    var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 4000);
+    return fetch('https://firestore.googleapis.com/v1/projects/' + c.projectId + '/databases/(default)/documents/public_config/retired?key=' + encodeURIComponent(c.apiKey || ''), ctl ? { signal: ctl.signal } : {})
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { var v = (j && j.fields && j.fields.ids && j.fields.ids.arrayValue && j.fields.ids.arrayValue.values) || []; PUBRET = {}; v.forEach(function (x) { if (x.stringValue) PUBRET[x.stringValue] = true; }); })
+      .then(null, function () { /* offline: nothing is hidden */ }).then(function () { clearTimeout(to); });
+  }
+  // the chat is exactly as tall as what is visible (the keyboard and the address bar change it), so the message box never hides behind anything
+  function fit() {
+    var as = document.getElementById('as'), hd = document.querySelector('header.ms-sitebar'); if (!as) return;
+    var vv = window.visualViewport, top = hd ? hd.offsetHeight : 56, h = vv ? vv.height : window.innerHeight, off = vv ? vv.offsetTop : 0;
+    as.style.top = (top + off) + 'px'; as.style.height = Math.max(240, h - top) + 'px';
+  }
+  window.addEventListener('resize', fit); window.addEventListener('orientationchange', fit);
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', fit); window.visualViewport.addEventListener('scroll', fit); }
   restore();
+  S.fresh = S.msgs.length;
   render(true);
+  fit();
   var VER = (document.currentScript && document.currentScript.src.split('v=')[1]) || '';
   function load(name, fallback) { return fetch('./assets/' + name + '.json?v=' + VER).then(function (r) { if (!r.ok) throw new Error(name); return r.json(); }).catch(function () { return fallback; }); }
   Promise.all([fetch('./assets/catalog.json?v=' + VER).then(function (r) { if (!r.ok) throw new Error('catalog'); return r.json(); }), load('knowledge', []), load('equivalents', {})]).then(function (all) {
     build(all[0].items || [], all[1], all[2]); S.ready = true;
+    if (PUBLIC) loadPubRet().then(function () { render(true); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(true); }, function () { render(true); }); window.MSPrices.onChange(function () { render(true); }); }
     render(true);
     var q = new URLSearchParams(location.search).get('q'); if (q) ask(q);

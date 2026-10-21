@@ -10,6 +10,11 @@
   var STATE_KEY = 'ms-planner-v1';
   // someone with no staff account sees the public version: no prices, and the result is a purchase request for sales (Chef Market sheet)
   var PUBLIC = (function () { try { return !localStorage.getItem('ms-role') || /[?&]public=1/.test(location.search); } catch (e) { return true; } })();
+  var ARIA = PUBLIC && /[?&]from=aria/.test(location.search);   // the visitor comes from Aria with a list of products
+  function ariaLines() {
+    var a = []; try { a = JSON.parse(localStorage.getItem('ms-aria-pub-v1') || '[]'); } catch (e) { a = []; }
+    return (Array.isArray(a) ? a : []).filter(function (x) { return x && BY[x.id] && !PUBRET[x.id]; }).slice(0, 40).map(function (x) { var p = BY[x.id]; return { id: p.id, code: String(p.code || '').slice(0, 20), name: String(p.name || '').slice(0, 120), brand: BRAND[p.src] || '', qty: Math.max(1, Math.min(20, Number(x.qty) || 1)) }; });
+  }
   var PUBRET = {};   // product ids taken out of use, published by sales management (public_config/retired)
 
   // ---- what we know how to plan
@@ -207,15 +212,16 @@
     return { name: F.name, phone: F.phone, nid: F.nid, address: F.address, province: F.province, city: cityOf(), zip: F.zip, self: F.self, rName: F.rName, rNid: F.rNid, rPhone: F.rPhone, note: F.note, agree: F.agree };
   }
   function requestLines() {
+    if (ARIA) return ariaLines();
     return plan().filter(function (j) { return S.removed.indexOf(j.id) < 0 && pickFor(j.id); }).map(function (j) {
       var p = pickFor(j.id);
       return { id: p.id, code: String(p.code || '').slice(0, 20), name: String(p.name || '').slice(0, 120), brand: BRAND[p.src] || '', qty: qtyFor(j.id) };
     });
   }
   function stepRequest() {
-    var lines = requestLines(), c = conceptOf(S.concept);
-    return progress(2 + qList().length, 'اطلاعات شما') + '<h1>ارسال درخواست به کارشناس</h1><p class="pl-lead">اطلاعات خود را بنویسید تا کارشناس فروش مکث‌سیلور با شما تماس بگیرد. در این برگه قیمتی نیست؛ قیمت و شرایط را کارشناس فروش اعلام می‌کند.</p>' +
-      '<section class="pl-req"><h3>طرح شما: ' + esc(c.t) + ' ' + SIZES[S.size].t + '</h3><ul class="pl-rl">' + lines.map(function (l) { return '<li><b>' + esc(l.name) + '</b><span>' + (l.brand ? esc(l.brand) + SEP : '') + faInt.format(l.qty) + ' عدد</span></li>'; }).join('') + '</ul></section>' +
+    var lines = requestLines(), c = conceptOf(S.concept) || { t: '' };
+    return (ARIA ? '<p class="pl-note"><a href="./assistant.html">بازگشت به آریا</a></p>' : progress(2 + qList().length, 'اطلاعات شما')) + '<h1>ارسال درخواست به کارشناس</h1><p class="pl-lead">اطلاعات خود را بنویسید تا کارشناس فروش مکث‌سیلور با شما تماس بگیرد. در این برگه قیمتی نیست؛ قیمت و شرایط را کارشناس فروش اعلام می‌کند.</p>' +
+      '<section class="pl-req"><h3>' + (ARIA ? 'لیست انتخاب‌شدهٔ شما از آریا' : 'طرح شما: ' + esc(c.t) + ' ' + SIZES[S.size].t) + '</h3><ul class="pl-rl">' + lines.map(function (l) { return '<li><b>' + esc(l.name) + '</b><span>' + (l.brand ? esc(l.brand) + SEP : '') + faInt.format(l.qty) + ' عدد</span></li>'; }).join('') + '</ul></section>' +
       '<form class="pl-form" novalidate autocomplete="on">' + (ERR_ALL ? '<p class="pl-err" role="alert">' + esc(ERR_ALL) + '</p>' : '') +
       '<h3>مشخصات خریدار</h3><div class="pl-grid">' +
       field('name', 'نام و نام خانوادگی', { ac: 'name', wide: true, max: 80 }) + field('phone', 'شمارهٔ موبایل', { ac: 'tel-national', mode: 'numeric', dir: 'ltr', max: 14 }) + field('nid', 'کد ملی', { mode: 'numeric', dir: 'ltr', max: 10 }) +
@@ -331,12 +337,13 @@
     var r = window.MSRequests.check(formData());
     ERR = fixErr(r.errors); ERR_ALL = r.ok ? '' : 'چند مورد را اصلاح کنید.';
     if (!r.ok) { render(); var bad = root.querySelector('.pl-f.bad input, .pl-f.bad select'); if (bad) bad.focus(); return; }
-    var c = conceptOf(S.concept), serve = S.serve.map(function (sid) { var s = c.serve.filter(function (x) { return x.id === sid; })[0]; return s ? s.t : ''; }).filter(Boolean).join('، ').slice(0, 160);
+    var c = conceptOf(S.concept) || { t: 'آریا', serve: [] }, serve = S.serve.map(function (sid) { var s = c.serve.filter(function (x) { return x.id === sid; })[0]; return s ? s.t : ''; }).filter(Boolean).join('، ').slice(0, 160);
     r.customer.address = ('استان ' + r.province + '، ' + r.customer.address).slice(0, 300);
-    var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: c.t, size: SIZES[S.size].t, serve: serve, province: r.province }, note: r.note, terms: r.terms, src: 'planner' };
+    var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: ARIA ? 'لیست آریا' : c.t, size: ARIA ? '' : SIZES[S.size].t, serve: serve, province: r.province }, note: r.note, terms: r.terms, src: 'planner' };
     REQ_BUSY = true; render();
     window.MSRequests.submit(payload).then(function (code) {
       REQ_BUSY = false; OK = {}; DONE = { code: code, customer: r.customer, lines: lines }; F = { self: true };
+      if (ARIA) { try { localStorage.removeItem('ms-aria-pub-v1'); } catch (e) { /* ignore */ } }
       try { localStorage.setItem('ms-req-last', String(Date.now())); } catch (e) { /* ignore */ }
       render(); window.scrollTo(0, 0);
     }, function (e) { REQ_BUSY = false; ERR_ALL = window.MSRequests.errText(e); render(); window.scrollTo(0, 0); });
@@ -368,7 +375,7 @@
     if (S.concept && S.step >= 2 && open >= 0) { S.step = 1; S.q = open; }     // the plan waits until every question has an answer
     if (S.step === 1 && S.q >= qList().length) S.q = qList().length - 1;
     if (PUBLIC && DONE) root.innerHTML = stepDone();
-    else if (PUBLIC && S.step === 3 && S.concept) root.innerHTML = stepRequest();
+    else if (PUBLIC && S.step === 3 && (S.concept || ARIA)) root.innerHTML = stepRequest();
     else if (!PUBLIC && S.step === 4 && S.concept) root.innerHTML = stepSend();
     else if (S.step === 2 && S.concept) root.innerHTML = stepPlan();
     else if (S.step === 1 && S.concept) root.innerHTML = stepQuestions();
@@ -500,7 +507,9 @@
     var tj = res[1] || {}, map = tj.tiers || tj;
     Object.keys(map).forEach(function (id) { var w = TIER_WORD[map[id]]; if (BY[id] && w) TIERS[id] = w; });
     TIERS_ON = Object.keys(TIERS).length >= 20;   // a budget question only makes sense once enough products carry a level
-    ready = true; render();
+    ready = true;
+    if (ARIA && ariaLines().length && !DONE) { S.step = 3; FORM_AT = Date.now(); }
+    render();
   }).then(null, function () { failed = true; render(); });
   render();
 })();
