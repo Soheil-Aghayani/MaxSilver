@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'new-server-1405-08', date: '1405/07/30', tag: 'جدید', title: 'ورود و داده‌ها به سرور داخلی منتقل شد',
+      summary: 'ورود کارکنان و داده‌ها اکنون روی سرور ایرانی انجام می‌شود و دیگر به فیلترشکن نیاز نیست. اگر رمزتان را نمی‌دانید، از مدیریت بخواهید رمز تازه برایتان بگذارد.' },
     { id: 'password-rule-8', date: '1405/07/30', tag: 'امنیت', title: 'قاعدهٔ رمز عبور ساده‌تر شد', roles: ['manager'],
       summary: 'رمز در سرور تازه دست‌کم ۸ نویسه با یک حرف بزرگ و یک حرف کوچک انگلیسی است. رمزهای رایج و نام ایمیل همچنان پذیرفته نمی‌شوند.' },
     { id: 'new-products-1405-08', date: '1405/07/30', tag: 'جدید', title: 'نه کالای تازه در کاتالوگ',
