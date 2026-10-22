@@ -24,14 +24,24 @@ ITEMS = [
 
 text = io.open(path, encoding='utf-8').read()
 data = json.loads(text)
-have = {i['id'] for i in data['items']}
+# picture stems made by tools/make_new_product_photos.py (ms- for Max Silver, wt- for Wintora); sinks have none yet
+PIC = {'oven4-700': 'new-oven4', 'oven4-900': 'new-oven4', 'oven6-700': 'new-oven6', 'oven6-900': 'new-oven6', 'trolley': 'new-trolley'}
+PRE = {'max-silver': 'ms-', 'wintora': 'wt-'}
+root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+def pic(brand, key):
+    s = PIC.get(key)
+    f = os.path.join(root, 'assets', 'products', 'pl', PRE[brand] + s + '.webp') if s else ''
+    return './assets/products/pl/%s%s.webp' % (PRE[brand], s) if s and os.path.exists(f) else ''
+have = {i['id']: i for i in data['items']}
 added = 0
 for brand in BRANDS:
     for key, name, grp, cat, specs in ITEMS:
         iid = '%s:new-%s' % (brand, key)
         if iid in have:
+            if pic(brand, key) and not have[iid].get('img'):
+                have[iid]['img'] = pic(brand, key)
             continue
-        data['items'].append({'id': iid, 'src': brand, 'name': name, 'code': '', 'grp': grp, 'cat': cat, 'sec': [], 'img': '', 'url': '', 'desc': WHY, 'dims': None, 'wt': None, 'specs': specs})
+        data['items'].append({'id': iid, 'src': brand, 'name': name, 'code': '', 'grp': grp, 'cat': cat, 'sec': [], 'img': pic(brand, key), 'url': '', 'desc': WHY, 'dims': None, 'wt': None, 'specs': specs})
         added += 1
 io.open(path, 'w', encoding='utf-8', newline='\n').write(json.dumps(data, ensure_ascii=False, separators=(',', ':')))
 print('added', added, 'items; total', len(data['items']))
