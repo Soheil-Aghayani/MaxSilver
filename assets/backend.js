@@ -39,7 +39,7 @@
       '<p class="bk-sub">بخش‌هایی که این نقش می‌بیند: ' + u.areas.length + ' مورد</p></section>';
     if (can('roleAdmin')) {
       h += '<section class="bk-card"><h2>ساخت حساب</h2><form id="fNew" class="bk-grid"><label>نام<input name="name" required maxlength="120"></label><label>ایمیل<input name="email" type="email" dir="ltr" required></label>' +
-        '<label>رمز (حداقل ۱۰ نویسه)<input name="password" type="password" dir="ltr" minlength="10" required autocomplete="new-password"></label><label>نقش<select name="role">' + roleOptions('visitor') + '</select></label>' +
+        '<label>رمز (حداقل ۸ نویسه، با حرف بزرگ و کوچک انگلیسی)<input name="password" type="password" dir="ltr" minlength="8" required autocomplete="new-password"></label><label>نقش<select name="role">' + roleOptions('visitor') + '</select></label>' +
         '<label>موبایل (اختیاری)<input name="phone" dir="ltr" inputmode="numeric" pattern="09\\d{9}"></label><button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>ساخت</button></form></section>';
     }
     if (can('team')) {

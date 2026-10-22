@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'password-rule-8', date: '1405/07/30', tag: 'امنیت', title: 'قاعدهٔ رمز عبور ساده‌تر شد', roles: ['manager'],
+      summary: 'رمز در سرور تازه دست‌کم ۸ نویسه با یک حرف بزرگ و یک حرف کوچک انگلیسی است. رمزهای رایج و نام ایمیل همچنان پذیرفته نمی‌شوند.' },
     { id: 'new-products-1405-08', date: '1405/07/30', tag: 'جدید', title: 'نه کالای تازه در کاتالوگ',
       summary: 'برای مکث‌سیلور و وینتورا این کالاها اضافه شد: اجاق چهار شعله و شش شعله فردار (سری ۷۰۰ و ۹۰۰)، سینک و رویه سینک تک لگن (۷۵×۵۰ و ۵۰×۱۰۰) و ترولی حمل بن‌ماری. کد، قیمت و ابعاد هنوز ثبت نشده است؛ کارشناس فروش اعلام می‌کند.' },
     { id: 'aria-open-to-visitors', date: '1405/07/30', tag: 'جدید', title: 'آریا برای همه باز شد و روی موبایل راحت‌تر است',
