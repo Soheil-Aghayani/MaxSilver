@@ -134,7 +134,7 @@
         if (stopped) return;
         var sig = JSON.stringify(v);
         if (sig !== last) { last = sig; deliver(v); }
-      }, function (e) { if (!stopped && fail) fail(e); }).then(function () { if (!stopped) timer = setTimeout(tick, POLL); });
+      }, function (e) { if (!stopped && fail) fail(e); }).then(function () { if (!stopped) timer = setTimeout(tick, w.__msFast ? 2500 : POLL); });
     }
     tick();
     return function () { stopped = true; clearTimeout(timer); };

@@ -506,11 +506,15 @@
       '<ul class="pn-dd-list" role="listbox" hidden>' + lis + '</ul></div>';
   }
 
+  function matchQ(x, other) {
+    var q = (S.tk.q || '').trim().toLowerCase(); if (!q) return true;
+    return [x.title, other, x.lastText].join(' ').toLowerCase().indexOf(q) >= 0;
+  }
   function ticketsView() {
     var T = S.tk, wait = tkWaiting();
     var rows = T.list.map(function (x) {
       var other = otherParty(x), mineLast = x.lastBy === S.user.uid, waiting = !mineLast && x.status === 'open';
-      return '<li><button type="button" class="pn-chat' + (x.status === 'closed' ? ' off' : '') + (waiting ? ' wait' : '') + '" data-tk-open="' + esc(x.id) + '">' +
+      return '<li' + (matchQ(x, other) ? '' : ' hidden') + '><button type="button" class="pn-chat' + (x.status === 'closed' ? ' off' : '') + (waiting ? ' wait' : '') + '" data-tk-open="' + esc(x.id) + '">' +
         avatar(other, 46, otherUidOf(x)) +
         '<span class="pn-chat-main"><span class="pn-chat-top"><b>' + esc(x.title) + '</b><time>' + esc(tkTime(x.updatedAt)) + '</time></span>' +
         '<span class="pn-chat-sub">' + esc(other) + (x.kind === 'account-removal' ? ' · خودکار' : '') + (x.status === 'closed' ? ' · بسته' : '') + '</span>' +
@@ -519,6 +523,7 @@
     }).join('');
     return '<section class="pn-card pn-tickets" id="tickets" data-no-reveal><div class="pn-tk-head"><h2>گفت‌وگوها' + (wait ? ' <span class="pn-badge" aria-label="منتظر پاسخ شما">' + faInt.format(wait) + '</span>' : '') + '</h2>' +
       '</div>' +
+      '<input type="search" id="tkSearch" class="pn-tk-search" placeholder="جست‌وجو در گفت‌وگوها" aria-label="جست‌وجو در گفت‌وگوها" value="' + esc(T.q) + '">' +
       (T.error ? '<p class="pn-err" role="alert">' + esc(T.error) + '</p>' : '') +
       (rows ? '<ul class="pn-chats">' + rows + '</ul>' : '<p class="pn-note">' + (T.loading ? 'در حال بارگذاری…' : 'گفت‌وگویی نیست. برای پیام به فروش، مالی، مدیریت یا هر واحد دیگر دکمهٔ مداد را بزنید.') + '</p>') + '<button type="button" class="pn-fab" data-tk-new aria-label="گفت‌وگوی تازه" title="گفت‌وگوی تازه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>' + '</section>';
   }
@@ -560,11 +565,12 @@
       var joinNext = next && next.uid === m.uid && tkDay(next.at) === tkDay(m.at) && next.at - m.at < 5 * 60000;
       var mine = m.uid === me;
       if (newDay) out += '<li class="pn-day"><span>' + esc(tkDay(m.at)) + '</span></li>';
-      out += '<li class="pn-row ' + (mine ? 'mine' : 'other') + (joinPrev ? '' : ' first') + (joinNext ? '' : ' last') + '">' +
+      out += '<li class="pn-row ' + (mine ? 'mine' : 'other') + (joinPrev ? '' : ' first') + (joinNext ? '' : ' last') + '" data-mid="' + esc(m.id || '') + '">' +
         (mine ? '' : '<span class="pn-row-av">' + (joinNext ? '' : avatar(m.name, 34, m.uid)) + '</span>') +
         '<div class="pn-bubble"' + (mine && colorOf(me) ? ' style="background:' + colorOf(me) + '"' : '') + '>' +
         (!mine && !joinPrev ? '<b class="pn-from"' + (colorOf(m.uid) ? ' style="color:' + colorOf(m.uid) + '"' : '') + '>' + esc(m.name || '—') + '</b>' : '') +
-        '<p>' + esc(m.text) + '</p><span class="pn-meta"><time>' + esc(tkTime(m.at)) + '</time>' + (mine ? ticks(m.at) : '') + '</span></div></li>';
+        msgBody(m) + '<span class="pn-meta">' + (m.editedAt && !m.deleted ? '<i class="pn-ed">ویرایش‌شده</i>' : '') + '<time>' + esc(tkTime(m.at)) + '</time>' + (mine && !m.deleted ? ticks(m.at) : '') + '</span>' +
+        (m.deleted ? '' : '<button type="button" class="pn-more" data-more="' + esc(m.id || '') + '" aria-label="گزینه‌های پیام">' + DOTS_SVG + '</button>') + '</div></li>';
       prev = m;
     });
     return out;
@@ -580,8 +586,12 @@
       avatar(other, 44, otherUidOf(x)) + '<div class="pn-chat-who"><b id="dlgName">' + esc(x.title) + '</b><span>' + esc(x.fromName || '—') + ' ← ' + esc(x.toName || MSRoles.label(x.toRole)) + (x.kind === 'account-removal' ? ' · خودکار' : '') + '</span>' +
       (otherUidOf(x) ? '<span class="pn-presence" id="tkPresence" hidden></span>' : '') + '</div>' + toggle + '</div>' +
       '<ul class="pn-feed" id="tkFeed">' + feedHtml() + '</ul>' +
-      (S.tk.error ? '<p class="pn-err" role="alert">' + esc(S.tk.error) + '</p>' : '') +
-      (open ? '<form id="tkReplyForm" class="pn-composer" data-id="' + esc(x.id) + '"><textarea name="text" rows="1" maxlength="2000" placeholder="پیام…" aria-label="پیام" required></textarea>' +
+      '<p class="pn-err" id="tkErr" role="alert"' + (S.tk.error ? '' : ' hidden') + '>' + esc(S.tk.error) + '</p>' +
+      (open ? '<div id="tkBars" class="pn-bars">' + barsHtml() + '</div><div class="pn-emoji" id="tkEmoji" hidden>' + emojiHtml() + '</div>' +
+        '<form id="tkReplyForm" class="pn-composer" data-id="' + esc(x.id) + '"><input type="file" id="tkFile" multiple hidden accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.zip,.rar,.7z">' +
+        (canAttach() ? '<button type="button" class="pn-ci" data-attach aria-label="پیوست" title="پیوست عکس یا فایل">' + CLIP_SVG + '</button>' : '') +
+        '<button type="button" class="pn-ci" data-emoji aria-label="شکلک" title="شکلک">' + SMILE_SVG + '</button>' +
+        '<textarea name="text" rows="1" maxlength="2000" placeholder="پیام…" aria-label="پیام"></textarea>' +
         '<button type="submit" class="pn-send" aria-label="ارسال" title="ارسال" disabled>' + SEND_SVG + '</button></form>'
         : '<div class="pn-closed"><span>این گفت‌وگو بسته است.</span><button type="button" class="pn-secondary" data-tk-status="open" data-id="' + esc(x.id) + '">بازکردن دوباره</button></div>');
   }
@@ -595,7 +605,7 @@
       if (k.indexOf('read_') === 0 && k !== 'read_' + me) read = Math.max(read, c[k] || 0);
     });
     var last = S.tk.msgs[S.tk.msgs.length - 1];
-    return S.tk.msgs.length + ':' + (last ? last.at : 0) + ':' + recv + ':' + read;
+    return S.tk.msgs.length + ':' + (last ? last.at : 0) + ':' + recv + ':' + read + ':' + S.tk.msgs.reduce(function (a, m) { return a + (m.editedAt || 0) + (m.deleted ? 1 : 0); }, 0);
   }
   // both listeners (messages and the ticket) can fire together: one repaint per frame, and none when nothing changed
   function paintFeed(first) {
@@ -611,6 +621,7 @@
       var near = paintFirst || feed.scrollHeight - feed.scrollTop - feed.clientHeight < 90;
       var last = S.tk.msgs[S.tk.msgs.length - 1];
       feed.innerHTML = feedHtml();
+      hydrateFeed();
       lastSig = sig; paintFirst = false;
       if (near || (last && last.uid === S.user.uid)) feed.scrollTop = feed.scrollHeight;
     });
@@ -638,15 +649,18 @@
   function openThread(id) {
     stopFeed();
     S.tk.open = id; S.tk.msgs = []; S.tk.error = '';
-    dlg.className = 'pn-dialog pn-chatdlg';
+    S.tk.pending.forEach(function (p) { if (p.url) URL.revokeObjectURL(p.url); });
+    S.tk.pending = []; S.tk.reply = null; S.tk.edit = null;
+    window.__msFast = true;       // refresh every 2.5 s instead of 6 s while a conversation is open
+    dlg.className = 'pn-dialog pn-chatdlg' + (dockWide() ? ' dock' : '');
     dlg.innerHTML = tkThread(id);
-    if (!dlg.open) dlg.showModal();
+    if (!dlg.open) { if (dockWide()) dlg.show(); else dlg.showModal(); }
     var first = true;
     // live: a reply from the other side appears without a refresh
     var ref = db.collection('tickets').doc(id), offMsgs = null, offDoc = null, lastStatus = '';
     S.tk.cur = (S.tk.list.filter(function (k) { return k.id === id; })[0]) || {};
     offMsgs = ref.collection('messages').orderBy('at').onSnapshot(function (qs) {
-      S.tk.msgs = []; qs.forEach(function (s) { S.tk.msgs.push(s.data()); });
+      S.tk.msgs = []; qs.forEach(function (s) { var d = s.data(); d.id = s.id; S.tk.msgs.push(d); });
       needProfiles(S.tk.msgs.map(function (m) { return m.uid; }));
       paintFeed(first); first = false;
       markSeen(id);
@@ -686,12 +700,260 @@
     c['read_' + S.user.uid] = u['read_' + S.user.uid];
     db.collection('tickets').doc(id).update(u).then(null, function () { /* ignore */ });
   }
-  dlg.addEventListener('close', function () { stopFeed(); S.tk.open = null; S.tk.cur = null; dlg.className = 'pn-dialog'; dlg.style.height = ''; dlg.style.top = ''; });
+  dlg.addEventListener('close', function () {
+    window.__msFast = false;
+    stopFeed(); S.tk.open = null; S.tk.cur = null; dlg.className = 'pn-dialog'; dlg.style.height = ''; dlg.style.top = '';
+    S.tk.pending.forEach(function (p) { if (p.url) URL.revokeObjectURL(p.url); });
+    S.tk.pending = []; S.tk.reply = null; S.tk.edit = null;
+  });
   function tkTouch(id, extra) {
     var now = Date.now(), data = { updatedAt: now };
     Object.keys(extra).forEach(function (k) { data[k] = extra[k]; });
     return db.collection('tickets').doc(id).update(data);
   }
+
+  // ---- conversations: pictures, files, replies, edits and deletes (the picture and file parts need the Max Silver server)
+  S.tk.pending = []; S.tk.reply = null; S.tk.edit = null; S.tk.q = '';
+  var CF = {};                       // file id (+ ':t' for the small copy) -> promise of an object URL of the downloaded picture
+  var FILE_OK = /\.(jpe?g|png|gif|webp|pdf|docx?|xlsx?|pptx?|csv|txt|zip|rar|7z)$/i, MAX_FILE = 10 * 1024 * 1024, MAX_FILES = 5;
+  var faSize = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 });
+  function canAttach() { return !!(window.MSApi && window.MSApi.enabled() && window.MSApi.signedIn()); }
+  function fmtSize(n) { return n >= 1048576 ? faSize.format(n / 1048576) + ' مگابایت' : faSize.format(Math.max(1, Math.round(n / 1024))) + ' کیلوبایت'; }
+  function isImgFile(f) { return /^image\//.test(f.mime || ''); }
+  function chatBlob(fid, thumb) {
+    var k = fid + (thumb ? ':t' : '');
+    if (!CF[k]) CF[k] = window.MSApi.fetchBlob('chat/files/' + encodeURIComponent(fid) + (thumb ? '?thumb=1' : '')).then(function (b) { return URL.createObjectURL(b); }, function (e) { delete CF[k]; throw e; });
+    return CF[k];
+  }
+  // the pictures are protected, so they are fetched with the session and shown from memory
+  function hydrateFeed() {
+    Array.prototype.forEach.call(document.querySelectorAll('#tkFeed img[data-fid]:not([src])'), function (img) {
+      chatBlob(img.getAttribute('data-fid'), img.getAttribute('data-thumb') === '1').then(function (u) { img.src = u; img.classList.add('ok'); }, function () { img.classList.add('bad'); });
+    });
+  }
+  var DOTS_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+  var CLIP_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 11-8.600 8.600a5 5 0 0 1-7-7L14 4a3.500 3.500 0 0 1 5 5l-8.600 8.600a2 2 0 0 1-3-3L15 7"/></svg>';
+  var SMILE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.500 14.500a4.500 4.500 0 0 0 7 0M9 9.500h.01M15 9.500h.01"/></svg>';
+  var DL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>';
+  var EMOJI = '😀 😃 😄 😁 😆 😅 😂 🤣 😊 🙂 😉 😍 🥰 😘 😎 🤩 🥳 😇 🤔 😐 😴 😢 😭 😡 🤯 😱 🙏 👍 👎 👏 🙌 💪 🤝 👌 ✌️ 🤞 👋 ❤️ 🧡 💛 💚 💙 💜 🔥 ✨ ⭐ 🎉 🎂 🎁 ☕ 🍕 🍔 🍟 ✅ ❌ ⚠️ ❓ ❗ 📎 📷 📞 💡 📌'.split(' ');
+  // a message's body: quote, pictures, files, text
+  function msgBody(m) {
+    if (m.deleted) return '<p class="pn-gone">این پیام حذف شد</p>';
+    var h = '', files = m.files || [], imgs = files.filter(isImgFile), others = files.filter(function (f) { return !isImgFile(f); });
+    if (m.replyTo) h += '<button type="button" class="pn-quote" data-goto="' + esc(m.replyTo.id) + '"><b>' + esc(m.replyTo.name || '') + '</b><span>' + esc(m.replyTo.text || '') + '</span></button>';
+    if (imgs.length) h += '<div class="pn-imgs n' + Math.min(imgs.length, 4) + '">' + imgs.map(function (f) {
+      return '<button type="button" class="pn-img" data-view="' + esc(f.id) + '" data-name="' + esc(f.name) + '" aria-label="باز کردن عکس"><img data-fid="' + esc(f.id) + '" data-thumb="' + (f.thumb ? '1' : '0') + '" alt="" width="' + (f.w || 4) + '" height="' + (f.h || 3) + '"></button>';
+    }).join('') + '</div>';
+    others.forEach(function (f) {
+      var ext = (String(f.name).split('.').pop() || '').slice(0, 4).toUpperCase();
+      h += '<button type="button" class="pn-file" data-dl="' + esc(f.id) + '" data-name="' + esc(f.name) + '"><span class="pn-fi">' + esc(ext) + '</span><span class="pn-fn"><b>' + esc(f.name) + '</b><small>' + esc(fmtSize(f.size || 0)) + '</small></span>' + DL_SVG + '</button>';
+    });
+    if (m.text) h += '<p>' + esc(m.text) + '</p>';
+    return h;
+  }
+  // the strip above the composer: what is being replied to or edited, and the files waiting to be sent
+  function barsHtml() {
+    var T = S.tk, h = '';
+    if (T.reply) h += '<div class="pn-bar2"><span class="pn-bar2-t"><b>پاسخ به ' + esc(T.reply.name || '') + '</b><span>' + esc(T.reply.text) + '</span></span><button type="button" class="pn-ico" data-bar-cancel aria-label="لغو">' + CLOSE_SVG + '</button></div>';
+    if (T.edit) h += '<div class="pn-bar2"><span class="pn-bar2-t"><b>ویرایش پیام</b><span>' + esc(T.edit.text.slice(0, 80)) + '</span></span><button type="button" class="pn-ico" data-bar-cancel aria-label="لغو">' + CLOSE_SVG + '</button></div>';
+    if (T.pending.length) h += '<div class="pn-pend">' + T.pending.map(function (p, i) {
+      return '<span class="pn-chip2' + (p.err ? ' bad' : '') + '">' + (p.url ? '<img src="' + esc(p.url) + '" alt="">' : '<i class="pn-fi">' + esc((p.file.name.split('.').pop() || '').slice(0, 4).toUpperCase()) + '</i>') +
+        '<span>' + esc(p.file.name) + '<small>' + (p.err ? esc(p.err) : esc(fmtSize(p.file.size)) + (p.busy ? ' · در حال ارسال…' : '')) + '</small></span>' +
+        (p.busy ? '' : '<button type="button" class="pn-ico" data-pend-x="' + i + '" aria-label="حذف">' + CLOSE_SVG + '</button>') + '</span>';
+    }).join('') + '</div>';
+    return h;
+  }
+  function paintBars() {
+    var el = document.getElementById('tkBars'); if (el) el.innerHTML = barsHtml();
+    syncSend();
+  }
+  function syncSend() {
+    var f = document.getElementById('tkReplyForm'); if (!f) return;
+    var sb = f.querySelector('.pn-send'); if (sb && !sb.classList.contains('sending')) sb.disabled = !(f.elements.text.value.trim() || S.tk.pending.length);
+  }
+  function addFiles(list) {
+    if (!canAttach()) { S.tk.error = 'فرستادن عکس و فایل فقط روی سرور مکث‌سیلور ممکن است.'; return; }
+    var added = false, refused = false;
+    S.tk.error = '';
+    Array.prototype.forEach.call(list || [], function (file) {
+      if (S.tk.pending.length >= MAX_FILES) { S.tk.error = 'در هر پیام حداکثر ' + faInt.format(MAX_FILES) + ' فایل.'; refused = true; return; }
+      if (!FILE_OK.test(file.name || 'image.png')) { S.tk.error = 'این نوع فایل پذیرفته نمی‌شود: ' + file.name; refused = true; return; }
+      if (file.size > MAX_FILE) { S.tk.error = 'فایل «' + file.name + '» از ۱۰ مگابایت بزرگ‌تر است.'; refused = true; return; }
+      S.tk.pending.push({ file: file, url: /^image\//.test(file.type) ? URL.createObjectURL(file) : '', busy: false, err: '' });
+      added = true;
+    });
+    void refused; void added;
+    paintBars();
+    var er = document.getElementById('tkErr'); if (er) { er.hidden = !S.tk.error; er.textContent = S.tk.error; }
+  }
+  // a picture is shrunk before it is sent (long side 1600 px) and gets a small copy for the conversation
+  function prepImage(file) {
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var W = img.naturalWidth, H = img.naturalHeight, k = Math.min(1, 1600 / Math.max(W, H));
+        function cv(s, q) { var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(W * s)); c.height = Math.max(1, Math.round(H * s)); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return new Promise(function (r) { c.toBlob(r, 'image/jpeg', q); }); }
+        var keep = file.type === 'image/gif' || (k === 1 && file.size <= 1.5 * 1048576);
+        Promise.all([keep ? Promise.resolve(file) : cv(k, 0.85), cv(Math.min(1, 360 / Math.max(W, H)), 0.7)]).then(function (r) {
+          URL.revokeObjectURL(url);
+          resolve({ main: r[0], thumb: r[1], w: W, h: H, name: keep ? file.name : (file.name.replace(/\.[^.]+$/, '') || 'image') + '.jpg' });
+        });
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve(null); };
+      img.src = url;
+    });
+  }
+  function uploadOne(tid, p) {
+    var isImg = /^image\//.test(p.file.type), job = isImg ? prepImage(p.file) : Promise.resolve(null);
+    return job.then(function (pi) {
+      var fd = new FormData();
+      if (pi && pi.main) { fd.append('file', pi.main, pi.name); if (pi.thumb) fd.append('thumb', pi.thumb, 't.jpg'); fd.append('w', pi.w); fd.append('h', pi.h); }
+      else fd.append('file', p.file, p.file.name);
+      return window.MSApi.raw('POST', 'chat/' + encodeURIComponent(tid) + '/files', fd);
+    }).then(function (m) { return { id: m.id, name: m.name, mime: m.mime, size: m.size, w: m.w || undefined, h: m.h || undefined, thumb: !!m.thumb }; });
+  }
+  function cleanMeta(o) { var r = {}; Object.keys(o).forEach(function (k) { if (o[k] !== undefined) r[k] = o[k]; }); return r; }
+  function sendMessage(f, tid, txt) {
+    var T = S.tk, pend = T.pending.slice(), sb = f.querySelector('.pn-send'), metas = [];
+    if (sb) { sb.disabled = true; sb.classList.add('sending'); }
+    pend.forEach(function (p) { p.busy = true; p.err = ''; }); paintBars();
+    var chain = Promise.resolve(), sent = null;
+    pend.forEach(function (p) { chain = chain.then(function () { return uploadOne(tid, p).then(function (m) { metas.push(cleanMeta(m)); }, function (e) { p.busy = false; p.err = (e && e.message) || 'ارسال نشد'; throw e; }); }); });
+    chain.then(function () {
+      var now = Date.now(), rref = db.collection('tickets').doc(tid), nb = db.batch(), msg = { uid: S.user.uid, name: myName(), role: myRole(), text: txt, at: now };
+      if (metas.length) msg.files = metas;
+      if (T.reply) msg.replyTo = { id: T.reply.id, name: String(T.reply.name || '').slice(0, 80), text: String(T.reply.text || '').slice(0, 160) };
+      var mref = rref.collection('messages').doc();
+      nb.set(mref, msg);
+      sent = cleanMeta(Object.assign({}, msg, { id: mref.id }));
+      var last = txt ? txt.slice(0, 140) : (metas.length ? (metas.some(isImgFile) ? 'عکس' : 'فایل: ' + metas[0].name) : '');
+      nb.update(rref, { updatedAt: now, lastText: last, lastBy: S.user.uid, lastByName: myName() });
+      clearTyping();
+      return nb.commit();
+    }).then(function () {
+      T.pending.forEach(function (p) { if (p.url) URL.revokeObjectURL(p.url); });
+      T.pending = []; T.reply = null; T.error = '';
+      f.elements.text.value = ''; f.elements.text.style.height = '';
+      if (sb) sb.classList.remove('sending');
+      if (sent && T.open === tid) { T.msgs.push(sent); lastSig = ''; paintFeed(false); }      // shown at once; the next refresh brings the stored copy
+      paintBars(); loadTickets();
+    }, function (err) {
+      T.error = errText(err);
+      if (sb) sb.classList.remove('sending');
+      pend.forEach(function (p) { p.busy = false; });
+      paintBars();
+      var er = document.getElementById('tkErr'); if (er) { er.hidden = false; er.textContent = T.error; }
+    });
+  }
+  // the little menu of a message
+  function closeMenu() { var m = document.getElementById('tkMenu'); if (m) m.remove(); }
+  function openMenu(btn) {
+    closeMenu();
+    var id = btn.getAttribute('data-more'), m = S.tk.msgs.filter(function (x) { return x.id === id; })[0];
+    if (!m || m.deleted) return;
+    var mine = m.uid === S.user.uid, young = Date.now() - (m.at || 0) < 48 * 3600000, open = (S.tk.cur || {}).status === 'open', items = [];
+    if (open) items.push(['reply', 'پاسخ']);
+    if (m.text) items.push(['copy', 'کپی متن']);
+    if (open && mine && young) items.push(['edit', 'ویرایش']);
+    if (open && mine) items.push(['del', 'حذف برای همه']);
+    if (!items.length) return;
+    var menu = document.createElement('div'); menu.id = 'tkMenu'; menu.className = 'pn-menu'; menu.setAttribute('role', 'menu');
+    menu.innerHTML = items.map(function (it) { return '<button type="button" role="menuitem" data-act="' + it[0] + '" data-mid="' + esc(id) + '"' + (it[0] === 'del' ? ' class="danger"' : '') + '>' + it[1] + '</button>'; }).join('');
+    btn.closest('.pn-bubble').appendChild(menu);
+  }
+  function doAction(act, id) {
+    var m = S.tk.msgs.filter(function (x) { return x.id === id; })[0], tid = S.tk.open; closeMenu();
+    if (!m || !tid) return;
+    var ta = document.querySelector('#tkReplyForm textarea');
+    if (act === 'reply') {
+      S.tk.edit = null;
+      S.tk.reply = { id: id, name: m.name || '', text: m.text ? m.text.slice(0, 120) : (m.files && m.files.length ? (m.files.some(isImgFile) ? 'عکس' : 'فایل') : '') };
+      paintBars(); if (ta) ta.focus();
+    } else if (act === 'copy') {
+      try { navigator.clipboard.writeText(m.text); } catch (e) { /* ignore */ }
+    } else if (act === 'edit') {
+      S.tk.reply = null; S.tk.edit = { id: id, text: m.text || '' };
+      if (ta) { ta.value = m.text || ''; ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; ta.focus(); }
+      paintBars();
+    } else if (act === 'del') {
+      if (!window.confirm('این پیام برای همه حذف شود؟')) return;
+      var rref = db.collection('tickets').doc(tid), last = S.tk.msgs[S.tk.msgs.length - 1];
+      rref.collection('messages').doc(id).update({ deleted: true, deletedAt: Date.now(), text: '', files: [] }).then(function () {
+        if (last && last.id === id) return rref.update({ updatedAt: Date.now(), lastText: 'این پیام حذف شد', lastBy: S.user.uid, lastByName: myName() });
+      }).then(function () { m.deleted = true; m.text = ''; m.files = []; lastSig = ''; paintFeed(false); loadTickets(); }, function (err) { S.tk.error = errText(err); var er = document.getElementById('tkErr'); if (er) { er.hidden = false; er.textContent = S.tk.error; } });
+    }
+  }
+  // a picture opens full size in a viewer
+  var viewer = null;
+  function openViewer(fid, name) {
+    if (!viewer) {
+      viewer = document.createElement('dialog'); viewer.className = 'pn-viewer';
+      viewer.innerHTML = '<div class="pn-viewer-bar"><span></span><a class="pn-ico" data-v-dl aria-label="دانلود" title="دانلود">' + DL_SVG + '</a><button type="button" class="pn-ico" data-v-x aria-label="بستن">' + CLOSE_SVG + '</button></div><div class="pn-viewer-box"><img alt=""><i class="pn-spin2"></i></div>';
+      document.body.appendChild(viewer);
+      viewer.addEventListener('click', function (e) { if (e.target === viewer || e.target.closest('[data-v-x]') || e.target.classList.contains('pn-viewer-box')) viewer.close(); });
+    }
+    var img = viewer.querySelector('img'), a = viewer.querySelector('[data-v-dl]');
+    img.removeAttribute('src'); img.classList.remove('ok'); viewer.querySelector('span').textContent = name || '';
+    a.removeAttribute('href'); a.setAttribute('download', name || 'image.jpg');
+    if (!viewer.open) viewer.showModal();
+    chatBlob(fid, false).then(function (u) { img.src = u; img.classList.add('ok'); a.href = u; }, function () { viewer.querySelector('span').textContent = 'عکس باز نشد.'; });
+  }
+  function downloadFile(fid, name) {
+    chatBlob(fid, false).then(function (u) { var a = document.createElement('a'); a.href = u; a.download = name || 'file'; document.body.appendChild(a); a.click(); a.remove(); }, function () { S.tk.error = 'فایل دانلود نشد.'; var er = document.getElementById('tkErr'); if (er) { er.hidden = false; er.textContent = S.tk.error; } });
+  }
+  function emojiHtml() { return EMOJI.map(function (e) { return '<button type="button" data-emo="' + e + '" aria-label="' + e + '">' + e + '</button>'; }).join(''); }
+  function dockWide() { return !!(window.matchMedia && window.matchMedia('(min-width:1100px)').matches); }
+
+
+  // ---- listeners of the conversation window
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t.closest || !S.tk) return;
+    if (!t.closest('.pn-menu') && !t.closest('[data-more]')) closeMenu();
+    if (!t.closest('#tkEmoji') && !t.closest('[data-emoji]')) { var em0 = document.getElementById('tkEmoji'); if (em0) em0.hidden = true; }
+    var b = t.closest('[data-attach]'); if (b) { var fi = document.getElementById('tkFile'); if (fi) fi.click(); return; }
+    b = t.closest('[data-emoji]'); if (b) { var em = document.getElementById('tkEmoji'); if (em) em.hidden = !em.hidden; return; }
+    b = t.closest('[data-emo]'); if (b) {
+      var ta = document.querySelector('#tkReplyForm textarea');
+      if (ta) { var p = ta.selectionStart || ta.value.length; ta.value = ta.value.slice(0, p) + b.getAttribute('data-emo') + ta.value.slice(ta.selectionEnd || p); ta.focus(); ta.dispatchEvent(new Event('input', { bubbles: true })); }
+      return;
+    }
+    b = t.closest('[data-more]'); if (b) { var had = document.getElementById('tkMenu'); if (had && had.parentNode === b.closest('.pn-bubble')) closeMenu(); else openMenu(b); return; }
+    b = t.closest('#tkMenu [data-act]'); if (b) { doAction(b.getAttribute('data-act'), b.getAttribute('data-mid')); return; }
+    b = t.closest('[data-bar-cancel]'); if (b) { S.tk.reply = null; if (S.tk.edit) { S.tk.edit = null; var ta2 = document.querySelector('#tkReplyForm textarea'); if (ta2) { ta2.value = ''; ta2.style.height = ''; } } paintBars(); return; }
+    b = t.closest('[data-pend-x]'); if (b) { var pi = +b.getAttribute('data-pend-x'), pp = S.tk.pending[pi]; if (pp && pp.url) URL.revokeObjectURL(pp.url); S.tk.pending.splice(pi, 1); paintBars(); return; }
+    b = t.closest('[data-view]'); if (b) { openViewer(b.getAttribute('data-view'), b.getAttribute('data-name')); return; }
+    b = t.closest('[data-dl]'); if (b) { downloadFile(b.getAttribute('data-dl'), b.getAttribute('data-name')); return; }
+    b = t.closest('[data-goto]'); if (b) {
+      var row = document.querySelector('#tkFeed [data-mid="' + b.getAttribute('data-goto').replace(/"/g, '') + '"]');
+      if (row) { row.scrollIntoView({ block: 'center', behavior: 'smooth' }); row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600); }
+    }
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'tkFile') { addFiles(e.target.files); e.target.value = ''; }
+  });
+  document.addEventListener('paste', function (e) {
+    var ta = e.target;
+    if (!ta || ta.tagName !== 'TEXTAREA' || !ta.form || ta.form.id !== 'tkReplyForm' || !e.clipboardData) return;
+    var files = []; Array.prototype.forEach.call(e.clipboardData.items || [], function (it) { if (it.kind === 'file') { var f = it.getAsFile(); if (f) files.push(f); } });
+    if (files.length) { e.preventDefault(); addFiles(files); }
+  });
+  dlg.addEventListener('dragover', function (e) { if (S.tk.open && e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) { e.preventDefault(); dlg.classList.add('drag'); } });
+  dlg.addEventListener('dragleave', function (e) { if (e.target === dlg) dlg.classList.remove('drag'); });
+  dlg.addEventListener('drop', function (e) {
+    if (!S.tk.open || !e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+    e.preventDefault(); dlg.classList.remove('drag'); addFiles(e.dataTransfer.files);
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && dlg.open && dlg.classList.contains('dock')) dlg.close(); });
+  document.addEventListener('input', function (e) {
+    var q = e.target;
+    if (!q || q.id !== 'tkSearch') return;
+    S.tk.q = q.value;
+    Array.prototype.forEach.call(document.querySelectorAll('#tickets .pn-chats > li'), function (li) {
+      var t = (li.innerText || '').toLowerCase(), k = (S.tk.q || '').trim().toLowerCase();
+      li.hidden = !!k && t.indexOf(k) < 0;
+    });
+  });
 
   // ----- outside messages (the contact page writes them)
   var PUB = { sales: 'فروش و توسعه بازار', service: 'خدمات پس از فروش', management: 'مدیریت' };
@@ -736,8 +998,13 @@
     var r = myRole(), E = window.MSEvents;
     if (!(r === 'manager' || r === 'ceo' || r === 'hr') || !E || !E.fromJ || !E.toJ || !S.team) return '';
     var now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), jy = E.toJ(t0).jy, out = [];
+    // the date a person typed about themselves, or the one management/HR keep in the personal record (read by the manager and HR only)
+    if (S.personalB === undefined && (r === 'manager' || r === 'hr')) {
+      S.personalB = null;
+      db.collection('personal').get().then(function (qs) { var o = {}; qs.forEach(function (d) { var b = d.data().birthday; if (b) o[d.id] = b; }); S.personalB = o; render(); }, function () { S.personalB = {}; });
+    }
     S.team.forEach(function (u) {
-      var m = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(u.birthday || '');
+      var m = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(u.birthday || (S.personalB && S.personalB[u.id]) || '');
       if (!m || u.active === false) return;
       var next = null;
       [jy, jy + 1].forEach(function (y) { if (next) return; var d = E.fromJ(y, +m[2], +m[3]); if (d >= t0) next = d; });
@@ -1578,7 +1845,7 @@
     var ta = e.target;
     if (ta && ta.tagName === 'TEXTAREA' && ta.form && ta.form.id === 'tkReplyForm') {
       ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
-      var sb = ta.form.querySelector('.pn-send'); if (sb) sb.disabled = !ta.value.trim();
+      syncSend();
       if (ta.value.trim()) signalTyping(ta.form.getAttribute('data-id'));
     }
     if (ta && ta.tagName === 'INPUT' && ta.name === 'phone') { var cp = cleanPhone(ta.value); if (cp !== ta.value) ta.value = cp; }
@@ -1588,7 +1855,7 @@
   document.addEventListener('keydown', function (e) {
     var ta = e.target;
     if (ta && ta.tagName === 'TEXTAREA' && ta.form && ta.form.id === 'tkReplyForm' && e.key === 'Enter' && !e.shiftKey && !(window.matchMedia && window.matchMedia('(pointer:coarse)').matches)) {
-      e.preventDefault(); if (ta.value.trim()) ta.form.requestSubmit();
+      e.preventDefault(); if (ta.value.trim() || S.tk.pending.length) ta.form.requestSubmit();
     }
   });
   document.addEventListener('change', function (e) {
@@ -1659,16 +1926,21 @@
       if (!o.title || !o.text) return;
       createTicket(o).then(function () { dlg.close(); loadTickets(); }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkNewForm(); });
     } else if (f.id === 'tkReplyForm') {
-      var rid = f.getAttribute('data-id'), txt = f.elements.text.value.trim();
-      if (!txt) return;
-      var rref = db.collection('tickets').doc(rid), nb = db.batch(), now2 = Date.now();
-      nb.set(rref.collection('messages').doc(), { uid: S.user.uid, name: myName(), role: myRole(), text: txt, at: now2 });
-      nb.update(rref, { updatedAt: now2, lastText: txt.slice(0, 140), lastBy: S.user.uid, lastByName: myName() });
-      clearTyping();
-      var sendBtn = f.querySelector('.pn-send'); if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('sending'); }
-      nb.commit().then(function () {
-        f.elements.text.value = ''; f.elements.text.style.height = ''; if (sendBtn) sendBtn.classList.remove('sending'); loadTickets();
-      }, function (err) { S.tk.error = errText(err); dlg.innerHTML = tkThread(rid); });
+      var rid = f.getAttribute('data-id'), txt = f.elements.text.value.trim(), ed = S.tk.edit;
+      if (ed) {
+        var edMsg = S.tk.msgs.filter(function (x) { return x.id === ed.id; })[0] || {};
+        if (!txt && !(edMsg.files && edMsg.files.length)) return;
+        var eref = db.collection('tickets').doc(rid), lastM = S.tk.msgs[S.tk.msgs.length - 1], nowE = Date.now();
+        eref.collection('messages').doc(ed.id).update({ text: txt, editedAt: nowE }).then(function () {
+          if (lastM && lastM.id === ed.id) return eref.update({ updatedAt: nowE, lastText: txt.slice(0, 140), lastBy: S.user.uid, lastByName: myName() });
+        }).then(function () {
+          edMsg.text = txt; edMsg.editedAt = nowE; lastSig = ''; paintFeed(false);
+          S.tk.edit = null; f.elements.text.value = ''; f.elements.text.style.height = ''; paintBars(); loadTickets();
+        }, function (err) { S.tk.error = errText(err); var er = document.getElementById('tkErr'); if (er) { er.hidden = false; er.textContent = S.tk.error; } });
+        return;
+      }
+      if (!txt && !S.tk.pending.length) return;
+      sendMessage(f, rid, txt);
     } else if (f.id === 'addForm') {
       db.collection('users').doc(v('uid')).set({ name: v('name'), email: v('email'), role: 'visitor', active: true, regions: [], cities: '' }).then(function () { load(); }, function (err) { S.error = errText(err); render(); });
     } else if (f.id === 'editForm') {

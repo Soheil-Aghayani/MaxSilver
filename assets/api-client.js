@@ -86,6 +86,10 @@
     putConfig: function (key, d) { return call('PUT', 'config/' + key, d); },
     appInfo: function () { return call('GET', 'app/android/info'); },
     appUpload: function (fd) { return call('POST', 'portal/app', fd); },
+    fetchBlob: function (path) {
+      var b = base(); if (!b || !token()) return Promise.reject({ status: 401, message: 'وارد حساب شوید.' });
+      return fetch(b + '/api/v1/' + path, { headers: { 'Authorization': 'Bearer ' + token(), 'Accept': '*/*' }, credentials: 'omit' }).then(function (r) { if (!r.ok) throw { status: r.status, message: 'فایل باز نشد.' }; return r.blob(); });
+    },
     // a file that only signed-in people may fetch: it is read with the session token and saved from memory
     download: function (path, name) {
       var b = base(); if (!b || !token()) return Promise.reject({ status: 401, message: 'برای دانلود باید وارد حساب شوید.' });
