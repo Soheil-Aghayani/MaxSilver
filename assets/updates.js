@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'dock-centered-1405-08', date: '1405/08/02', tag: 'بهبود', title: 'نوار ناوبری دقیقاً وسط صفحه',
+      summary: 'منوی گردِ بالای صفحه تا حالا به‌خاطر تفاوت پهنای لوگو و دکمهٔ QR کمی به یک طرف می‌رفت؛ اکنون دقیقاً وسط قرار می‌گیرد.' },
     { id: 'occasion-tile-1405-08', date: '1405/08/02', tag: 'جدید', title: 'کاشی مناسبت نزدیک با نقاشی مخصوص هر مناسبت', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'marketing'],
       summary: 'در صفحهٔ اصلی یک کاشی نشان می‌دهد کدام مناسبت نزدیک است (هالووین، یلدا، نوروز، ولنتاین و...) و با کلیک تقویم مناسبت‌ها باز می‌شود. در «تیم» هم فرم قدیمی افزودن کاربر با Firebase برداشته شد؛ حساب‌ها از «حساب کارکنان» ساخته می‌شوند.' },
     { id: 'occasion-tiles-staff-only-1405-08', date: '1405/08/02', tag: 'بهبود', title: 'کاشی‌های مناسبتی فقط برای کارکنان', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'marketing'],
