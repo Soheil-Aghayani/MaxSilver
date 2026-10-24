@@ -41,6 +41,7 @@
     competitorsEdit: ['manager'],                                                       // loads or replaces the competitor file (same)
     assistant: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],   // the catalog assistant (asks about products)
     roadmap: ['manager', 'ceo', 'sales_manager'],                                       // the milestone timeline (management, CEO, sales manager)
+    siteUpdate: ['manager'],                                                            // uploads a zip that updates the portal pages on the host (technology lead only)
     backup: ['manager', 'ceo'],                                                         // downloads a backup of the database (management only)
     competitors: ['manager', 'ceo', 'sales_manager'],                                   // competitor analysis (staff only)
     advertising: ['manager', 'ceo', 'sales_manager', 'marketing'],                      // advertising strategy tree

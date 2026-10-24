@@ -17,10 +17,11 @@
     var b = base();
     if (!b) return Promise.reject({ status: 0, message: 'آدرس سرور تنظیم نشده است.' });
     var h = { 'Accept': 'application/json' };
-    if (body !== undefined) h['Content-Type'] = 'application/json';
+    var isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+    if (body !== undefined && !isForm) h['Content-Type'] = 'application/json';
     if (!anon && token()) h['Authorization'] = 'Bearer ' + token();
-    var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, 15000);
-    return fetch(b + '/api/v1/' + path, { method: method, headers: h, body: body === undefined ? undefined : JSON.stringify(body), signal: ctl.signal, credentials: 'omit' })
+    var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, isForm ? 180000 : 15000);
+    return fetch(b + '/api/v1/' + path, { method: method, headers: h, body: body === undefined ? undefined : isForm ? body : JSON.stringify(body), signal: ctl.signal, credentials: 'omit' })
       .then(function (r) {
         clearTimeout(t);
         if (r.status === 204) return null;
@@ -67,6 +68,9 @@
     deleteStatus: function (id) { return call('DELETE', 'item-status/' + encodeURIComponent(id)); },
     putSetting: function (key, d) { return call('PUT', 'settings/' + key, d); },
     putConfig: function (key, d) { return call('PUT', 'config/' + key, d); },
+    portal: function () { return call('GET', 'portal'); },
+    portalUpdate: function (fd) { return call('POST', 'portal/update', fd); },
+    portalRollback: function (d) { return call('POST', 'portal/rollback', d); },
     users: function () { return call('GET', 'users'); },
     createUser: function (d) { return call('POST', 'users', d); },
     updateUser: function (id, d) { return call('PATCH', 'users/' + id, d); }

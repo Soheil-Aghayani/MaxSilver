@@ -7,6 +7,10 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'no-server-address-1405-08', date: '1405/08/02', tag: 'بهبود', title: 'دیگر آدرس سرور پرسیده نمی‌شود', roles: ['manager'],
+      summary: 'صفحهٔ «اتصال به سرور» برداشته شد؛ آدرس سرور ثابت و خودکار است و فقط برای توسعه‌دهنده روی همین رایانه یا شبکهٔ داخلی دیده می‌شود.' },
+    { id: 'site-update-page-1405-08', date: '1405/08/02', tag: 'جدید', title: 'به‌روزرسانی سایت از داخل برنامه', roles: ['manager'],
+      summary: 'در «حساب‌ها و سایت» (کاشی صفحهٔ اصلی) مدیر می‌تواند فایل zip به‌روزرسانی را بارگذاری کند و صفحه‌های سایت روی هاست بدون cPanel عوض شوند. برای هر به‌روزرسانی یک نسخهٔ بازگشت نگه داشته می‌شود.' },
     { id: 'dock-centered-1405-08', date: '1405/08/02', tag: 'بهبود', title: 'نوار ناوبری دقیقاً وسط صفحه',
       summary: 'منوی گردِ بالای صفحه تا حالا به‌خاطر تفاوت پهنای لوگو و دکمهٔ QR کمی به یک طرف می‌رفت؛ اکنون دقیقاً وسط قرار می‌گیرد.' },
     { id: 'occasion-tile-1405-08', date: '1405/08/02', tag: 'جدید', title: 'کاشی مناسبت نزدیک با نقاشی مخصوص هر مناسبت', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'marketing'],
