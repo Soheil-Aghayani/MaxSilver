@@ -385,3 +385,12 @@
 @media(prefers-reduced-motion:reduce){.pn-fab{animation:none}}
 
 .pn-link{display:block;margin:10px auto 0;padding:6px 8px;border:0;background:none;color:var(--ms-navy);font:700 13px/1.6 Estedad,Tahoma,sans-serif;text-decoration:underline;cursor:pointer}.pn-link:hover{color:#b8860b}
+.pn-onb{display:grid;gap:12px;border-color:#ffcc2a;background:linear-gradient(180deg,#fffaf0,#fff)}
+.pn-onb-form{display:grid;gap:12px}
+.pn-onb-form label{display:grid;gap:5px;font-weight:700;font-size:13px}
+.pn-onb-form input[type=text],.pn-onb-form input:not([type]),.pn-onb-form textarea{min-height:44px;padding:8px 12px;border:1px solid #d7dfeb;border-radius:12px;font:600 14px Estedad,Tahoma,sans-serif;background:#fff}
+.pn-joke{margin:0;color:#8a6200;background:#fff3cc;border-radius:10px;padding:8px 12px}
+.pn-radios{display:flex;flex-wrap:wrap;gap:8px 16px;margin:0;padding:0;border:0}.pn-radios legend{font-weight:700;font-size:13px;margin-bottom:4px}
+.pn-radios label{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.pn-onb-actions{display:flex;align-items:center;gap:12px}
+

@@ -731,6 +731,31 @@
   }
   window.addEventListener('ms-notify', function () { if (S.profile) render(); });
 
+  // ---- first run: a short form about the person (shown on the home tab until it is saved)
+  S.onb = { hide: false, busy: false, err: '' };
+  function latinDigits(s) {
+    return String(s || '').replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); }).replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 1632); });
+  }
+  function onboardView() {
+    var p = S.profile;
+    if (!p || p.onboarded || S.onb.hide || !S.user) return '';
+    var me = S.user.uid, ph = (profOf(me) || {}).photo;
+    return '<section class="pn-card pn-onb"><h2>خوش آمدی؛ کمی دربارهٔ خودت بگو</h2>' +
+      '<p class="pn-note">فقط چند ثانیه. عکس و جنسیت به ما کمک می‌کند در گفت‌وگوها و پیام‌ها درست خطابت کنیم. تاریخ تولد و آدرس فقط برای تو، مدیریت و منابع انسانی دیده می‌شود.</p>' +
+      '<div class="pn-look-row">' + avatar(p.name || S.user.email, 64, me) +
+        '<div class="pn-look-actions"><button type="button" class="pn-secondary" data-photo-pick' + (S.look.busy ? ' disabled' : '') + '>' + (ph ? 'تغییر عکس' : 'انتخاب عکس (پیشنهاد می‌کنیم)') + '</button>' +
+        '<input type="file" id="photoFile" accept="image/*" hidden></div></div>' +
+      '<form id="onbForm" class="pn-onb-form">' +
+        '<label>تاریخ تولد (شمسی؛ مثل ۱۳۷۵/۰۳/۱۲)<input name="birthday" dir="ltr" inputmode="numeric" placeholder="۱۳۷۵/۰۳/۱۲" autocomplete="bday" maxlength="10"></label>' +
+        '<p class="pn-note pn-joke">نگران نباش؛ فقط می‌خواهیم بدانیم کِی باید برایت جشن بگیریم و کیک سفارش بدهیم. (راستش را بگویی کیک بزرگ‌تر می‌شود.)</p>' +
+        '<fieldset class="pn-radios"><legend>جنسیت</legend>' +
+          '<label><input type="radio" name="gender" value="male"> آقا</label><label><input type="radio" name="gender" value="female"> خانم</label><label><input type="radio" name="gender" value="na" checked> ترجیح می‌دهم نگویم</label></fieldset>' +
+        '<label>آدرس (اختیاری)<textarea name="address" rows="2" maxlength="300" placeholder="شهر، محله، خیابان"></textarea></label>' +
+        (S.onb.err ? '<p class="pn-err" role="alert">' + esc(S.onb.err) + '</p>' : '') +
+        '<div class="pn-onb-actions"><button type="submit" class="pn-primary"' + (S.onb.busy ? ' disabled' : '') + '>ذخیره</button><button type="button" class="pn-link" data-onb-later>بعداً</button></div>' +
+      '</form></section>';
+  }
+
   // ---- my look: picture and colour
   S.look = { busy: false, msg: '' };
   function lookView() {
@@ -1276,7 +1301,7 @@
       '<div><h2>' + esc(p.name || S.user.email) + '</h2>' +
       '<span class="pn-role">' + esc(MSRoles.label(p.role)) + '</span>' + (p.code ? ' <span class="pn-chip" dir="ltr">' + esc(p.code) + '</span>' : '') + '</div>' +
       '<button type="button" class="pn-ico" data-out aria-label="خروج" title="خروج"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></section>';
-    var home = notifyView();
+    var home = onboardView() + notifyView();
     if (MSRoles.hasField(p.role, 'territory')) home += '<section class="pn-card"><h2>منطقهٔ فعالیت و فروش من</h2>' + chips(p) + areaView(p) + '</section>';
     if (MSRoles.hasField(p.role, 'proformas')) home += '<section class="pn-card"><h2>پیش‌فاکتورهای من</h2><div class="pn-stats"><div><span>تعداد کل</span><b>' + faInt.format(mine.length) + '</b></div>' +
       '<div><span>مجموع این ماه (شمسی)</span><b>' + monthTotals(mine) + '</b></div></div>' +
@@ -1479,6 +1504,7 @@
     var pf = e.target.closest('[data-pref]');
     if (pf) { savePrefs(pf.getAttribute('data-pref')); return; }
     if (e.target.closest('[data-allow-notify]')) { if (window.MSNotify) window.MSNotify.askPermission().then(function () { render(); }); return; }
+    if (e.target.closest('[data-onb-later]')) { S.onb.hide = true; render(); return; }
     if (e.target.closest('[data-photo-pick]')) { var fi = document.getElementById('photoFile'); if (fi) fi.click(); return; }
     var pc2 = e.target.closest('[data-color]');
     if (pc2) { saveLook({ color: pc2.getAttribute('data-color') }); return; }
@@ -1561,6 +1587,16 @@
     var f = e.target, v = function (n) { return f.elements[n].value.trim(); };
     if (f.id === 'jdForm') { jdSave(f); return; }
     S.error = ''; S.msg = '';
+    if (f.id === 'onbForm') {
+      var bd = latinDigits(f.elements.birthday.value).trim().replace(/[-.]/g, '/');
+      if (bd && !/^1[34]\d\d\/(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/.test(bd)) { S.onb.err = 'تاریخ تولد را مثل ۱۳۷۵/۰۳/۱۲ بنویس (یا خالی بگذار).'; render(); return; }
+      var gv = f.elements.gender.value || 'na', ad = f.elements.address.value.trim();
+      S.onb.err = ''; S.onb.busy = true; render();
+      db.collection('users').doc(S.user.uid).update({ birthday: bd, gender: gv, address: ad, onboarded: true }).then(function () {
+        S.profile.birthday = bd; S.profile.gender = gv; S.profile.address = ad; S.profile.onboarded = true; S.msg = 'ذخیره شد؛ ممنون که خودت را معرفی کردی.';
+      }, function (err) { S.onb.err = errText(err); }).then(function () { S.onb.busy = false; render(); });
+      return;
+    }
     if (f.id === 'pwForm') {
       var cur = f.elements.cur.value, nw = f.elements.nw.value, rp = f.elements.rp.value;
       S.pwMsg = ''; S.pwErr = '';
