@@ -1257,7 +1257,7 @@
         '<h2>ورود به حساب</h2><p class="pn-note">با ایمیل و رمزی که مدیر برای شما ساخته وارد شوید.</p>' +
         '<label>ایمیل<input type="email" name="email" dir="ltr" autocomplete="username" required></label>' +
         '<label>رمز عبور<input type="password" name="password" dir="ltr" autocomplete="current-password" required></label>' +
-        (S.needCode ? '<label>کد شش‌رقمی برنامهٔ احراز هویت<input type="text" name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required autofocus></label>' : '') +
+        ('<label>کد شش‌رقمی برنامهٔ احراز هویت' + (S.needCode ? '' : ' (اگر ورود دومرحله‌ای دارید)') + '<input type="text" name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code"' + (S.needCode ? ' required autofocus' : '') + '></label>') +
         (S.enroll ? '<p class="pn-note">ورود دومرحله‌ای برای نقش شما الزامی است. یک بار آن را در <a href="./backend.html">صفحهٔ ورود به سرور</a> فعال کنید و دوباره بیایید.</p>' : '') +
         (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.pwMsg ? '<p class="pn-ok" role="status">' + esc(S.pwMsg) + '</p>' : '') +
         '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ورود</button>' +

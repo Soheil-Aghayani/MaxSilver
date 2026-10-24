@@ -21,7 +21,7 @@
     return '<section class="bk-card"><h1>ورود کارکنان</h1><p class="bk-sub">سرور: <bdi dir="ltr">' + esc(api.base()) + '</bdi> · <button type="button" class="bk-link" data-server>تغییر</button></p>' + msg() +
       '<form id="fLogin" autocomplete="on"><label>ایمیل<input name="email" type="email" dir="ltr" autocomplete="username" value="' + esc(S.email) + '" required></label>' +
       '<label>رمز عبور<input name="password" type="password" dir="ltr" autocomplete="current-password" required></label>' +
-      (S.needCode ? '<label>کد شش‌رقمی برنامهٔ احراز هویت<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required autofocus></label>' : '') +
+      ('<label>کد شش‌رقمی برنامهٔ احراز هویت' + (S.needCode ? '' : ' (اگر ورود دومرحله‌ای دارید)') + '<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code"' + (S.needCode ? ' required autofocus' : '') + '></label>') +
       '<button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>' + (S.busy ? 'در حال ورود…' : 'ورود') + '</button></form></section>';
   }
   function viewEnroll() {
