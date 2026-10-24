@@ -1,0 +1,24 @@
+.ip{width:min(1040px,calc(100% - 24px));margin:18px auto 40px;display:grid;gap:16px}
+.ip h1,.ip h2,.ip p{margin:0}
+.ip-note{padding:14px 16px;border-radius:14px;background:#e8f6ec;color:#17613a;line-height:2}
+.ip-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 26px;border-radius:24px;background:linear-gradient(135deg,#071b36,#12356b);color:#fff;box-shadow:0 14px 36px rgba(7,27,54,.2)}
+.ip-hero h1{font-size:25px;line-height:1.6}.ip-hero p{margin-top:6px;max-width:520px;color:#cfdaf0;font-size:14px;line-height:2}
+.ip-mascot{width:132px;height:132px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.3))}
+.ip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.ip-card{position:relative;display:grid;gap:12px;align-content:start;padding:18px;border:1px solid var(--ms-line,#d7dfeb);border-radius:22px;background:#fff;box-shadow:0 6px 18px rgba(7,27,54,.05)}
+.ip-card.me{border:2px solid #ffcc2a;background:linear-gradient(180deg,#fffaf0,#fff)}
+.ip-me{position:absolute;top:-12px;inset-inline-start:16px;padding:3px 12px;border-radius:99px;background:#ffcc2a;color:#071b36;font:800 12px Estedad,Tahoma,sans-serif}
+.ip-head{display:flex;align-items:center;gap:14px}.ip-head h2{font-size:18px;color:var(--ms-navy,#071b36)}.ip-head p{margin-top:2px;color:var(--ms-muted,#51627a);font-size:13px}
+.ip-ico{position:relative;flex:0 0 auto;width:64px;height:64px;display:grid;place-items:center;border-radius:20px;background:#f3f6fb;color:var(--c,#071b36)}
+.ip-ico svg{width:34px;height:34px}.ip-ico img{position:absolute;inset:0;width:64px;height:64px;border-radius:20px;background:#fff}
+.ip-card ol{margin:0;padding:0 20px 0 0;display:grid;gap:6px;font-size:14px;line-height:2;color:#27364f}
+.ip-small{font-size:12.5px;line-height:1.9;color:var(--ms-muted,#51627a)}
+.ip-btn{display:inline-grid;place-items:center;min-height:46px;padding:0 20px;border:0;border-radius:14px;background:var(--ms-navy,#071b36);color:#fff;font:800 14px Estedad,Tahoma,sans-serif;text-decoration:none;cursor:pointer}
+.ip-btn:hover{box-shadow:0 8px 18px rgba(7,27,54,.22)}
+.ip-trust{border:1px solid var(--ms-line,#d7dfeb);border-radius:14px;background:#f8fafd}
+.ip-trust summary{padding:11px 14px;cursor:pointer;font:700 13.5px Estedad,Tahoma,sans-serif;color:#1746b5}
+.ip-trust>div{display:grid;gap:10px;padding:0 14px 14px;font-size:13.5px;line-height:2;color:#27364f}
+.ip-trust dl{display:grid;gap:6px;margin:0}.ip-trust dl>div{display:grid;gap:2px;padding:6px 0;border-top:1px solid #e6ecf5}
+.ip-trust dt{font-size:12px;color:var(--ms-muted,#51627a)}.ip-trust dd{margin:0;font-weight:700}
+.ip-hash{font:600 11.5px/1.7 monospace;word-break:break-all}
+@media (max-width:560px){.ip{width:calc(100% - 16px)}.ip-hero{padding:16px}.ip-hero h1{font-size:20px}.ip-mascot{width:96px;height:96px}}

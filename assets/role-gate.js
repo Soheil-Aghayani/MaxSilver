@@ -27,7 +27,7 @@
     var r = role(), signed = !!r || hasSession();
     var page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
     if (!signed) {
-      if (page !== 'index.html' && page !== 'panel.html' && page !== 'contact.html' && page !== 'planner.html' && page !== 'assistant.html' && page !== 'legal.html' && page !== 'blog-halloween.html' && page !== 'backend.html' && page !== 'track.html') { location.replace('./index.html'); return; }
+      if (page !== 'index.html' && page !== 'panel.html' && page !== 'contact.html' && page !== 'planner.html' && page !== 'assistant.html' && page !== 'legal.html' && page !== 'blog-halloween.html' && page !== 'backend.html' && page !== 'track.html' && page !== 'install.html') { location.replace('./index.html'); return; }
       document.documentElement.setAttribute('data-anon', '');
       Array.prototype.forEach.call(document.querySelectorAll('.ms-nav-links li'), function (li) {
         var a = li.querySelector('a'), href = a ? a.getAttribute('href') : '';
