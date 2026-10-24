@@ -10,6 +10,7 @@
   var ua = navigator.userAgent || '', plat = navigator.platform || '';
   var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   if (standalone) return;
+  if (/MaxSilverApp/.test(ua)) return;     // inside the Android app itself: nothing to install
 
   function detect() {
     if (/SteamOS|Steam Deck|Valve Steam/i.test(ua)) return 'steamos';
@@ -136,7 +137,25 @@
     void url;
   }
 
+  // Android: the real app (APK) is offered first; the home-screen shortcut stays as the fallback when the file is not on the server yet
+  var APK = './app/maxsilver.apk';
+  function showApk() {
+    open('<div class="ms-install-body"><div class="ms-install-hero">' + icon('android', 56) + '<h2 id="msInstallTitle">اپلیکیشن مکث‌سیلور برای اندروید</h2></div>' +
+      '<p>اپلیکیشن واقعی، تمام‌صفحه و بدون نوار مرورگر. فایل نصب را دانلود کنید و باز کنید.</p><ol>' +
+      '<li>دکمهٔ «دانلود اپلیکیشن» را بزنید.</li><li>فایل دانلودشده را باز کنید.</li>' +
+      '<li>اگر گوشی دربارهٔ «نصب از این منبع» پرسید، «اجازه» را بزنید و نصب را تأیید کنید. (این پیام فقط برای فایل‌هایی است که از فروشگاه نیامده‌اند.)</li></ol>' +
+      '<div class="ms-install-actions"><a class="ms-install-go" href="' + APK + '" download="maxsilver.apk">دانلود اپلیکیشن</a><button type="button" class="ms-install-copy">میان‌بر روی صفحهٔ اصلی</button></div>' +
+      '<button type="button" class="ms-install-close">بستن</button></div>');
+    dlg.querySelector('.ms-install-copy').addEventListener('click', function () { dlg.close(); installShortcut(); });
+  }
   function install() {
+    if (OS === 'android' && window.fetch) {
+      fetch(APK, { method: 'HEAD', cache: 'no-store' }).then(function (r) { if (r.ok) showApk(); else installShortcut(); }, installShortcut);
+      return;
+    }
+    installShortcut();
+  }
+  function installShortcut() {
     if (inApp) { showInApp(); return; }
     if (!prompt) { showSteps(); return; }
     var p = prompt; prompt = null;
@@ -175,7 +194,7 @@
     try { localStorage.setItem(KEY, '1'); } catch (e) { /* ignore */ }
     if (inApp) { showInApp(); return; }
     open('<div class="ms-install-body"><div class="ms-install-hero">' + icon(OS, 56) + '<h2 id="msInstallTitle">مکث‌سیلور را روی ' + NAME[OS] + ' نصب کنید</h2></div>' +
-      '<p>دسترسی سریع از صفحهٔ اصلی، بدون باز کردن مرورگر. بعداً هم از «حساب من» می‌توانید نصب کنید.</p>' +
+      '<p>' + (OS === 'android' ? 'اپلیکیشن تمام‌صفحه و سریع، بدون نوار مرورگر.' : 'دسترسی سریع از صفحهٔ اصلی، بدون باز کردن مرورگر.') + ' بعداً هم از «حساب من» می‌توانید نصب کنید.</p>' +
       '<div class="ms-install-actions"><button type="button" class="ms-install-go">نصب</button><button type="button" class="ms-install-later">بعداً</button></div></div>');
     dlg.querySelector('.ms-install-go').addEventListener('click', function () { dlg.close(); install(); });
   }, 1500);

@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'android-app-1405-08', date: '1405/08/02', tag: 'جدید', title: 'اپلیکیشن اندروید مکث‌سیلور',
+      summary: 'کاربران اندروید به‌جای میان‌بر، فایل نصب اپلیکیشن را دانلود می‌کنند؛ اپلیکیشن تمام‌صفحه است و با نوار وضعیت و نوار پایین گوشی تداخل ندارد. فایل‌های اکسل و پی‌دی‌اف در پوشهٔ دانلودها ذخیره می‌شوند.' },
     { id: 'contact-facts-1405-08', date: '1405/08/02', tag: 'بهبود', title: 'اطلاعات رسمی شرکت و دکمهٔ QR در کاتالوگ',
       summary: 'صفحهٔ «اطلاعات کسب‌وکار» اکنون نام حقوقی، شمارهٔ ثبت، شناسهٔ ملی، نشانی‌ها، کدپستی‌ها، تلفن‌ها، ساعت کاری و راه ثبت شکایت را دارد. دکمهٔ QR بالای صفحهٔ کاتالوگ دیگر کشیده نمی‌شود. مسیرهای آموزش عکس مخصوص خودشان را گرفتند.' },
     { id: 'academy-onboarding-1405-08', date: '1405/08/02', tag: 'جدید', title: 'آموزش، خوش‌آمدگویی و پروفایل',
