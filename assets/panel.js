@@ -731,6 +731,29 @@
   }
   window.addEventListener('ms-notify', function () { if (S.profile) render(); });
 
+  // ---- birthdays of colleagues: the next two weeks, for the technology lead, management and HR (the server shows birthdays to nobody else)
+  function birthdayView() {
+    var r = myRole(), E = window.MSEvents;
+    if (!(r === 'manager' || r === 'ceo' || r === 'hr') || !E || !E.fromJ || !E.toJ || !S.team) return '';
+    var now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), jy = E.toJ(t0).jy, out = [];
+    S.team.forEach(function (u) {
+      var m = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(u.birthday || '');
+      if (!m || u.active === false) return;
+      var next = null;
+      [jy, jy + 1].forEach(function (y) { if (next) return; var d = E.fromJ(y, +m[2], +m[3]); if (d >= t0) next = d; });
+      if (!next) return;
+      var days = Math.round((next - t0) / 86400000);
+      if (days <= 14) out.push({ name: u.name || u.email || '', days: days, jm: +m[2], jd: +m[3] });
+    });
+    if (!out.length) return '';
+    out.sort(function (a, b) { return a.days - b.days; });
+    var cake = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21h16v-7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3z"/><path d="M4 16c2 1.500 3 1.500 4 0s2.500-1.500 4 0 3 1.500 4 0 2-1.500 4 0M12 11V7M12 7c-1-1-1-2 0-3 1 1 1 2 0 3z"/></svg>';
+    var MON = E.MONTHS || [];
+    return '<section class="pn-card pn-bday"><h2>' + cake + ' تولد همکاران</h2><ul>' + out.map(function (b) {
+      return '<li' + (b.days === 0 ? ' class="today"' : '') + '><b>' + esc(b.name) + '</b><span>' + (b.days === 0 ? 'امروز تولدش است؛ کیک یادت نرود' : b.days === 1 ? 'فردا' : faInt.format(b.days) + ' روز دیگر') + ' · ' + faInt.format(b.jd) + ' ' + esc(MON[b.jm - 1] || '') + '</span></li>';
+    }).join('') + '</ul></section>';
+  }
+
   // ---- first run: a short form about the person (shown on the home tab until it is saved)
   S.onb = { hide: false, busy: false, err: '' };
   function latinDigits(s) {
@@ -1301,7 +1324,7 @@
       '<div><h2>' + esc(p.name || S.user.email) + '</h2>' +
       '<span class="pn-role">' + esc(MSRoles.label(p.role)) + '</span>' + (p.code ? ' <span class="pn-chip" dir="ltr">' + esc(p.code) + '</span>' : '') + '</div>' +
       '<button type="button" class="pn-ico" data-out aria-label="خروج" title="خروج"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></section>';
-    var home = onboardView() + notifyView();
+    var home = onboardView() + notifyView() + birthdayView();
     if (MSRoles.hasField(p.role, 'territory')) home += '<section class="pn-card"><h2>منطقهٔ فعالیت و فروش من</h2>' + chips(p) + areaView(p) + '</section>';
     if (MSRoles.hasField(p.role, 'proformas')) home += '<section class="pn-card"><h2>پیش‌فاکتورهای من</h2><div class="pn-stats"><div><span>تعداد کل</span><b>' + faInt.format(mine.length) + '</b></div>' +
       '<div><span>مجموع این ماه (شمسی)</span><b>' + monthTotals(mine) + '</b></div></div>' +

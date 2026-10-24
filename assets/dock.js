@@ -31,6 +31,8 @@
     competitors: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M8 11h6"/>'),
     events: svg('<rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4m8-4v4"/>'),
     planner: svg('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M9 21V9"/>'),
+    academy: svg('<path d="M3 9l9-5 9 5-9 5z"/><path d="M7 11.500V16c0 1 2.200 3 5 3s5-2 5-3v-4.500M21 9v6"/>'),
+    install: svg('<path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>'),
     contact: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.7A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/>'),
     star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>'
   };
@@ -40,14 +42,16 @@
     { id: 'customers', href: './customers.html', label: 'مشتریان', area: 'customers', page: 'customers.html' },
     { id: 'catalog', href: './product-catalog.html', label: 'کاتالوگ محصولات', page: 'product-catalog.html' },
     { id: 'invoices', href: './panel.html#invoices', label: 'پیش‌فاکتورها', area: 'invoices' },
-    { id: 'process', href: './sales-process.html', label: 'نقشهٔ فروش', page: 'sales-process.html' },
+    { id: 'process', href: './sales-process.html', label: 'نقشهٔ فروش', area: 'salesProcess', page: 'sales-process.html' },
     { id: 'planner', href: './planner.html', label: 'طراح کافه و رستوران', page: 'planner.html' },
     { id: 'crm', href: './crm.html', label: 'درخواست‌های خرید', area: 'crm', page: 'crm.html' },
     { id: 'prices', href: './prices.html', label: 'قیمت‌ها', area: 'pricesAudit', page: 'prices.html' },
     { id: 'events', href: './events.html', label: 'مناسبت‌ها', area: 'events', page: 'events.html' },
     { id: 'warehouse', href: './warehouse.html', label: 'انبار و موجودی', area: 'warehouse', page: 'warehouse.html' },
     { id: 'banks', href: './banks.html', label: 'حساب‌های بانکی', area: 'bankAccounts', page: 'banks.html' },
-    { id: 'fairs', href: './fairs.html', label: 'نمایشگاه‌ها', page: 'fairs.html' },
+    { id: 'fairs', href: './fairs.html', label: 'نمایشگاه‌ها', area: 'fairs', page: 'fairs.html' },
+    { id: 'academy', href: './academy.html', label: 'آموزش', area: 'academy', page: 'academy.html' },
+    { id: 'install', href: './install.html', label: 'نصب برنامه', page: 'install.html' },
     { id: 'features', href: './features.html', label: 'ویژگی‌ها', area: 'features', page: 'features.html' },
     { id: 'permissions', href: './permissions.html', label: 'دسترسی‌ها', area: 'roleAdmin', page: 'permissions.html' },
     { id: 'assistant', href: './assistant.html', label: 'آریا', area: 'assistant', page: 'assistant.html' },
@@ -84,7 +88,7 @@
     var r = role(), R = window.MSRoles, on = signed();
     return ITEMS.filter(function (it) {
       if (window.MSFeatures && window.MSFeatures.hidden(it.id) && !window.MSFeatures.owner()) return false;
-      if (!on) return it.id === 'home' || it.id === 'planner' || it.id === 'panel' || it.id === 'contact';
+      if (!on) return it.id === 'home' || it.id === 'planner' || it.id === 'panel' || it.id === 'contact' || it.id === 'install';
       if (it.anon) return false;
       if (!it.area) return true;
       if (!r) return false;

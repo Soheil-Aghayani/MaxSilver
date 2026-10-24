@@ -138,19 +138,23 @@
   }
 
   // Android: the real app (APK) is offered first; the home-screen shortcut stays as the fallback when the file is not on the server yet
-  var APK = './app/maxsilver.apk';
   function showApk() {
     open('<div class="ms-install-body"><div class="ms-install-hero">' + icon('android', 56) + '<h2 id="msInstallTitle">اپلیکیشن مکث‌سیلور برای اندروید</h2></div>' +
       '<p>اپلیکیشن واقعی، تمام‌صفحه و بدون نوار مرورگر. فایل نصب را دانلود کنید و باز کنید.</p><ol>' +
       '<li>دکمهٔ «دانلود اپلیکیشن» را بزنید.</li><li>فایل دانلودشده را باز کنید.</li>' +
       '<li>اگر گوشی دربارهٔ «نصب از این منبع» پرسید، «اجازه» را بزنید و نصب را تأیید کنید. (این پیام فقط برای فایل‌هایی است که از فروشگاه نیامده‌اند.)</li></ol>' +
-      '<div class="ms-install-actions"><a class="ms-install-go" href="' + APK + '" download="maxsilver.apk">دانلود اپلیکیشن</a><button type="button" class="ms-install-copy">میان‌بر روی صفحهٔ اصلی</button></div>' +
+      '<div class="ms-install-actions"><button type="button" class="ms-install-go" data-apk>دانلود اپلیکیشن</button><button type="button" class="ms-install-copy">میان‌بر روی صفحهٔ اصلی</button></div>' +
       '<button type="button" class="ms-install-close">بستن</button></div>');
     dlg.querySelector('.ms-install-copy').addEventListener('click', function () { dlg.close(); installShortcut(); });
+    dlg.querySelector('[data-apk]').addEventListener('click', function (e) {
+      var b = e.currentTarget; b.disabled = true; b.textContent = 'در حال دانلود…';
+      window.MSApi.download('app/android/file', 'maxsilver.apk').then(function () { b.textContent = 'دانلود شد؛ از پوشهٔ دانلودها باز کنید'; }, function (er) { b.disabled = false; b.textContent = (er && er.message) || 'دانلود انجام نشد'; });
+    });
   }
   function install() {
-    if (OS === 'android' && window.fetch) {
-      fetch(APK, { method: 'HEAD', cache: 'no-store' }).then(function (r) { if (r.ok) showApk(); else installShortcut(); }, installShortcut);
+    // the app file is only for people who are signed in; everyone else gets the home-screen shortcut
+    if (OS === 'android' && window.MSApi && window.MSApi.signedIn && window.MSApi.signedIn()) {
+      window.MSApi.appInfo().then(showApk, installShortcut);
       return;
     }
     installShortcut();

@@ -393,4 +393,8 @@
 .pn-radios{display:flex;flex-wrap:wrap;gap:8px 16px;margin:0;padding:0;border:0}.pn-radios legend{font-weight:700;font-size:13px;margin-bottom:4px}
 .pn-radios label{display:inline-flex;align-items:center;gap:6px;font-weight:600}
 .pn-onb-actions{display:flex;align-items:center;gap:12px}
+.pn-bday h2{display:flex;align-items:center;gap:8px}.pn-bday h2 svg{width:22px;height:22px;color:#c2410c}
+.pn-bday ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pn-bday li{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 12px;border-radius:12px;background:#f7f9fd;font-size:13.5px}
+.pn-bday li span{color:var(--ms-muted,#51627a)}.pn-bday li.today{background:#fff4cc}.pn-bday li.today span{color:#8a6200;font-weight:800}
 

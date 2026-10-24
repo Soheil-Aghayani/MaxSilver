@@ -84,6 +84,20 @@
     deleteStatus: function (id) { return call('DELETE', 'item-status/' + encodeURIComponent(id)); },
     putSetting: function (key, d) { return call('PUT', 'settings/' + key, d); },
     putConfig: function (key, d) { return call('PUT', 'config/' + key, d); },
+    appInfo: function () { return call('GET', 'app/android/info'); },
+    appUpload: function (fd) { return call('POST', 'portal/app', fd); },
+    // a file that only signed-in people may fetch: it is read with the session token and saved from memory
+    download: function (path, name) {
+      var b = base(); if (!b || !token()) return Promise.reject({ status: 401, message: 'برای دانلود باید وارد حساب شوید.' });
+      return fetch(b + '/api/v1/' + path, { headers: { 'Authorization': 'Bearer ' + token(), 'Accept': '*/*' }, credentials: 'omit' }).then(function (r) {
+        if (!r.ok) throw { status: r.status, message: r.status === 404 ? 'فایل هنوز روی سرور نیست.' : 'دانلود انجام نشد.' };
+        return r.blob();
+      }).then(function (blob) {
+        var u = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
+      });
+    },
     portal: function () { return call('GET', 'portal'); },
     portalUpdate: function (fd) { return call('POST', 'portal/update', fd); },
     portalRollback: function (d) { return call('POST', 'portal/rollback', d); },

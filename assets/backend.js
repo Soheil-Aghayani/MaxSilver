@@ -97,6 +97,10 @@
       h += '<section class="bk-card"><h2>به‌روزرسانی سایت</h2><p class="bk-sub">نسخهٔ فعلی صفحه‌های سایت روی این سرور: <bdi dir="ltr">' + esc(p.version || 'نامشخص') + '</bdi>. فایل zip به‌روزرسانی را اینجا بارگذاری کنید؛ فقط فایل‌های ایستا (صفحه، تصویر، قلم) پذیرفته می‌شود و از نسخهٔ قبلی یک نسخهٔ بازگشت نگه داشته می‌شود. حجم مجاز: ' + p.upload_mb + ' مگابایت.</p>' +
         (ok ? '' : '<p class="bk-err">این بخش هنوز آماده نیست: ' + (!p.configured ? 'مسیر پوشهٔ سایت (PORTAL_PATH) در تنظیمات سرور نیست.' : !p.writable ? 'پوشهٔ سایت قابل نوشتن نیست.' : 'افزونهٔ zip در هاست خاموش است.') + '</p>') +
         (ok ? '<form id="fSite"><label class="bk-file" id="siteFile"><input name="file" type="file" accept=".zip,application/zip" required><span class="bk-file-btn">انتخاب فایل zip</span><span class="bk-file-name">فایلی انتخاب نشده</span></label>' + ask + '<button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>بارگذاری و به‌روزرسانی</button></form>' : '') +
+        (ok ? '<details><summary class="bk-link">فایل اپلیکیشن اندروید (APK)</summary><form id="fApk"><p class="bk-sub">نسخهٔ تازهٔ برنامه را بارگذاری کنید. فایل در پوشهٔ خصوصی سرور می‌ماند و فقط کسانی که وارد حساب شده‌اند می‌توانند دانلودش کنند.</p>' +
+          '<label class="bk-file" id="apkFile"><input name="file" type="file" accept=".apk,application/vnd.android.package-archive" required><span class="bk-file-btn">انتخاب فایل APK</span><span class="bk-file-name">فایلی انتخاب نشده</span></label>' +
+          '<label>شمارهٔ نسخه<input name="version" dir="ltr" placeholder="1.0.1" maxlength="20" required></label>' +
+          '<label>SHA-256 گواهی امضا (اختیاری)<input name="signerSha256" dir="ltr" maxlength="64" pattern="[0-9a-fA-F]{64}"></label>' + ask + '<button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>بارگذاری APK</button></form></details>' : '') +
         (ok && p.backups && p.backups.length ? '<details><summary class="bk-link">بازگرداندن به نسخهٔ قبل (' + p.backups.length + ' نسخهٔ بازگشت)</summary><form id="fSiteBack">' + ask + '<button class="bk-btn ghost" ' + (S.busy ? 'disabled' : '') + '>بازگرداندن آخرین به‌روزرسانی</button></form></details>' : '') + '</section>';
     }
     return h;
@@ -142,6 +146,13 @@
     } else if (f.id === 'fUserPw') {
       var uid = f.getAttribute('data-id');
       api.setUserPassword(uid, f.elements.password.value).then(function () { S.pwFor = 0; S.busy = false; S.error = ''; S.note = 'رمز تازه ذخیره شد و آن شخص از همهٔ دستگاه‌ها خارج شد. رمز را حضوری به او بدهید.'; render(); }, fail);
+    } else if (f.id === 'fApk') {
+      var ad = new FormData();
+      ad.append('file', f.elements.file.files[0]); ad.append('version', v('version')); ad.append('password', f.elements.password.value);
+      if (v('signerSha256')) ad.append('signerSha256', v('signerSha256'));
+      ad.append('signer', 'CN=Max Silver, O=Max Steel Arya, C=IR');
+      if (f.elements.code && f.elements.code.value) ad.append('code', f.elements.code.value.trim());
+      api.appUpload(ad).then(function (r) { S.busy = false; S.note = 'فایل اپلیکیشن بارگذاری شد: نسخهٔ ' + r.version; render(); }, fail);
     } else if (f.id === 'fSite' || f.id === 'fSiteBack') {
       var fd = new FormData();
       if (f.id === 'fSite') fd.append('file', f.elements.file.files[0]);
@@ -178,8 +189,8 @@
   });
   root.addEventListener('change', function (ev) {
     var s = ev.target;
-    if (s.type === 'file' && s.closest && s.closest('#siteFile')) {
-      var lb = s.closest('#siteFile'), nm = lb.querySelector('.bk-file-name');
+    if (s.type === 'file' && s.closest && (s.closest('#siteFile') || s.closest('#apkFile'))) {
+      var lb = s.closest('#siteFile') || s.closest('#apkFile'), nm = lb.querySelector('.bk-file-name');
       nm.textContent = s.files && s.files[0] ? s.files[0].name + ' (' + (s.files[0].size / 1048576).toFixed(2) + ' مگابایت)' : 'فایلی انتخاب نشده';
       lb.classList.toggle('has', !!(s.files && s.files[0]));
       return;

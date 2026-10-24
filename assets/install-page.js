@@ -25,7 +25,8 @@
     { id: 'macos', name: 'مک', lead: 'نصب از Chrome، Edge یا Safari', steps: ['Chrome یا Edge: روی آیکن نصب در نوار آدرس بزنید.', 'Safari: از منوی File گزینهٔ «Add to Dock» را بزنید.', 'برنامه در پوشهٔ Applications و Dock دیده می‌شود.'] },
     { id: 'linux', name: 'لینوکس', lead: 'نصب از Chrome یا Chromium', steps: ['در Chrome یا Chromium این سایت را باز کنید.', 'روی آیکن نصب در نوار آدرس بزنید یا دکمهٔ «نصب» همین کارت را بزنید.', 'Firefox نصب برنامه را روی رایانه پشتیبانی نمی‌کند.'] }
   ];
-  var info = null, deferred = null;
+  var info = null, deferred = null, apkMsg = '';
+  var api = window.MSApi, signed = !!(api && api.signedIn && api.signedIn());
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; render(); });
 
   function icon(id, px) {
@@ -36,10 +37,11 @@
 
   function trust() {
     var a = info && info.android; if (!a) return '';
+    var day = String(a.date || '').slice(0, 10);
     return '<details class="ip-trust"><summary>مشخصات فایل و چرا کوچک است</summary><div>' +
       '<p><b>چرا فقط ' + esc(fa(mb(a.bytes))) + '؟</b> این برنامه مرورگر خودش را همراه ندارد: صفحه‌های مکث‌سیلور را مستقیم از سرور شرکت (portal.agseyl.ir) می‌خواند و در قاب برنامه نشان می‌دهد. برای همین سبک است، همیشه آخرین نسخهٔ پورتال را نشان می‌دهد و نیازی نیست دوباره نصب کنید.</p>' +
       '<p>این برنامه فقط به اینترنت دسترسی دارد (و برای ذخیرهٔ فایل‌های اکسل و پی‌دی‌اف در پوشهٔ دانلودها). به مخاطبین، پیامک، دوربین، میکروفون و موقعیت مکانی دسترسی نمی‌خواهد.</p>' +
-      '<dl><div><dt>نسخه</dt><dd>' + esc(fa(a.version)) + ' · ' + esc(fa(a.date)) + '</dd></div><div><dt>حجم</dt><dd>' + esc(fa(mb(a.bytes))) + '</dd></div><div><dt>حداقل اندروید</dt><dd>' + esc(fa(a.minAndroid)) + '</dd></div>' +
+      '<dl><div><dt>نسخه</dt><dd>' + esc(fa(a.version)) + ' · ' + esc(fa(day)) + '</dd></div><div><dt>حجم</dt><dd>' + esc(fa(mb(a.bytes))) + '</dd></div><div><dt>حداقل اندروید</dt><dd>' + esc(fa(a.minAndroid)) + '</dd></div>' +
       '<div><dt>امضاکننده</dt><dd dir="ltr">' + esc(a.signer) + '</dd></div><div><dt>SHA-256 فایل</dt><dd dir="ltr" class="ip-hash">' + esc(a.sha256) + '</dd></div><div><dt>SHA-256 گواهی امضا</dt><dd dir="ltr" class="ip-hash">' + esc(a.signerSha256) + '</dd></div></dl>' +
       '<p class="ip-small">برای اطمینان، SHA-256 فایل دانلودشده را (با ابزار بررسی هش گوشی یا رایانه) با مقدار بالا مقایسه کنید.</p></div></details>';
   }
@@ -47,7 +49,8 @@
   function card(c) {
     var me = c.id === ME, a = info && info.android;
     var action = '';
-    if (c.id === 'android') action = '<a class="ip-btn" href="' + (a ? a.file : './app/maxsilver.apk') + '" download="maxsilver.apk">دانلود اپلیکیشن' + (a ? ' · ' + esc(fa(mb(a.bytes))) : '') + '</a>';
+    if (c.id === 'android') action = signed ? '<button type="button" class="ip-btn" data-apk>دانلود اپلیکیشن' + (a ? ' · ' + esc(fa(mb(a.bytes))) : '') + '</button>' + (apkMsg ? '<p class="ip-small" role="status">' + esc(apkMsg) + '</p>' : '')
+      : '<a class="ip-btn" href="./panel.html">برای دانلود، وارد حساب شوید</a><p class="ip-small">فایل اپلیکیشن فقط برای کارکنان و کاربرانی است که حساب دارند.</p>';
     else if (c.id === 'windows' || c.id === 'macos' || c.id === 'linux') action = me && deferred ? '<button type="button" class="ip-btn" data-install>نصب</button>' : '';
     return '<article class="ip-card' + (me ? ' me' : '') + '" id="os-' + c.id + '">' + (me ? '<span class="ip-me">دستگاه شما</span>' : '') +
       '<div class="ip-head">' + icon(c.id, 64) + '<div><h2>' + esc(c.name) + '</h2><p>' + esc(c.lead) + '</p></div></div>' +
@@ -63,12 +66,17 @@
   }
 
   root.addEventListener('click', function (e) {
+    if (e.target.closest('[data-apk]')) {
+      apkMsg = 'در حال دانلود…'; render();
+      api.download('app/android/file', 'maxsilver.apk').then(function () { apkMsg = 'دانلود شد؛ فایل را از پوشهٔ دانلودها باز کنید.'; render(); }, function (er) { apkMsg = (er && er.message) || 'دانلود انجام نشد.'; render(); });
+      return;
+    }
     if (!e.target.closest('[data-install]') || !deferred) return;
     var p = deferred; deferred = null;
     try { p.prompt(); } catch (x) { /* the steps above still apply */ }
     render();
   });
 
-  function init() { render(); if (window.fetch) fetch('./assets/app-info.json?v=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { info = j; render(); }, function () { /* the card still works without the details */ }); }
+  function init() { render(); if (signed) api.appInfo().then(function (j) { info = { android: j }; render(); }, function () { /* the card still works without the details */ }); }
   init();
 })();
