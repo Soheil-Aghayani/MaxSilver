@@ -72,6 +72,8 @@
     portalUpdate: function (fd) { return call('POST', 'portal/update', fd); },
     portalRollback: function (d) { return call('POST', 'portal/rollback', d); },
     users: function () { return call('GET', 'users'); },
+    setUserPassword: function (id, pw) { return call('PUT', 'users/' + id + '/password', { password: pw }); },
+    deleteUser: function (id) { return call('DELETE', 'udocs/' + id); },
     createUser: function (d) { return call('POST', 'users', d); },
     updateUser: function (id, d) { return call('PATCH', 'users/' + id, d); }
   };

@@ -19,3 +19,19 @@
 .bk-th{border-top:0;color:var(--ms-muted);font-size:12px;font-weight:800}.bk-tr small{display:block;color:var(--ms-muted);font-size:12px}
 .bk :focus-visible{outline:3px solid #1746b5;outline-offset:2px}
 @media(max-width:620px){.bk-grid{grid-template-columns:1fr}.bk-tr{grid-template-columns:1fr 1fr}.bk-th{display:none}}
+/* the open list of a drop-down uses the same font as the box, not the system font */
+.bk-card select,.bk-card option,.bk-card optgroup{font-family:Estedad,Tahoma,sans-serif;font-weight:600;font-size:14px}
+.bk-card option{padding:6px 10px;color:var(--ms-ink,#071b36);background:#fff}
+/* file picker in the app's own style: the real input is kept (for the keyboard and validation) but invisible */
+.bk-card .bk-file{position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:48px;padding:6px 8px;border:1.5px dashed #b9c6dc;border-radius:12px;background:#f7f9fd;cursor:pointer}
+.bk-card .bk-file:hover,.bk-card .bk-file:focus-within{border-color:#2456d8;background:#f0f5ff}
+.bk-card .bk-file input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;min-height:0;padding:0;border:0}
+.bk-file-btn{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:10px;background:var(--ms-navy,#071b36);color:#fff;font:800 13px Estedad,Tahoma,sans-serif}
+.bk-file-name{flex:1;min-width:0;color:var(--ms-muted,#51627a);font:600 13px Estedad,Tahoma,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-file.has .bk-file-name{color:var(--ms-navy,#071b36)}
+.bk-acts{display:flex;flex-wrap:wrap;gap:6px}
+.bk-btn.sm{min-height:36px;padding:0 12px;font-size:12.5px}
+.bk-btn.danger{color:#8a1f1f;border-color:#f0c7c7}
+.bk-btn.danger.sure{background:#b42318;color:#fff;border-color:#b42318}
+.bk-card .bk-pwrow{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:end;padding:8px 0}
+.bk-card .bk-pwrow label{flex:1;min-width:200px}

@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'team-password-delete-1405-08', date: '1405/08/02', tag: 'جدید', title: 'رمز تازه و حذف حساب برای مدیر', roles: ['manager'],
+      summary: 'در فهرست تیم، مدیر می‌تواند برای هر نفر رمز تازه بگذارد (او از همهٔ دستگاه‌ها خارج می‌شود) یا حساب را برای همیشه حذف کند؛ حذف با یک تأیید دوم انجام می‌شود. لیست‌های بازشو هم با همان قلم برنامه نمایش داده می‌شوند و انتخاب فایل شکل خود برنامه را دارد.' },
     { id: 'no-server-address-1405-08', date: '1405/08/02', tag: 'بهبود', title: 'دیگر آدرس سرور پرسیده نمی‌شود', roles: ['manager'],
       summary: 'صفحهٔ «اتصال به سرور» برداشته شد؛ آدرس سرور ثابت و خودکار است و فقط برای توسعه‌دهنده روی همین رایانه یا شبکهٔ داخلی دیده می‌شود.' },
     { id: 'site-update-page-1405-08', date: '1405/08/02', tag: 'جدید', title: 'به‌روزرسانی سایت از داخل برنامه', roles: ['manager'],

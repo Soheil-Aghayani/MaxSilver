@@ -3,7 +3,7 @@
   // Staff sign-in and account administration against the Laravel backend (api-client.js). Firebase screens are untouched.
   var root = document.getElementById('bk'), api = window.MSApi, R = window.MSRoles;
   if (!root || !api) return;
-  var S = { view: '', user: null, users: [], portal: null, busy: false, error: '', note: '', otp: '', email: '', needCode: false };
+  var S = { view: '', user: null, users: [], portal: null, pwFor: 0, delFor: 0, busy: false, error: '', note: '', otp: '', email: '', needCode: false };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function can(area) { return !!(S.user && S.user.areas && S.user.areas.indexOf(area) >= 0); }
@@ -51,7 +51,9 @@
           var edit = can('roleAdmin');
           return '<div class="bk-tr" role="row"><span>' + esc(x.name) + '<small dir="ltr">' + esc(x.email) + '</small></span><span>' +
             (edit ? '<select data-role="' + x.id + '" aria-label="نقش ' + esc(x.name) + '">' + roleOptions(x.role) + '</select>' : esc(R.label(x.role))) + '</span><span>' + (x.last_login_at ? esc(new Date(x.last_login_at).toLocaleDateString('fa-IR')) : '-') + '</span><span>' +
-            (edit ? '<button class="bk-btn ghost" data-active="' + x.id + '" data-to="' + (x.is_active ? 0 : 1) + '">' + (x.is_active ? 'غیرفعال‌کردن' : 'فعال‌کردن') + '</button>' : (x.is_active ? '' : 'غیرفعال')) + '</span></div>';
+            (edit ? '<div class="bk-acts"><button class="bk-btn ghost sm" data-active="' + x.id + '" data-to="' + (x.is_active ? 0 : 1) + '">' + (x.is_active ? 'غیرفعال‌کردن' : 'فعال‌کردن') + '</button>' +
+              (x.id !== u.id ? '<button class="bk-btn ghost sm" data-pw="' + x.id + '">رمز تازه</button><button class="bk-btn ghost sm danger' + (S.delFor === x.id ? ' sure' : '') + '" data-del="' + x.id + '">' + (S.delFor === x.id ? 'تأیید حذف' : 'حذف') + '</button>' : '') + '</div>' : (x.is_active ? '' : 'غیرفعال')) + '</span></div>' +
+            (S.pwFor === x.id ? '<form id="fUserPw" class="bk-pwrow" data-id="' + x.id + '"><label>رمز تازه برای ' + esc(x.name) + ' (حداقل ۸ نویسه، با حرف بزرگ و کوچک انگلیسی)<input name="password" type="password" dir="ltr" minlength="8" required autocomplete="new-password" autofocus></label><button class="bk-btn sm">ذخیره</button><button type="button" class="bk-btn ghost sm" data-pwcancel>انصراف</button></form>' : '');
         }).join('') + '</div></section>';
     }
     if (can('siteUpdate') && S.portal) {
@@ -60,7 +62,7 @@
         (two ? '<label>کد شش‌رقمی برنامهٔ احراز هویت<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required></label>' : '');
       h += '<section class="bk-card"><h2>به‌روزرسانی سایت</h2><p class="bk-sub">نسخهٔ فعلی صفحه‌های سایت روی این سرور: <bdi dir="ltr">' + esc(p.version || 'نامشخص') + '</bdi>. فایل zip به‌روزرسانی را اینجا بارگذاری کنید؛ فقط فایل‌های ایستا (صفحه، تصویر، قلم) پذیرفته می‌شود و از نسخهٔ قبلی یک نسخهٔ بازگشت نگه داشته می‌شود. حجم مجاز: ' + p.upload_mb + ' مگابایت.</p>' +
         (ok ? '' : '<p class="bk-err">این بخش هنوز آماده نیست: ' + (!p.configured ? 'مسیر پوشهٔ سایت (PORTAL_PATH) در تنظیمات سرور نیست.' : !p.writable ? 'پوشهٔ سایت قابل نوشتن نیست.' : 'افزونهٔ zip در هاست خاموش است.') + '</p>') +
-        (ok ? '<form id="fSite"><label>فایل zip<input name="file" type="file" accept=".zip,application/zip" required></label>' + ask + '<button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>بارگذاری و به‌روزرسانی</button></form>' : '') +
+        (ok ? '<form id="fSite"><label class="bk-file" id="siteFile"><input name="file" type="file" accept=".zip,application/zip" required><span class="bk-file-btn">انتخاب فایل zip</span><span class="bk-file-name">فایلی انتخاب نشده</span></label>' + ask + '<button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>بارگذاری و به‌روزرسانی</button></form>' : '') +
         (ok && p.backups && p.backups.length ? '<details><summary class="bk-link">بازگرداندن به نسخهٔ قبل (' + p.backups.length + ' نسخهٔ بازگشت)</summary><form id="fSiteBack">' + ask + '<button class="bk-btn ghost" ' + (S.busy ? 'disabled' : '') + '>بازگرداندن آخرین به‌روزرسانی</button></form></details>' : '') + '</section>';
     }
     return h;
@@ -98,6 +100,9 @@
       }, function (e) { if (e.data && e.data.need_code) { S.needCode = true; S.busy = false; S.error = ''; render(); } else fail(e); });
     } else if (f.id === 'fEnroll') {
       api.twoFactorConfirm(v('code')).then(function () { S.otp = ''; return loadHome(); }, fail);
+    } else if (f.id === 'fUserPw') {
+      var uid = f.getAttribute('data-id');
+      api.setUserPassword(uid, f.elements.password.value).then(function () { S.pwFor = 0; S.busy = false; S.error = ''; S.note = 'رمز تازه ذخیره شد و آن شخص از همهٔ دستگاه‌ها خارج شد. رمز را حضوری به او بدهید.'; render(); }, fail);
     } else if (f.id === 'fSite' || f.id === 'fSiteBack') {
       var fd = new FormData();
       if (f.id === 'fSite') fd.append('file', f.elements.file.files[0]);
@@ -118,12 +123,27 @@
     if (t.hasAttribute('data-server')) go('server');
     else if (t.hasAttribute('data-off')) { api.setBase(''); S.note = 'سرور خاموش شد؛ پورتال دوباره از Firebase استفاده می‌کند.'; render(); }
     else if (t.hasAttribute('data-out')) api.logout().then(function () { S.user = null; go('login'); });
+    else if (t.hasAttribute('data-pw')) { S.pwFor = Number(t.getAttribute('data-pw')); S.delFor = 0; S.error = ''; S.note = ''; render(); }
+    else if (t.hasAttribute('data-pwcancel')) { S.pwFor = 0; render(); }
+    else if (t.hasAttribute('data-del')) {
+      var did = Number(t.getAttribute('data-del'));
+      if (S.delFor !== did) { S.delFor = did; S.pwFor = 0; render(); setTimeout(function () { if (S.delFor === did) { S.delFor = 0; render(); } }, 5000); return; }
+      S.delFor = 0;
+      api.deleteUser(did).then(function () { return loadHome().then(function () { S.note = 'حساب حذف شد.'; render(); }); }, fail);
+    }
     else if (t.hasAttribute('data-active')) {
       api.updateUser(t.getAttribute('data-active'), { is_active: t.getAttribute('data-to') === '1' }).then(loadHome, fail);
     }
   });
   root.addEventListener('change', function (ev) {
-    var s = ev.target; if (!s.hasAttribute || !s.hasAttribute('data-role')) return;
+    var s = ev.target;
+    if (s.type === 'file' && s.closest && s.closest('#siteFile')) {
+      var lb = s.closest('#siteFile'), nm = lb.querySelector('.bk-file-name');
+      nm.textContent = s.files && s.files[0] ? s.files[0].name + ' (' + (s.files[0].size / 1048576).toFixed(2) + ' مگابایت)' : 'فایلی انتخاب نشده';
+      lb.classList.toggle('has', !!(s.files && s.files[0]));
+      return;
+    }
+    if (!s.hasAttribute || !s.hasAttribute('data-role')) return;
     api.updateUser(s.getAttribute('data-role'), { role: s.value }).then(loadHome, function (e) { fail(e); loadHome().then(function () { S.error = e.message; render(); }); });
   });
 
