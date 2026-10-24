@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   var DRAFT = true;
-  var VERSION = (window.MSRequests && window.MSRequests.TERMS) || '1405-07-25';
+  var VERSION = (window.MSRequests && window.MSRequests.TERMS) || '1405-08-02';
   var root = document.getElementById('lg');
   if (!root) return;
   var faDigits = function (s) { return String(s).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); };

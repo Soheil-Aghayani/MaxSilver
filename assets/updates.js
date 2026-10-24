@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'coffee-cafe-festival-1405-09', date: '1405/08/02', tag: 'جدید', title: 'سومین فستیوال قهوه و کافه، ۲۴ تا ۲۷ آذر',
+      summary: 'فستیوال قهوه و کافه تهران در بوستان گفتگو به فهرست نمایشگاه‌ها اضافه شد. سی روز پیش از شروع، بنر آن در صفحهٔ اصلی هم می‌آید. صفحهٔ نصب برنامه هم با ماسکوت مکسی آماده شد.' },
     { id: 'android-app-1405-08', date: '1405/08/02', tag: 'جدید', title: 'اپلیکیشن اندروید مکث‌سیلور',
       summary: 'کاربران اندروید به‌جای میان‌بر، فایل نصب اپلیکیشن را دانلود می‌کنند؛ اپلیکیشن تمام‌صفحه است و با نوار وضعیت و نوار پایین گوشی تداخل ندارد. فایل‌های اکسل و پی‌دی‌اف در پوشهٔ دانلودها ذخیره می‌شوند.' },
     { id: 'contact-facts-1405-08', date: '1405/08/02', tag: 'بهبود', title: 'اطلاعات رسمی شرکت و دکمهٔ QR در کاتالوگ',

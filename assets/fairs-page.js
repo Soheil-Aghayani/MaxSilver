@@ -54,7 +54,7 @@
       actions: f.actions || [], invite: !!f.invite, edition: f.edition || '', source: main ? f.source : '', sourceName: main ? f.sourceName : '' };
   }
   // the picture of a row: the sector picture, whole inside the square. Banners of the main fairs stay on the home slides.
-  var PIC = { 'iran-retail-show': 'horeca-kitchen', 'iran-coffex': 'food-coffee', 'sense-of-coffee': 'food-coffee', 'iran-food-hospitality': 'food-coffee', midex: 'construction-hvac', 'expo-05': 'horeca-kitchen' };
+  var PIC = { 'iran-retail-show': 'horeca-kitchen', 'iran-coffex': 'food-coffee', 'coffee-cafe-festival': 'food-coffee', 'sense-of-coffee': 'food-coffee', 'iran-food-hospitality': 'food-coffee', midex: 'construction-hvac', 'expo-05': 'horeca-kitchen' };
   function thumb(v) {
     var it = v.it, name = PIC[v.id] || (it.art ? it.art.replace(/^sector-/, '').replace(/\.webp$/, '') : '');
     return name ? '<span class="fe-pic"><img src="./assets/art/fairs/sector-' + esc(name) + '.webp" alt="" loading="lazy" decoding="async" onerror="this.remove()"></span>' : '';

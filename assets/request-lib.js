@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   // the version of the legal texts (assets/legal.js) the visitor accepted; stored with every request
-  var TERMS = '1405-07-25';
+  var TERMS = '1405-08-02';
   var STATUS = { new: 'جدید', contacted: 'تماس گرفته شد', quoted: 'پیش‌فاکتور فرستاده شد', won: 'خرید انجام شد', lost: 'منصرف شد' };
   var ROUTE = { call: 'نیاز به تماس', warehouse: 'ارسال به انبار', production: 'ارسال به تولید' };
   var NEXT_LOG = { call: 'تماس', note: 'یادداشت', status: 'تغییر وضعیت', route: 'تصمیم ارسال', assign: 'ارجاع' };
