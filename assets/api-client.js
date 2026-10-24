@@ -13,6 +13,22 @@
     try { if (u) localStorage.setItem(BASE_KEY, u); else localStorage.removeItem(BASE_KEY); } catch (e) { /* ignore */ }
   }
 
+  // the server answers in English; people read Persian
+  var FA = [
+    [/at least 8 characters/i, 'رمز دست‌کم ۸ نویسه باشد.'],
+    [/uppercase and one lowercase/i, 'رمز باید هم حرف بزرگ و هم حرف کوچک انگلیسی داشته باشد.'],
+    [/Unauthenticated/i, 'نشست شما تمام شده است؛ دوباره وارد شوید.'],
+    [/Email, password or code is wrong/i, 'ایمیل، رمز یا کد درست نیست.'],
+    [/Password or code is wrong/i, 'رمز یا کد درست نیست.'],
+    [/Code is wrong/i, 'کد درست نیست.'],
+    [/Two-factor is required for this role/i, 'برای نقش این حساب ورود دومرحله‌ای الزامی است و نمی‌شود آن را خاموش کرد.'],
+    [/At least one active manager/i, 'دست‌کم یک مدیر فعال باید بماند.'],
+    [/Nobody removes their own account/i, 'کسی حساب خودش را حذف نمی‌کند.'],
+    [/Too Many Attempts|Too many/i, 'تلاش بیش از حد؛ کمی بعد دوباره امتحان کنید.'],
+    [/This action is unauthorized|Forbidden/i, 'این کار برای نقش شما مجاز نیست.']
+  ];
+  function fa(m) { for (var i = 0; i < FA.length; i++) if (FA[i][0].test(m)) return FA[i][1]; return m; }
+
   function call(method, path, body, anon) {
     var b = base();
     if (!b) return Promise.reject({ status: 0, message: 'آدرس سرور تنظیم نشده است.' });
@@ -26,7 +42,7 @@
         clearTimeout(t);
         if (r.status === 204) return null;
         return r.json().catch(function () { return {}; }).then(function (j) {
-          if (!r.ok) { var m = j.message || 'خطا'; if (j.errors) m = Object.keys(j.errors).map(function (k) { return j.errors[k][0]; }).join(' '); throw { status: r.status, message: m, data: j }; }
+          if (!r.ok) { var m = j.message || 'خطا'; if (j.errors) m = Object.keys(j.errors).map(function (k) { return j.errors[k][0]; }).join(' '); throw { status: r.status, message: fa(m), data: j }; }
           return j;
         });
       }, function () { clearTimeout(t); throw { status: 0, message: 'ارتباط با سرور برقرار نشد.' }; });
@@ -71,6 +87,9 @@
     portal: function () { return call('GET', 'portal'); },
     portalUpdate: function (fd) { return call('POST', 'portal/update', fd); },
     portalRollback: function (d) { return call('POST', 'portal/rollback', d); },
+    twoFactorBegin: function () { return call('POST', 'auth/2fa/begin'); },
+    twoFactorVerify: function (code) { return call('POST', 'auth/2fa/verify', { code: code }); },
+    twoFactorDisable: function (d) { return call('POST', 'auth/2fa/disable', d); },
     users: function () { return call('GET', 'users'); },
     setUserPassword: function (id, pw) { return call('PUT', 'users/' + id + '/password', { password: pw }); },
     deleteUser: function (id) { return call('DELETE', 'udocs/' + id); },

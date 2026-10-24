@@ -883,7 +883,8 @@
       '<label>تکرار رمز جدید<input type="password" name="rp" dir="ltr" autocomplete="new-password" minlength="8" required></label>' +
       (S.pwMsg ? '<p class="pn-ok" role="status">' + esc(S.pwMsg) + '</p>' : '') + (S.pwErr ? '<p class="pn-err" role="alert">' + esc(S.pwErr) + '</p>' : '') +
       '<button type="submit" class="pn-primary"' + (S.pwBusy ? ' disabled' : '') + '>' + (S.pwBusy ? 'در حال تغییر…' : 'تغییر رمز') + '</button>' +
-      '<button type="button" class="pn-link" data-forgot-me>رمز فعلی را فراموش کرده‌ام؛ پیوند تغییر به ایمیل ورودم برسد</button></form></section>';
+      '<button type="button" class="pn-link" data-forgot-me>رمز فعلی را فراموش کرده‌ام؛ پیوند تغییر به ایمیل ورودم برسد</button></form>' +
+      (window.MSApi && window.MSApi.enabled() ? '<p class="pn-note">ورود دومرحله‌ای (کد شش‌رقمی از برنامهٔ گوشی): <a href="./backend.html">فعال یا خاموش‌کردن</a></p>' : '') + '</section>';
   }
   var TAB_ICON = {
     home: '<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',

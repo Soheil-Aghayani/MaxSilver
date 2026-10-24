@@ -3,10 +3,24 @@
   // Staff sign-in and account administration against the Laravel backend (api-client.js). Firebase screens are untouched.
   var root = document.getElementById('bk'), api = window.MSApi, R = window.MSRoles;
   if (!root || !api) return;
-  var S = { view: '', user: null, users: [], portal: null, pwFor: 0, delFor: 0, busy: false, error: '', note: '', otp: '', email: '', needCode: false };
+  var S = { view: '', user: null, users: [], portal: null, pwFor: 0, delFor: 0, twoStep: false, busy: false, error: '', note: '', otp: '', email: '', needCode: false };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function can(area) { return !!(S.user && S.user.areas && S.user.areas.indexOf(area) >= 0); }
+  var IC = {
+    off: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>',
+    on: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.500 3 3 5-6"/></svg>',
+    key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8m-3 3 3 3"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
+  };
+  function ic(attr, cls, title, svg) { return '<button type="button" class="bk-ic' + (cls ? ' ' + cls : '') + '" ' + attr + ' title="' + esc(title) + '" aria-label="' + esc(title) + '">' + svg + '</button>'; }
+  // messages on the home screen float at the bottom, so they are seen wherever the person is on the page
+  function toast(kind, text) {
+    var old = document.getElementById('bkToast'); if (old) old.remove();
+    var t = document.createElement('div'); t.id = 'bkToast'; t.className = 'bk-toast ' + kind; t.setAttribute('role', kind === 'err' ? 'alert' : 'status'); t.textContent = text;
+    document.body.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.remove(); }, kind === 'err' ? 9000 : 6000);
+  }
   function msg() { return (S.error ? '<p class="bk-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.note ? '<p class="bk-ok" role="status">' + esc(S.note) + '</p>' : ''); }
   function fail(e) { S.busy = false; S.error = (e && e.message) || 'خطا'; S.note = ''; render(); }
   function go(v) { S.view = v; S.error = ''; render(); }
@@ -37,9 +51,28 @@
   function roleOptions(sel) {
     return R.ORDER.map(function (r) { return '<option value="' + r + '"' + (r === sel ? ' selected' : '') + '>' + esc(R.label(r)) + '</option>'; }).join('');
   }
+  function twoCard(u) {
+    var h = '<section class="bk-card"><h2>ورود دومرحله‌ای</h2>';
+    if (S.otp && S.twoStep) {
+      var svg = '';
+      try { var q = window.qrcode(0, 'M'); q.addData(S.otp); q.make(); svg = q.createSvgTag({ scalable: true, margin: 2 }); } catch (e) { svg = ''; }
+      return h + '<p class="bk-sub">این کد را با یک برنامهٔ احراز هویت (Google Authenticator، Microsoft Authenticator یا مشابه) اسکن کنید و کد شش‌رقمی را بنویسید.</p><div class="bk-qr" aria-label="کد QR">' + svg + '</div>' +
+        '<details><summary>اسکن نمی‌شود؟</summary><p dir="ltr" class="bk-secret">' + esc((S.otp.match(/secret=([A-Z2-7]+)/) || [])[1] || '') + '</p></details>' +
+        '<form id="fTwoOn"><label>کد شش‌رقمی<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required autofocus></label><div class="bk-row"><button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>تأیید و فعال‌سازی</button><button type="button" class="bk-btn ghost" data-2fa-cancel>انصراف</button></div></form></section>';
+    }
+    if (!u.has_2fa) {
+      return h + '<p class="bk-sub">ورود دومرحله‌ای خاموش است. با فعال‌کردن آن، هنگام ورود علاوه بر رمز، یک کد شش‌رقمی از برنامهٔ احراز هویت گوشی هم پرسیده می‌شود و حساب شما امن‌تر است.</p><div><button type="button" class="bk-btn" data-2fa-on>فعال‌سازی</button></div></section>';
+    }
+    if (u.needs_2fa) {
+      return h + '<p class="bk-sub">روشن است. برای نقش شما الزامی است و نمی‌توان آن را خاموش کرد.</p></section>';
+    }
+    return h + '<p class="bk-sub">روشن است. برای خاموش‌کردن، رمز و یک کد فعلی را بنویسید.</p>' +
+      '<form id="fTwoOff" class="bk-grid"><label>رمز عبور<input name="password" type="password" dir="ltr" required autocomplete="current-password"></label><label>کد شش‌رقمی<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required></label><button class="bk-btn ghost" ' + (S.busy ? 'disabled' : '') + '>خاموش‌کردن</button></form></section>';
+  }
   function viewHome() {
     var u = S.user, h = '<section class="bk-card"><div class="bk-head"><div><h1>' + esc(u.name) + '</h1><p class="bk-sub">' + esc(R.label(u.role)) + ' · <bdi dir="ltr">' + esc(u.email) + '</bdi>' + (u.has_2fa ? ' · ورود دومرحله‌ای فعال' : '') + '</p></div><button class="bk-btn ghost" data-out>خروج</button></div>' + msg() +
       '<p class="bk-sub">بخش‌هایی که این نقش می‌بیند: ' + u.areas.length + ' مورد</p></section>';
+    h += twoCard(u);
     if (can('roleAdmin')) {
       h += '<section class="bk-card"><h2>ساخت حساب</h2><form id="fNew" class="bk-grid"><label>نام<input name="name" required maxlength="120"></label><label>ایمیل<input name="email" type="email" dir="ltr" required></label>' +
         '<label>رمز (حداقل ۸ نویسه، با حرف بزرگ و کوچک انگلیسی)<input name="password" type="password" dir="ltr" minlength="8" required autocomplete="new-password"></label><label>نقش<select name="role">' + roleOptions('visitor') + '</select></label>' +
@@ -51,8 +84,8 @@
           var edit = can('roleAdmin');
           return '<div class="bk-tr" role="row"><span>' + esc(x.name) + '<small dir="ltr">' + esc(x.email) + '</small></span><span>' +
             (edit ? '<select data-role="' + x.id + '" aria-label="نقش ' + esc(x.name) + '">' + roleOptions(x.role) + '</select>' : esc(R.label(x.role))) + '</span><span>' + (x.last_login_at ? esc(new Date(x.last_login_at).toLocaleDateString('fa-IR')) : '-') + '</span><span>' +
-            (edit ? '<div class="bk-acts"><button class="bk-btn ghost sm" data-active="' + x.id + '" data-to="' + (x.is_active ? 0 : 1) + '">' + (x.is_active ? 'غیرفعال‌کردن' : 'فعال‌کردن') + '</button>' +
-              (x.id !== u.id ? '<button class="bk-btn ghost sm" data-pw="' + x.id + '">رمز تازه</button><button class="bk-btn ghost sm danger' + (S.delFor === x.id ? ' sure' : '') + '" data-del="' + x.id + '">' + (S.delFor === x.id ? 'تأیید حذف' : 'حذف') + '</button>' : '') + '</div>' : (x.is_active ? '' : 'غیرفعال')) + '</span></div>' +
+            (edit ? '<div class="bk-acts">' + ic('data-active="' + x.id + '" data-to="' + (x.is_active ? 0 : 1) + '"', '', x.is_active ? 'غیرفعال‌کردن حساب' : 'فعال‌کردن حساب', x.is_active ? IC.off : IC.on) +
+              (x.id !== u.id ? ic('data-pw="' + x.id + '"', '', 'رمز تازه', IC.key) + ic('data-del="' + x.id + '"', 'danger' + (S.delFor === x.id ? ' sure' : ''), S.delFor === x.id ? 'تأیید حذف برای همیشه' : 'حذف حساب', IC.trash) : '') + '</div>' : (x.is_active ? '' : 'غیرفعال')) + '</span></div>' +
             (S.pwFor === x.id ? '<form id="fUserPw" class="bk-pwrow" data-id="' + x.id + '"><label>رمز تازه برای ' + esc(x.name) + ' (حداقل ۸ نویسه، با حرف بزرگ و کوچک انگلیسی)<input name="password" type="password" dir="ltr" minlength="8" required autocomplete="new-password" autofocus></label><button class="bk-btn sm">ذخیره</button><button type="button" class="bk-btn ghost sm" data-pwcancel>انصراف</button></form>' : '');
         }).join('') + '</div></section>';
     }
@@ -71,6 +104,7 @@
   function render() {
     root.innerHTML = S.view === 'server' ? viewServer() : S.view === 'login' ? viewLogin() : S.view === 'enroll' ? viewEnroll() : S.view === 'home' ? viewHome() : '';
     var f;
+    if (S.view === 'home' && (S.error || S.note)) { toast(S.error ? 'err' : 'ok', S.error || S.note); S.error = ''; S.note = ''; }
     if ((f = root.querySelector('input[autofocus]'))) f.focus();
   }
 
@@ -100,6 +134,10 @@
       }, function (e) { if (e.data && e.data.need_code) { S.needCode = true; S.busy = false; S.error = ''; render(); } else fail(e); });
     } else if (f.id === 'fEnroll') {
       api.twoFactorConfirm(v('code')).then(function () { S.otp = ''; return loadHome(); }, fail);
+    } else if (f.id === 'fTwoOn') {
+      api.twoFactorVerify(v('code')).then(function () { S.otp = ''; S.twoStep = false; return loadHome().then(function () { S.note = 'ورود دومرحله‌ای فعال شد.'; render(); }); }, fail);
+    } else if (f.id === 'fTwoOff') {
+      api.twoFactorDisable({ password: f.elements.password.value, code: v('code') }).then(function () { return loadHome().then(function () { S.note = 'ورود دومرحله‌ای خاموش شد.'; render(); }); }, fail);
     } else if (f.id === 'fUserPw') {
       var uid = f.getAttribute('data-id');
       api.setUserPassword(uid, f.elements.password.value).then(function () { S.pwFor = 0; S.busy = false; S.error = ''; S.note = 'رمز تازه ذخیره شد و آن شخص از همهٔ دستگاه‌ها خارج شد. رمز را حضوری به او بدهید.'; render(); }, fail);
@@ -123,6 +161,8 @@
     if (t.hasAttribute('data-server')) go('server');
     else if (t.hasAttribute('data-off')) { api.setBase(''); S.note = 'سرور خاموش شد؛ پورتال دوباره از Firebase استفاده می‌کند.'; render(); }
     else if (t.hasAttribute('data-out')) api.logout().then(function () { S.user = null; go('login'); });
+    else if (t.hasAttribute('data-2fa-on')) { S.busy = true; api.twoFactorBegin().then(function (r) { S.otp = r.otpauth; S.twoStep = true; S.busy = false; render(); }, fail); }
+    else if (t.hasAttribute('data-2fa-cancel')) { S.otp = ''; S.twoStep = false; render(); }
     else if (t.hasAttribute('data-pw')) { S.pwFor = Number(t.getAttribute('data-pw')); S.delFor = 0; S.error = ''; S.note = ''; render(); }
     else if (t.hasAttribute('data-pwcancel')) { S.pwFor = 0; render(); }
     else if (t.hasAttribute('data-del')) {
