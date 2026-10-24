@@ -29,6 +29,7 @@
     bankPick: ['finance'],                                                              // chooses the bank account on an approved pre-invoice
     pricesAudit: ['manager', 'ceo', 'sales_manager', 'finance'],                         // opens the prices page: finance downloads the audit template; the others also edit and upload it
     crm: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'],                                // purchase requests from the public planner: follow-up and decisions (a visitor sees the ones given to them)
+    occasions: ['manager', 'ceo', 'sales_manager', 'visitor', 'marketing'],              // seasonal campaign tiles and pages (Halloween, Yalda...): staff only, never for people without an account
     events: ['manager', 'ceo', 'sales_manager', 'marketing'],                           // occasions calendar and its bell reminders
     warehouse: ['operations', 'account_manager', 'manager', 'ceo', 'sales_manager', 'production'],   // live inventory: who sees it
     warehouseEdit: ['operations', 'manager'],                                           // enters stock by hand or from the Excel template

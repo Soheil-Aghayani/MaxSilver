@@ -7,6 +7,10 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'occasion-tile-1405-08', date: '1405/08/02', tag: 'جدید', title: 'کاشی مناسبت نزدیک با نقاشی مخصوص هر مناسبت', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'marketing'],
+      summary: 'در صفحهٔ اصلی یک کاشی نشان می‌دهد کدام مناسبت نزدیک است (هالووین، یلدا، نوروز، ولنتاین و...) و با کلیک تقویم مناسبت‌ها باز می‌شود. در «تیم» هم فرم قدیمی افزودن کاربر با Firebase برداشته شد؛ حساب‌ها از «حساب کارکنان» ساخته می‌شوند.' },
+    { id: 'occasion-tiles-staff-only-1405-08', date: '1405/08/02', tag: 'بهبود', title: 'کاشی‌های مناسبتی فقط برای کارکنان', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'marketing'],
+      summary: 'کاشی و صفحهٔ هالووین و مناسبت‌های بعدی فقط برای مدیر، مدیرعامل، مدیر فروش، کارشناس فروش و تیم بازاریابی دیده می‌شود و از جعبهٔ بازدیدکننده برداشته شد.' },
     { id: 'staff-accounts-tile-1405-08', date: '1405/08/02', tag: 'جدید', title: 'کاشی «حساب کارکنان» در صفحهٔ اصلی', roles: ['manager'],
       summary: 'مدیر از صفحهٔ اصلی با یک کلیک به ساخت حساب برای کارکنان و تعیین نقش می‌رود. این کاشی فقط برای مدیر دیده می‌شود.' },
     { id: 'login-code-field-1405-08', date: '1405/07/30', tag: 'بهبود', title: 'ذخیرهٔ رمز در مرورگر هنگام ورود دومرحله‌ای',

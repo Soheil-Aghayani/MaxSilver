@@ -1329,7 +1329,7 @@
         '<button type="button" class="pn-ibtn" data-edit="' + esc(u.id) + '" title="ویرایش" aria-label="ویرایش ' + esc(u.name || '') + '"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z\"/></svg></button></li>';
     }).join('');
     return '<section class="pn-card"><h2>تیم</h2><ul class="pn-users">' + rows + '</ul>' +
-      (can('roleAdmin') ? '<form id="addForm" class="pn-add"><h3>افزودن کاربر</h3>' +
+      (can('roleAdmin') && window.MSApi && window.MSApi.enabled() ? '<p class="pn-note"><a href="./backend.html">ساخت حساب تازه برای کارکنان</a></p>' : can('roleAdmin') ? '<form id="addForm" class="pn-add"><h3>افزودن کاربر</h3>' +
         '<p class="pn-note">ابتدا در Firebase ← Authentication ← Users کاربر را بسازید و «User UID» را اینجا بچسبانید. نقش اولیه کارشناس فروش است؛ پس از افزودن از «ویرایش» تغییر دهید.</p>' +
         '<label>User UID<input type="text" name="uid" dir="ltr" required pattern="[A-Za-z0-9]{10,}" title="فقط حروف و عدد"></label>' +
         '<label>نام و نام خانوادگی<input type="text" name="name" required maxlength="60"></label>' +
