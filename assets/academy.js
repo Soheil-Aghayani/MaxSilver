@@ -81,6 +81,9 @@
     hr: '<circle cx="9" cy="8" r="3.500"/><path d="M2 20c0-3.300 3-6 7-6s7 2.700 7 6M17 5a3.500 3.500 0 0 1 0 7"/>'
   };
   function svg(name, cls) { return '<svg class="' + (cls || 'ac-ic') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[name] || ICON.sales) + '</svg>'; }
+  // the clay pictures made for the academy; the line icon stays as the fallback when a picture is missing
+  function art(name) { return '<span class="ac-ic-wrap">' + svg(name) + '<img class="ac-ic-img" src="./assets/art/academy/track-' + name + '.webp" alt="" width="56" height="56" loading="lazy" onerror="this.remove()"></span>'; }
+  function trophy() { return '<img class="ac-trophy" src="./assets/art/academy/trophy.webp" alt="" width="84" height="84" onerror="this.remove()">'; }
   function ring(pct, size) {
     var r = 26, c = 2 * Math.PI * r, off = c * (1 - pct / 100);
     return '<span class="ac-ring" style="--s:' + size + 'px"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + r + '" class="bg"/><circle cx="32" cy="32" r="' + r + '" class="fg" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"/></svg><b>' + fa(pct) + '٪</b></span>';
@@ -97,7 +100,7 @@
     h += '<div class="ac-tracks">' + tracks.map(function (t) {
       var pct = trackPct(t);
       var mine = !seesAll() || t.roles.indexOf(role()) >= 0;
-      return '<article class="ac-track' + (t.soon ? ' soon' : '') + (mine ? '' : ' other') + '"><div class="ac-th">' + svg(t.icon) + '<div><h2>' + esc(t.title) + '</h2><p>' + esc(t.intro) + '</p></div></div>' +
+      return '<article class="ac-track' + (t.soon ? ' soon' : '') + (mine ? '' : ' other') + '"><div class="ac-th">' + art(t.icon) + '<div><h2>' + esc(t.title) + '</h2><p>' + esc(t.intro) + '</p></div></div>' +
         (t.soon
           ? '<ul class="ac-outline">' + t.outline.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') + '</ul><span class="ac-badge">به‌زودی</span>'
           : '<div class="ac-tp">' + ring(pct, 64) + '<div><b>' + fa(t.days.length) + ' روز · حدود ' + fa(Math.round(t.days.reduce(function (a, d) { return a + d.minutes; }, 0) / 60)) + ' ساعت</b>' + bar(pct) + '</div></div><button type="button" class="ac-go" data-go="' + t.id + '">' + (pct ? 'ادامهٔ مسیر' : 'شروع مسیر') + '</button>') +
@@ -117,7 +120,7 @@
         '<span class="ac-dt"><b>روز ' + fa(d.n) + ' · ' + esc(d.title) + '</b><small>' + esc(d.goal) + '</small><small class="meta">' + fa(d.minutes) + ' دقیقه · ' + fa(d.lessons.length) + ' درس · ' + fa(d.quiz.length) + ' پرسش' + (d.n === t.days.length ? ' · آزمون نهایی' : '') + '</small></span>' +
         '<span class="ac-dp">' + (state === 'now' ? '<em>ادامه بده</em>' : fa(pct) + '٪') + '</span></button></li>';
     }).join('') + '</ol>';
-    if (t.days.every(function (d) { return dayDone(t, d); })) h += '<section class="ac-cert"><b>تبریک!</b><p>هفتهٔ آموزش را کامل کردی. حالا آمادهٔ آموزش میدانی هستی. به مدیر فروش خبر بده.</p></section>';
+    if (t.days.every(function (d) { return dayDone(t, d); })) h += '<section class="ac-cert">' + trophy() + '<b>تبریک!</b><p>هفتهٔ آموزش را کامل کردی. حالا آمادهٔ آموزش میدانی هستی. به مدیر فروش خبر بده.</p></section>';
     return h;
   }
 
@@ -141,7 +144,7 @@
     }).join('') + '</ul>';
     if (dayDone(t, d)) {
       var nx = t.days[t.days.indexOf(d) + 1];
-      h += '<section class="ac-cert"><b>روز ' + fa(d.n) + ' کامل شد!</b><p>پنجاه امتیاز پاداش گرفتی.</p>' + (nx ? '<button type="button" class="ac-go" data-go="' + t.id + '/' + nx.id + '">روز بعد: ' + esc(nx.title) + '</button>' : '<button type="button" class="ac-go" data-go="' + t.id + '">بازگشت به نقشهٔ هفته</button>') + '</section>';
+      h += '<section class="ac-cert">' + trophy() + '<b>روز ' + fa(d.n) + ' کامل شد!</b><p>پنجاه امتیاز پاداش گرفتی.</p>' + (nx ? '<button type="button" class="ac-go" data-go="' + t.id + '/' + nx.id + '">روز بعد: ' + esc(nx.title) + '</button>' : '<button type="button" class="ac-go" data-go="' + t.id + '">بازگشت به نقشهٔ هفته</button>') + '</section>';
     }
     return h;
   }

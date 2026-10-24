@@ -65,3 +65,8 @@
 @keyframes acPop{0%{transform:scale(.9);opacity:.4}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
 @media (prefers-reduced-motion:reduce){.ac *{animation:none!important;transition:none!important}}
 @media (max-width:560px){.ac{width:calc(100% - 16px);margin-top:10px}.ac-hero{padding:16px}.ac-hero h1{font-size:21px}.ac-dp{display:none}.ac-body{padding:2px 14px 14px}}
+.ac-ic-wrap{position:relative;flex:0 0 auto;width:56px;height:56px}
+.ac-ic-wrap .ac-ic{position:absolute;inset:7px;width:42px;height:42px}
+.ac-ic-wrap .ac-ic-img{position:absolute;inset:0;width:56px;height:56px;background:#fff;border-radius:16px}
+.ac-trophy{width:84px;height:84px}
+

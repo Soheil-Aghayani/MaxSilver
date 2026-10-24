@@ -9,7 +9,7 @@ button,input,select{font:inherit}
 /* floating, icon-first top bar */
 .ms-sitebar{position:sticky;top:10px;z-index:1500;width:min(1380px,calc(100% - 24px));margin:10px auto 0;view-transition-name:ms-sitebar}
 .ms-sitebar-inner{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;min-height:64px;padding:8px 14px;border:1px solid rgba(215,223,235,.95);border-radius:20px;background:rgba(255,255,255,.84);backdrop-filter:saturate(1.5) blur(18px);-webkit-backdrop-filter:saturate(1.5) blur(18px);box-shadow:0 12px 36px rgba(7,27,54,.09),inset 0 1px 0 #fff}
-.ms-sitebar-inner>.ms-brand{grid-column:1;justify-self:start}.ms-sitebar-inner>nav{grid-column:2}.ms-sitebar-inner>.ms-share-btn{grid-column:3;justify-self:end}
+.ms-sitebar-inner>.ms-brand{grid-column:1;justify-self:start}.ms-sitebar-inner>nav{grid-column:2}.ms-sitebar-inner>.ms-share-btn,.ms-sitebar-inner>.ms-actions,.ms-sitebar-inner>.ms-actions>*{grid-column:3;justify-self:end}
 .ms-brand{display:inline-flex;align-items:center;min-height:44px;color:var(--ms-navy);text-decoration:none}
 .ms-brand-logo{display:block;width:clamp(116px,12vw,156px);height:auto;object-fit:contain}
 .ms-nav-links{display:flex;align-items:center;gap:4px;margin:0;padding:4px;list-style:none;border-radius:16px;background:#edf1f7}
