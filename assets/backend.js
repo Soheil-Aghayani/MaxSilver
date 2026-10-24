@@ -11,6 +11,8 @@
     off: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>',
     on: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.500 3 3 5-6"/></svg>',
     key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8m-3 3 3 3"/></svg>',
+    out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.500-5.600-6.500-11a6.500 6.500 0 0 1 13 0c0 5.400-6.500 11-6.500 11z"/><circle cx="12" cy="10" r="2.500"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
   };
   function ic(attr, cls, title, svg) { return '<button type="button" class="bk-ic' + (cls ? ' ' + cls : '') + '" ' + attr + ' title="' + esc(title) + '" aria-label="' + esc(title) + '">' + svg + '</button>'; }
@@ -70,8 +72,7 @@
       '<form id="fTwoOff" class="bk-grid"><label>رمز عبور<input name="password" type="password" dir="ltr" required autocomplete="current-password"></label><label>کد شش‌رقمی<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required></label><button class="bk-btn ghost" ' + (S.busy ? 'disabled' : '') + '>خاموش‌کردن</button></form></section>';
   }
   function viewHome() {
-    var u = S.user, h = '<section class="bk-card"><div class="bk-head"><div><h1>' + esc(u.name) + '</h1><p class="bk-sub">' + esc(R.label(u.role)) + ' · <bdi dir="ltr">' + esc(u.email) + '</bdi>' + (u.has_2fa ? ' · ورود دومرحله‌ای فعال' : '') + '</p></div><button class="bk-btn ghost" data-out>خروج</button></div>' + msg() +
-      '<p class="bk-sub">بخش‌هایی که این نقش می‌بیند: ' + u.areas.length + ' مورد</p></section>';
+    var u = S.user, h = '<section class="bk-card"><div class="bk-head"><div><h1>' + esc(u.name) + '</h1><p class="bk-sub">' + esc(R.label(u.role)) + ' · <bdi dir="ltr">' + esc(u.email) + '</bdi>' + (u.has_2fa ? ' · ورود دومرحله‌ای فعال' : '') + '</p></div>' + ic('data-out', '', 'خروج از حساب', IC.out) + '</div>' + msg() + '</section>';
     h += twoCard(u);
     if (can('roleAdmin')) {
       h += '<section class="bk-card"><h2>ساخت حساب</h2><form id="fNew" class="bk-grid"><label>نام<input name="name" required maxlength="120"></label><label>ایمیل<input name="email" type="email" dir="ltr" required></label>' +
@@ -84,7 +85,7 @@
           var edit = can('roleAdmin');
           return '<div class="bk-tr" role="row"><span>' + esc(x.name) + '<small dir="ltr">' + esc(x.email) + '</small></span><span>' +
             (edit ? '<select data-role="' + x.id + '" aria-label="نقش ' + esc(x.name) + '">' + roleOptions(x.role) + '</select>' : esc(R.label(x.role))) + '</span><span>' + (x.last_login_at ? esc(new Date(x.last_login_at).toLocaleDateString('fa-IR')) : '-') + '</span><span>' +
-            (edit ? '<div class="bk-acts">' + ic('data-active="' + x.id + '" data-to="' + (x.is_active ? 0 : 1) + '"', '', x.is_active ? 'غیرفعال‌کردن حساب' : 'فعال‌کردن حساب', x.is_active ? IC.off : IC.on) +
+            (edit ? '<div class="bk-acts">' + (can('territory') && R.hasField && R.hasField(x.role, 'territory') ? '<a class="bk-ic" href="./panel.html#team" title="منطقهٔ فعالیت و ویرایش کامل" aria-label="منطقهٔ فعالیت و ویرایش کامل">' + IC.pin + '</a>' : '') + ic('data-active="' + x.id + '" data-to="' + (x.is_active ? 0 : 1) + '"', '', x.is_active ? 'غیرفعال‌کردن حساب' : 'فعال‌کردن حساب', x.is_active ? IC.off : IC.on) +
               (x.id !== u.id ? ic('data-pw="' + x.id + '"', '', 'رمز تازه', IC.key) + ic('data-del="' + x.id + '"', 'danger' + (S.delFor === x.id ? ' sure' : ''), S.delFor === x.id ? 'تأیید حذف برای همیشه' : 'حذف حساب', IC.trash) : '') + '</div>' : (x.is_active ? '' : 'غیرفعال')) + '</span></div>' +
             (S.pwFor === x.id ? '<form id="fUserPw" class="bk-pwrow" data-id="' + x.id + '"><label>رمز تازه برای ' + esc(x.name) + ' (حداقل ۸ نویسه، با حرف بزرگ و کوچک انگلیسی)<input name="password" type="password" dir="ltr" minlength="8" required autocomplete="new-password" autofocus></label><button class="bk-btn sm">ذخیره</button><button type="button" class="bk-btn ghost sm" data-pwcancel>انصراف</button></form>' : '');
         }).join('') + '</div></section>';
