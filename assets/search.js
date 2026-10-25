@@ -102,8 +102,7 @@
       '.ms-sr-t{font-weight:700;font-size:14px}.ms-sr-s{font-size:12px;color:#5b6b82}.ms-sr-empty{padding:22px 16px;text-align:center;color:#5b6b82;font-size:14px}.ms-sr-ask{display:inline-block;margin-top:10px;padding:8px 14px;border-radius:12px;background:#ffc800;color:#071b36;font-weight:700;text-decoration:none}' +
       '.ms-sr-btn{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 14px;padding:13px 16px;border:1px solid #d5deec;border-radius:16px;background:#fff;color:#5b6b82;font:inherit;font-size:14px;cursor:pointer;text-align:start}' +
       '.ms-sr-btn:hover{border-color:#ffc800;box-shadow:0 4px 14px rgba(7,27,54,.08)}.ms-sr-btn svg{width:20px;height:20px;flex:none}.ms-sr-btn kbd{margin-inline-start:auto;padding:2px 7px;border:1px solid #cfd8e6;border-radius:7px;font:12px inherit}' +
-      '.ms-nav-search button{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:14px;background:transparent;color:inherit;cursor:pointer}.ms-nav-search svg{width:21px;height:21px}' +
-      '@media (max-width:1099px){.ms-nav-links li.ms-nav-search{display:none!important}.ms-sr-btn kbd{display:none}}';
+      '@media (max-width:1099px){.ms-sr-btn kbd{display:none}}';
     document.head.appendChild(st);
     var d = document.createElement('div');
     d.className = 'ms-sr'; d.hidden = true; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'جست‌وجو');
@@ -153,12 +152,6 @@
   function mount() {
     if (!signed()) return;
     build();   // puts the styles in the page first, so the magnifier never shows up unstyled
-    var nav = document.querySelector('.ms-sitebar .ms-nav-links');
-    if (nav && !nav.querySelector('.ms-nav-search')) {
-      var li = document.createElement('li'); li.className = 'ms-nav-search';
-      li.innerHTML = '<button type="button" data-ms-search aria-label="جست‌وجو" title="جست‌وجو (Ctrl+K)">' + ICON + '</button>';
-      nav.appendChild(li);
-    }
     var grid = document.querySelector('main .portal-grid:not(.anon)');
     if (grid && !document.querySelector('.ms-sr-btn') && /index\.html$|\/$/.test(location.pathname)) {
       build();
@@ -167,12 +160,7 @@
       grid.parentNode.insertBefore(b, grid);
     }
   }
-  function watch() {
-    mount();
-    var nav = document.querySelector('.ms-sitebar .ms-nav-links');
-    // the dock redraws its own list now and then; the magnifier is put back each time
-    if (nav && w.MutationObserver) new MutationObserver(function () { if (!nav.querySelector('.ms-nav-search')) mount(); }).observe(nav, { childList: true });
-  }
+  function watch() { mount(); }
   w.addEventListener('ms-role-change', mount);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
   w.MSSearch = { open: open, close: close, norm: norm, search: function (t) { return ensure().then(function () { return search(t); }); } };

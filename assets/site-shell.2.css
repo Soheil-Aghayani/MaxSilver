@@ -214,3 +214,6 @@ html:not(.ms-nav-on) .ms-sitebar nav{visibility:hidden}
 .ms-legal.ms-legal-grid a:hover,.ms-legal.ms-legal-grid a:focus-visible{color:var(--ms-navy,#071b36);text-decoration:underline;text-underline-offset:4px}
 .ms-foot2 .ft-credit{max-width:720px;margin:0 auto;padding-top:12px;border-top:1px solid var(--ms-line,#d7dfeb)}
 @media (max-width:560px){.ms-legal.ms-legal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px}.ms-legal-grid section:last-child{grid-column:1/-1}}
+
+/* the search magnifier lives in the top bar of wide screens only; phones and tablets search from the home page bar, Ctrl+K or "/" */
+@media(max-width:1099px){.ms-nav-links li.ms-nav-search{display:none!important}}

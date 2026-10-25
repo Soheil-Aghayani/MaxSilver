@@ -166,6 +166,8 @@
   // staff (a role with the «assistant» area) see prices and the pre-invoice tools; everyone else gets the public version: no prices,
   // and a purchase request that goes to sales through the same request sheet as the public planner (same checks and same terms)
   var STAFF = (function () { try { var r = localStorage.getItem('ms-role') || '', R = window.MSRoles; return !!r && !!R && R.can(r, 'assistant'); } catch (e) { return false; } })(), PUBLIC = !STAFF;
+  // anybody signed in may use company knowledge and the helper notes; prices and the catalog tools still follow STAFF / PUBLIC above
+  var SIGNED = (function () { try { return !!localStorage.getItem('ms-role'); } catch (e) { return false; } })();
   var REDUCE = false; try { REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* ignore */ }
   var PUBK = 'ms-aria-pub-v1', PUBRET = {}, RECK = 'ms-aria-recent-v1';
   var PRICEQ = /(قیمت|چنده|چند تومان|چقدر|ارزان|گران|بودجه|میلیون|تخفیف|تومان|هزینه|اعتباری|چکی|نقدی|تقسیط|قسط)/;
@@ -194,8 +196,8 @@
   var SUGGEST = PUBLIC ? ['می‌خواهم کافه راه‌اندازی کنم', 'گریل ۶۰ سانت ذغالی', 'سینک ۱۰۰ سانت دو لگن', 'سرخ‌کن گازی ۱۸ لیتری', 'درخواست خرید چطور است؟'] : ['گریل ۶۰ ذغالی چنده؟', 'سینک ۱۰۰ سانت دو لگن دارید؟', 'بویلر ۲۵ لیتر BUNN', 'سرخ‌کن گازی ۱۸ لیتری', 'یخچال زیر گریل ۱۸۰', 'مدل SPIN چیست؟', 'ساعت کاری شرکت', 'فستیوال قهوه کی برگزار می‌شود؟'];
   // starter questions by kind of work: sales people get the catalog and the selling lessons first, everyone else the company and their own duties
   (function () {
-    if (PUBLIC) return;
     var r = (function () { try { return localStorage.getItem('ms-role') || ''; } catch (e) { return ''; } })();
+    if (!r) return;
     var sales = ['visitor', 'account_manager', 'sales_manager'].indexOf(r) >= 0, lead = ['manager', 'ceo'].indexOf(r) >= 0;
     if (sales) SUGGEST = ['گریل ۶۰ ذغالی چنده؟', 'مدل SPIN چیست؟', 'چطور اعتراض مشتری را جواب بدهم؟', 'اسکریپت فروش چیست؟', 'پیش‌نویس پیگیری پیش‌فاکتور', 'فستیوال قهوه کی برگزار می‌شود؟'];
     else if (!lead && r) SUGGEST = ['شرح وظایف نقش من', 'چک‌لیست روزانه', 'ساعت کاری شرکت', 'آدرس دفتر کجاست؟', 'گارانتی چطور است؟', 'پیش‌نویس درخواست خدمات پس از فروش'];
@@ -249,7 +251,7 @@
   function logRead() { try { var a = JSON.parse(localStorage.getItem(LOGK) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
   function logAdd(kind, q, ids) {
     if (!q) return;
-    if (!PUBLIC && STAFF && (kind === 'none' || kind === 'down') && window.MSKnowledge) window.MSKnowledge.report(q, kind);
+    if (SIGNED && (kind === 'none' || kind === 'down') && window.MSKnowledge) window.MSKnowledge.report(q, kind);
     var a = logRead(); a.push({ t: new Date().toISOString(), kind: kind, q: String(q).slice(0, 300), ids: (ids || []).slice(0, 5) });
     try { localStorage.setItem(LOGK, JSON.stringify(a.slice(-300))); } catch (e) { /* ignore */ }
   }
@@ -691,7 +693,31 @@
     if (n) links.push({ href: './planner.html?public=1&from=aria', label: 'مشاهده و ارسال درخواست خرید (' + fmt(n) + ' کالا)' });
     return { text: '**درخواست خرید:** کالاهای مورد نظر را با دکمهٔ «+ افزودن به درخواست خرید» زیر هر کالا (یا بنویسید «اضافه کن») در لیست بگذارید، بعد «مشاهده و ارسال» را بزنید و مشخصات خود را بنویسید. کارشناس فروش با شما تماس می‌گیرد و قیمت و شرایط را همان‌جا اعلام می‌کند. قیمت و پرداخت اینجا انجام نمی‌شود.' + (n ? '\n\nاکنون ' + fmt(n) + ' کالا در درخواست شما هست.' : ''), links: links };
   }
-  function skills(q) { var s = norm(q); if (PUBLIC) return addToLast(s) || starter(s) || spaceFit(s) || pageGuide(s) || reqHelp(s); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || starter(s) || spaceFit(s) || quote(s) || pageGuide(s); }
+  // «can I cook X?»: the question is turned into the equipment that does the job, then the catalog is searched. How long, how hot, or what may share a basket is NOT in our sources, so Arya says so.
+  var FOOD = [[/پیتزا/, 'پیتزا', 'فر پیتزا'], [/پاستا/, 'پاستا', 'پاستاپز'], [/سیب ?زمینی|سوخاری|ناگت|پیاز داغ|بادمجان|فلافل/, 'غذای سرخ‌کردنی', 'سرخ کن'], [/کباب|استیک|گریل|همبرگر|برگر/, 'کباب و گریل', 'گریل'], [/آب ?پرتقال|آب ?میوه/, 'آب‌میوه', 'آب پرتقال گیر']];
+  function foodSkill(s) {
+    if (!/(می ?تون|می ?توان|میشه|می ?شود|بپز|درست کن|سرخ کن|آماده|طول می ?کش|چند دقیقه|چه دستگاه|چی لازم|چه وسیله|بذار)/.test(s)) return null;
+    for (var i = 0; i < FOOD.length; i++) {
+      if (!FOOD[i][0].test(s)) continue;
+      var hits = retrieve(FOOD[i][2], 5); if (!hits.length) return null;
+      var timing = /(طول می ?کش|چند دقیقه|چند ساعت|دما|چند درجه|زمان)/.test(s), mix = /(کنار|با هم|هم ?زمان|همراه|هم بذار|باهاش)/.test(s);
+      var note = 'برای ' + FOOD[i][1] + ' دستگاه‌های زیر مناسب‌اند. ' + (timing || mix ? 'زمان، دما و اینکه چه موادی را می‌شود با هم پخت در منابع من نیست و حدس نمی‌زنم؛ مرجع، دفترچهٔ همان دستگاه یا خدمات پس از فروش است [نیاز به تأیید].' : 'مشخصات هر دستگاه را از کارت‌ها ببینید.');
+      return { ids: hits.map(function (h) { return h.d.it.id; }), note: note, text: '', cards: true };
+    }
+    return null;
+  }
+  // what Arya is not for: say so plainly and point to where the answer lives, instead of a bare «no answer»
+  function scopeNote(s) {
+    function nav(id) { var n = NAV.filter(function (x) { return x.id === id; })[0]; return n && navAllowed(n) ? { href: n.href, label: n.label } : null; }
+    var l = [];
+    if (/(دستور ?پخت|طرز تهیه|رسپی|قرمه ?سبزی|خورش|خوشمزه|طعم|مزه|خوب می ?شه)/.test(s)) return { text: '**دستور پخت و سلیقهٔ طعم جزو دانسته‌های من نیست.** من دربارهٔ تجهیزات، شرکت، نمایشگاه‌ها و آموزش‌های مکث‌سیلور جواب می‌دهم. اگر بنویسید چه غذایی و در چه حجمی می‌پزید، دستگاه مناسبش را پیدا می‌کنم.', links: [], chips: [{ label: 'دستگاه برای رستوران', q: 'می‌خواهم رستوران راه‌اندازی کنم' }] };
+    if (/(چرا|چه دلیل|به نظرت).*(فروش)|فروش.*(زیاد|کم|بیشتر|کمتر|افت|رشد)|پر ?فروش|کم ?فروش|بیشترین فروش|کمترین فروش/.test(s)) { l = [nav('analysis'), nav('dashboard')].filter(Boolean); return { text: '**تحلیل فروش و دلیل کم یا زیادشدنش را حدس نمی‌زنم.** این کار به داده و بررسی انسانی نیاز دارد' + (l.length ? '؛ گزارش‌ها را در صفحه‌های زیر ببینید.' : ' و نقش شما به گزارش‌های فروش دسترسی ندارد؛ از مدیر فروش بپرسید.'), links: l, chips: null }; }
+    if (/(استخدام|مصاحبه|رزومه|جذب نیرو)/.test(s)) return { text: '**فرایند استخدام را منابع انسانی اجرا می‌کند.** اگر نقش شما اجازه دارد، توضیحش را در «روش اجرایی» همین دستیار می‌بینید (بنویسید «روش اجرایی منابع انسانی»)؛ وگرنه از «گفت‌وگوها» از منابع انسانی بپرسید.', links: [{ href: './panel.html#tickets', label: 'گفت‌وگوها' }], chips: [{ label: 'روش اجرایی منابع انسانی', q: 'روش اجرایی منابع انسانی' }] };
+    if (/(تعمیر|خراب|روشن می ?شه|کار نمی ?کنه|عیب|تعویض|تویض)|سرویس (کنم|کردن|دستگاه)|هر چند وقت.*سرویس/.test(s)) return { text: '**عیب‌یابی، تعمیر و زمان سرویس هر دستگاه را من تأیید نمی‌کنم** (خودتعمیری ممکن است ایمنی و گارانتی را به خطر بیندازد). مدل دستگاه و شرح مشکل را از «گفت‌وگوها» برای خدمات پس از فروش بفرستید؛ من پیش‌نویس درخواستش را می‌نویسم.', links: [{ href: './panel.html#tickets', label: 'گفت‌وگوها' }], chips: [{ label: 'پیش‌نویس درخواست خدمات', q: 'پیش‌نویس درخواست خدمات پس از فروش' }] };
+    if (/(بر اساس چه|چه مبنایی|چرا .*(مناسب|پیشنهاد)|مناسبه)/.test(s)) return { text: '**پیشنهادهای من فقط از داده‌های کاتالوگ می‌آید:** گروه و نام کالا، ابعاد، ظرفیت و مشخصات ثبت‌شده، و نوع کسب‌وکار و اندازه‌ای که شما بنویسید (مثلاً کافه کوچک). نیاز واقعی مشتری را کارشناس فروش بررسی می‌کند؛ من جای او تصمیم نمی‌گیرم.', links: [], chips: [{ label: 'راه‌اندازی کافه', q: 'می‌خواهم کافه راه‌اندازی کنم' }] };
+    return null;
+  }
+  function skills(q) { var s = norm(q); if (PUBLIC) return addToLast(s) || (SIGNED && drafts(s)) || starter(s) || spaceFit(s) || foodSkill(s) || pageGuide(s) || reqHelp(s); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || starter(s) || spaceFit(s) || quote(s) || foodSkill(s) || pageGuide(s); }
   // small follow-up buttons under an answer
   function extras(m) {
     var h = '';
@@ -715,10 +741,13 @@
   function noteOf(m) { return m.nonote || m.note || ('نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:'); }
   function resolve(q, prevQ) {
     var talk = smallTalk(q); if (talk) return { ids: [], text: talk, state: 'done' };
-    var kb = !PUBLIC && STAFF && window.MSKnowledge ? window.MSKnowledge.answer(q, prevQ) : null;   // company, fairs and academy texts (role-limited); no model
+    var kb = SIGNED && window.MSKnowledge ? window.MSKnowledge.answer(q, prevQ) : null;   // company, fairs and academy texts (role-limited); no model
     var kbOut = kb ? { ids: [], text: kb.text, links: kb.links, chips: kb.chips, state: 'done', kb: kb.title } : null;
     var sk = skills(q);
     if (!sk && kbOut && window.MSKnowledge.intent(q)) return kbOut;   // a question about the company or the training is answered before the catalog is searched
+    var sn0 = !sk && SIGNED ? scopeNote(norm(q)) : null;   // repairs, recipes, sales analysis...: say what Arya is not for before a stray catalog word answers instead
+    if (sn0) return { ids: [], text: sn0.text, links: sn0.links || [], chips: sn0.chips || null, state: 'done', scope: true };
+    if (sk && sk.cards) return { ids: sk.ids, note: sk.note, main: true, state: 'cards' };
     if (sk) return { ids: sk.ids || [], text: sk.text, links: sk.links || [], cart: sk.cart || null, chips: sk.chips || null, flow: !!sk.flow, flowDone: !!sk.flowDone, state: 'done' };
     var s2 = smart2(q);
     if (s2) return { ids: s2.ids, text: s2.text, note: s2.note, state: s2.text ? 'done' : s2.none ? 'none' : 'cards', nonote: s2.none ? s2.note : '' };
@@ -730,6 +759,8 @@
     if (!hits.length) {
       if (kbOut && kb.strong) return kbOut;   // the catalog has nothing: company knowledge may still answer, but only when every word of the question matched
       if (PUBLIC && PRICEQ.test(norm(q))) return { ids: [], text: 'قیمت و شرایط پرداخت را فقط کارشناس فروش مکث‌سیلور در تماس اعلام می‌کند. اگر کالای مورد نظرتان را بنویسید، پیدایش می‌کنم و به درخواست خرید شما اضافه می‌کنم.', state: 'done' };
+      var sn = SIGNED ? scopeNote(norm(q)) : null;
+      if (sn) return { ids: [], text: sn.text, links: sn.links || [], chips: sn.chips || null, state: 'done', scope: true };
       return null;
     }
     var bot = { q: q, main: true, ids: hits.map(function (h) { return h.d.it.id; }), state: 'cards' };
@@ -774,6 +805,7 @@
     }
     if (!r) { r = { q: text, ids: [], state: 'none' }; logAdd('none', text, []); }
     else if (r.state === 'none' && r.main) logAdd('none', text, []);
+    else if (r.scope) logAdd('none', text, []);   // outside Arya's job: still worth knowing what people ask
     if (r.main && relayUrl() && r.ids.length && r.state === 'cards') {
       var bot = r, bi = S.msgs.length, items = r.ids.map(function (id) { return byId[id]; }).filter(Boolean);
       bot.role = 'bot'; S.msgs.push(bot);

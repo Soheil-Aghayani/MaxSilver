@@ -399,26 +399,29 @@
   // The program's own Excel template: one row per customer, optional sales columns named «فروش 1403».
   var TPL_ALIASES = {
     code: ['کد مشتری'], name: ['نام مشتری', 'نام', 'عنوان'], group: ['گروه (همکار مسئول)', 'گروه', 'گروه مشتری', 'همکار مسئول'], city: ['شهر'], province: ['استان'],
-    phone: ['تلفن', 'موبایل', 'شماره تماس'], contact: ['شخص تماس', 'نام تماس'], address: ['نشانی', 'آدرس'], notes: ['یادداشت', 'توضیحات']
+    phone: ['تلفن', 'موبایل', 'شماره تماس'], contact: ['شخص تماس', 'نام تماس'], address: ['نشانی', 'آدرس'], postal: ['کد پستی'], notes: ['یادداشت', 'توضیحات']
   };
   var TPL_HEAD = [['code', 'کد مشتری'], ['name', 'نام مشتری'], ['group', 'گروه (همکار مسئول)'], ['city', 'شهر'], ['province', 'استان'], ['phone', 'تلفن'], ['contact', 'شخص تماس'], ['address', 'نشانی'], ['notes', 'یادداشت']];
   function parseTemplate(matrix) {
     for (var r = 0; r < Math.min(matrix.length, 10); r++) {
-      var row = matrix[r] || [], cols = {}, sales = {}, found = false;
+      var row = matrix[r] || [], cols = {}, sales = {}, found = false, altCode;
       row.forEach(function (h, i) {
         var k = norm(h); if (!k) return;
         if (k === norm('کد مشتری')) { cols.code = i; found = true; return; }
+        if (k === norm('کد')) { altCode = i; return; }
         var m = /^فروش\s*(\d{4})\s*(?:\(.*\))?$/.exec(k);
         if (m) { sales[m[1]] = i; return; }
         Object.keys(TPL_ALIASES).forEach(function (f) { if (f !== 'code' && cols[f] === undefined && TPL_ALIASES[f].map(norm).indexOf(k) >= 0) cols[f] = i; });
       });
+      // a plain «کد» column counts only together with a phone or address column: that is the accounting program's customer list, not a sales report
+      if (!found && altCode !== undefined && (cols.phone !== undefined || cols.address !== undefined)) { cols.code = altCode; found = true; }
       if (!found || cols.name === undefined) continue;
       var out = [], skipped = 0, val = function (rw, i) { var v = rw[i]; return v == null ? '' : String(v).trim(); };
       for (var i = r + 1; i < matrix.length; i++) {
         var rw = matrix[i] || [], code = latinDigits(val(rw, cols.code)).replace(/\.0+$/, '');
         if (!code || /^نمونه/.test(code)) { if (rw.some(function (x) { return x != null && String(x).trim(); })) skipped++; continue; }
         var rec = { code: code, sales: {} };
-        Object.keys(cols).forEach(function (f) { if (f !== 'code') rec[f] = f === 'phone' ? latinDigits(val(rw, cols[f])).replace(/\D/g, '') : fixLetters(val(rw, cols[f])); });
+        Object.keys(cols).forEach(function (f) { if (f !== 'code') rec[f] = (f === 'phone' || f === 'postal') ? latinDigits(val(rw, cols[f])).replace(/\D/g, '') : fixLetters(val(rw, cols[f])); });
         Object.keys(sales).forEach(function (y) { var n = Number(latinDigits(val(rw, sales[y])).replace(/[٬,\s]/g, '')); if (isFinite(n) && val(rw, sales[y]) !== '') rec.sales[y] = Math.round(n * 10); });
         out.push(rec);
       }
@@ -570,7 +573,7 @@
           r.tpl.rows.forEach(function (rec) {
             var o = slot(rec.code);
             Object.keys(rec.sales).forEach(function (y) { o.sales[y] = rec.sales[y]; });
-            ['name', 'group', 'city', 'province', 'phone', 'contact', 'address', 'notes'].forEach(function (k) { if (rec[k]) o.tpl[k] = rec[k]; });
+            ['name', 'group', 'city', 'province', 'phone', 'contact', 'address', 'postal', 'notes'].forEach(function (k) { if (rec[k]) o.tpl[k] = rec[k]; });
           });
           return;
         }
@@ -592,7 +595,7 @@
       var rows = Object.keys(by).map(function (k) {
         var o = by[k], t = parseTitle(o._name || o.tpl.name || ''), city = o.tpl.city || t.city, prov = o.tpl.province || provinceOf(city);
         return { code: k, name: o.tpl.name || t.name, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales,
-          phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: o.tpl.address || '', notes: o.tpl.notes || '' };
+          phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: ((o.tpl.address || '') + (o.tpl.postal ? (o.tpl.address ? '، ' : '') + 'کد پستی ' + o.tpl.postal : '')).slice(0, 300), notes: o.tpl.notes || '' };
       });
       S.imp = { rows: rows, files: info, skipped: skipped, fresh: rows.filter(function (r) { return !have[r.code]; }).length, blank: rows.filter(function (r) { return !r.group; }).length,
         withPhone: rows.filter(function (r) { return r.phone; }).length, withAddress: rows.filter(function (r) { return r.address; }).length,
@@ -609,6 +612,7 @@
     im.rows.forEach(function (r) {
       var doc = { code: r.code, name: r.name, city: r.city, province: r.province, region: r.region, group: r.group, sales: r.sales, importedAt: now, updatedAt: now };
       ['phone', 'contact', 'address', 'notes'].forEach(function (k) { if (r[k]) doc[k] = r[k]; });
+      ['name', 'city', 'province', 'region', 'group'].forEach(function (k) { if (!doc[k]) delete doc[k]; });   // an empty cell in the file never erases what is already stored
       var go = groupOwner[r.group];
       if (go) { doc.ownerUid = go.ownerUid; doc.ownerName = go.ownerName; }
       ops.push([db.collection('customers').doc(r.code), doc]);

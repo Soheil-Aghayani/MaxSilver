@@ -35,6 +35,7 @@
     academy: svg('<path d="M3 9l9-5 9 5-9 5z"/><path d="M7 11.500V16c0 1 2.200 3 5 3s5-2 5-3v-4.500M21 9v6"/>'),
     install: svg('<path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>'),
     contact: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.7A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/>'),
+    search: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>'),
     star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>'
   };
   // area: roles.js area required (none: any signed-in person). page: file name that makes it «current».
@@ -149,6 +150,8 @@
       html = link(byId.home, cur === 'home');
       pinsFor(list).slice(0, maxPins()).forEach(function (id) { html += link(byId[id], cur === id); });
       html += link(byId.panel, cur === 'panel');
+      // the search magnifier is part of the bar from the first draw, so the sliding pill is measured with it in place (wide screens only; see site-shell.2.css)
+      html += '<li class="ms-nav-search"><a href="#" data-ms-search aria-label="جست‌وجو" data-tip="جست‌وجو (Ctrl+K)">' + ICON.search + '</a></li>';
     }
     nav.innerHTML = html;
     document.documentElement.classList.add('ms-nav-on');   // the menu is shown only once it holds the right items for this person
