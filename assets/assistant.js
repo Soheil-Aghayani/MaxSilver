@@ -257,7 +257,7 @@
   }
   function logExport() {
     var a = logRead(); if (!a.length) return;
-    var blob = new Blob([JSON.stringify({ app: 'maxi', exported: new Date().toISOString(), note: 'پرسش‌های بی‌پاسخ و بازخورد؛ برای آموزش آریا', items: a }, null, 1)], { type: 'application/json' });
+    var blob = new Blob([JSON.stringify({ app: 'maxi', exported: new Date().toISOString(), note: 'پرسش‌های بی‌پاسخ و بازخورد؛ برای آموزش مکثی', items: a }, null, 1)], { type: 'application/json' });
     var url = URL.createObjectURL(blob), l = document.createElement('a'); l.href = url; l.download = 'maxi-questions-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
   }
   function fbHtml(m, i) {
@@ -269,7 +269,7 @@
   function botHtml(m, i) {
     var hits = hitsOf(m), body;
     if (m.state === 'typing') body = '<p>' + esc(m.typed || '') + '<span class="as-caret"></span></p>';
-    else if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) : 'در منابع من پاسخی برای این پرسش نیست.') + '</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید یا بپرسید «چطور …»؛ آریا حدس نمی‌زند.</p>';
+    else if (m.state === 'none') body = '<p>' + (m.nonote ? esc(m.nonote) : 'در منابع من پاسخی برای این پرسش نیست.') + '</p><p class="as-hint">نام کالا، اندازه یا کد را بنویسید یا بپرسید «چطور …»؛ مکثی حدس نمی‌زند.</p>';
     else if (m.state === 'wait') body = '<span class="as-dots" aria-label="در حال نوشتن"><i></i><i></i><i></i></span>';
     else if (m.text) body = md(m.text) + (m.state === 'stream' ? '<span class="as-caret"></span>' : '');
     else body = '<p>' + (m.note ? esc(m.note) : 'نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:') + '</p>';
@@ -294,14 +294,14 @@
   function view() {
     if (S.error) return '<p class="as-err" role="alert">' + esc(S.error) + '</p>';
     var empty = !S.msgs.length;
-    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">آریا</span></h1><span class="as-tools">' + (STAFF && logRead().length ? '<button type="button" class="as-new as-qlog" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش آریا">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></span></header>' +
-      '<div class="as-scroll" id="asScroll" role="log" aria-live="polite" aria-relevant="additions text" aria-label="گفت‌وگو با آریا" aria-busy="' + !!S.busy + '">' + (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من آریا هستم! چه کمکی از دستم برمی‌آید؟</h2><p>' + (PUBLIC ? 'دربارهٔ کالاها بپرسید یا بگویید چه کسب‌وکاری می‌خواهید راه بیندازید تا فهرست تجهیزات را پیشنهاد بدهم و درخواست خرید شما را آماده کنم. قیمت را کارشناس فروش در تماس اعلام می‌کند.' : 'دربارهٔ کالاها، قیمت‌ها، بخش‌های سایت و پیش‌فاکتور بپرسید.') + ' اگر ندانم همین را می‌گویم و حدس نمی‌زنم.' +
+    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکثی</span></h1><span class="as-tools">' + (STAFF && logRead().length ? '<button type="button" class="as-new as-qlog" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش مکثی">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></span></header>' +
+      '<div class="as-scroll" id="asScroll" role="log" aria-live="polite" aria-relevant="additions text" aria-label="گفت‌وگو با مکثی" aria-busy="' + !!S.busy + '">' + (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من مکثی هستم! چه کمکی از دستم برمی‌آید؟</h2><p>' + (PUBLIC ? 'دربارهٔ کالاها بپرسید یا بگویید چه کسب‌وکاری می‌خواهید راه بیندازید تا فهرست تجهیزات را پیشنهاد بدهم و درخواست خرید شما را آماده کنم. قیمت را کارشناس فروش در تماس اعلام می‌کند.' : 'دربارهٔ کالاها، قیمت‌ها، بخش‌های سایت و پیش‌فاکتور بپرسید.') + ' اگر ندانم همین را می‌گویم و حدس نمی‌زنم.' +
         (relayUrl() || PUBLIC ? '' : '<br><span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهم؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p>' +
         '<div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' + recentsHtml() + '</div>' :
         '<div class="as-log" id="asLog">' + S.msgs.map(function (m, i) { return m.role === 'user' ? userHtml(m, i) : botHtml(m, i); }).join('') + '</div>') + '</div>' + (PUBLIC && pubRead().length ? '<div class="as-reqbar" role="status"><span>درخواست خرید شما: ' + fmt(pubRead().length) + ' کالا</span><a href="./planner.html?public=1&from=aria">مشاهده و ارسال</a></div>' : '') +
-      '<form class="as-form' + (empty ? ' empty' : '') + '" id="asForm" aria-label="ارسال پیام به آریا"><div class="as-box"><textarea id="asQ" rows="1" maxlength="600" enterkeyhint="send" placeholder="' + (S.ready ? 'پیام خود را بنویسید…' : 'در حال آماده‌کردن کاتالوگ…') + '" aria-label="پیام"' + (S.ready ? '' : ' disabled') + '></textarea>' +
+      '<form class="as-form' + (empty ? ' empty' : '') + '" id="asForm" aria-label="ارسال پیام به مکثی"><div class="as-box"><textarea id="asQ" rows="1" maxlength="600" enterkeyhint="send" placeholder="' + (S.ready ? 'پیام خود را بنویسید…' : 'در حال آماده‌کردن کاتالوگ…') + '" aria-label="پیام"' + (S.ready ? '' : ' disabled') + '></textarea>' +
       (SR ? '<button type="button" class="as-mic' + (S.listening ? ' on' : '') + '" id="asMic" aria-label="گفتن پیام با صدا" title="گفتن پیام با صدا"' + (S.ready ? '' : ' disabled') + '>' + ICON.mic + '</button>' : '') + '<button type="submit" class="as-send" aria-label="ارسال"' + (S.ready && !S.busy ? '' : ' disabled') + '>' + ICON.send + '</button></div>' +
-      '<p class="as-fine">' + (PUBLIC ? 'آریا ممکن است اشتباه کند؛ قیمت و شرایط را کارشناس فروش در تماس اعلام می‌کند.' : 'آریا ممکن است اشتباه کند؛ کد، قیمت و اندازه را پیش از پیش‌فاکتور در کاتالوگ ببینید.') + '</p></form>';
+      '<p class="as-fine">' + (PUBLIC ? 'مکثی ممکن است اشتباه کند؛ قیمت و شرایط را کارشناس فروش در تماس اعلام می‌کند.' : 'مکثی ممکن است اشتباه کند؛ کد، قیمت و اندازه را پیش از پیش‌فاکتور در کاتالوگ ببینید.') + '</p></form>';
   }
   function grow(q) { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 168) + 'px'; }
   function save() { try { sessionStorage.setItem(KEY, JSON.stringify(S.msgs.slice(-30).map(function (m) { return m.state === 'wait' || m.state === 'stream' || m.state === 'typing' ? Object.assign({}, m, { state: m.text ? 'done' : 'cards' }) : m; }))); } catch (e) { /* ignore */ } }
@@ -360,7 +360,7 @@
   var TALK = [
     [/^(سلام|درود|وقت بخیر|صبح بخیر|عصر بخیر|شب بخیر|hi|hello)[\s!.؟?]*$/i, 'سلام، خوش آمدید. کدام کالا را لازم دارید؟ نام، اندازه یا کد را بنویسید، مثلاً «گریل ۶۰ ذغالی».'],
     [/^(ممنون|مرسی|سپاس|تشکر|دستت درد نکنه|متشکرم|thanks)[\s!.]*$/i, 'خواهش می‌کنم. اگر کالای دیگری لازم بود بنویسید.'],
-    [/(تو کی|شما کی|کی هستی|چه کار(ی)? (می‌?کنی|می‌?توانی|بلدی)|چیکار(ا)? (می‌?کنی|بلدی)|چه کمکی)/, 'من آریا، دستیار هوشمند مکث‌سیلور هستم. فعلاً کالا، کد، قیمت نقدی و اعتباری (چکی) و ابعاد را پیدا می‌کنم، دو کالا را مقایسه می‌کنم، کالاهای مشابه برندهای دیگر را (احتمالی) پیشنهاد می‌دهم و معنی واژه‌های کاتالوگ را می‌گویم. کارهای بیشتر در راه است؛ آنچه در منابعم نباشد را حدس نمی‌زنم.'],
+    [/(تو کی|شما کی|کی هستی|چه کار(ی)? (می‌?کنی|می‌?توانی|بلدی)|چیکار(ا)? (می‌?کنی|بلدی)|چه کمکی)/, 'من مکثی، دستیار هوشمند مکث‌سیلور هستم. فعلاً کالا، کد، قیمت نقدی و اعتباری (چکی) و ابعاد را پیدا می‌کنم، دو کالا را مقایسه می‌کنم، کالاهای مشابه برندهای دیگر را (احتمالی) پیشنهاد می‌دهم و معنی واژه‌های کاتالوگ را می‌گویم. کارهای بیشتر در راه است؛ آنچه در منابعم نباشد را حدس نمی‌زنم.'],
     [/^(خداحافظ|فعلا|بای|bye)[\s!.]*$/i, 'موفق باشید.']
   ];
   function smallTalk(q) { var s = norm(q).trim(); for (var i = 0; i < TALK.length; i++) if (TALK[i][0].test(s)) return TALK[i][1]; return ''; }

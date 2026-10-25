@@ -18,7 +18,7 @@
   var WORDS = {
     customers: 'مشتری مشتریان بانک اطلاعات مشتری', catalog: 'کاتالوگ محصول محصولات دستگاه', invoices: 'پیش فاکتور فاکتور', prices: 'قیمت قیمت‌ها لیست قیمت', warehouse: 'انبار موجودی',
     academy: 'آموزش درس کلاس دوره اسکریپت فروش', install: 'نصب اپ اپلیکیشن برنامه اندروید موبایل', tickets: 'گفت‌وگو چت پیام', crm: 'درخواست خرید', fairs: 'نمایشگاه فستیوال',
-    events: 'مناسبت رویداد', process: 'نقشه فروش فرایند', panel: 'حساب پروفایل رمز عبور', assistant: 'آریا دستیار هوش مصنوعی', backup: 'پشتیبان', banks: 'حساب بانکی شبا'
+    events: 'مناسبت رویداد', process: 'نقشه فروش فرایند', panel: 'حساب پروفایل رمز عبور', assistant: 'مکثی دستیار هوش مصنوعی', backup: 'پشتیبان', banks: 'حساب بانکی شبا'
   };
 
   var items = null, loading = null, ui = null, active = -1, shown = [];
@@ -131,7 +131,7 @@
     shown = search(t); active = -1;
     ui.list.innerHTML = shown.length ? shown.map(function (it) {
       return '<li><a href="' + esc(it.href) + '"><span class="ms-sr-k">' + esc(it.kind) + '</span><span class="ms-sr-t">' + esc(it.title) + '</span>' + (it.sub ? '<span class="ms-sr-s">' + esc(it.sub) + '</span>' : '<span class="ms-sr-s"></span>') + '</a></li>';
-    }).join('') : '<li class="ms-sr-empty">چیزی پیدا نشد. با نوشتهٔ کوتاه‌تر یا کد کالا امتحان کنید.<br><a class="ms-sr-ask" href="./assistant.html?q=' + encodeURIComponent(t.trim()) + '">از آریا بپرسید: «' + esc(t.trim().slice(0, 60)) + '»</a></li>';
+    }).join('') : '<li class="ms-sr-empty">چیزی پیدا نشد. با نوشتهٔ کوتاه‌تر یا کد کالا امتحان کنید.<br><a class="ms-sr-ask" href="./assistant.html?q=' + encodeURIComponent(t.trim()) + '">از مکثی بپرسید: «' + esc(t.trim().slice(0, 60)) + '»</a></li>';
   }
   function open() {
     if (!signed()) return;

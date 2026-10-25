@@ -56,7 +56,7 @@
     { id: 'install', href: './install.html', label: 'نصب برنامه', page: 'install.html' },
     { id: 'features', href: './features.html', label: 'ویژگی‌ها', area: 'features', page: 'features.html' },
     { id: 'permissions', href: './permissions.html', label: 'دسترسی‌ها', area: 'roleAdmin', page: 'permissions.html' },
-    { id: 'assistant', href: './assistant.html', label: 'آریا', area: 'assistant', page: 'assistant.html' },
+    { id: 'assistant', href: './assistant.html', label: 'مکثی', area: 'assistant', page: 'assistant.html' },
     { id: 'roadmap', href: './roadmap.html', label: 'نقشهٔ راه', area: 'roadmap', page: 'roadmap.html' },
     { id: 'backup', href: './backup.html', label: 'نسخهٔ پشتیبان', area: 'backup', page: 'backup.html' },
     { id: 'competitors', href: './competitors.html', label: 'تحلیل رقبا', area: 'competitors', page: 'competitors.html' },

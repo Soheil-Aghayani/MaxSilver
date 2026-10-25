@@ -16,8 +16,8 @@
 
   var box = document.createElement('details');
   box.className = 'as-adm';
-  box.innerHTML = '<summary>مدیریت آریا</summary><div class="as-adm-in">' +
-    '<section><h3>سؤال‌هایی که آریا جواب نداد</h3><p class="as-adm-note">بدون نام؛ فقط نقش پرسنده. بر اساس تعداد تکرار مرتب شده‌اند.</p>' +
+  box.innerHTML = '<summary>مدیریت مکثی</summary><div class="as-adm-in">' +
+    '<section><h3>سؤال‌هایی که مکثی جواب نداد</h3><p class="as-adm-note">بدون نام؛ فقط نقش پرسنده. بر اساس تعداد تکرار مرتب شده‌اند.</p>' +
     '<div class="as-adm-row"><button type="button" data-qs>نمایش</button>' + (isManager ? '<button type="button" data-qclear class="warn">پاک‌کردن فهرست</button>' : '') + '</div><ol class="as-adm-list" data-qlist></ol></section>' +
     (isManager ? '<section><h3>وارد کردن متن‌های شرکت</h3><p class="as-adm-note">فایل <b>arya_knowledge.json</b> را انتخاب کنید. هر متن فقط برای نقش‌هایی که در آن نوشته شده دیده می‌شود. وارد کردن دوباره، متن‌های هم‌نام را جایگزین می‌کند.</p>' +
       '<div class="as-adm-row"><input type="file" accept="application/json,.json" data-kfile><button type="button" data-kgo>وارد کردن</button></div><p class="as-adm-msg" data-kmsg role="status"></p></section>' : '') +

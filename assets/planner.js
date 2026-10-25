@@ -220,8 +220,8 @@
   }
   function stepRequest() {
     var lines = requestLines(), c = conceptOf(S.concept) || { t: '' };
-    return (ARIA ? '<p class="pl-note"><a href="./assistant.html">بازگشت به آریا</a></p>' : progress(2 + qList().length, 'اطلاعات شما')) + '<h1>ارسال درخواست به کارشناس</h1><p class="pl-lead">اطلاعات خود را بنویسید تا کارشناس فروش مکث‌سیلور با شما تماس بگیرد. در این برگه قیمتی نیست؛ قیمت و شرایط را کارشناس فروش اعلام می‌کند.</p>' +
-      '<section class="pl-req"><h3>' + (ARIA ? 'لیست انتخاب‌شدهٔ شما از آریا' : 'طرح شما: ' + esc(c.t) + ' ' + SIZES[S.size].t) + '</h3><ul class="pl-rl">' + lines.map(function (l) { return '<li><b>' + esc(l.name) + '</b><span>' + (l.brand ? esc(l.brand) + SEP : '') + faInt.format(l.qty) + ' عدد</span></li>'; }).join('') + '</ul></section>' +
+    return (ARIA ? '<p class="pl-note"><a href="./assistant.html">بازگشت به مکثی</a></p>' : progress(2 + qList().length, 'اطلاعات شما')) + '<h1>ارسال درخواست به کارشناس</h1><p class="pl-lead">اطلاعات خود را بنویسید تا کارشناس فروش مکث‌سیلور با شما تماس بگیرد. در این برگه قیمتی نیست؛ قیمت و شرایط را کارشناس فروش اعلام می‌کند.</p>' +
+      '<section class="pl-req"><h3>' + (ARIA ? 'لیست انتخاب‌شدهٔ شما از مکثی' : 'طرح شما: ' + esc(c.t) + ' ' + SIZES[S.size].t) + '</h3><ul class="pl-rl">' + lines.map(function (l) { return '<li><b>' + esc(l.name) + '</b><span>' + (l.brand ? esc(l.brand) + SEP : '') + faInt.format(l.qty) + ' عدد</span></li>'; }).join('') + '</ul></section>' +
       '<form class="pl-form" novalidate autocomplete="on">' + (ERR_ALL ? '<p class="pl-err" role="alert">' + esc(ERR_ALL) + '</p>' : '') +
       '<h3>مشخصات خریدار</h3><div class="pl-grid">' +
       field('name', 'نام و نام خانوادگی', { ac: 'name', wide: true, max: 80 }) + field('phone', 'شمارهٔ موبایل', { ac: 'tel-national', mode: 'numeric', dir: 'ltr', max: 14 }) + field('nid', 'کد ملی', { mode: 'numeric', dir: 'ltr', max: 10 }) +
@@ -337,9 +337,9 @@
     var r = window.MSRequests.check(formData());
     ERR = fixErr(r.errors); ERR_ALL = r.ok ? '' : 'چند مورد را اصلاح کنید.';
     if (!r.ok) { render(); var bad = root.querySelector('.pl-f.bad input, .pl-f.bad select'); if (bad) bad.focus(); return; }
-    var c = conceptOf(S.concept) || { t: 'آریا', serve: [] }, serve = S.serve.map(function (sid) { var s = c.serve.filter(function (x) { return x.id === sid; })[0]; return s ? s.t : ''; }).filter(Boolean).join('، ').slice(0, 160);
+    var c = conceptOf(S.concept) || { t: 'مکثی', serve: [] }, serve = S.serve.map(function (sid) { var s = c.serve.filter(function (x) { return x.id === sid; })[0]; return s ? s.t : ''; }).filter(Boolean).join('، ').slice(0, 160);
     r.customer.address = ('استان ' + r.province + '، ' + r.customer.address).slice(0, 300);
-    var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: ARIA ? 'لیست آریا' : c.t, size: ARIA ? '' : SIZES[S.size].t, serve: serve, province: r.province }, note: r.note, terms: r.terms, src: 'planner' };
+    var payload = { customer: r.customer, receiver: r.receiver, lines: lines, plan: { concept: ARIA ? 'لیست مکثی' : c.t, size: ARIA ? '' : SIZES[S.size].t, serve: serve, province: r.province }, note: r.note, terms: r.terms, src: 'planner' };
     REQ_BUSY = true; render();
     window.MSRequests.submit(payload).then(function (code) {
       REQ_BUSY = false; OK = {}; DONE = { code: code, customer: r.customer, lines: lines }; F = { self: true };
