@@ -103,7 +103,7 @@
       '.ms-sr-btn{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 14px;padding:13px 16px;border:1px solid #d5deec;border-radius:16px;background:#fff;color:#5b6b82;font:inherit;font-size:14px;cursor:pointer;text-align:start}' +
       '.ms-sr-btn:hover{border-color:#ffc800;box-shadow:0 4px 14px rgba(7,27,54,.08)}.ms-sr-btn svg{width:20px;height:20px;flex:none}.ms-sr-btn kbd{margin-inline-start:auto;padding:2px 7px;border:1px solid #cfd8e6;border-radius:7px;font:12px inherit}' +
       '.ms-nav-search button{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:14px;background:transparent;color:inherit;cursor:pointer}.ms-nav-search svg{width:21px;height:21px}' +
-      '@media (max-width:1099px){.ms-nav-search{display:none}.ms-sr-btn kbd{display:none}}';
+      '@media (max-width:1099px){.ms-nav-links li.ms-nav-search{display:none!important}.ms-sr-btn kbd{display:none}}';
     document.head.appendChild(st);
     var d = document.createElement('div');
     d.className = 'ms-sr'; d.hidden = true; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'جست‌وجو');
@@ -152,6 +152,7 @@
   // the entry points: a bar above the sections on the home page, and a magnifier in the wide-screen top bar
   function mount() {
     if (!signed()) return;
+    build();   // puts the styles in the page first, so the magnifier never shows up unstyled
     var nav = document.querySelector('.ms-sitebar .ms-nav-links');
     if (nav && !nav.querySelector('.ms-nav-search')) {
       var li = document.createElement('li'); li.className = 'ms-nav-search';
