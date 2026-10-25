@@ -95,11 +95,11 @@
       '.ms-sr-box{width:min(620px,100%);max-height:78vh;display:flex;flex-direction:column;border-radius:20px;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden}' +
       '.ms-sr-in{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #e3e8f0}.ms-sr-in svg{width:22px;height:22px;flex:none;color:#5b6b82}' +
       '.ms-sr-in input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:16px;color:#071b36;background:transparent}' +
-      '.ms-sr-in kbd{padding:2px 7px;border:1px solid #cfd8e6;border-radius:7px;font:12px inherit;color:#5b6b82}' +
+      '.ms-sr-x{display:grid;place-items:center;flex:none;width:34px;height:34px;border:0;border-radius:10px;background:#eef3fb;color:#5b6b82;cursor:pointer}.ms-sr-x:hover{background:#e0e8f5;color:#071b36}.ms-sr-x svg{width:18px;height:18px}' +
       '.ms-sr-list{margin:0;padding:6px;list-style:none;overflow-y:auto;overflow-x:hidden}.ms-sr-list li{margin:0}' +
       '.ms-sr-list a{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:10px 12px;border-radius:12px;color:#071b36;text-decoration:none}' +
       '.ms-sr-list a:hover,.ms-sr-list a.on{background:#eef3fb}.ms-sr-k{grid-row:span 2;align-self:center;padding:2px 9px;border-radius:999px;background:#ffc800;color:#071b36;font:700 11px inherit}' +
-      '.ms-sr-t{font-weight:700;font-size:14px}.ms-sr-s{font-size:12px;color:#5b6b82}.ms-sr-empty{padding:22px 16px;text-align:center;color:#5b6b82;font-size:14px}' +
+      '.ms-sr-t{font-weight:700;font-size:14px}.ms-sr-s{font-size:12px;color:#5b6b82}.ms-sr-empty{padding:22px 16px;text-align:center;color:#5b6b82;font-size:14px}.ms-sr-ask{display:inline-block;margin-top:10px;padding:8px 14px;border-radius:12px;background:#ffc800;color:#071b36;font-weight:700;text-decoration:none}' +
       '.ms-sr-btn{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 14px;padding:13px 16px;border:1px solid #d5deec;border-radius:16px;background:#fff;color:#5b6b82;font:inherit;font-size:14px;cursor:pointer;text-align:start}' +
       '.ms-sr-btn:hover{border-color:#ffc800;box-shadow:0 4px 14px rgba(7,27,54,.08)}.ms-sr-btn svg{width:20px;height:20px;flex:none}.ms-sr-btn kbd{margin-inline-start:auto;padding:2px 7px;border:1px solid #cfd8e6;border-radius:7px;font:12px inherit}' +
       '.ms-nav-search button{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:14px;background:transparent;color:inherit;cursor:pointer}.ms-nav-search svg{width:21px;height:21px}' +
@@ -107,10 +107,10 @@
     document.head.appendChild(st);
     var d = document.createElement('div');
     d.className = 'ms-sr'; d.hidden = true; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'جست‌وجو');
-    d.innerHTML = '<div class="ms-sr-box"><div class="ms-sr-in">' + ICON + '<input type="search" autocomplete="off" placeholder="جست‌وجوی بخش‌ها، محصولات و درس‌های آموزش…" aria-label="جست‌وجو"><kbd>Esc</kbd></div><ul class="ms-sr-list"></ul></div>';
+    d.innerHTML = '<div class="ms-sr-box"><div class="ms-sr-in">' + ICON + '<input type="search" autocomplete="off" placeholder="جست‌وجوی بخش‌ها، محصولات و درس‌های آموزش…" aria-label="جست‌وجو"><button type="button" class="ms-sr-x" data-ms-sr-close aria-label="بستن" title="بستن (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><ul class="ms-sr-list"></ul></div>';
     document.body.appendChild(d);
     ui = { root: d, input: d.querySelector('input'), list: d.querySelector('ul') };
-    d.addEventListener('click', function (e) { if (e.target === d) close(); });
+    d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-ms-sr-close]')) close(); });
     ui.input.addEventListener('input', paint);
     ui.input.addEventListener('keydown', function (e) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); move(e.key === 'ArrowDown' ? 1 : -1); }
@@ -132,7 +132,7 @@
     shown = search(t); active = -1;
     ui.list.innerHTML = shown.length ? shown.map(function (it) {
       return '<li><a href="' + esc(it.href) + '"><span class="ms-sr-k">' + esc(it.kind) + '</span><span class="ms-sr-t">' + esc(it.title) + '</span>' + (it.sub ? '<span class="ms-sr-s">' + esc(it.sub) + '</span>' : '<span class="ms-sr-s"></span>') + '</a></li>';
-    }).join('') : '<li class="ms-sr-empty">چیزی پیدا نشد. با نوشتهٔ کوتاه‌تر یا کد کالا امتحان کنید.</li>';
+    }).join('') : '<li class="ms-sr-empty">چیزی پیدا نشد. با نوشتهٔ کوتاه‌تر یا کد کالا امتحان کنید.<br><a class="ms-sr-ask" href="./assistant.html?q=' + encodeURIComponent(t.trim()) + '">از آریا بپرسید: «' + esc(t.trim().slice(0, 60)) + '»</a></li>';
   }
   function open() {
     if (!signed()) return;

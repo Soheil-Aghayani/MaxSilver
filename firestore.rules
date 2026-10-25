@@ -428,6 +428,28 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Texts the assistant may quote (company procedures, role descriptions): a person reads an entry only when their role is listed on it;
+    // only organizational technology (manager) loads, replaces or deletes them.
+    match /knowledge/{id} {
+      allow read: if approved() && (hasRole(['manager', 'ceo']) || (resource.data.roles is list && role() in resource.data.roles));
+      allow create, update: if approved() && hasRole(['manager'])
+        && request.resource.data.keys().hasOnly(['title', 'body', 'tip', 'src', 'href', 'roles', 'draft', 'words', 'updatedAt'])
+        && request.resource.data.title is string && request.resource.data.title.size() >= 1 && request.resource.data.title.size() <= 140
+        && request.resource.data.body is list && request.resource.data.body.size() >= 1 && request.resource.data.body.size() <= 120
+        && request.resource.data.roles is list && request.resource.data.roles.size() >= 1 && request.resource.data.roles.size() <= 16;
+      allow delete: if approved() && hasRole(['manager']);
+    }
+
+    // Questions the assistant could not answer: no name, only the role, so the team sees what to teach it next.
+    match /arya_questions/{id} {
+      allow read: if approved() && hasRole(['manager', 'ceo', 'sales_manager']);
+      allow create: if approved() && request.resource.data.keys().hasOnly(['q', 'role', 'kind', 'at'])
+        && request.resource.data.q is string && request.resource.data.q.size() >= 3 && request.resource.data.q.size() <= 200
+        && request.resource.data.role == role() && request.resource.data.kind in ['none', 'down'] && request.resource.data.at is number;
+      allow update: if false;
+      allow delete: if approved() && hasRole(['manager']);
+    }
+
     // Competitor analysis (sensitive, so it is not in the public repository): management, the CEO and the sales manager read it;
     // only organizational technology (manager) loads or replaces it; the roadmap is read-only for everyone else.
     match /intel/{id} {

@@ -192,6 +192,14 @@
     try { rec.start(); S.listening = true; var m = document.getElementById('asMic'); if (m) m.classList.add('on'); } catch (e) { done(); }
   }
   var SUGGEST = PUBLIC ? ['می‌خواهم کافه راه‌اندازی کنم', 'گریل ۶۰ سانت ذغالی', 'سینک ۱۰۰ سانت دو لگن', 'سرخ‌کن گازی ۱۸ لیتری', 'درخواست خرید چطور است؟'] : ['گریل ۶۰ ذغالی چنده؟', 'سینک ۱۰۰ سانت دو لگن دارید؟', 'بویلر ۲۵ لیتر BUNN', 'سرخ‌کن گازی ۱۸ لیتری', 'یخچال زیر گریل ۱۸۰', 'مدل SPIN چیست؟', 'ساعت کاری شرکت', 'فستیوال قهوه کی برگزار می‌شود؟'];
+  // starter questions by kind of work: sales people get the catalog and the selling lessons first, everyone else the company and their own duties
+  (function () {
+    if (PUBLIC) return;
+    var r = (function () { try { return localStorage.getItem('ms-role') || ''; } catch (e) { return ''; } })();
+    var sales = ['visitor', 'account_manager', 'sales_manager'].indexOf(r) >= 0, lead = ['manager', 'ceo'].indexOf(r) >= 0;
+    if (sales) SUGGEST = ['گریل ۶۰ ذغالی چنده؟', 'مدل SPIN چیست؟', 'چطور اعتراض مشتری را جواب بدهم؟', 'اسکریپت فروش چیست؟', 'پیش‌نویس پیگیری پیش‌فاکتور', 'فستیوال قهوه کی برگزار می‌شود؟'];
+    else if (!lead && r) SUGGEST = ['شرح وظایف نقش من', 'چک‌لیست روزانه', 'ساعت کاری شرکت', 'آدرس دفتر کجاست؟', 'گارانتی چطور است؟', 'پیش‌نویس درخواست خدمات پس از فروش'];
+  })();
   var ICON = {
     spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" opacity=".7"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
@@ -241,6 +249,7 @@
   function logRead() { try { var a = JSON.parse(localStorage.getItem(LOGK) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
   function logAdd(kind, q, ids) {
     if (!q) return;
+    if (!PUBLIC && STAFF && (kind === 'none' || kind === 'down') && window.MSKnowledge) window.MSKnowledge.report(q, kind);
     var a = logRead(); a.push({ t: new Date().toISOString(), kind: kind, q: String(q).slice(0, 300), ids: (ids || []).slice(0, 5) });
     try { localStorage.setItem(LOGK, JSON.stringify(a.slice(-300))); } catch (e) { /* ignore */ }
   }
@@ -486,6 +495,10 @@
     return { text: '**مناسبت‌های پیش رو:**\n\n' + list.map(function (e) { return '- ' + e.title + ': ' + e.when + ' (' + e.weekday + ' ' + e.jalali + ')'; }).join('\n') + '\n\nبرای پیش‌نویس تبریک بنویسید «کمپین ' + x.title + '».', links: [{ href: './events.html', label: 'تقویم مناسبت‌ها' }] };
   }
   var DRAFTS = [
+    [/نمایشگاه|دعوت/, '**پیش‌نویس دعوت به نمایشگاه:**\n\nسلام [نام مشتری] عزیز، مکث‌سیلور در [نام نمایشگاه] از [تاریخ شروع] تا [تاریخ پایان] در [محل برگزاری] حضور دارد. [شمارهٔ غرفه: نیاز به تأیید] خوشحال می‌شویم شما را آنجا ببینیم.\n\nبا احترام، [نام شما]'],
+    [/جلسه|خلاصه/, '**پیش‌نویس خلاصهٔ جلسه:**\n\nموضوع: [موضوع جلسه]\nتاریخ: [تاریخ]\nحاضران: [نام‌ها]\n\nتصمیم‌ها:\n• [تصمیم ۱]\n\nاقدام‌ها (هر اقدام یک مسئول و یک موعد دارد):\n• [اقدام] ـ مسئول: [نام] ـ موعد: [تاریخ]\n\nموضوع بدون تصمیم به جلسهٔ بعد: [در صورت وجود]'],
+    [/خدمات|ایراد|خرابی|تعمیر/, '**پیش‌نویس درخواست خدمات پس از فروش:**\n\nنام مشتری: [نام]\nکالا: [نام کالا و کد]\nشمارهٔ فاکتور یا تاریخ خرید: [شماره یا تاریخ]\nشرح مشکل: [چه اتفاقی افتاده؟ از کی؟]\nتلفن تماس: [شماره]\n\nاین متن را در «گفت‌وگوها» برای خدمات پس از فروش بفرستید.'],
+
     [/پیگیری/, '**پیش‌نویس پیگیری پیش‌فاکتور:**\n\nسلام [نام مشتری] عزیز، وقت شما بخیر. پیش‌فاکتور شمارهٔ [شمارهٔ پیش‌فاکتور] را برایتان فرستاده‌ایم. اگر نکته‌ای دربارهٔ کالاها، قیمت یا شرایط پرداخت هست در خدمتیم. [تاریخ اعتبار پیش‌فاکتور: نیاز به تأیید]\n\nبا احترام، [نام شما]، مکث‌سیلور'],
     [/تشکر|سپاس/, '**پیش‌نویس تشکر از خرید:**\n\nسلام [نام مشتری] عزیز، از اعتماد شما به مکث‌سیلور سپاسگزاریم. اگر در نصب یا استفاده از [نام کالا] پرسشی داشتید در خدمتیم.\n\nبا احترام، [نام شما]'],
     [/اطلاع|تغییر قیمت|قیمت جدید/, '**پیش‌نویس اطلاع‌رسانی قیمت:**\n\nسلام [نام مشتری] عزیز، فهرست قیمت‌های تازه آماده است. برای دریافت قیمت [نام کالا یا گروه] پیام بدهید تا پیش‌فاکتور برایتان صادر شود. [تاریخ اجرای قیمت‌ها: نیاز به تأیید]\n\nبا احترام، [نام شما]، مکث‌سیلور'],
@@ -702,7 +715,7 @@
   function noteOf(m) { return m.nonote || m.note || ('نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:'); }
   function resolve(q, prevQ) {
     var talk = smallTalk(q); if (talk) return { ids: [], text: talk, state: 'done' };
-    var kb = !PUBLIC && STAFF && window.MSKnowledge ? window.MSKnowledge.answer(q) : null;   // company, fairs and academy texts (role-limited); no model
+    var kb = !PUBLIC && STAFF && window.MSKnowledge ? window.MSKnowledge.answer(q, prevQ) : null;   // company, fairs and academy texts (role-limited); no model
     var kbOut = kb ? { ids: [], text: kb.text, links: kb.links, chips: kb.chips, state: 'done', kb: kb.title } : null;
     var sk = skills(q);
     if (!sk && kbOut && window.MSKnowledge.intent(q)) return kbOut;   // a question about the company or the training is answered before the catalog is searched

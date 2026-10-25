@@ -153,3 +153,16 @@ body.as-page :focus-visible{outline:3px solid #1746b5;outline-offset:2px;border-
 
 @media (max-width:560px){.as-x{top:13px;left:60px}}
 @media (max-width:1100px){.as-x{top:13px}}
+
+/* Arya's back office (assistant page, leads only) */
+.as-adm{margin:18px auto 0;max-width:760px;border:1px solid var(--ms-line,#dfe5ee);border-radius:16px;background:#fff}
+.as-adm>summary{padding:12px 16px;font-weight:700;color:var(--ms-navy,#071b36);cursor:pointer}
+.as-adm-in{display:grid;gap:18px;padding:4px 16px 16px}
+.as-adm h3{margin:0 0 4px;font-size:15px;color:var(--ms-navy,#071b36)}
+.as-adm-note{margin:0 0 8px;font-size:13px;color:#5b6b82}
+.as-adm-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.as-adm button{padding:8px 14px;border:0;border-radius:12px;background:var(--ms-navy,#071b36);color:#fff;font:inherit;font-size:13px;cursor:pointer}
+.as-adm button.warn{background:#b42318}
+.as-adm-list{margin:10px 0 0;padding-inline-start:20px;display:grid;gap:6px;font-size:13px}
+.as-adm-list small{color:#5b6b82}
+.as-adm-msg{margin:8px 0 0;font-size:13px;color:#14804a}.as-adm-msg.bad{color:#b42318}
