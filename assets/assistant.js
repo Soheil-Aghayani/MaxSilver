@@ -191,7 +191,7 @@
     rec.onerror = done; rec.onend = done;
     try { rec.start(); S.listening = true; var m = document.getElementById('asMic'); if (m) m.classList.add('on'); } catch (e) { done(); }
   }
-  var SUGGEST = PUBLIC ? ['می‌خواهم کافه راه‌اندازی کنم', 'گریل ۶۰ سانت ذغالی', 'سینک ۱۰۰ سانت دو لگن', 'سرخ‌کن گازی ۱۸ لیتری', 'درخواست خرید چطور است؟'] : ['گریل ۶۰ ذغالی چنده؟', 'سینک ۱۰۰ سانت دو لگن دارید؟', 'بویلر ۲۵ لیتر BUNN', 'سرخ‌کن گازی ۱۸ لیتری', 'یخچال زیر گریل ۱۸۰'];
+  var SUGGEST = PUBLIC ? ['می‌خواهم کافه راه‌اندازی کنم', 'گریل ۶۰ سانت ذغالی', 'سینک ۱۰۰ سانت دو لگن', 'سرخ‌کن گازی ۱۸ لیتری', 'درخواست خرید چطور است؟'] : ['گریل ۶۰ ذغالی چنده؟', 'سینک ۱۰۰ سانت دو لگن دارید؟', 'بویلر ۲۵ لیتر BUNN', 'سرخ‌کن گازی ۱۸ لیتری', 'یخچال زیر گریل ۱۸۰', 'مدل SPIN چیست؟', 'ساعت کاری شرکت', 'فستیوال قهوه کی برگزار می‌شود؟'];
   var ICON = {
     spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" opacity=".7"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
@@ -702,7 +702,10 @@
   function noteOf(m) { return m.nonote || m.note || ('نزدیک‌ترین کالاها به پرسش شما، از میان ' + fa.format(docs.length) + ' کالای کاتالوگ:'); }
   function resolve(q, prevQ) {
     var talk = smallTalk(q); if (talk) return { ids: [], text: talk, state: 'done' };
+    var kb = !PUBLIC && STAFF && window.MSKnowledge ? window.MSKnowledge.answer(q) : null;   // company, fairs and academy texts (role-limited); no model
+    var kbOut = kb ? { ids: [], text: kb.text, links: kb.links, chips: kb.chips, state: 'done', kb: kb.title } : null;
     var sk = skills(q);
+    if (!sk && kbOut && window.MSKnowledge.intent(q)) return kbOut;   // a question about the company or the training is answered before the catalog is searched
     if (sk) return { ids: sk.ids || [], text: sk.text, links: sk.links || [], cart: sk.cart || null, chips: sk.chips || null, flow: !!sk.flow, flowDone: !!sk.flowDone, state: 'done' };
     var s2 = smart2(q);
     if (s2) return { ids: s2.ids, text: s2.text, note: s2.note, state: s2.text ? 'done' : s2.none ? 'none' : 'cards', nonote: s2.none ? s2.note : '' };
@@ -712,6 +715,7 @@
     var short = tokens(q).filter(function (w) { return w.charAt(0) !== '~'; }).length;
     var hits = retrieve(q, 5); if (!hits.length && short <= 2) hits = retrieve(q, 5, true); if (!hits.length && prevQ) hits = retrieve(prevQ + ' ' + q, 5);
     if (!hits.length) {
+      if (kbOut && kb.strong) return kbOut;   // the catalog has nothing: company knowledge may still answer, but only when every word of the question matched
       if (PUBLIC && PRICEQ.test(norm(q))) return { ids: [], text: 'قیمت و شرایط پرداخت را فقط کارشناس فروش مکث‌سیلور در تماس اعلام می‌کند. اگر کالای مورد نظرتان را بنویسید، پیدایش می‌کنم و به درخواست خرید شما اضافه می‌کنم.', state: 'done' };
       return null;
     }
