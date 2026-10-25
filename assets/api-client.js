@@ -4,7 +4,8 @@
   // The address is chosen on backend.html and kept only in this browser. No secret is ever stored here: the token is a short-lived session token.
   var BASE_KEY = 'ms-api-base', TOKEN_KEY = 'ms-api-token';
 
-  function base() { var u = ''; try { u = localStorage.getItem(BASE_KEY) || ''; } catch (e) { /* ignore */ } return (u || w.MS_API_BASE || '').replace(/\/+$/, ''); }
+  function base() { if (/\.github\.io$/i.test(location.hostname)) return ''; var u = ''; try {   // the GitHub Pages copy is the Firebase fallback: a server address saved earlier in this browser must not override it
+    u = localStorage.getItem(BASE_KEY) || ''; } catch (e) { /* ignore */ } return (u || w.MS_API_BASE || '').replace(/\/+$/, ''); }
   function token() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
   function setToken(t) { try { if (t) sessionStorage.setItem(TOKEN_KEY, t); else sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ignore */ } }
   function setBase(u) {
