@@ -61,6 +61,7 @@ window.MS_FIREBASE = {
     var app = init.apply(firebase, arguments);
     try {
       var db = app.firestore();
+      try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e2) { /* already in use: keep the default transport */ }   // VPNs and proxies often break the streaming channel; this falls back to plain requests
       if (!db.__msTrack) {
         db.__msTrack = true;
         var rt = db.runTransaction; db.runTransaction = function () { return track(rt.apply(db, arguments), ''); };
