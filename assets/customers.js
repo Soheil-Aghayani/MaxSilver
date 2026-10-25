@@ -22,6 +22,15 @@
   function faDigits(s) { return String(s == null ? '' : s).replace(/\d/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(d); }); }
   function fixLetters(s) { return String(s == null ? '' : s).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/ۀ/g, 'ه').replace(/[‌‏‎]/g, ' ').replace(/[ـ]/g, '').replace(/[\s ]+/g, ' ').trim(); }
   function norm(s) { return latinDigits(fixLetters(s)).toLowerCase(); }
+  // the Iranian national code has a check digit; a birthday is a Jalali date written yyyy/mm/dd
+  function nidOk(v) {
+    v = latinDigits(v); if (!/^\d{10}$/.test(v) || /^(\d)\1{9}$/.test(v)) return false;
+    var sum = 0, i; for (i = 0; i < 9; i++) sum += Number(v.charAt(i)) * (10 - i);
+    var r = sum % 11, c = Number(v.charAt(9)); return r < 2 ? c === r : c === 11 - r;
+  }
+  function bdayFix(v) { v = latinDigits(v).replace(/[\-.\s]+/g, '/').replace(/^\/|\/$/g, ''); var m = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(v); return m ? m[1] + '/' + ('0' + m[2]).slice(-2) + '/' + ('0' + m[3]).slice(-2) : ''; }
+  function bdayOk(v) { v = bdayFix(v); if (!v) return false; var p = v.split('/').map(Number); return p[0] >= 1250 && p[0] <= 1420 && p[1] >= 1 && p[1] <= 12 && p[2] >= 1 && p[2] <= (p[1] <= 6 ? 31 : 30); }
+  function postalOk(v) { return /^\d{10}$/.test(latinDigits(v)); }
   function amount(n) { return faInt.format(Math.round(n || 0)); }
   function compact(n) {
     n = Math.round(n || 0);
@@ -349,6 +358,9 @@
       '<label>تلفن<input type="tel" name="phone" dir="ltr" inputmode="numeric" maxlength="15" value="' + esc(faDigits(c.phone || '')) + '"' + (edit ? '' : ' disabled') + '></label>' +
       '<label>شخص تماس<input type="text" name="contact" maxlength="80" value="' + esc(c.contact || '') + '"' + (edit ? '' : ' disabled') + '></label>' +
       '<label class="full">نشانی<input type="text" name="address" maxlength="300" value="' + esc(c.address || '') + '"' + (edit ? '' : ' disabled') + '></label>' +
+      '<label>کد پستی<input type="text" name="postal" dir="ltr" inputmode="numeric" maxlength="10" value="' + esc(faDigits(c.postal || '')) + '"' + (edit ? '' : ' disabled') + '></label>' +
+      '<label>کد ملی<input type="text" name="nationalId" dir="ltr" inputmode="numeric" maxlength="10" value="' + esc(faDigits(c.nationalId || '')) + '"' + (edit ? '' : ' disabled') + '></label>' +
+      '<label>تاریخ تولد (شمسی، ۱۳۷۰/۰۱/۱۵)<input type="text" name="birthday" dir="ltr" inputmode="numeric" maxlength="10" placeholder="۱۳۷۰/۰۱/۱۵" value="' + esc(faDigits(c.birthday || '')) + '"' + (edit ? '' : ' disabled') + '></label>' +
       '<label class="full">یادداشت<textarea name="notes" rows="3" maxlength="800"' + (edit ? '' : ' disabled') + '>' + esc(c.notes || '') + '</textarea></label></div>' +
       (S.msg ? '<p class="cu-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="cu-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '</form></section>' +
@@ -380,6 +392,7 @@
       body += '<div class="cu-kpis"><div><span>مشتری در فایل‌ها</span><b>' + faInt.format(im.rows.length) + '</b></div><div><span>جدید</span><b>' + faInt.format(im.fresh) + '</b></div>' +
         '<div><span>موجود (به‌روزرسانی)</span><b>' + faInt.format(im.rows.length - im.fresh) + '</b></div><div><span>بدون گروه</span><b>' + faInt.format(im.blank) + '</b></div></div>' +
         (im.withPhone ? '<p class="cu-note">دارای تلفن: ' + faInt.format(im.withPhone) + ' · دارای نشانی: ' + faInt.format(im.withAddress) + '</p>' : '') +
+        (im.bad ? '<p class="cu-err">' + faInt.format(im.bad) + ' کد ملی، کد پستی یا تاریخ تولد درست نبود و ذخیره نمی‌شود.</p>' : '') +
         '<ul class="cu-imp">' + im.files.map(function (f) { return '<li><b>' + esc(f.name) + '</b><span>' + esc(f.label) + '</span></li>'; }).join('') + '</ul>' +
         (im.skipped ? '<p class="cu-note">ردیف‌های نمونه یا بدون کد نادیده گرفته شد: ' + faInt.format(im.skipped) + '</p>' : '') +
         (im.renamed.length ? '<p class="cu-note">نام این کدها در سال‌ها متفاوت است؛ نام جدیدتر نگه داشته می‌شود: ' + esc(im.renamed.slice(0, 6).join('، ')) + '</p>' : '') +
@@ -399,9 +412,9 @@
   // The program's own Excel template: one row per customer, optional sales columns named «فروش 1403».
   var TPL_ALIASES = {
     code: ['کد مشتری'], name: ['نام مشتری', 'نام', 'عنوان'], group: ['گروه (همکار مسئول)', 'گروه', 'گروه مشتری', 'همکار مسئول'], city: ['شهر'], province: ['استان'],
-    phone: ['تلفن', 'موبایل', 'شماره تماس'], contact: ['شخص تماس', 'نام تماس'], address: ['نشانی', 'آدرس'], postal: ['کد پستی'], notes: ['یادداشت', 'توضیحات']
+    phone: ['تلفن', 'موبایل', 'شماره تماس'], contact: ['شخص تماس', 'نام تماس'], address: ['نشانی', 'آدرس'], postal: ['کد پستی'], nationalId: ['کد ملی', 'شماره ملی'], birthday: ['تاریخ تولد', 'تولد'], notes: ['یادداشت', 'توضیحات']
   };
-  var TPL_HEAD = [['code', 'کد مشتری'], ['name', 'نام مشتری'], ['group', 'گروه (همکار مسئول)'], ['city', 'شهر'], ['province', 'استان'], ['phone', 'تلفن'], ['contact', 'شخص تماس'], ['address', 'نشانی'], ['notes', 'یادداشت']];
+  var TPL_HEAD = [['code', 'کد مشتری'], ['name', 'نام مشتری'], ['group', 'گروه (همکار مسئول)'], ['city', 'شهر'], ['province', 'استان'], ['phone', 'تلفن'], ['contact', 'شخص تماس'], ['address', 'نشانی'], ['postal', 'کد پستی'], ['nationalId', 'کد ملی'], ['birthday', 'تاریخ تولد'], ['notes', 'یادداشت']];
   function parseTemplate(matrix) {
     for (var r = 0; r < Math.min(matrix.length, 10); r++) {
       var row = matrix[r] || [], cols = {}, sales = {}, found = false, altCode;
@@ -421,7 +434,7 @@
         var rw = matrix[i] || [], code = latinDigits(val(rw, cols.code)).replace(/\.0+$/, '');
         if (!code || /^نمونه/.test(code)) { if (rw.some(function (x) { return x != null && String(x).trim(); })) skipped++; continue; }
         var rec = { code: code, sales: {} };
-        Object.keys(cols).forEach(function (f) { if (f !== 'code') rec[f] = (f === 'phone' || f === 'postal') ? latinDigits(val(rw, cols[f])).replace(/\D/g, '') : fixLetters(val(rw, cols[f])); });
+        Object.keys(cols).forEach(function (f) { if (f !== 'code') rec[f] = (f === 'phone' || f === 'postal' || f === 'nationalId') ? latinDigits(val(rw, cols[f])).replace(/\D/g, '') : fixLetters(val(rw, cols[f])); });
         Object.keys(sales).forEach(function (y) { var n = Number(latinDigits(val(rw, sales[y])).replace(/[٬,\s]/g, '')); if (isFinite(n) && val(rw, sales[y]) !== '') rec.sales[y] = Math.round(n * 10); });
         out.push(rec);
       }
@@ -445,7 +458,7 @@
     var head = TPL_HEAD.map(function (h) { return h[1]; }).concat(years.map(function (y) { return 'فروش ' + y + ' (تومان)'; }));
     var rows = [head];
     list.forEach(function (c) {
-      rows.push([c.code, c.name || '', c.group || '', c.city || '', c.province || provinceOf(c.city), c.phone || '', c.contact || '', c.address || '', c.notes || '']
+      rows.push([c.code, c.name || '', c.group || '', c.city || '', c.province || provinceOf(c.city), c.phone || '', c.contact || '', c.address || '', c.postal || '', c.nationalId || '', c.birthday || '', c.notes || '']
         .concat(years.map(function (y) { var v = (c.sales || {})[y]; return v == null ? '' : Math.round(v / 10); })));
     });
     return rows;
@@ -522,7 +535,7 @@
     '<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="top" wrapText="1"/></xf>' +
     '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
   function buildXlsx(rows, opt) {
-    var widths = [13, 34, 26, 14, 18, 16, 20, 40, 30].concat(rows[0].slice(9).map(function () { return 18; }));
+    var widths = [13, 34, 26, 14, 18, 16, 20, 40, 13, 13, 13, 30].concat(rows[0].slice(12).map(function () { return 18; }));
     var guide = [['راهنمای پر کردن'],
       ['۱. هر مشتری یک ردیف است. «کد مشتری» همان کد نرم‌افزار حسابداری است و باید یکتا باشد.'],
       ['۲. «نام مشتری» و «کد مشتری» اجباری‌اند؛ بقیهٔ ستون‌ها اختیاری هستند.'],
@@ -531,7 +544,8 @@
       ['۵. ستون‌های «فروش 1403 (تومان)» و مانند آن اختیاری‌اند؛ سال را در عنوان ستون بنویسید و مبلغ را به تومان وارد کنید.'],
       ['۶. خانهٔ خالی، مقدار فعلی را پاک نمی‌کند؛ فقط خانه‌های پر شده جایگزین می‌شوند.'],
       ['۷. ردیف‌هایی که کدشان با «نمونه» شروع شود نادیده گرفته می‌شوند.'],
-      ['۸. فایل را در برنامه از «مشتریان ← ورود اطلاعات» بارگذاری کنید و پیش از ذخیره، پیش‌نمایش را ببینید.']];
+      ['۸. «کد ملی» ده رقم، «کد پستی» ده رقم و «تاریخ تولد» شمسی به شکل 1370/01/15 است؛ مقدار نادرست ذخیره نمی‌شود.'],
+      ['۹. فایل را در برنامه از «مشتریان ← ورود اطلاعات» بارگذاری کنید و پیش از ذخیره، پیش‌نمایش را ببینید.']];
     var NS = 'http://schemas.openxmlformats.org/';
     return zipStore([
       { name: '[Content_Types].xml', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>' },
@@ -551,8 +565,8 @@
   }
   function downloadSample() {
     var rows = sheetRows([]), from = rows.length;
-    rows.push(['نمونه-۱', 'نمونه: فروشگاه آزمایشی', 'نام همکار مسئول', 'تهران', 'تهران', '09120000000', 'نام شخص تماس', 'نشانی کامل مشتری', 'هر توضیح لازم']);
-    rows.push(['نمونه-۲', 'نمونه: شرکت دوم', 'نام همکار مسئول', 'مشهد', 'خراسان رضوی', '', '', '', '']);
+    rows.push(['نمونه-۱', 'نمونه: فروشگاه آزمایشی', 'نام همکار مسئول', 'تهران', 'تهران', '09120000000', 'نام شخص تماس', 'نشانی کامل مشتری', '1234567890', '', '1370/01/15', 'هر توضیح لازم']);
+    rows.push(['نمونه-۲', 'نمونه: شرکت دوم', 'نام همکار مسئول', 'مشهد', 'خراسان رضوی', '', '', '', '', '', '', '']);
     saveBlob(buildXlsx(rows, { exampleFrom: from }), 'customers-template.xlsx');
   }
   function downloadExport() {
@@ -573,7 +587,7 @@
           r.tpl.rows.forEach(function (rec) {
             var o = slot(rec.code);
             Object.keys(rec.sales).forEach(function (y) { o.sales[y] = rec.sales[y]; });
-            ['name', 'group', 'city', 'province', 'phone', 'contact', 'address', 'postal', 'notes'].forEach(function (k) { if (rec[k]) o.tpl[k] = rec[k]; });
+            ['name', 'group', 'city', 'province', 'phone', 'contact', 'address', 'postal', 'nationalId', 'birthday', 'notes'].forEach(function (k) { if (rec[k]) o.tpl[k] = rec[k]; });
           });
           return;
         }
@@ -595,10 +609,11 @@
       var rows = Object.keys(by).map(function (k) {
         var o = by[k], t = parseTitle(o._name || o.tpl.name || ''), city = o.tpl.city || t.city, prov = o.tpl.province || provinceOf(city);
         return { code: k, name: o.tpl.name || t.name, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales,
-          phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: ((o.tpl.address || '') + (o.tpl.postal ? (o.tpl.address ? '، ' : '') + 'کد پستی ' + o.tpl.postal : '')).slice(0, 300), notes: o.tpl.notes || '' };
+          phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: (o.tpl.address || '').slice(0, 300), postal: postalOk(o.tpl.postal || '') ? o.tpl.postal : '', nationalId: nidOk(o.tpl.nationalId || '') ? o.tpl.nationalId : '', birthday: bdayOk(o.tpl.birthday || '') ? bdayFix(o.tpl.birthday) : '', notes: o.tpl.notes || '',
+          bad: (o.tpl.postal && !postalOk(o.tpl.postal) ? 1 : 0) + (o.tpl.nationalId && !nidOk(o.tpl.nationalId) ? 1 : 0) + (o.tpl.birthday && !bdayOk(o.tpl.birthday) ? 1 : 0) };
       });
       S.imp = { rows: rows, files: info, skipped: skipped, fresh: rows.filter(function (r) { return !have[r.code]; }).length, blank: rows.filter(function (r) { return !r.group; }).length,
-        withPhone: rows.filter(function (r) { return r.phone; }).length, withAddress: rows.filter(function (r) { return r.address; }).length,
+        bad: rows.reduce(function (n, r) { return n + (r.bad || 0); }, 0), withPhone: rows.filter(function (r) { return r.phone; }).length, withAddress: rows.filter(function (r) { return r.address; }).length,
         renamed: Object.keys(renamed).map(function (k) { return k + ': ' + renamed[k]; }) };
     }).then(null, function (e) { S.imp = { error: e && e.message || 'خواندن فایل انجام نشد.' }; })
       .then(function () { S.busy = false; render(); });
@@ -611,7 +626,7 @@
     var ops = [];
     im.rows.forEach(function (r) {
       var doc = { code: r.code, name: r.name, city: r.city, province: r.province, region: r.region, group: r.group, sales: r.sales, importedAt: now, updatedAt: now };
-      ['phone', 'contact', 'address', 'notes'].forEach(function (k) { if (r[k]) doc[k] = r[k]; });
+      ['phone', 'contact', 'address', 'postal', 'nationalId', 'birthday', 'notes'].forEach(function (k) { if (r[k]) doc[k] = r[k]; });
       ['name', 'city', 'province', 'region', 'group'].forEach(function (k) { if (!doc[k]) delete doc[k]; });   // an empty cell in the file never erases what is already stored
       var go = groupOwner[r.group];
       if (go) { doc.ownerUid = go.ownerUid; doc.ownerName = go.ownerName; }
@@ -666,6 +681,9 @@
   });
   document.addEventListener('input', function (e) {
     if (e.target.id === 'cuQ') { S.q = e.target.value; S.shown = 60; paintList(); }
+    if ((e.target.name === 'postal' || e.target.name === 'nationalId') && e.target.form && e.target.form.id === 'cuForm') {
+      var dd = latinDigits(e.target.value).replace(/\D/g, '').slice(0, 10), shown2 = faDigits(dd); if (e.target.value !== shown2) e.target.value = shown2;
+    }
     if (e.target.name === 'phone' && e.target.form && e.target.form.id === 'cuForm') {
       var d = latinDigits(e.target.value).replace(/\D/g, '').slice(0, 15), shown = faDigits(d);
       if (e.target.value !== shown) e.target.value = shown;
@@ -678,8 +696,11 @@
     if (e.target.id !== 'cuForm') return;
     e.preventDefault();
     var f = e.target, code = f.getAttribute('data-code'), now = Date.now();
-    var upd = { phone: latinDigits(f.elements.phone.value).replace(/\D/g, ''), contact: f.elements.contact.value.trim(), address: f.elements.address.value.trim(), notes: f.elements.notes.value.trim(), updatedAt: now };
+    var upd = { phone: latinDigits(f.elements.phone.value).replace(/\D/g, ''), contact: f.elements.contact.value.trim(), address: f.elements.address.value.trim(), postal: latinDigits(f.elements.postal.value).replace(/\D/g, ''), nationalId: latinDigits(f.elements.nationalId.value).replace(/\D/g, ''), birthday: bdayFix(f.elements.birthday.value), notes: f.elements.notes.value.trim(), updatedAt: now };
     S.msg = ''; S.error = '';
+    if (upd.postal && !postalOk(upd.postal)) { S.error = 'کد پستی باید ده رقم باشد.'; render(); return; }
+    if (upd.nationalId && !nidOk(upd.nationalId)) { S.error = 'کد ملی درست نیست (ده رقم و رقم کنترل).'; render(); return; }
+    if (f.elements.birthday.value.trim() && !bdayOk(f.elements.birthday.value)) { S.error = 'تاریخ تولد را شمسی و به شکل ۱۳۷۰/۰۱/۱۵ بنویسید.'; render(); return; }
     db.collection('customers').doc(code).update(upd).then(function () {
       var c = S.list.filter(function (x) { return x.code === code; })[0]; if (c) Object.assign(c, upd);
       S.msg = 'ذخیره شد.';

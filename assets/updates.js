@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'customer-card-1405-08', date: '1405/08/03', tag: 'جدید', title: 'کارت مشتری: نشانی، تلفن، کد ملی، تاریخ تولد و کد پستی',
+      summary: 'در صفحهٔ هر مشتری، کد پستی، کد ملی و تاریخ تولد (شمسی) هم ثبت می‌شود و کد ملی و کد پستی هنگام ذخیره بررسی می‌شوند. فایل Excel نمونه و فهرست «جامع طرف حساب‌ها» هم این ستون‌ها را می‌خوانند و مقدار نادرست ذخیره نمی‌شود.', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'] },
     { id: 'assistant-renamed-makesi', date: '1405/08/03', tag: 'بهبود', title: 'دستیار دوباره «مکثی» شد',
       summary: 'نام دستیار هوشمند از «آریا» به «مکثی» برگشت، چون «آریا» با نام شرکت یکی بود. همهٔ کارهای او همان است؛ فقط نامش در صفحه‌ها و جست‌وجو عوض شد.' },
     { id: 'arya-knowledge-1405-08', date: '1405/08/03', tag: 'بهبود', title: 'مکثی حالا دربارهٔ شرکت، نمایشگاه‌ها و آموزش هم جواب می‌دهد',

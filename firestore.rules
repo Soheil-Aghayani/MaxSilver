@@ -118,7 +118,10 @@ service cloud.firestore {
       allow create, delete: if hasRole(['manager', 'ceo', 'sales_manager']);
       allow update: if hasRole(['manager', 'ceo', 'sales_manager'])
         || ((hasRole(['account_manager']) || ownsCustomer())
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone', 'address', 'contact', 'notes', 'updatedAt']));
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone', 'address', 'contact', 'notes', 'postal', 'nationalId', 'birthday', 'updatedAt'])
+            && (!('postal' in request.resource.data) || request.resource.data.postal == '' || request.resource.data.postal.matches('^[0-9]{10}$'))
+            && (!('nationalId' in request.resource.data) || request.resource.data.nationalId == '' || request.resource.data.nationalId.matches('^[0-9]{10}$'))
+            && (!('birthday' in request.resource.data) || request.resource.data.birthday == '' || request.resource.data.birthday.matches('^[0-9]{4}/[0-9]{2}/[0-9]{2}$')));
     }
     // A customer group is a responsible partner or person; the owner is applied to the group's customers.
     match /customer_groups/{id} {
