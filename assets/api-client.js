@@ -7,7 +7,30 @@
   function base() { if (/\.github\.io$/i.test(location.hostname)) return ''; var u = ''; try {   // the GitHub Pages copy is the Firebase fallback: a server address saved earlier in this browser must not override it
     u = localStorage.getItem(BASE_KEY) || ''; } catch (e) { /* ignore */ } return (u || w.MS_API_BASE || '').replace(/\/+$/, ''); }
   function token() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
-  function setToken(t) { try { if (t) sessionStorage.setItem(TOKEN_KEY, t); else sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ignore */ } }
+  function setToken(t) { try { if (t) sessionStorage.setItem(TOKEN_KEY, t); else sessionStorage.removeItem(TOKEN_KEY); wipeCache(); } catch (e) { /* ignore */ } }
+
+  // ----- last good answers: when the server cannot be reached, a read is answered from the copy saved by the last good one, so the screen
+  // keeps its data and a small bar says so. The copy lives in sessionStorage only (gone when the tab closes, wiped at sign-in and sign-out).
+  var OC = 'ms-oc:', OC_MAX = 600000, offlineBar = null, offlineTimer = null;
+  function cacheable(method, path, anon) { return method === 'GET' && !anon && !/^(auth|portal|app|ping|public)(\/|$)/.test(path); }
+  function wipeCache() { try { Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf(OC) === 0) sessionStorage.removeItem(k); }); } catch (e) { /* ignore */ } }
+  function cachePut(path, j) {
+    try { var t = JSON.stringify(j); if (t.length <= OC_MAX) sessionStorage.setItem(OC + path, t); } catch (e) { wipeCache(); }
+  }
+  function cacheGet(path) { try { var t = sessionStorage.getItem(OC + path); return t ? { v: JSON.parse(t) } : null; } catch (e) { return null; } }
+  function offlineNote(on) {
+    if (!document.body) return;
+    if (!on) { if (offlineBar) offlineBar.hidden = true; return; }
+    if (!offlineBar) {
+      var st = document.createElement('style');
+      st.textContent = '.ms-offbar{position:fixed;inset-inline:12px;bottom:96px;z-index:2147482000;margin:0 auto;width:fit-content;max-width:calc(100vw - 24px);padding:9px 14px;border-radius:14px;background:#7a4b00;color:#fff;font:600 13px/1.5 inherit;box-shadow:0 8px 24px rgba(0,0,0,.25)}.ms-offbar[hidden]{display:none}';
+      document.head.appendChild(st);
+      offlineBar = document.createElement('div'); offlineBar.className = 'ms-offbar'; offlineBar.setAttribute('role', 'status');
+      offlineBar.textContent = 'اتصال به سرور برقرار نیست؛ آخرین داده‌های ذخیره‌شده نمایش داده می‌شود و تغییرات ذخیره نمی‌شود.';
+      document.body.appendChild(offlineBar);
+    }
+    offlineBar.hidden = false;
+  }
   function setBase(u) {
     u = String(u || '').trim().replace(/\/+$/, '');
     if (u && !/^https?:\/\/[\w.\-]+(:\d+)?$/.test(u)) throw new Error('آدرس باید مثل http://192.168.1.10:8080 باشد.');
@@ -44,9 +67,15 @@
         if (r.status === 204) return null;
         return r.json().catch(function () { return {}; }).then(function (j) {
           if (!r.ok) { var m = j.message || 'خطا'; if (j.errors) m = Object.keys(j.errors).map(function (k) { return j.errors[k][0]; }).join(' '); throw { status: r.status, message: fa(m), data: j }; }
+          if (cacheable(method, path, anon)) { cachePut(path, j); offlineNote(false); }
           return j;
         });
-      }, function () { clearTimeout(t); throw { status: 0, message: 'ارتباط با سرور برقرار نشد.' }; });
+      }, function () {
+        clearTimeout(t);
+        var hit = cacheable(method, path, anon) && token() ? cacheGet(path) : null;
+        if (hit) { offlineNote(true); return hit.v; }
+        throw { status: 0, message: 'ارتباط با سرور برقرار نشد.' };
+      });
   }
 
   function remember(user) {

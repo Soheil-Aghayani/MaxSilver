@@ -17,7 +17,7 @@
   function errText(e) {
     var c = e && e.code || '';
     if (/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c)) return 'ایمیل یا رمز عبور درست نیست.';
-    if (/network|unavailable|deadline|timeout/.test(c)) return 'اتصال به سرویس برقرار نشد (اینترنت یا VPN). اطلاعات ذخیره‌شدهٔ این دستگاه نمایش داده می‌شود.';
+    if (/network|unavailable|deadline|timeout/.test(c)) return 'سرور پاسخ نداد. اینترنت را بررسی کنید و اگر VPN روشن است آن را خاموش کنید؛ سپس دوباره امتحان کنید. اگر مشکل ماند، چند دقیقه بعد دوباره بیایید.';
     if (/permission-denied/.test(c)) return 'اجازهٔ انجام این کار را ندارید.';
     if (/too-many-requests/.test(c)) return 'تلاش‌های زیاد؛ چند دقیقه بعد دوباره امتحان کنید.';
     if (/requires-recent-login/.test(c)) return 'برای امنیت یک بار خارج شوید، دوباره وارد شوید و تکرار کنید.';
@@ -1571,9 +1571,10 @@
     if (!S.user) {
       return '<form class="pn-card pn-login" id="loginForm"><span class="pn-login-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.500"/><path d="M5 20c0-3.900 3.100-7 7-7s7 3.100 7 7"/></svg></span>' +
         '<h2>ورود به حساب</h2><p class="pn-note">با ایمیل و رمزی که مدیر برای شما ساخته وارد شوید.</p>' +
-        '<label>ایمیل<input type="email" name="email" dir="ltr" autocomplete="username" required></label>' +
-        '<label>رمز عبور<input type="password" name="password" dir="ltr" autocomplete="current-password" required></label>' +
-        ('<label>کد شش‌رقمی برنامهٔ احراز هویت' + (S.needCode ? '' : ' (اگر ورود دومرحله‌ای دارید)') + '<input type="text" name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code"' + (S.needCode ? ' required autofocus' : '') + '></label>') +
+        '<label>ایمیل<input type="email" name="email" dir="ltr" autocomplete="username" value="' + esc(S.email || lastEmail()) + '" required></label>' +
+        '<label>رمز عبور<span class="pn-pw"><input type="password" name="password" dir="ltr" autocomplete="current-password" required><button type="button" class="pn-eye" data-eye aria-label="نمایش رمز" title="نمایش رمز"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.600-7 10-7 10 7 10 7-3.600 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>' +
+        // the code box appears only when the server asks for it (an account with two-step login), so most people never see it
+        (S.needCode ? '<label>کد شش‌رقمی برنامهٔ احراز هویت<input type="text" name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required autofocus></label>' : '') +
         (S.enroll ? '<p class="pn-note">ورود دومرحله‌ای برای نقش شما الزامی است. یک بار آن را در <a href="./backend.html">صفحهٔ ورود به سرور</a> فعال کنید و دوباره بیایید.</p>' : '') +
         (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.pwMsg ? '<p class="pn-ok" role="status">' + esc(S.pwMsg) + '</p>' : '') +
         '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'در حال ورود…' : 'ورود') + '</button>' +
@@ -1724,16 +1725,21 @@
     if (act && pill) { pill.style.transition = 'none'; placePill(nav, { left: act.offsetLeft, width: act.offsetWidth }); }
   });
   var hashDone = false;
+  function lastEmail() { try { return localStorage.getItem('ms-last-email') || ''; } catch (e) { return ''; } }
   function render() {
     if (!hashDone && S.user && S.profile) { hashDone = true; var hk = HASH_TAB[(location.hash || '').slice(1)]; if (hk) { S.tab = hk; S.launcher = false; } }   // a link to a section opens that section
     var prev = tabSnap();
     root.innerHTML = view();
     morphTabs(prev);
+    var lf0 = !S.user && document.getElementById('loginForm');
+    if (lf0 && S.pwTmp && lf0.elements.password) lf0.elements.password.value = S.pwTmp;   // a busy or error redraw keeps what was typed
     var h = document.querySelector('.pn-head'); if (h) h.classList.toggle('anon', !S.user && !S.loading); paintMap();
   }
 
   // ----- actions
   document.addEventListener('click', function (e) {
+    var eye = e.target.closest('[data-eye]');
+    if (eye) { var pi = eye.parentNode.querySelector('input'); var show = pi.type === 'password'; pi.type = show ? 'text' : 'password'; eye.classList.toggle('on', show); eye.setAttribute('aria-label', show ? 'پنهان‌کردن رمز' : 'نمایش رمز'); return; }
     if (e.target.closest('[data-out]')) { auth.signOut(); return; }
     if (e.target.closest('[data-forgot]') || e.target.closest('[data-forgot-me]')) {
       var me = !!e.target.closest('[data-forgot-me]'), lf = document.getElementById('loginForm');
@@ -1903,9 +1909,10 @@
     }
     if (f.id === 'loginForm') {
       S.pwMsg = '';
+      S.email = v('email'); S.pwTmp = f.elements.password.value;
       S.busy = true; render();
       S.enroll = false;
-      auth.signInWithEmailAndPassword(v('email'), f.elements.password.value, f.elements.code ? v('code') : undefined).then(function () { S.needCode = false; }, function (err) {
+      auth.signInWithEmailAndPassword(v('email'), S.pwTmp, f.elements.code ? v('code') : undefined).then(function () { S.needCode = false; S.pwTmp = ''; try { localStorage.setItem('ms-last-email', S.email); } catch (x) { /* ignore */ } }, function (err) {
         var c = (err && err.code) || '';
         if (c === 'auth/code-required') { S.needCode = true; S.error = ''; } else if (c === 'auth/enroll-2fa') { S.enroll = true; S.error = ''; } else S.error = errText(err);
         S.busy = false; S.loading = false; render();

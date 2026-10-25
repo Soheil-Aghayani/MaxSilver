@@ -447,3 +447,15 @@
 /* sign-in: the wait note fades in after a few seconds so a slow server does not look like a frozen page */
 .pn-wait{opacity:0;animation:pnWait .4s ease 4s forwards}
 @keyframes pnWait{to{opacity:1}}
+
+/* sign-in: show/hide password */
+.pn-pw{position:relative;display:block}
+.pn-pw input{width:100%;padding-inline-end:46px}
+.pn-eye{position:absolute;inset-block:0;inset-inline-end:6px;display:grid;place-items:center;width:38px;margin:auto 0;height:38px;border:0;border-radius:12px;background:transparent;color:#5b6b82;cursor:pointer}
+.pn-eye svg{width:20px;height:20px}
+.pn-eye:hover,.pn-eye.on{color:var(--ms-navy);background:rgba(255,200,0,.22)}
+/* a button that is working shows a small spinner so a slow server does not look like a frozen page */
+.pn-primary[disabled]{position:relative;opacity:.85;cursor:progress}
+.pn-primary[disabled]::before{content:"";display:inline-block;width:14px;height:14px;margin-inline-end:8px;vertical-align:-2px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:pnSpin .8s linear infinite}
+@keyframes pnSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.pn-primary[disabled]::before{animation:none}}

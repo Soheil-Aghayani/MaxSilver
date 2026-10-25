@@ -3,6 +3,7 @@
 // screen). Which sections exist for a role comes from roles.js. Pins are kept per device.
 (function () {
   'use strict';
+  var dockStamp = (document.currentScript && document.currentScript.src.match(/v=([0-9]+)/) || [])[1] || '';
   var nav = document.querySelector('.ms-sitebar .ms-nav-links');
   if (!nav) return;
   var svg = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
@@ -155,6 +156,7 @@
     if (window.MSNotify && window.MSNotify.paint) { try { window.MSNotify.paint(); } catch (e) { /* ignore */ } }
     if (window.MSUpdates && window.MSUpdates.paintDot) { try { window.MSUpdates.paintDot(); } catch (e) { /* ignore */ } }
     decorateHome();
+    loadSearch();
   }
 
   // ---- the home page: every card carries a star that adds or removes the section from the dock
@@ -234,5 +236,13 @@
   window.addEventListener('hashchange', render);
   window.addEventListener('storage', function (e) { if (e.key === 'ms-role' || e.key === KEY) render(); });
   if (mqDock.addEventListener) mqDock.addEventListener('change', render);
-  window.MSDock = { render: render, maxPins: maxPins };
+  window.MSDock = { render: render, maxPins: maxPins, list: allowed };
+  // site search (search.js) is fetched only for signed-in people, with the same ?v= stamp as this file
+  function loadSearch() {
+    if (window.MSSearch || document.getElementById('msSearchJs') || !signed()) return;
+    var s = document.createElement('script'); s.id = 'msSearchJs'; s.src = './assets/search.js' + (dockStamp ? '?v=' + dockStamp : ''); document.head.appendChild(s);
+  }
+  loadSearch();
+  window.addEventListener('ms-role-change', loadSearch);
+  window.addEventListener('storage', function (e) { if (e.key === 'ms-role') loadSearch(); });
 })();
