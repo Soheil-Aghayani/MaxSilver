@@ -443,3 +443,7 @@
 .pn-viewer-box img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;opacity:0;transition:opacity .25s}.pn-viewer-box img.ok{opacity:1}
 .pn-spin2{position:absolute;width:34px;height:34px;border:3px solid rgba(255,255,255,.25);border-top-color:#ffcc2a;border-radius:50%;animation:pn-spin2 .8s linear infinite}
 .pn-viewer-box img.ok~.pn-spin2{display:none}@keyframes pn-spin2{to{transform:rotate(360deg)}}
+
+/* sign-in: the wait note fades in after a few seconds so a slow server does not look like a frozen page */
+.pn-wait{opacity:0;animation:pnWait .4s ease 4s forwards}
+@keyframes pnWait{to{opacity:1}}

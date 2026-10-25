@@ -75,7 +75,7 @@
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
-    if (!u) { if (!(window.MSApi && window.MSApi.signedIn())) { try { localStorage.removeItem('ms-role'); } catch (x) { /* ignore */ } } if (window.MSGate) window.MSGate.apply(); S.loading = false; render(); return; }
+    if (!u) { if (!(window.MSApi && window.MSApi.signedIn())) { try { if (localStorage.getItem('ms-show') !== '1') localStorage.removeItem('ms-role'); } catch (x) { /* ignore */ } } if (window.MSGate) window.MSGate.apply(); S.loading = false; render(); return; }
     load();
   });
 
@@ -1576,7 +1576,8 @@
         ('<label>کد شش‌رقمی برنامهٔ احراز هویت' + (S.needCode ? '' : ' (اگر ورود دومرحله‌ای دارید)') + '<input type="text" name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code"' + (S.needCode ? ' required autofocus' : '') + '></label>') +
         (S.enroll ? '<p class="pn-note">ورود دومرحله‌ای برای نقش شما الزامی است. یک بار آن را در <a href="./backend.html">صفحهٔ ورود به سرور</a> فعال کنید و دوباره بیایید.</p>' : '') +
         (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.pwMsg ? '<p class="pn-ok" role="status">' + esc(S.pwMsg) + '</p>' : '') +
-        '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>ورود</button>' +
+        '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'در حال ورود…' : 'ورود') + '</button>' +
+        (S.busy ? '<p class="pn-note pn-wait" role="status">در حال اتصال به سرور… تا ۱۵ ثانیه صبر کنید؛ اگر پاسخی نیامد، پیام خطا نشان داده می‌شود.</p>' : '') +
         '<button type="button" class="pn-link" data-forgot>رمز عبور را فراموش کرده‌اید؟</button></form>';
     }
     if (!S.profile || !active()) {

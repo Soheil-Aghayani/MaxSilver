@@ -50,7 +50,7 @@
 
   function remember(user) {
     // the portal's role gate reads ms-role: write it after a good sign-in and clear it on sign-out
-    try { if (user && user.role) localStorage.setItem('ms-role', user.role); else localStorage.removeItem('ms-role'); } catch (e) { /* ignore */ }
+    try { if (user && user.role) localStorage.setItem('ms-role', user.role); else if (localStorage.getItem('ms-show') !== '1') localStorage.removeItem('ms-role'); } catch (e) { /* ignore */ }   // ms-show: local presentation mode (show.html) keeps the role while the server is down
     if (w.MSGate) w.MSGate.apply();
   }
 
