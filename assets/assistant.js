@@ -205,6 +205,7 @@
   var ICON = {
     spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" opacity=".7"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
     up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11v9H4v-9zM7 11l4-8c1.5 0 2.5 1 2.2 2.6L12.8 9H19a2 2 0 0 1 2 2.4l-1.2 6A2 2 0 0 1 17.8 19H7"/></svg>',
@@ -294,7 +295,7 @@
   function view() {
     if (S.error) return '<p class="as-err" role="alert">' + esc(S.error) + '</p>';
     var empty = !S.msgs.length;
-    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکثی</span></h1><span class="as-tools">' + (STAFF && logRead().length ? '<button type="button" class="as-new as-qlog" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش مکثی">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button></span></header>' +
+    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکثی</span></h1><span class="as-tools">' + (STAFF && logRead().length ? '<button type="button" class="as-new as-qlog" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش مکثی">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button><a class="as-xi" href="./index.html" aria-label="بستن مکثی و برگشت به صفحهٔ اصلی" title="بستن">' + ICON.close + '</a></span></header>' +
       '<div class="as-scroll" id="asScroll" role="log" aria-live="polite" aria-relevant="additions text" aria-label="گفت‌وگو با مکثی" aria-busy="' + !!S.busy + '">' + (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من مکثی هستم! چه کمکی از دستم برمی‌آید؟</h2><p>' + (PUBLIC ? 'دربارهٔ کالاها بپرسید یا بگویید چه کسب‌وکاری می‌خواهید راه بیندازید تا فهرست تجهیزات را پیشنهاد بدهم و درخواست خرید شما را آماده کنم. قیمت را کارشناس فروش در تماس اعلام می‌کند.' : 'دربارهٔ کالاها، قیمت‌ها، بخش‌های سایت و پیش‌فاکتور بپرسید.') + ' اگر ندانم همین را می‌گویم و حدس نمی‌زنم.' +
         (relayUrl() || PUBLIC ? '' : '<br><span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهم؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p>' +
         '<div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' + recentsHtml() + '</div>' :
@@ -588,7 +589,11 @@
   var CONCEPT_KEYS = { cafe: ['کافه', 'کافی شاپ', 'کافیشاپ'], fastfood: ['فست فود', 'فستفود', 'برگری', 'همبرگر'], restaurant: ['رستوران'], pizza: ['پیتزا'], bakery: ['نانوایی'], juice: ['آبمیوه'], pastry: ['قنادی', 'شیرینی فروشی'], icecream: ['بستنی'], kebab: ['کبابی', 'چلوکبابی'], shawarma: ['شاورما'], catering: ['کترینگ'], breakfast: ['چایخانه', 'صبحانه'], selfservice: ['سلف'] };
   function exampleFor(job) {
     var cats = job.cats || [], list = [];
-    itemsAll().forEach(function (it) { if (cats.indexOf(it.cat) >= 0 && cashOf(it)) list.push(it); });
+    itemsAll().forEach(function (it) { if (cats.indexOf(it.cat) >= 0 && !it.faq && (PUBLIC ? it.img : cashOf(it))) list.push(it); });
+    if (PUBLIC) {   // no prices are shown here: take the first product with a picture, our own brand first, in a fixed order
+      list.sort(function (a, b) { return (a.src === 'max-silver' ? 0 : 1) - (b.src === 'max-silver' ? 0 : 1) || String(a.code).localeCompare(String(b.code)); });
+      return list.length ? list[0] : null;
+    }
     list.sort(function (a, b) { return cashOf(a) - cashOf(b); });
     return list.length ? list[Math.floor((list.length - 1) / 2)] : null;
   }
@@ -646,12 +651,13 @@
     jobs.forEach(function (jid) {
       var job = PL.JOBS[jid]; if (!job) return;
       var q = job.qty[size], ex = exampleFor(job);
-      t.push('- **' + job.t + '** × ' + fmt(q) + ': ' + job.why + (ex ? ' (نمونه: ' + ex.name + '، ' + fmt(cashOf(ex)) + ' تومان نقدی)' : ''));
+      t.push('- **' + job.t + '** × ' + fmt(q) + ': ' + job.why + (ex ? ' (نمونه: ' + ex.name + (cashOf(ex) ? '، ' + fmt(cashOf(ex)) + ' تومان نقدی' : '') + ')' : ''));
       if (ex) { ids.push(ex.id); cart.push({ id: ex.id, qty: q }); total += cashOf(ex) * q; } else noEx.push(job.t);
     });
     if (total) t.push('', 'جمع تقریبی نقدی نمونه‌ها: **' + fmt(total) + ' تومان**' + (noEx.length ? ' (بدون ' + noEx.join('، ') + '، که نمونهٔ قیمت‌دار در کاتالوگ ندارد)' : '') + '.');
-    t.push('', 'این پیشنهاد از قاعده‌های طراح کافه و رستوران است و جای مشاورهٔ فروش را نمی‌گیرد؛ نمونه‌ها کالای میانهٔ قیمت هر دسته‌اند. می‌خواهید چیزی را عوض کنیم؟');
-    return { flowDone: true, text: t.join('\n'), ids: ids, cart: cart, links: [{ href: './planner.html', label: 'ساخت طرح کامل در طراح' }],
+    t.push('', 'این پیشنهاد از قاعده‌های طراح کافه و رستوران است و جای مشاورهٔ فروش را نمی‌گیرد؛ ' + (PUBLIC ? 'نمونه‌ها یک کالای شاخص از هر دسته‌اند و تصویرشان را زیر همین پیام می‌بینید. ' : 'نمونه‌ها کالای میانهٔ قیمت هر دسته‌اند. ') + 'می‌خواهید چیزی را عوض کنیم؟');
+    return { flowDone: true, text: t.join('\n'), ids: ids, cart: cart,
+      links: (cart.length ? [PUBLIC ? { href: './planner.html?public=1&from=aria', label: 'مشاهده و ارسال درخواست خرید' } : { href: './product-catalog.html#proforma', label: 'باز کردن پیش‌فاکتور' }] : []).concat([{ href: './planner.html', label: 'ساخت طرح کامل در طراح' }]),
       chips: [{ label: 'اندازهٔ دیگر', q: 'می‌خواهم ' + c.t + ' راه‌اندازی کنم' }, { label: 'کسب‌وکار دیگر', q: 'می‌خواهم کسب‌وکار دیگری راه‌اندازی کنم' }] };
   }
   // length and depth in cm: from dims, or from the «طول» / «عرض» spec lines of items that have no height
@@ -717,7 +723,27 @@
     if (/(بر اساس چه|چه مبنایی|چرا .*(مناسب|پیشنهاد)|مناسبه)/.test(s)) return { text: '**پیشنهادهای من فقط از داده‌های کاتالوگ می‌آید:** گروه و نام کالا، ابعاد، ظرفیت و مشخصات ثبت‌شده، و نوع کسب‌وکار و اندازه‌ای که شما بنویسید (مثلاً کافه کوچک). نیاز واقعی مشتری را کارشناس فروش بررسی می‌کند؛ من جای او تصمیم نمی‌گیرم.', links: [], chips: [{ label: 'راه‌اندازی کافه', q: 'می‌خواهم کافه راه‌اندازی کنم' }] };
     return null;
   }
-  function skills(q) { var s = norm(q); if (PUBLIC) return addToLast(s) || (SIGNED && drafts(s)) || starter(s) || spaceFit(s) || foodSkill(s) || pageGuide(s) || reqHelp(s); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || starter(s) || spaceFit(s) || quote(s) || foodSkill(s) || pageGuide(s); }
+  // «what is this?»: the answer is the catalog's own text (a guide entry, or the product's description and specs), with its picture below.
+  // Nothing is added from outside the catalog; a product without a description says so instead of inventing one.
+  function whatIs(s) {
+    if (!/(چیست|چیه|یعنی چی|یعنی چه|چه دستگاهی|چه کاربردی|کاربرد|به چه درد|توضیح بده|معرفی کن|چه چیزی است)/.test(s) || PRICEQ.test(s)) return null;
+    var topic = s.replace(/(چیست|چیه|یعنی چی|یعنی چه|چه دستگاهی|چه کاربردی|کاربردش|کاربرد|به چه درد می ?خور[هد]|توضیح بده|معرفی کن|چه چیزی است)/g, ' ').replace(/[؟?]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!topic || topic.length < 3) return null;
+    var hits = retrieve(topic, 3); if (!hits.length) return null;
+    var it = hits[0].d.it;
+    if (it.faq) return { text: '**' + it.name + '**\n\n' + it.text + '\n\nمنبع: راهنمای کالا در کاتالوگ مکث‌سیلور.', ids: [], links: [{ href: './product-catalog.html?q=' + encodeURIComponent(topic), label: 'کالاهای این دسته در کاتالوگ' }] };
+    var d = String(it.desc || '').replace(/\s+/g, ' ').trim(), sent = d ? ((/^(?:[^.!؟]*[.!؟]){1,2}/.exec(d) || [d])[0]).trim() : '';   // the first two sentences (no look-behind: older phones)
+    sent = sent.replace(/\[specs-table\]/g, '').replace(/\s+/g, ' ').trim();
+    if (sent.length < 40) sent = '';                      // a name repeated or a table marker is not a description
+    if (sent.length > 380) sent = sent.slice(0, 380).replace(/\s\S*$/, '') + '…';
+    var guide = !sent ? retrieve(it.cat || topic, 3).filter(function (x) { return x.d.it.faq; })[0] : null;   // the category guide, when the product itself has no text
+    var lines = ['**' + it.name + '**' + (it.cat ? ' (' + it.cat + ')' : '')];
+    lines.push(sent ? sent : guide ? guide.d.it.text : 'در کاتالوگ توضیحی برای این کالا نوشته نشده است؛ مشخصاتش را از کارت زیر ببینید.');
+    if (it.dims && it.dims.l) lines.push('ابعاد: ' + dimsText(it));
+    lines.push('منبع: توضیح و مشخصات کاتالوگ مکث‌سیلور؛ دسته‌بندی و مشخصات ماشینی‌اند و تأیید نهایی با صفحهٔ همان کالاست.');
+    return { text: lines.join('\n\n'), ids: [it.id], links: [] };
+  }
+  function skills(q) { var s = norm(q); if (PUBLIC) return addToLast(s) || (SIGNED && drafts(s)) || starter(s) || spaceFit(s) || foodSkill(s) || whatIs(s) || pageGuide(s) || reqHelp(s); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || starter(s) || spaceFit(s) || quote(s) || foodSkill(s) || whatIs(s) || pageGuide(s); }
   // small follow-up buttons under an answer
   function extras(m) {
     var h = '';

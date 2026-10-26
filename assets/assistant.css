@@ -166,3 +166,8 @@ body.as-page :focus-visible{outline:3px solid #1746b5;outline-offset:2px;border-
 .as-adm-list{margin:10px 0 0;padding-inline-start:20px;display:grid;gap:6px;font-size:13px}
 .as-adm-list small{color:#5b6b82}
 .as-adm-msg{margin:8px 0 0;font-size:13px;color:#14804a}.as-adm-msg.bad{color:#b42318}
+
+/* the close button sits in the header row, after the new-chat button, instead of floating over the site bar beside the QR button */
+.as-xi{display:inline-grid;place-items:center;flex:none;width:40px;height:40px;border:1px solid var(--ms-line);border-radius:50%;background:#fff;color:var(--ms-navy);text-decoration:none}
+.as-xi svg{width:18px;height:18px}.as-xi:hover{border-color:var(--ms-gold);background:#fff8e1}
+.as-tools{align-items:center}

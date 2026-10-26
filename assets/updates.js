@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'maxi-plan-pictures-1405-08', date: '1405/08/04', tag: 'بهبود', title: 'مکثی: عکس در طرح کافه، توضیح کالا و دکمهٔ بستن مرتب‌تر',
+      summary: 'وقتی فهرست تجهیزات یک کافه یا رستوران را می‌گیرید، زیر آن عکس و کارت هر کالا می‌آید؛ با یک دکمه همه را به درخواست خرید (یا پیش‌فاکتور، برای کسانی که اجازه دارند) اضافه می‌کنید. اگر بپرسید «پاستاپز چیست؟»، مکثی از توضیح کاتالوگ جواب می‌دهد و اگر توضیحی نباشد، همین را می‌گوید. دکمهٔ بستن حالا کنار دکمهٔ گفت‌وگوی تازه است و روی دکمهٔ QR نمی‌افتد.' },
     { id: 'customer-card-1405-08', date: '1405/08/03', tag: 'جدید', title: 'کارت مشتری: نشانی، تلفن، کد ملی، تاریخ تولد و کد پستی',
       summary: 'در صفحهٔ هر مشتری، کد پستی، کد ملی و تاریخ تولد (شمسی) هم ثبت می‌شود و کد ملی و کد پستی هنگام ذخیره بررسی می‌شوند. فایل Excel نمونه و فهرست «جامع طرف حساب‌ها» هم این ستون‌ها را می‌خوانند و مقدار نادرست ذخیره نمی‌شود.', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'] },
     { id: 'assistant-renamed-makesi', date: '1405/08/03', tag: 'بهبود', title: 'دستیار دوباره «مکثی» شد',
