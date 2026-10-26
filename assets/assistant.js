@@ -204,7 +204,7 @@
     else if (!lead && r) SUGGEST = ['شرح وظایف نقش من', 'چک‌لیست روزانه', 'ساعت کاری شرکت', 'آدرس دفتر کجاست؟', 'گارانتی چطور است؟', 'پیش‌نویس درخواست خدمات پس از فروش'];
   })();
   var ICON = {
-    spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" opacity=".7"/></svg>',
+    spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 3.5c4.7 0 8.5 3.1 8.5 7.5s-3.8 7.5-8.5 7.5c-1 0-2-.15-2.9-.45L5 20l1-3.4C4.6 15.3 3.5 13.3 3.5 11 3.5 6.6 7.3 3.5 12 3.5zM9.2 9.6a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4zm5.6 0a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4zM9.3 13.6a.7.7 0 0 0-.5 1.1c.8.9 1.9 1.4 3.2 1.4s2.4-.5 3.2-1.4a.7.7 0 0 0-1-.9c-.6.7-1.3 1-2.2 1s-1.6-.3-2.2-1a.7.7 0 0 0-.5-.2z"/><path d="m19.6 1.6.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
@@ -226,7 +226,7 @@
   }
   function card(it, n) {
     if (it.faq) return '<article class="as-card as-guide"><div class="as-body"><h3>' + (n ? '<span class="as-n">' + fa.format(n) + '</span>' : '') + esc(it.name) + '</h3><p class="as-note">' + esc(it.text) + '</p></div></article>';
-    return '<article class="as-card"><div class="as-img">' + (it.img ? '<img src="' + esc(it.img) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">' : '') + '</div>' +
+    return '<article class="as-card">' + (it.img ? '<button type="button" class="as-img" data-zoom="' + esc(it.img) + '" data-name="' + esc(it.name) + '" aria-label="بزرگ‌نمایی عکس ' + esc(it.name) + '"><img src="' + esc(it.img) + '" alt="' + esc(it.name) + '" decoding="async" referrerpolicy="no-referrer"><span class="as-zoom" aria-hidden="true">+</span></button>' : '<div class="as-img"></div>') +
       '<div class="as-body"><h3>' + (n ? '<span class="as-n">' + fa.format(n) + '</span>' : '') + esc(it.name) + '</h3><p class="as-meta"><span class="as-br" data-brand="' + esc(it.src) + '"><i></i>' + esc(BR[it.src] || it.src) + '</span>' +
       (it.code ? '<span>کد <b dir="ltr">' + esc(it.code) + '</b></span>' : '') + (it.cat ? '<span>' + esc(it.cat) + '</span>' : '') + '</p>' +
       '<div class="as-prices">' + price(it) + '</div>' +
@@ -257,6 +257,25 @@
     if (SIGNED && (kind === 'none' || kind === 'down') && window.MSKnowledge) window.MSKnowledge.report(q, kind);
     var a = logRead(); a.push({ t: new Date().toISOString(), kind: kind, q: String(q).slice(0, 300), ids: (ids || []).slice(0, 5) });
     try { localStorage.setItem(LOGK, JSON.stringify(a.slice(-300))); } catch (e) { /* ignore */ }
+  }
+  // tapping a product picture opens it large (the small card picture is only a hint)
+  function zoomPic(src, name) {
+    var d = document.getElementById('asZoom');
+    if (!d) {
+      d = document.createElement('dialog'); d.id = 'asZoom'; d.className = 'as-zoomdlg';
+      d.innerHTML = '<button type="button" class="as-zoomx" aria-label="بستن">×</button><img alt=""><p></p>';
+      d.addEventListener('click', function () { if (d.close) d.close(); else d.removeAttribute('open'); });
+      document.body.appendChild(d);
+    }
+    d.querySelector('img').src = src; d.querySelector('img').alt = name || ''; d.querySelector('p').textContent = name || '';
+    if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  }
+  // «عکسش رو بده»: the picture of the last product shown, large
+  function showPic(s) {
+    if (!/(عکس|تصویر|فوتو|شکلش|ظاهرش|چه شکلی)/.test(s) || /(آپلود|ارسال کنم|بفرستم|بارگذاری)/.test(s)) return null;
+    var it = lastItem(); if (!it) return { text: 'عکس کدام کالا؟ نام یا کد کالا را بنویسید.', links: [] };
+    if (!it.img) return { text: 'برای «' + it.name + '» هنوز عکسی در کاتالوگ نیست؛ مشخصات و ابعادش را می‌توانم بگویم.', ids: [it.id], links: [] };
+    return { cards: true, ids: [it.id], note: 'عکس «' + it.name + '» (روی عکس بزنید تا بزرگ شود):' };
   }
   // every question and answer is also sent to the server's record (no name; a role or «public»; phone numbers and e-mails are blanked there),
   // so the team can read what people really ask. It works only when the portal talks to its own server; the record is shown in «مدیریت».
@@ -815,14 +834,14 @@
     if (/(تعمیر|خراب|روشن ?نمی ?شه|کار ?نمی ?کنه|عیب|خودم .*(تعمیر|درست)|سرویس (کنم|کردن))/.test(s)) return { text: '**عیب‌یابی و تعمیر را من تأیید نمی‌کنم**؛ تعمیر دستگاه‌های برقی و گازی بدون آموزش می‌تواند خطرناک باشد و شرایط خدمات را تغییر دهد. مدل دستگاه و شرح مشکل را از «تماس با ما» برای واحد خدمات پس از فروش بفرستید.', links: CONTACT };
     return null;
   }
-  function extraSkills(s) { return offTopic(s) || noTip(s) || priceFollow(s) || countModels(s) || similar(s) || seeIt(s) || (PUBLIC ? pubScope(s) : (/(نیرو|رزومه|استخدام)/.test(s) ? scopeNote(s + ' جذب نیرو') : null)); }
+  function extraSkills(s) { return offTopic(s) || showPic(s) || noTip(s) || priceFollow(s) || countModels(s) || similar(s) || seeIt(s) || (PUBLIC ? pubScope(s) : (/(نیرو|رزومه|استخدام)/.test(s) ? scopeNote(s + ' جذب نیرو') : null)); }
   function skills(q) { var s = norm(q); if (PUBLIC) return addToLast(s) || extraSkills(s) || (SIGNED && drafts(s)) || starter(s) || spaceFit(s) || foodSkill(s) || whatIs(s) || pageGuide(s) || reqHelp(s); return addToLast(s) || extraSkills(s) || myTasks(s) || occasions(s) || drafts(s) || starter(s) || spaceFit(s) || quote(s) || foodSkill(s) || whatIs(s) || pageGuide(s); }
   // small follow-up buttons under an answer
   function extras(m) {
     var h = '';
     if (m.state === 'wait' || m.state === 'stream' || m.state === 'typing') return '';
     if (m.chips && m.chips.length && S.msgs[S.msgs.length - 1] === m) h += '<div class="as-quick as-chips2">' + m.chips.map(function (c) { return '<button type="button" data-q="' + esc(c.q) + '">' + esc(c.label) + '</button>'; }).join('') + '</div>';
-    if (m.links && m.links.length) h += '<div class="as-links">' + m.links.map(function (l) { return '<a class="as-go" href="' + esc(l.href) + '">' + esc(l.label) + '</a>'; }).join('') + '</div>';
+    if (m.links && m.links.length) h += '<div class="as-links">' + m.links.map(function (l, li) { return '<a class="as-go" href="' + esc(l.href) + '"' + (m.cart && m.cart.length && li === 0 ? ' data-cart="' + esc(JSON.stringify(m.cart)) + '"' : '') + '>' + esc(l.label) + '</a>'; }).join('') + '</div>';
     if (m.cart && m.cart.length) h += '<div class="as-quick"><button type="button" data-addall="' + esc(JSON.stringify(m.cart)) + '">' + T_ALL + '</button></div>';
     var its = hitsOf(m).filter(function (it) { return !it.faq; });
     if (its.length && !m.cart && (m.state === 'cards' || m.state === 'done') && !m.links) {
@@ -926,12 +945,15 @@
   root.addEventListener('click', function (e) {
     var c;
     if (e.target.closest('#asLog2')) { logExport(); return; }
+    if ((c = e.target.closest('[data-zoom]'))) { zoomPic(c.getAttribute('data-zoom'), c.getAttribute('data-name')); return; }
     if ((c = e.target.closest('[data-fb]'))) {
       var mi = Number(c.getAttribute('data-i')), mm = S.msgs[mi], kind = c.getAttribute('data-fb');
       if (mm) { var prev = S.msgs[mi - 1], same = mm.fb === kind; mm.fb = same ? '' : kind; if (!same) { logAdd(kind === 'up' ? 'up' : 'down', prev && prev.text, mm.ids); dlg(prev && prev.text, kind === 'up' ? 'up' : 'down', mm.text || mm.note, mm.ids); } save(); render(true); }
       return;
     }
     if (e.target.closest('#asMic')) { listen(); return; }
+    // the «send / open the pre-invoice» link of a plan puts the plan's items in the list first, so the next page is not empty (it used to fall back to the designer's first page)
+    if ((c = e.target.closest('a[data-cart]'))) { var cl = []; try { cl = JSON.parse(c.getAttribute('data-cart')); } catch (x) { cl = []; } cl.forEach(function (l) { addProforma(l.id, l.qty); }); return; }
     if ((c = e.target.closest('[data-addall]'))) {
       var cart = []; try { cart = JSON.parse(c.getAttribute('data-addall')); } catch (x) { cart = []; }
       var n = 0; cart.forEach(function (l) { if (addProforma(l.id, l.qty)) n++; });

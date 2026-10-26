@@ -26,7 +26,7 @@
     fairs: svg('<path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/>'),
     features: svg('<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'),
     permissions: svg('<path d="M12 3 4 6v6c0 4.5 3.2 8 8 9 4.8-1 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/>'),
-    assistant: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.7A8 8 0 1 1 21 12z"/><path d="m12 7.5.9 1.9 1.9.9-1.9.9-.9 1.9-.9-1.9-1.9-.9 1.9-.9z"/>'),
+    assistant: svg('<path d="M20.5 11.2c0 4-3.7 7.1-8.3 7.1-1 0-1.9-.15-2.8-.45L5 19.8l1.1-3.5C4.7 15.1 3.9 13.2 3.9 11.2c0-4 3.7-7.1 8.3-7.1s8.3 3.1 8.3 7.1z"/><circle cx="9.2" cy="10.6" r=".9" fill="currentColor" stroke="none"/><circle cx="15.2" cy="10.6" r=".9" fill="currentColor" stroke="none"/><path d="M9.4 13.6c.7.7 1.6 1.1 2.8 1.1s2.1-.4 2.8-1.1"/><path d="m19.2 1.8.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6z" fill="currentColor" stroke="none"/>'),
     roadmap: svg('<path d="M3 12h18"/><circle cx="6" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="18" cy="12" r="2.2"/><path d="M6 6v3m6-6v3m6-3v3"/>'),
     backup: svg('<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>'),
     competitors: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M8 11h6"/>'),

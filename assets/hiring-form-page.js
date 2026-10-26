@@ -4,7 +4,7 @@
   var H = w.MSHiring, sheet = d.getElementById('hfSheet'), brand = d.getElementById('hfBrand'), msg = d.getElementById('hfMsg');
   if (!H || !sheet) return;
   function say(t) { msg.textContent = t || ''; }
-  function draw() { sheet.innerHTML = H.pageHtml(brand.value); say(''); }
+  function draw() { sheet.setAttribute('style', H.theme(brand.value)); sheet.innerHTML = H.pageHtml(brand.value); say(''); }
   draw();
   brand.addEventListener('change', draw);
   d.getElementById('hfPrint').addEventListener('click', function () { w.print(); });
