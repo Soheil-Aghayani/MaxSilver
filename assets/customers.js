@@ -657,6 +657,7 @@
   function render() {
     var active = document.activeElement, keep = active && active.id === 'cuQ' ? active.selectionStart : null;
     root.innerHTML = view();
+    if (window.MSPurchases && S.user && S.profile) window.MSPurchases.paint(root, route());   // purchase history under a customer; the sales import under «ورود اطلاعات»
     if (window.MSGate) window.MSGate.apply();
     if (keep !== null) { var q = document.getElementById('cuQ'); if (q) { q.focus(); try { q.setSelectionRange(keep, keep); } catch (e) { /* ignore */ } } }
   }

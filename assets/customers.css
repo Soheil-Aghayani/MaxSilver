@@ -179,3 +179,11 @@
 .cu-kimg{display:block;width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(7,27,54,.16))}
 .cu-kpis span{font-size:13px}
 .cu-kpis b{font-size:25px;color:var(--c)}
+
+/* purchase history (assets/purchases.js) */
+.cu-inv2{margin:8px 0;border:1px solid var(--ms-line,#dfe5ee);border-radius:14px;background:#fff;overflow:hidden}
+.cu-inv2>summary{display:grid;grid-template-columns:auto auto 1fr auto;gap:10px;align-items:center;padding:11px 14px;cursor:pointer;font-size:13px}
+.cu-inv2>summary em{font-style:normal;font-weight:800;color:var(--ms-navy,#071b36)}
+.cu-inv2[open]>summary{background:#f7f9fc}
+.cu-inv2 .cu-tablewrap{padding:0 10px 10px}
+.cu-check{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px;cursor:pointer}
