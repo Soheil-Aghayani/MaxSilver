@@ -258,6 +258,17 @@
     var a = logRead(); a.push({ t: new Date().toISOString(), kind: kind, q: String(q).slice(0, 300), ids: (ids || []).slice(0, 5) });
     try { localStorage.setItem(LOGK, JSON.stringify(a.slice(-300))); } catch (e) { /* ignore */ }
   }
+  // every question and answer is also sent to the server's record (no name; a role or «public»; phone numbers and e-mails are blanked there),
+  // so the team can read what people really ask. It works only when the portal talks to its own server; the record is shown in «مدیریت».
+  var SID = (function () { try { var k = 'ms-assistant-sid', v = sessionStorage.getItem(k); if (!v) { v = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); sessionStorage.setItem(k, v); } return v; } catch (e) { return 's' + Math.random().toString(36).slice(2, 12); } })();
+  function dlg(q, kind, a, ids) {
+    try {
+      var api = window.MSApi; q = String(q || '').trim(); if (!api || !api.assistantLog || !api.enabled() || !q) return;
+      var who = SIGNED && /^[a-z_]{3,24}$/.test(ROLE0) ? ROLE0 : 'public';
+      var names = (ids || []).slice(0, 3).map(function (id) { return byId[id] ? byId[id].name : ''; }).filter(Boolean).join(' | ');
+      api.assistantLog({ sid: SID, who: who, kind: kind, q: q.slice(0, 300), a: String(a || '').replace(/[*#]/g, '').slice(0, 600), items: names.slice(0, 190) }).then(null, function () { /* the record is optional */ });
+    } catch (e) { /* ignore */ }
+  }
   function logExport() {
     var a = logRead(); if (!a.length) return;
     var blob = new Blob([JSON.stringify({ app: 'maxi', exported: new Date().toISOString(), note: 'پرسش‌های بی‌پاسخ و بازخورد؛ برای آموزش مکثی', items: a }, null, 1)], { type: 'application/json' });
@@ -304,7 +315,7 @@
         '<div class="as-log" id="asLog">' + S.msgs.map(function (m, i) { return m.role === 'user' ? userHtml(m, i) : botHtml(m, i); }).join('') + '</div>') + '</div>' + (PUBLIC && pubRead().length ? '<div class="as-reqbar" role="status"><span>درخواست خرید شما: ' + fmt(pubRead().length) + ' کالا</span><a href="./planner.html?public=1&from=aria">مشاهده و ارسال</a></div>' : '') +
       '<form class="as-form' + (empty ? ' empty' : '') + '" id="asForm" aria-label="ارسال پیام به مکثی"><div class="as-box"><textarea id="asQ" rows="1" maxlength="600" enterkeyhint="send" placeholder="' + (S.ready ? 'پیام خود را بنویسید…' : 'در حال آماده‌کردن کاتالوگ…') + '" aria-label="پیام"' + (S.ready ? '' : ' disabled') + '></textarea>' +
       (SR ? '<button type="button" class="as-mic' + (S.listening ? ' on' : '') + '" id="asMic" aria-label="گفتن پیام با صدا" title="گفتن پیام با صدا"' + (S.ready ? '' : ' disabled') + '>' + ICON.mic + '</button>' : '') + '<button type="submit" class="as-send" aria-label="ارسال"' + (S.ready && !S.busy ? '' : ' disabled') + '>' + ICON.send + '</button></div>' +
-      '<p class="as-fine">' + (PUBLIC ? 'مکثی ممکن است اشتباه کند؛ قیمت و شرایط را کارشناس فروش در تماس اعلام می‌کند.' : 'مکثی ممکن است اشتباه کند؛ کد، قیمت و اندازه را پیش از پیش‌فاکتور در کاتالوگ ببینید.') + '</p></form>';
+      '<p class="as-fine">' + (PUBLIC ? 'مکثی ممکن است اشتباه کند؛ قیمت و شرایط را کارشناس فروش در تماس اعلام می‌کند. پرسش‌ها بدون نام ذخیره می‌شوند تا مکثی بهتر شود؛ شمارهٔ تلفن و اطلاعات شخصی ننویسید.' : 'مکثی ممکن است اشتباه کند؛ کد، قیمت و اندازه را پیش از پیش‌فاکتور در کاتالوگ ببینید. پرسش‌ها برای بهتر شدن مکثی بدون نام ذخیره می‌شوند.') + '</p></form>';
   }
   function grow(q) { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 168) + 'px'; }
   function save() { try { sessionStorage.setItem(KEY, JSON.stringify(S.msgs.slice(-30).map(function (m) { return m.state === 'wait' || m.state === 'stream' || m.state === 'typing' ? Object.assign({}, m, { state: m.text ? 'done' : 'cards' }) : m; }))); } catch (e) { /* ignore */ } }
@@ -364,7 +375,8 @@
     [/^(سلام|درود|وقت بخیر|صبح بخیر|عصر بخیر|شب بخیر|hi|hello)[\s!.؟?]*$/i, 'سلام، خوش آمدید. کدام کالا را لازم دارید؟ نام، اندازه یا کد را بنویسید، مثلاً «گریل ۶۰ ذغالی».'],
     [/^(ممنون|مرسی|سپاس|تشکر|دستت درد نکنه|متشکرم|thanks)[\s!.]*$/i, 'خواهش می‌کنم. اگر کالای دیگری لازم بود بنویسید.'],
     [/(تو کی|شما کی|کی هستی|چه کار(ی)? (می‌?کنی|می‌?توانی|بلدی)|چیکار(ا)? (می‌?کنی|بلدی)|چه کمکی)/, 'من مکثی، دستیار هوشمند مکث‌سیلور هستم. فعلاً کالا، کد، قیمت نقدی و اعتباری (چکی) و ابعاد را پیدا می‌کنم، دو کالا را مقایسه می‌کنم، کالاهای مشابه برندهای دیگر را (احتمالی) پیشنهاد می‌دهم و معنی واژه‌های کاتالوگ را می‌گویم. کارهای بیشتر در راه است؛ آنچه در منابعم نباشد را حدس نمی‌زنم.'],
-    [/^(خداحافظ|فعلا|بای|bye)[\s!.]*$/i, 'موفق باشید.']
+    [/^(خداحافظ|فعلا|بای|bye)[\s!.]*$/i, 'موفق باشید.'],
+    [/^(حالت|حال شما|حال تو|چطوری|چطورید|خوبی|خوبید)( ?(چطوره|چطور است|خوبه|چطوریه))?[\s!.؟?]*$/, 'ممنون، آماده‌ام کمک کنم. کدام کالا یا دستگاه را لازم دارید؟']
   ];
   function smallTalk(q) { var s = norm(q).trim(); for (var i = 0; i < TALK.length; i++) if (TALK[i][0].test(s)) return TALK[i][1]; return ''; }
   function brandOf(q) { var s = norm(q); for (var i = 0; i < BRAND_WORDS.length; i++) for (var k = 0; k < BRAND_WORDS[i][1].length; k++) if (s.indexOf(norm(BRAND_WORDS[i][1][k])) >= 0) return BRAND_WORDS[i][0]; return ''; }
@@ -745,7 +757,66 @@
     lines.push('منبع: توضیح و مشخصات کاتالوگ مکث‌سیلور؛ دسته‌بندی و مشخصات ماشینی‌اند و تأیید نهایی با صفحهٔ همان کالاست.');
     return { text: lines.join('\n\n'), ids: [it.id], links: [] };
   }
-  function skills(q) { var s = norm(q); if (PUBLIC) return addToLast(s) || (SIGNED && drafts(s)) || starter(s) || spaceFit(s) || foodSkill(s) || whatIs(s) || pageGuide(s) || reqHelp(s); return addToLast(s) || myTasks(s) || occasions(s) || drafts(s) || starter(s) || spaceFit(s) || quote(s) || foodSkill(s) || whatIs(s) || pageGuide(s); }
+
+  // ---- questions real visitors ask that are not «find a product»: off-topic, how many models, seeing a product, similar models, repairs, hiring, price follow-ups
+  var CONTACT = [{ href: './contact.html', label: 'تماس با ما' }];
+  var STOPW = ' چند چنتا تا چه مدل مدلی مدلها مدل‌ها نوع انواع دارین دارید دارد هست هستن تعداد شما رو را از و ما می کنید داریم ';
+  function offTopic(s) {
+    var code = /(پایتون|python|جاوا ?اسکریپت|javascript|برنامه ?نویسی|کد (بنویس|پایتون|جاوا|بده)|کدنویسی|ترجمه کن|شعر (بگو|بنویس)|جوک|لطیفه|فال |بیت ?کوین|ارز دیجیتال|فوتبال|نتیجه بازی|آب و هوا|هوا (چطور|چطوره))/.test(s);
+    var trivia = /(بلندترین|بزرگترین|کوچکترین|پایتخت|کی اختراع|کی بود|کجاست)/.test(s) && !/(مکث|وینتورا|توربو|شرکت|دفتر|کارخانه|نمایندگی|آدرس|فروشگاه|دستگاه|کالا|محصول)/.test(s) && !retrieve(s, 1).length;
+    if (!code && !trivia) return null;
+    return { text: '**این پرسش خارج از کار من است.** من فقط دربارهٔ تجهیزات آشپزخانهٔ صنعتی مکث‌سیلور، وینتورا و توربومکس، نیاز کسب‌وکار شما و درخواست خرید کمک می‌کنم. اگر بنویسید چه کسب‌وکاری دارید (مثلاً «کافه کوچک» یا «پیتزایی»)، دستگاه مناسب را پیشنهاد می‌دهم.', links: [], chips: [{ label: 'راه‌اندازی کافه', q: 'می‌خواهم کافه راه‌اندازی کنم' }, { label: 'راه‌اندازی رستوران', q: 'می‌خواهم رستوران راه‌اندازی کنم' }], scope: true };
+  }
+  function topicOf(s) {
+    return s.replace(/[؟?!.،,]/g, ' ').split(/\s+/).filter(function (t) { return t && STOPW.indexOf(' ' + t + ' ') < 0; }).join(' ');
+  }
+  function countModels(s) {
+    if (!/(چند|چنتا)( ?تا)? ?(مدل|نوع)|(چه|چند) ?(مدل|نوع)(ی|های)? .*(دارین|دارید|دارد|هست)|تعداد مدل/.test(s)) return null;
+    var topic = topicOf(s); if (topic.length < 3) return null;
+    var hits = retrieve(topic, 60).filter(function (h) { return !h.d.it.faq; });
+    if (!hits.length) return { text: 'در کاتالوگ چیزی با این نام پیدا نکردم. نام دستگاه را کامل‌تر یا به شکل دیگری بنویسید.', links: CONTACT };
+    var top = hits[0].s, list = hits.filter(function (h) { return h.s >= top * 0.5; }).map(function (h) { return h.d.it; });
+    var by = {}; list.forEach(function (it) { var b = BR[it.src] || it.src; by[b] = (by[b] || 0) + 1; });
+    var parts = Object.keys(by).map(function (b) { return fa.format(by[b]) + ' مدل از ' + b; });
+    return { cards: true, ids: list.slice(0, 5).map(function (it) { return it.id; }), note: 'در کاتالوگ حدود ' + fa.format(list.length) + ' مدل نزدیک به «' + topic + '» پیدا کردم (' + parts.join('، ') + '). چند نمونه:' };
+  }
+  function seeIt(s) {
+    if (!/(ببینم|ببینیم|دیدن|بازدید|حضوری|نمونه (واقعی|حضوری)|از نزدیک)/.test(s)) return null;
+    var SW = ' می شه تونم میشه می شه میتونم می تونم امکانش هست ببینم ببینیم دیدن بازدید حضوری از نزدیک رو را ی ش ';
+    var topic = s.replace(/[؟?!.،,]/g, ' ').split(/\s+/).map(function (t) { return t.replace(/(تون|شون|مون)$/, ''); }).filter(function (t) { return t && SW.indexOf(' ' + t + ' ') < 0; }).join(' ');
+    var hits = topic.length >= 3 ? retrieve(topic, 5).filter(function (h) { return !h.d.it.faq; }) : [];
+    if (hits.length) return { cards: true, ids: hits.map(function (h) { return h.d.it.id; }), note: 'مشخصات، ابعاد و عکس این کالاها در کاتالوگ هست. برای دیدن حضوری یا نمونه با کارشناس فروش هماهنگ کنید؛ زمان و مکان را او اعلام می‌کند:' };
+    return { text: 'این کالا را در کاتالوگ پیدا نکردم. برای دیدن حضوری دستگاه‌ها و هماهنگی بازدید با کارشناس فروش تماس بگیرید؛ زمان و مکان را او اعلام می‌کند.', links: CONTACT };
+  }
+  function similar(s) {
+    if (!/(شبیه|مشابه|مثل (این|همین)|نظیر|جایگزین|معادل)/.test(s)) return null;
+    var it = lastItem(); if (!it) return { text: 'کدام کالا؟ نام یا کد کالا را بنویسید تا مدل‌های مشابهش را نشان دهم.', links: [] };
+    var ids = (EQ[it.id] || []).filter(function (id) { return itemsById[id]; });
+    retrieve(it.cat || it.name, 12).forEach(function (h) { var o = h.d.it; if (!o.faq && o.id !== it.id && ids.indexOf(o.id) < 0) ids.push(o.id); });
+    ids = ids.slice(0, 5);
+    if (!ids.length) return { text: 'برای «' + it.name + '» مدل مشابهی در کاتالوگ پیدا نکردم؛ مشخصات دلخواهتان را بنویسید.', links: [] };
+    return { cards: true, ids: ids, note: 'مدل‌های شبیه به «' + it.name + '» در کاتالوگ (از برند دیگر یا همان دسته):' };
+  }
+  function noTip(s) {
+    if (!/(نکته|ویژگی|توضیح(ی|ات)?|اطلاعات).*(خاصی|ندار|نیست|کمه|کم است)|خاصی ندار/.test(s)) return null;
+    var it = lastItem(); if (!it) return { text: 'درباره کدام کالا؟ نام یا کد آن را بنویسید.', links: [] };
+    var d = String(it.desc || '').replace(/\[specs-table\]/g, '').replace(/\s+/g, ' ').trim();
+    return { text: 'درباره «' + it.name + '» در کاتالوگ فقط ' + (d.length > 40 ? 'همین توضیح و مشخصات ثبت شده است. ' : 'مشخصات فنی ثبت شده و توضیح تکمیلی نیست. ') + 'اگر نکتهٔ خاصی لازم دارید (کاربرد، جنس، ظرفیت)، همین‌جا بپرسید یا از کارشناس فروش بخواهید.', ids: [it.id], links: CONTACT };
+  }
+  function priceFollow(s) {
+    if (!/^(پس )?(قیمت|قیمتش|قیمتشو|قیمتش رو)( ?(نداره|نیست|چنده|چنده؟|چقدره|رو بگو))?[\s؟?!.]*$/.test(s)) return null;
+    var it = lastItem();
+    if (PUBLIC) return { text: (it ? 'قیمت «' + it.name + '» ' : 'قیمت‌ها ') + 'را کارشناس فروش مکث‌سیلور در تماس اعلام می‌کند؛ قیمت‌ها بسته به تعداد، شرایط پرداخت و موجودی تغییر می‌کند. کالا را به «درخواست خرید» اضافه کنید تا کارشناس با شما تماس بگیرد.', links: [{ href: './planner.html?public=1&from=aria', label: 'مشاهده و ارسال درخواست خرید' }].concat(CONTACT) };
+    if (it) { var c = cashOf(it); return { text: c ? '«' + it.name + '»: قیمت نقدی ' + fmt(c) + ' تومان (از فهرست قیمت ثبت‌شده).' : 'برای «' + it.name + '» هنوز قیمتی در فهرست ثبت نشده است؛ از مدیر فروش بپرسید.', ids: [it.id], links: [] }; }
+    return null;
+  }
+  function pubScope(s) {
+    if (/(نیرو|استخدام|کار ?می ?خوایم|همکاری|رزومه|شغل خالی|آگهی استخدام)/.test(s) && /(نمی ?خوا|می ?خوا|دارید|دارین|هست|استخدام|رزومه|نیرو)/.test(s)) return { text: '**اعلام نیاز به نیرو و دریافت رزومه با منابع انسانی است** و من از آن اطلاعاتی ندارم. برای پرسش دربارهٔ فرصت‌های شغلی از راه «تماس با ما» با شرکت در ارتباط باشید.', links: CONTACT };
+    if (/(تعمیر|خراب|روشن ?نمی ?شه|کار ?نمی ?کنه|عیب|خودم .*(تعمیر|درست)|سرویس (کنم|کردن))/.test(s)) return { text: '**عیب‌یابی و تعمیر را من تأیید نمی‌کنم**؛ تعمیر دستگاه‌های برقی و گازی بدون آموزش می‌تواند خطرناک باشد و شرایط خدمات را تغییر دهد. مدل دستگاه و شرح مشکل را از «تماس با ما» برای واحد خدمات پس از فروش بفرستید.', links: CONTACT };
+    return null;
+  }
+  function extraSkills(s) { return offTopic(s) || noTip(s) || priceFollow(s) || countModels(s) || similar(s) || seeIt(s) || (PUBLIC ? pubScope(s) : (/(نیرو|رزومه|استخدام)/.test(s) ? scopeNote(s + ' جذب نیرو') : null)); }
+  function skills(q) { var s = norm(q); if (PUBLIC) return addToLast(s) || extraSkills(s) || (SIGNED && drafts(s)) || starter(s) || spaceFit(s) || foodSkill(s) || whatIs(s) || pageGuide(s) || reqHelp(s); return addToLast(s) || extraSkills(s) || myTasks(s) || occasions(s) || drafts(s) || starter(s) || spaceFit(s) || quote(s) || foodSkill(s) || whatIs(s) || pageGuide(s); }
   // small follow-up buttons under an answer
   function extras(m) {
     var h = '';
@@ -834,6 +905,7 @@
     if (!r) { r = { q: text, ids: [], state: 'none' }; logAdd('none', text, []); }
     else if (r.state === 'none' && r.main) logAdd('none', text, []);
     else if (r.scope) logAdd('none', text, []);   // outside Arya's job: still worth knowing what people ask
+    dlg(text, r.state === 'none' ? 'none' : r.scope ? 'scope' : 'ok', r.text || (r.state === 'none' ? (r.nonote || 'در منابع من پاسخی برای این پرسش نیست.') : noteOf(r)), r.ids);
     if (r.main && relayUrl() && r.ids.length && r.state === 'cards') {
       var bot = r, bi = S.msgs.length, items = r.ids.map(function (id) { return byId[id]; }).filter(Boolean);
       bot.role = 'bot'; S.msgs.push(bot);
@@ -856,7 +928,7 @@
     if (e.target.closest('#asLog2')) { logExport(); return; }
     if ((c = e.target.closest('[data-fb]'))) {
       var mi = Number(c.getAttribute('data-i')), mm = S.msgs[mi], kind = c.getAttribute('data-fb');
-      if (mm) { var prev = S.msgs[mi - 1], same = mm.fb === kind; mm.fb = same ? '' : kind; if (!same) logAdd(kind === 'up' ? 'up' : 'down', prev && prev.text, mm.ids); save(); render(true); }
+      if (mm) { var prev = S.msgs[mi - 1], same = mm.fb === kind; mm.fb = same ? '' : kind; if (!same) { logAdd(kind === 'up' ? 'up' : 'down', prev && prev.text, mm.ids); dlg(prev && prev.text, kind === 'up' ? 'up' : 'down', mm.text || mm.note, mm.ids); } save(); render(true); }
       return;
     }
     if (e.target.closest('#asMic')) { listen(); return; }

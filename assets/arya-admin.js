@@ -19,6 +19,8 @@
   box.innerHTML = '<div class="as-adm-head"><h2>مدیریت مکثی</h2><button type="button" class="as-adm-x" data-adm-close aria-label="بستن">×</button></div><div class="as-adm-in">' +
     '<section><h3>سؤال‌هایی که مکثی جواب نداد</h3><p class="as-adm-note">بدون نام؛ فقط نقش پرسنده. بر اساس تعداد تکرار مرتب شده‌اند.</p>' +
     '<div class="as-adm-row"><button type="button" data-qs>نمایش</button>' + (isManager ? '<button type="button" data-qclear class="warn">پاک‌کردن فهرست</button>' : '') + '</div><ol class="as-adm-list" data-qlist></ol></section>' +
+    '<section><h3>گفت‌وگوهای ثبت‌شده با مکثی</h3><p class="as-adm-note">هر پرسش و پاسخ، بدون نام (فقط «مهمان» یا نقش) و با شمارهٔ تلفن و ایمیل پاک‌شده. برای دیدن اینکه مردم چه می‌پرسند و کجا مکثی کم می‌آورد.</p>' +
+    '<div class="as-adm-row"><select data-dkind><option value="">همه</option><option value="none">بی‌پاسخ</option><option value="scope">خارج از کار مکثی</option><option value="down">نمرهٔ منفی</option><option value="ok">پاسخ‌داده‌شده</option></select><button type="button" data-dshow>نمایش</button><button type="button" data-dcsv>دریافت Excel/CSV</button>' + (isManager ? '<button type="button" data-dclear class="warn">پاک‌کردن همه</button>' : '') + '</div><p class="as-adm-note" data-dinfo></p><ol class="as-adm-list" data-dlist></ol></section>' +
     (isManager ? '<section><h3>وارد کردن متن‌های شرکت</h3><p class="as-adm-note">فایل <b>arya_knowledge.json</b> را انتخاب کنید. هر متن فقط برای نقش‌هایی که در آن نوشته شده دیده می‌شود. وارد کردن دوباره، متن‌های هم‌نام را جایگزین می‌کند.</p>' +
       '<div class="as-adm-row"><input type="file" accept="application/json,.json" data-kfile><button type="button" data-kgo>وارد کردن</button></div><p class="as-adm-msg" data-kmsg role="status"></p></section>' : '') +
     '</div>';
@@ -38,6 +40,36 @@
       var list = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.n - a.n || b.last - a.last; });
       ol.innerHTML = list.length ? list.slice(0, 80).map(function (e) { return '<li><b>' + esc(e.q) + '</b> <small>' + fa.format(e.n) + ' بار' + (e.down ? '، ' + fa.format(e.down) + ' نمرهٔ منفی' : '') + ' · ' + esc(Object.keys(e.roles).join('، ')) + '</small></li>'; }).join('') : '<li>هنوز سؤالی ثبت نشده است.</li>';
     }, function () { ol.innerHTML = '<li>خواندن ممکن نشد.</li>'; });
+  }
+  var dRows = [];
+  var KIND = { ok: 'پاسخ', none: 'بی‌پاسخ', scope: 'خارج از کار', down: 'نمرهٔ منفی', up: 'نمرهٔ مثبت' };
+  function showDialogs() {
+    var ol = box.querySelector('[data-dlist]'), info = box.querySelector('[data-dinfo]'), api = w.MSApi;
+    if (!api || !api.enabled || !api.enabled()) { ol.innerHTML = '<li>ثبت گفت‌وگو فقط روی سرور اصلی کار می‌کند.</li>'; return; }
+    ol.innerHTML = '<li>در حال خواندن…</li>';
+    api.assistantDialogs(box.querySelector('[data-dkind]').value).then(function (r) {
+      dRows = r.rows || [];
+      var bySid = {}, order = [];
+      dRows.forEach(function (x) { if (!bySid[x.sid]) { bySid[x.sid] = []; order.push(x.sid); } bySid[x.sid].push(x); });
+      info.textContent = fa.format(r.total) + ' پرسش ثبت شده؛ ' + fa.format(order.length) + ' گفت‌وگو در فهرست زیر.';
+      ol.innerHTML = order.length ? order.slice(0, 120).map(function (sid) {
+        var l = bySid[sid].slice().reverse();
+        return '<li><small>' + esc(l[0].who === 'public' ? 'مهمان' : l[0].who) + ' · ' + esc(String(l[0].created_at || '').slice(0, 16)) + '</small>' + l.map(function (x) {
+          return '<div><b>' + esc(x.q) + '</b> <small>(' + esc(KIND[x.kind] || x.kind) + ')</small>' + (x.a ? '<br><span>' + esc(x.a) + '</span>' : '') + '</div>'; }).join('') + '</li>';
+      }).join('') : '<li>چیزی ثبت نشده است.</li>';
+    }, function () { ol.innerHTML = '<li>خواندن ممکن نشد.</li>'; });
+  }
+  function csvDialogs() {
+    if (!dRows.length) { showDialogs(); return; }
+    function c(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
+    var out = ['\ufeff' + ['گفت‌وگو', 'زمان', 'کاربر', 'نوع', 'پرسش', 'پاسخ', 'کالاها'].map(c).join(',')];
+    dRows.slice().reverse().forEach(function (x) { out.push([x.sid, x.created_at, x.who === 'public' ? 'مهمان' : x.who, KIND[x.kind] || x.kind, x.q, x.a, x.items].map(c).join(',')); });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out.join('\r\n')], { type: 'text/csv;charset=utf-8' })); a.download = 'maxi-dialogs.csv';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
+  function clearDialogs() {
+    var api = w.MSApi; if (!api || !w.confirm('همهٔ گفت‌وگوهای ثبت‌شده برای همیشه پاک شود؟')) return;
+    api.assistantDialogsClear().then(showDialogs, function () { say('پاک‌کردن ممکن نشد.', true); });
   }
   function clearQuestions() {
     var d = db(); if (!d || !w.confirm('همهٔ سؤال‌های ثبت‌شده پاک شود؟')) return;
@@ -74,6 +106,9 @@
     if (e.target === box || e.target.closest('[data-adm-close]')) { if (box.close) box.close(); else box.removeAttribute('open'); }
     else if (e.target.closest('[data-qs]')) showQuestions();
     else if (e.target.closest('[data-qclear]')) clearQuestions();
+    else if (e.target.closest('[data-dshow]')) showDialogs();
+    else if (e.target.closest('[data-dcsv]')) csvDialogs();
+    else if (e.target.closest('[data-dclear]')) clearDialogs();
     else if (e.target.closest('[data-kgo]')) importFile();
   });
 })(window);
