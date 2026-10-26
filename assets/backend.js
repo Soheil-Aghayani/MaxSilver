@@ -41,6 +41,7 @@
       '<form id="fLogin" autocomplete="on"><label>ایمیل<input name="email" type="email" dir="ltr" autocomplete="username" value="' + esc(S.email) + '" required></label>' +
       '<label>رمز عبور<input name="password" type="password" dir="ltr" autocomplete="current-password" required></label>' +
       ('<label>کد شش‌رقمی برنامهٔ احراز هویت' + (S.needCode ? '' : ' (اگر ورود دومرحله‌ای دارید)') + '<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code"' + (S.needCode ? ' required autofocus' : '') + '></label>') +
+      '<label class="bk-check"><input type="checkbox" name="remember"' + (S.remember ? ' checked' : '') + '> مرا روی این دستگاه به خاطر بسپار (۳۰ روز؛ فقط دستگاه شخصی)</label>' +
       '<button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>' + (S.busy ? 'در حال ورود…' : 'ورود') + '</button></form></section>';
   }
   function viewEnroll() {
@@ -66,7 +67,7 @@
       return h + '<p class="bk-sub">ورود دومرحله‌ای خاموش است. با فعال‌کردن آن، هنگام ورود علاوه بر رمز، یک کد شش‌رقمی از برنامهٔ احراز هویت گوشی هم پرسیده می‌شود و حساب شما امن‌تر است.</p><div><button type="button" class="bk-btn" data-2fa-on>فعال‌سازی</button></div></section>';
     }
     if (u.needs_2fa) {
-      return h + '<p class="bk-sub">روشن است. برای نقش شما الزامی است و نمی‌توان آن را خاموش کرد.</p></section>';
+      return h + '<p class="bk-sub">روشن است. برای نقش شما الزامی است و نمی‌توان آن را خاموش کرد.</p><p class="bk-sub">دستگاه‌های به‌خاطرسپرده: اگر دستگاهی گم شد یا مشکوک است، همه را فراموش کنید؛ در ورود بعدی دوباره کد پرسیده می‌شود.</p><button type="button" class="bk-btn ghost" data-forget-dev>فراموش‌کردن همهٔ دستگاه‌ها</button></section>';
     }
     return h + '<p class="bk-sub">روشن است. برای خاموش‌کردن، رمز و یک کد فعلی را بنویسید.</p>' +
       '<form id="fTwoOff" class="bk-grid"><label>رمز عبور<input name="password" type="password" dir="ltr" required autocomplete="current-password"></label><label>کد شش‌رقمی<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required></label><button class="bk-btn ghost" ' + (S.busy ? 'disabled' : '') + '>خاموش‌کردن</button></form></section>';
@@ -93,7 +94,7 @@
     if (can('siteUpdate') && S.portal) {
       var p = S.portal, ok = p.configured && p.writable && p.zip, two = !!u.has_2fa;
       var ask = '<label>رمز عبور شما (برای تأیید)<input name="password" type="password" dir="ltr" required autocomplete="current-password"></label>' +
-        (two ? '<label>کد شش‌رقمی برنامهٔ احراز هویت<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required></label>' : '');
+        (two ? '<label>کد شش‌رقمی برنامهٔ احراز هویت' + (api.device() ? ' (اختیاری: این دستگاه به خاطر سپرده شده است)' : '') + '<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code"' + (api.device() ? '' : ' required') + '></label>' : '');
       h += '<section class="bk-card"><h2>به‌روزرسانی سایت</h2><p class="bk-sub">نسخهٔ فعلی صفحه‌های سایت روی این سرور: <bdi dir="ltr">' + esc(p.version || 'نامشخص') + '</bdi>. فایل zip به‌روزرسانی را اینجا بارگذاری کنید؛ فقط فایل‌های ایستا (صفحه، تصویر، قلم) پذیرفته می‌شود و از نسخهٔ قبلی یک نسخهٔ بازگشت نگه داشته می‌شود. حجم مجاز: ' + p.upload_mb + ' مگابایت.</p>' +
         (ok ? '' : '<p class="bk-err">این بخش هنوز آماده نیست: ' + (!p.configured ? 'مسیر پوشهٔ سایت (PORTAL_PATH) در تنظیمات سرور نیست.' : !p.writable ? 'پوشهٔ سایت قابل نوشتن نیست.' : 'افزونهٔ zip در هاست خاموش است.') + '</p>') +
         (ok ? '<form id="fSite"><label class="bk-file" id="siteFile"><input name="file" type="file" accept=".zip,application/zip" required><span class="bk-file-btn">انتخاب فایل zip</span><span class="bk-file-name">فایلی انتخاب نشده</span></label>' + ask + '<button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>بارگذاری و به‌روزرسانی</button></form>' : '') +
@@ -132,7 +133,8 @@
       api.ping().then(function () { S.busy = false; go('login'); }, function () { api.setBase(''); fail({ message: 'سرور پاسخ نداد. آدرس و روشن‌بودن سرور را بررسی کنید.' }); });
     } else if (f.id === 'fLogin') {
       S.email = v('email');
-      api.login(S.email, f.elements.password.value, v('code')).then(function (r) {
+      S.remember = !!(f.elements.remember && f.elements.remember.checked);
+      api.login(S.email, f.elements.password.value, v('code'), S.remember).then(function (r) {
         S.needCode = false;
         if (r.must_enroll_2fa) return api.twoFactorStart().then(function (s) { S.otp = s.otpauth; S.busy = false; go('enroll'); });
         return loadHome();
@@ -148,7 +150,7 @@
       api.setUserPassword(uid, f.elements.password.value).then(function () { S.pwFor = 0; S.busy = false; S.error = ''; S.note = 'رمز تازه ذخیره شد و آن شخص از همهٔ دستگاه‌ها خارج شد. رمز را حضوری به او بدهید.'; render(); }, fail);
     } else if (f.id === 'fApk') {
       var ad = new FormData();
-      ad.append('file', f.elements.file.files[0]); ad.append('version', v('version')); ad.append('password', f.elements.password.value);
+      ad.append('file', f.elements.file.files[0]); ad.append('version', v('version')); ad.append('password', f.elements.password.value); if (api.device()) ad.append('device', api.device());
       if (v('signerSha256')) ad.append('signerSha256', v('signerSha256'));
       ad.append('signer', 'CN=Max Silver, O=Max Steel Arya, C=IR');
       if (f.elements.code && f.elements.code.value) ad.append('code', f.elements.code.value.trim());
@@ -156,10 +158,10 @@
     } else if (f.id === 'fSite' || f.id === 'fSiteBack') {
       var fd = new FormData();
       if (f.id === 'fSite') fd.append('file', f.elements.file.files[0]);
-      fd.append('password', f.elements.password.value);
+      fd.append('password', f.elements.password.value); if (api.device()) fd.append('device', api.device());
       if (f.elements.code && f.elements.code.value) fd.append('code', f.elements.code.value.trim());
       var rb = f.id === 'fSiteBack', pw = f.elements.password.value, cd = f.elements.code ? f.elements.code.value.trim() : '';
-      (rb ? api.portalRollback({ password: pw, code: cd || undefined }) : api.portalUpdate(fd)).then(function (r) {
+      (rb ? api.portalRollback({ password: pw, code: cd || undefined, device: api.device() || undefined }) : api.portalUpdate(fd)).then(function (r) {
         return loadHome().then(function () { S.note = rb ? 'به نسخهٔ قبل برگشت (' + r.restored + ' فایل). نسخهٔ فعلی: ' + (r.version || '') : 'سایت به‌روز شد: ' + r.files + ' فایل' + (r.deleted ? '، ' + r.deleted + ' حذف' : '') + '. نسخهٔ فعلی: ' + (r.version || '') + '. صفحه را با Ctrl+F5 تازه کنید.'; render(); });
       }, fail);
     } else if (f.id === 'fNew') {
@@ -173,6 +175,7 @@
     if (t.hasAttribute('data-server')) go('server');
     else if (t.hasAttribute('data-off')) { api.setBase(''); S.note = 'سرور خاموش شد؛ پورتال دوباره از Firebase استفاده می‌کند.'; render(); }
     else if (t.hasAttribute('data-out')) api.logout().then(function () { S.user = null; go('login'); });
+    else if (t.hasAttribute('data-forget-dev')) api.forgetDevices().then(function () { S.note = 'همهٔ دستگاه‌های به‌خاطرسپرده فراموش شد.'; render(); }, fail);
     else if (t.hasAttribute('data-2fa-on')) { S.busy = true; api.twoFactorBegin().then(function (r) { S.otp = r.otpauth; S.twoStep = true; S.busy = false; render(); }, fail); }
     else if (t.hasAttribute('data-2fa-cancel')) { S.otp = ''; S.twoStep = false; render(); }
     else if (t.hasAttribute('data-pw')) { S.pwFor = Number(t.getAttribute('data-pw')); S.delFor = 0; S.error = ''; S.note = ''; render(); }

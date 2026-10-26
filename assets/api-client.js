@@ -6,8 +6,18 @@
 
   function base() { if (/\.github\.io$/i.test(location.hostname)) return ''; var u = ''; try {   // the GitHub Pages copy is the Firebase fallback: a server address saved earlier in this browser must not override it
     u = localStorage.getItem(BASE_KEY) || ''; } catch (e) { /* ignore */ } return (u || w.MS_API_BASE || '').replace(/\/+$/, ''); }
-  function token() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
-  function setToken(t) { try { if (t) sessionStorage.setItem(TOKEN_KEY, t); else sessionStorage.removeItem(TOKEN_KEY); wipeCache(); } catch (e) { /* ignore */ } }
+  // the session token lives in this tab; when the person ticked «remember me» a copy also stays on this device (the server gives that token 30 days)
+  function token() { try { return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY + '-p') || ''; } catch (e) { return ''; } }
+  function setToken(t, persist) {
+    try {
+      if (t) { sessionStorage.setItem(TOKEN_KEY, t); if (persist) localStorage.setItem(TOKEN_KEY + '-p', t); else localStorage.removeItem(TOKEN_KEY + '-p'); }
+      else { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY + '-p'); }
+      wipeCache();
+    } catch (e) { /* ignore */ }
+  }
+  // the remembered-browser token that lets a sign-in or a site update skip the six-digit code (the password is always asked)
+  function device() { try { return localStorage.getItem('ms-device') || ''; } catch (e) { return ''; } }
+  function setDevice(t) { try { if (t) localStorage.setItem('ms-device', t); else localStorage.removeItem('ms-device'); } catch (e) { /* ignore */ } }
 
   // ----- last good answers: when the server cannot be reached, a read is answered from the copy saved by the last good one, so the screen
   // keeps its data and a small bar says so. The copy lives in sessionStorage only (gone when the tab closes, wiped at sign-in and sign-out).
@@ -90,9 +100,11 @@
     raw: call,
     forget: function () { setToken(''); try { localStorage.removeItem('ms-role'); } catch (e) { /* ignore */ } },
     ping: function () { return call('GET', 'ping'); },
-    login: function (email, password, code) {
-      var d = { email: email, password: password }; if (code) d.code = code;
-      return call('POST', 'auth/login', d).then(function (r) { setToken(r.token); if (r.user) remember(r.user); return r; });
+    device: device,
+    forgetDevices: function () { return call('POST', 'auth/devices/forget').then(function () { setDevice(''); }); },
+    login: function (email, password, code, rememberMe) {
+      var d = { email: email, password: password }; if (code) d.code = code; if (device()) d.device = device(); if (rememberMe) d.remember = true;
+      return call('POST', 'auth/login', d).then(function (r) { setToken(r.token, !!rememberMe && !r.must_enroll_2fa); if (r.device_token) setDevice(r.device_token); if (r.user) remember(r.user); return r; });
     },
     twoFactorStart: function () { return call('POST', 'auth/2fa/start'); },
     twoFactorConfirm: function (code) { return call('POST', 'auth/2fa/confirm', { code: code }).then(function (r) { setToken(r.token); remember(r.user); return r; }); },

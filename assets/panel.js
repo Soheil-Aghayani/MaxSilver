@@ -1575,6 +1575,7 @@
         '<label>رمز عبور<span class="pn-pw"><input type="password" name="password" dir="ltr" autocomplete="current-password" required><button type="button" class="pn-eye" data-eye aria-label="نمایش رمز" title="نمایش رمز"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.600-7 10-7 10 7 10 7-3.600 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>' +
         // the code box appears only when the server asks for it (an account with two-step login), so most people never see it
         (S.needCode ? '<label>کد شش‌رقمی برنامهٔ احراز هویت<input type="text" name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required autofocus></label>' : '') +
+        (window.MSApi && window.MSApi.enabled() ? '<label class="pn-remember"><input type="checkbox" name="remember"' + (S.remember ? ' checked' : '') + '><span>مرا روی این دستگاه به خاطر بسپار (۳۰ روز)</span></label><p class="pn-note pn-remember-note">فقط روی دستگاه شخصی خودتان بزنید؛ در این مدت کد شش‌رقمی و ورود دوباره پرسیده نمی‌شود. با «خروج» از حساب خارج می‌شوید.</p>' : '') +
         (S.enroll ? '<p class="pn-note">ورود دومرحله‌ای برای نقش شما الزامی است. یک بار آن را در <a href="./backend.html">صفحهٔ ورود به سرور</a> فعال کنید و دوباره بیایید.</p>' : '') +
         (S.error ? '<p class="pn-err" role="alert">' + esc(S.error) + '</p>' : '') + (S.pwMsg ? '<p class="pn-ok" role="status">' + esc(S.pwMsg) + '</p>' : '') +
         '<button type="submit" class="pn-primary"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'در حال ورود…' : 'ورود') + '</button>' +
@@ -1909,10 +1910,10 @@
     }
     if (f.id === 'loginForm') {
       S.pwMsg = '';
-      S.email = v('email'); S.pwTmp = f.elements.password.value;
+      S.email = v('email'); S.pwTmp = f.elements.password.value; S.remember = !!(f.elements.remember && f.elements.remember.checked);
       S.busy = true; render();
       S.enroll = false;
-      auth.signInWithEmailAndPassword(v('email'), S.pwTmp, f.elements.code ? v('code') : undefined).then(function () { S.needCode = false; S.pwTmp = ''; try { localStorage.setItem('ms-last-email', S.email); } catch (x) { /* ignore */ } }, function (err) {
+      auth.signInWithEmailAndPassword(v('email'), S.pwTmp, f.elements.code ? v('code') : undefined, S.remember).then(function () { S.needCode = false; S.pwTmp = ''; try { localStorage.setItem('ms-last-email', S.email); } catch (x) { /* ignore */ } }, function (err) {
         var c = (err && err.code) || '';
         if (c === 'auth/code-required') { S.needCode = true; S.error = ''; } else if (c === 'auth/enroll-2fa') { S.enroll = true; S.error = ''; } else S.error = errText(err);
         S.busy = false; S.loading = false; render();

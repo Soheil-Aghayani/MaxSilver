@@ -459,3 +459,11 @@
 .pn-primary[disabled]::before{content:"";display:inline-block;width:14px;height:14px;margin-inline-end:8px;vertical-align:-2px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:pnSpin .8s linear infinite}
 @keyframes pnSpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.pn-primary[disabled]::before{animation:none}}
+
+/* sign-in: the eye sits on the right edge (the typed text starts on the left), and the «remember me» line */
+.pn-pw input{padding-inline-end:0;padding-left:12px;padding-right:46px}
+.pn-eye{inset-inline-end:auto;right:6px;left:auto}
+.pn-remember{display:flex;align-items:center;gap:10px;margin-top:4px;font-weight:700;cursor:pointer}
+.pn-remember input{width:20px;height:20px;accent-color:#071b36}
+.pn-remember-note{margin:-4px 0 4px;font-size:12px}
+.pn-login label.pn-remember{display:flex;flex-direction:row;align-items:center;gap:10px}.pn-login .pn-remember input{flex:none;width:20px;height:20px;min-height:0;padding:0;margin:0}.pn-login .pn-remember span{flex:1}

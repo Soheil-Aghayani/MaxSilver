@@ -274,8 +274,8 @@
       whoAmI().then(function () { if (authCbs.indexOf(cb) >= 0) cb(ME); });
       return function () { var i = authCbs.indexOf(cb); if (i >= 0) authCbs.splice(i, 1); };
     },
-    signInWithEmailAndPassword: function (email, password, code) {
-      return A.login(email, password, code).then(function (r) {
+    signInWithEmailAndPassword: function (email, password, code, rememberMe) {
+      return A.login(email, password, code, rememberMe).then(function (r) {
         if (r.must_enroll_2fa) throw { code: 'auth/enroll-2fa' };
         started = null; return whoAmI().then(function () { emit(); return { user: ME }; });
       }, function (e) {
