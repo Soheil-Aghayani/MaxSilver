@@ -30,6 +30,7 @@
     pricesAudit: ['manager', 'ceo', 'sales_manager', 'finance'],                         // opens the prices page: finance downloads the audit template; the others also edit and upload it
     crm: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'],                                // purchase requests from the public planner: follow-up and decisions (a visitor sees the ones given to them)
     academy: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'],   // training: every signed-in role; the page shows each role only its own track
+    hiring: ['manager', 'ceo', 'hr'],                                                    // the employment form: print, PDF, Word with fillable boxes (human resources and management)
     salesProcess: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'],         // the nine-step sales process map (sales roles and management)
     fairs: ['manager', 'ceo', 'sales_manager', 'marketing'],                            // upcoming exhibitions (management, sales manager, marketing)
     occasions: ['manager', 'ceo', 'sales_manager', 'visitor', 'marketing'],              // seasonal campaign tiles and pages (Halloween, Yalda...): staff only, never for people without an account

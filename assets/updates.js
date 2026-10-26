@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'hiring-form-1405-08', date: '1405/08/04', tag: 'جدید', roles: ['manager','ceo','hr'], title: 'فرم استخدامی برای چاپ و ارسال',
+      summary: 'صفحهٔ «فرم استخدامی» برای هر سه برند: چاپ مستقیم یا ذخیره به‌صورت PDF، و فایل Word که متقاضی فقط خانه‌های مجاز را پر می‌کند (بخش «ویژهٔ شرکت» قفل است). برای قفل محکم‌تر می‌توانید رمز بگذارید.' },
     { id: 'customer-purchases-1405-08', date: '1405/08/04', tag: 'جدید', title: 'خریدهای هر مشتری در صفحهٔ خودش',
       summary: 'صفحهٔ هر مشتری بخش «خریدهای ثبت‌شده در حسابداری» دارد: فاکتورها با اقلام، مبلغ، وضعیت و نحوهٔ پرداخت، نشانی و کد پستی و جمع هر سال. هر کس همان مشتری‌هایی را می‌بیند که قبلاً هم می‌دید. مدیر داده را از گزارش فاکتورهای فروش (Excel) زیر «ورود اطلاعات» بارگذاری می‌کند.', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'visitor'] },
     { id: 'remember-me-1405-08', date: '1405/08/04', tag: 'جدید', title: '«مرا به خاطر بسپار» برای ورود و به‌روزرسانی سایت',
