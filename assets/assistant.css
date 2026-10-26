@@ -171,3 +171,11 @@ body.as-page :focus-visible{outline:3px solid #1746b5;outline-offset:2px;border-
 .as-xi{display:inline-grid;place-items:center;flex:none;width:40px;height:40px;border:1px solid var(--ms-line);border-radius:50%;background:#fff;color:var(--ms-navy);text-decoration:none}
 .as-xi svg{width:18px;height:18px}.as-xi:hover{border-color:var(--ms-gold);background:#fff8e1}
 .as-tools{align-items:center}
+
+/* back office window (opened by the «مدیریت» button in the header) */
+.as-adm-dlg{width:min(680px,calc(100vw - 24px));max-height:86vh;padding:0;border:1px solid var(--ms-line,#dfe5ee);border-radius:20px;background:#fff;color:var(--ms-navy,#071b36);box-shadow:0 24px 70px rgba(0,0,0,.35)}
+.as-adm-dlg::backdrop{background:rgba(7,27,54,.55)}
+.as-adm-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--ms-line,#dfe5ee)}
+.as-adm-head h2{margin:0;font-size:17px}
+.as-adm-x{width:34px;height:34px;border:0;border-radius:10px;background:#eef3fb;color:#5b6b82;font-size:22px;line-height:1;cursor:pointer}
+.as-adm-dlg .as-adm-in{padding:14px 18px 18px}

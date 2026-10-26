@@ -167,6 +167,7 @@
   // and a purchase request that goes to sales through the same request sheet as the public planner (same checks and same terms)
   var STAFF = (function () { try { var r = localStorage.getItem('ms-role') || '', R = window.MSRoles; return !!r && !!R && R.can(r, 'assistant'); } catch (e) { return false; } })(), PUBLIC = !STAFF;
   // anybody signed in may use company knowledge and the helper notes; prices and the catalog tools still follow STAFF / PUBLIC above
+  var ROLE0 = (function () { try { return localStorage.getItem('ms-role') || ''; } catch (e) { return ''; } })();
   var SIGNED = (function () { try { return !!localStorage.getItem('ms-role'); } catch (e) { return false; } })();
   var REDUCE = false; try { REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* ignore */ }
   var PUBK = 'ms-aria-pub-v1', PUBRET = {}, RECK = 'ms-aria-recent-v1';
@@ -205,6 +206,7 @@
   var ICON = {
     spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" opacity=".7"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
@@ -295,7 +297,7 @@
   function view() {
     if (S.error) return '<p class="as-err" role="alert">' + esc(S.error) + '</p>';
     var empty = !S.msgs.length;
-    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکثی</span></h1><span class="as-tools">' + (STAFF && logRead().length ? '<button type="button" class="as-new as-qlog" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش مکثی">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button><a class="as-xi" href="./index.html" aria-label="بستن مکثی و برگشت به صفحهٔ اصلی" title="بستن">' + ICON.close + '</a></span></header>' +
+    return '<header class="as-head"><h1 class="as-name"><span class="as-logo">' + ICON.spark + '</span><span class="as-shim">مکثی</span></h1><span class="as-tools">' + (STAFF && logRead().length ? '<button type="button" class="as-new as-qlog" id="asLog2" title="دریافت فایل پرسش‌های بی‌پاسخ و بازخوردها برای آموزش مکثی">' + ICON.copy + '<span>پرسش‌ها (' + fa.format(logRead().length) + ')</span></button>' : '') + '<button type="button" class="as-new" id="asNew"' + (empty ? ' hidden' : '') + '>' + ICON.plus + '<span>گفت‌وگوی تازه</span></button>' + (['manager', 'ceo', 'sales_manager'].indexOf(ROLE0) >= 0 ? '<button type="button" class="as-new" id="asAdm" title="مدیریت مکثی">' + ICON.gear + '<span>مدیریت</span></button>' : '') + '<a class="as-xi" href="./index.html" aria-label="بستن مکثی و برگشت به صفحهٔ اصلی" title="بستن">' + ICON.close + '</a></span></header>' +
       '<div class="as-scroll" id="asScroll" role="log" aria-live="polite" aria-relevant="additions text" aria-label="گفت‌وگو با مکثی" aria-busy="' + !!S.busy + '">' + (empty ? '<div class="as-hello"><span class="as-av big"><i class="as-ring"></i>' + ICON.spark + '</span><h2>سلام، من مکثی هستم! چه کمکی از دستم برمی‌آید؟</h2><p>' + (PUBLIC ? 'دربارهٔ کالاها بپرسید یا بگویید چه کسب‌وکاری می‌خواهید راه بیندازید تا فهرست تجهیزات را پیشنهاد بدهم و درخواست خرید شما را آماده کنم. قیمت را کارشناس فروش در تماس اعلام می‌کند.' : 'دربارهٔ کالاها، قیمت‌ها، بخش‌های سایت و پیش‌فاکتور بپرسید.') + ' اگر ندانم همین را می‌گویم و حدس نمی‌زنم.' +
         (relayUrl() || PUBLIC ? '' : '<br><span class="as-flag">فعلاً نزدیک‌ترین کالاها را نشان می‌دهم؛ پاسخ نوشته‌شده با اتصال به مدل زبانی فعال می‌شود.</span>') + '</p>' +
         '<div class="as-chips">' + SUGGEST.map(function (s) { return '<button type="button" data-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' + recentsHtml() + '</div>' :

@@ -14,15 +14,16 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var fa = new Intl.NumberFormat('fa-IR');
 
-  var box = document.createElement('details');
-  box.className = 'as-adm';
-  box.innerHTML = '<summary>مدیریت مکثی</summary><div class="as-adm-in">' +
+  var box = document.createElement('dialog');
+  box.className = 'as-adm-dlg';
+  box.innerHTML = '<div class="as-adm-head"><h2>مدیریت مکثی</h2><button type="button" class="as-adm-x" data-adm-close aria-label="بستن">×</button></div><div class="as-adm-in">' +
     '<section><h3>سؤال‌هایی که مکثی جواب نداد</h3><p class="as-adm-note">بدون نام؛ فقط نقش پرسنده. بر اساس تعداد تکرار مرتب شده‌اند.</p>' +
     '<div class="as-adm-row"><button type="button" data-qs>نمایش</button>' + (isManager ? '<button type="button" data-qclear class="warn">پاک‌کردن فهرست</button>' : '') + '</div><ol class="as-adm-list" data-qlist></ol></section>' +
     (isManager ? '<section><h3>وارد کردن متن‌های شرکت</h3><p class="as-adm-note">فایل <b>arya_knowledge.json</b> را انتخاب کنید. هر متن فقط برای نقش‌هایی که در آن نوشته شده دیده می‌شود. وارد کردن دوباره، متن‌های هم‌نام را جایگزین می‌کند.</p>' +
       '<div class="as-adm-row"><input type="file" accept="application/json,.json" data-kfile><button type="button" data-kgo>وارد کردن</button></div><p class="as-adm-msg" data-kmsg role="status"></p></section>' : '') +
     '</div>';
-  (root.parentNode || document.body).insertBefore(box, root.nextSibling);
+  document.body.appendChild(box);
+  document.addEventListener('click', function (e) { if (e.target.closest('#asAdm')) { if (box.showModal) box.showModal(); else box.setAttribute('open', ''); } });
   var msg = box.querySelector('[data-kmsg]');
   function say(t, bad) { if (msg) { msg.textContent = t; msg.className = 'as-adm-msg' + (bad ? ' bad' : ''); } }
   function db() { return w.firebase && w.firebase.firestore ? w.firebase.firestore() : null; }
@@ -70,7 +71,8 @@
     rd.readAsText(f, 'utf-8');
   }
   box.addEventListener('click', function (e) {
-    if (e.target.closest('[data-qs]')) showQuestions();
+    if (e.target === box || e.target.closest('[data-adm-close]')) { if (box.close) box.close(); else box.removeAttribute('open'); }
+    else if (e.target.closest('[data-qs]')) showQuestions();
     else if (e.target.closest('[data-qclear]')) clearQuestions();
     else if (e.target.closest('[data-kgo]')) importFile();
   });
