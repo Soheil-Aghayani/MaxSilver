@@ -44,3 +44,14 @@
 .bk-toast.ok{background:#17613a;color:#fff}.bk-toast.err{background:#8a1f1f;color:#fff}
 
 .bk-check{display:flex;align-items:center;gap:10px;margin:2px 0 6px;font-weight:700;font-size:13px;cursor:pointer}.bk-check input{width:18px;height:18px;accent-color:#071b36}
+
+/* staff sign-in: same look as the panel's (round icon, eye on the right edge) */
+.bk-login{text-align:center}
+.bk-login h1{margin:8px 0 14px}
+.bk-login form{text-align:start}
+.bk-login-ico{display:grid;place-items:center;width:60px;height:60px;margin:0 auto;border-radius:20px;background:var(--ms-gold,#ffc800);color:var(--ms-navy,#071b36)}
+.bk-login-ico svg{width:30px;height:30px}
+.bk-pw{position:relative;display:block}
+.bk-pw input{width:100%;padding-right:46px;padding-left:12px}
+.bk-eye{position:absolute;top:50%;right:6px;transform:translateY(-50%);display:grid;place-items:center;width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:#5b6b82;cursor:pointer}
+.bk-eye svg{width:20px;height:20px}.bk-eye:hover,.bk-eye.on{color:var(--ms-navy,#071b36);background:rgba(255,200,0,.22)}

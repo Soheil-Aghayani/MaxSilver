@@ -37,10 +37,10 @@
       '<div class="bk-row"><button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>آزمایش و ذخیره</button>' + (api.base() ? '<button type="button" class="bk-btn ghost" data-off>خاموش‌کردن (برگشت به Firebase)</button>' : '') + '</div></form></section>';
   }
   function viewLogin() {
-    return '<section class="bk-card"><h1>ورود کارکنان</h1>' + (isDev() ? '<p class="bk-sub">سرور: <bdi dir="ltr">' + esc(api.base()) + '</bdi> · <button type="button" class="bk-link" data-server>تغییر</button></p>' : '') + msg() +
+    return '<section class="bk-card bk-login"><span class="bk-login-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></span><h1>ورود کارکنان</h1>' + (isDev() ? '<p class="bk-sub">سرور: <bdi dir="ltr">' + esc(api.base()) + '</bdi> · <button type="button" class="bk-link" data-server>تغییر</button></p>' : '') + msg() +
       '<form id="fLogin" autocomplete="on"><label>ایمیل<input name="email" type="email" dir="ltr" autocomplete="username" value="' + esc(S.email) + '" required></label>' +
-      '<label>رمز عبور<input name="password" type="password" dir="ltr" autocomplete="current-password" required></label>' +
-      ('<label>کد شش‌رقمی برنامهٔ احراز هویت' + (S.needCode ? '' : ' (اگر ورود دومرحله‌ای دارید)') + '<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code"' + (S.needCode ? ' required autofocus' : '') + '></label>') +
+      '<label>رمز عبور<span class="bk-pw"><input name="password" type="password" dir="ltr" autocomplete="current-password" required><button type="button" class="bk-eye" data-eye aria-label="نمایش رمز" title="نمایش رمز"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>' +
+      (S.needCode ? '<label>کد شش‌رقمی برنامهٔ احراز هویت<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required autofocus></label>' : '') +
       '<label class="bk-check"><input type="checkbox" name="remember"' + (S.remember ? ' checked' : '') + '> مرا روی این دستگاه به خاطر بسپار (۳۰ روز؛ فقط دستگاه شخصی)</label>' +
       '<button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>' + (S.busy ? 'در حال ورود…' : 'ورود') + '</button></form></section>';
   }
@@ -172,7 +172,8 @@
   });
   root.addEventListener('click', function (ev) {
     var t = ev.target.closest('button'); if (!t) return;
-    if (t.hasAttribute('data-server')) go('server');
+    if (t.hasAttribute('data-eye')) { var pi = t.parentNode.querySelector('input'), show = pi.type === 'password'; pi.type = show ? 'text' : 'password'; t.classList.toggle('on', show); t.setAttribute('aria-label', show ? 'پنهان‌کردن رمز' : 'نمایش رمز'); }
+    else if (t.hasAttribute('data-server')) go('server');
     else if (t.hasAttribute('data-off')) { api.setBase(''); S.note = 'سرور خاموش شد؛ پورتال دوباره از Firebase استفاده می‌کند.'; render(); }
     else if (t.hasAttribute('data-out')) api.logout().then(function () { S.user = null; go('login'); });
     else if (t.hasAttribute('data-forget-dev')) api.forgetDevices().then(function () { S.note = 'همهٔ دستگاه‌های به‌خاطرسپرده فراموش شد.'; render(); }, fail);

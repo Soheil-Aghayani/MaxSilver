@@ -76,6 +76,7 @@
         clearTimeout(t);
         if (r.status === 204) return null;
         return r.json().catch(function () { return {}; }).then(function (j) {
+          if (r.status === 429 && j.retry_after) throw { status: 429, message: 'تلاش بیش از حد؛ ' + Math.max(1, Math.round(j.retry_after)) + ' ثانیه دیگر دوباره امتحان کنید.', data: j };
           if (!r.ok) { var m = j.message || 'خطا'; if (j.errors) m = Object.keys(j.errors).map(function (k) { return j.errors[k][0]; }).join(' '); throw { status: r.status, message: fa(m), data: j }; }
           if (cacheable(method, path, anon)) { cachePut(path, j); offlineNote(false); }
           return j;
