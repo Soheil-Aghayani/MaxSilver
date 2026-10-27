@@ -27,7 +27,7 @@
   var state = { q: (function () { try { return new URLSearchParams(location.search).get('q') || ''; } catch (e) { return ''; } })(), src: '', grp: '', sec: '', sort: 'name' };   // ?q= opens the catalog already searching (the assistant links here)
   var compare = [];
   var STORE = 'ms-proforma-v1';
-  var inv = { lines: [], docNo: '', issuer: '', customer: '', custCity: '', custPhone: '', custAddr: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان', pay: { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false } };
+  var inv = { lines: [], docNo: '', issuer: '', customer: '', custCode: '', custCity: '', custPhone: '', custAddr: '', discount: 0, discMode: 'pct', tax: 10, unit: 'تومان', pay: { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false } };
   var invDate = '';
   try { var saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved && Array.isArray(saved.lines)) inv = Object.assign(inv, saved); } catch (e) { /* storage unavailable: the draft lives for this visit only */ }
   function invSave() { try { localStorage.setItem(STORE, JSON.stringify(inv)); } catch (e) { /* ignore */ } }
@@ -475,11 +475,12 @@
         '<label>تاریخ<input type="text" data-f="date" data-jdate readonly inputmode="none" value="' + esc(invDate) + '"></label>' +
         '<label>شمارهٔ سند<input type="text" dir="ltr" data-f="docNo" value="' + esc(inv.docNo) + '" placeholder="خودکار" readonly aria-readonly="true" autocomplete="off"></label>' +
         '<label class="wide">مشتری<input type="text" data-f="customer" list="custList" value="' + esc(inv.customer) + '" autocomplete="off" placeholder="نام مشتری"></label>' +
+        '<div class="wide cust-sim" id="custSim" aria-live="polite"></div>' +
         '<label>تلفن گیرنده<input type="tel" inputmode="numeric" dir="ltr" data-f="custPhone" value="' + esc(fa0(inv.custPhone)) + '" maxlength="11" autocomplete="tel-national" placeholder="۰۹…"><small class="inv-hint bad" data-phone-hint hidden>شماره باید ۱۱ رقم و با صفر شروع شود</small></label>' +
         '<label>شهر<input type="text" data-f="custCity" value="' + esc(inv.custCity) + '" autocomplete="address-level2" placeholder="شهر گیرنده"></label>' +
         '<label class="wide addr">نشانی گیرنده<input type="text" data-f="custAddr" value="' + esc(inv.custAddr) + '" autocomplete="street-address" placeholder="نشانی کامل"></label>' +
         '<label class="wide">واحد پول<select data-f="unit">' + UNITS.map(function (u) { return '<option' + (u === inv.unit ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></label>' +
-        '<datalist id="custList">' + customerNames().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist></div>' + body + '</div>' + foot, 'inv-sheet');
+        '<datalist id="custList">' + customerNames().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist></div>' + body + '</div>' + foot, 'inv-sheet'); simSoon();
     invTotalsRender();
     if (has) loadH2C().then(null, function () { /* offline: share falls back to print */ });
   }
@@ -524,7 +525,7 @@
   }
   function snapshot() {
     return {
-      docNo: inv.docNo, requestCode: inv.requestCode || '', date: invDate || today(), createdAt: Date.now(), customer: inv.customer, customerCity: inv.custCity, customerPhone: inv.custPhone, customerAddress: inv.custAddr, issuer: inv.issuer, unit: inv.unit,
+      docNo: inv.docNo, requestCode: inv.requestCode || '', date: invDate || today(), createdAt: Date.now(), customer: inv.customer, customerCode: inv.custCode || '', customerCity: inv.custCity, customerPhone: inv.custPhone, customerAddress: inv.custAddr, issuer: inv.issuer, unit: inv.unit,
       tax: inv.tax, discount: inv.discount, discMode: inv.discMode, pay: payCopy(),
       lines: inv.lines.filter(function (l) { return byId[l.id]; }).map(function (l) {
         var it = byId[l.id];
@@ -796,6 +797,69 @@
 
   // ----- archive: saved proformas, customers and a portable backup of everything kept on this device
   var BACKUP_KEYS = [STORE, ARCH_KEY, PRICE_KEY, 'ms-proforma-seq', 'ms-ig-v1'];
+  // ---- «is this customer already in the database?» (same or near name, same phone) so a customer is not entered twice
+  var simList = null, simTimer = 0;
+  function simKey(s) { return norm(s).replace(/\(.*?\)/g, ' ').replace(/\b(win|وین)\b/g, ' ').replace(/[^a-z0-9\u0600-\u06ff ]/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function lev(a, b) {
+    var m = a.length, n = b.length, i, j, p = [], c;
+    if (!m) return n; if (!n) return m;
+    for (j = 0; j <= n; j++) p[j] = j;
+    for (i = 1; i <= m; i++) { var prev = p[0]; p[0] = i; for (j = 1; j <= n; j++) { c = p[j]; p[j] = Math.min(p[j] + 1, p[j - 1] + 1, prev + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1)); prev = c; } }
+    return p[n];
+  }
+  function simScore(q, k) {
+    if (!q || !k) return 0;
+    if (q === k) return 1;
+    var best = 1 - lev(q, k) / Math.max(q.length, k.length);
+    var qt = q.split(' ').filter(Boolean), kt = k.split(' ').filter(Boolean), hit = 0;
+    qt.forEach(function (t) { if (t.length > 1 && kt.some(function (u) { return u === t || (t.length > 3 && (u.indexOf(t) === 0 || t.indexOf(u) === 0)); })) hit++; });
+    var tok = qt.length ? hit / Math.max(qt.length, kt.length) : 0;
+    if (k.indexOf(q) >= 0 && q.length >= 4) tok = Math.max(tok, 0.8);
+    return Math.max(best, tok);
+  }
+  function simFind() {
+    var q = simKey(inv.customer), ph = String(inv.custPhone || '').replace(/\D/g, '').slice(-10), out = [];
+    if (!simList || (q.length < 3 && ph.length < 10)) return out;
+    simList.forEach(function (c) {
+      var byPhone = ph.length === 10 && String(c.phone || '').replace(/\D/g, '').slice(-10) === ph;
+      var s = q.length >= 3 ? simScore(q, c._k || (c._k = simKey(c.name))) : 0;
+      if (byPhone || s >= 0.6) out.push({ c: c, s: byPhone ? Math.max(s, 0.96) : s, byPhone: byPhone });
+    });
+    out.sort(function (a, b) { return b.s - a.s; });
+    return out.slice(0, 4);
+  }
+  function simRender() {
+    var box = dialog.querySelector('#custSim'); if (!box) return;
+    if (!simList) { box.innerHTML = ''; return; }
+    if (inv.custCode) {
+      var hit = simList.filter(function (c) { return c.code === inv.custCode; })[0];
+      box.innerHTML = '<p class="sim-ok">مشتری موجود در پایگاه: <b>' + esc(hit ? hit.name : inv.customer) + '</b> <small dir="ltr">' + esc(inv.custCode) + '</small></p>';
+      return;
+    }
+    var m = simFind(), q = simKey(inv.customer);
+    if (!m.length) { box.innerHTML = q.length >= 3 ? '<p class="sim-new">مشتری مشابهی در پایگاه نیست؛ این یک مشتری جدید حساب می‌شود.</p>' : ''; return; }
+    var exact = m[0].s >= 0.96;
+    box.innerHTML = '<p class="' + (exact ? 'sim-warn' : 'sim-near') + '">' + (exact ? 'این مشتری از قبل هست؛ همان را انتخاب کنید تا پروندهٔ تکراری ساخته نشود:' : 'مشتری‌های مشابه در پایگاه؛ اگر همان است انتخاب کنید:') + '</p><ul class="sim-list">' +
+      m.map(function (x) {
+        return '<li><button type="button" data-sim-pick="' + esc(x.c.code) + '"><b>' + esc(x.c.name) + '</b><span>' + (x.c.city ? esc(x.c.city) + ' · ' : '') + (x.c.phone ? '<bdi dir="ltr">' + esc(fa0(x.c.phone)) + '</bdi> · ' : '') + '<bdi dir="ltr">' + esc(x.c.code) + '</bdi></span><em>' + (x.byPhone ? 'همین تلفن' : Math.round(x.s * 100) + '٪ شبیه') + '</em></button></li>';
+      }).join('') + '</ul>';
+  }
+  function simSoon() {
+    clearTimeout(simTimer);
+    simTimer = setTimeout(function () {
+      if (simList) { simRender(); return; }
+      if (!window.MSSync || !window.MSSync.customers) return;
+      window.MSSync.customers().then(function (l) { simList = l; simRender(); });
+    }, 220);
+  }
+  function simPick(code) {
+    var c = (simList || []).filter(function (x) { return x.code === code; })[0]; if (!c) return;
+    inv.customer = c.name; inv.custCode = c.code;
+    if (c.phone && !inv.custPhone) inv.custPhone = c.phone;
+    if (c.city && !inv.custCity) inv.custCity = c.city;
+    if (c.address && !inv.custAddr) inv.custAddr = c.address;
+    invSave(); invoiceView();
+  }
   function customerNames() {
     var seen = {}, out = [];
     var me = window.MSSync ? window.MSSync.uid() : '';
@@ -840,7 +904,7 @@
     inv.lines = kept.map(function (l) { return { id: l.id, qty: l.qty, price: l.price }; });
     inv.docNo = keepNo ? d.docNo : '';
     inv.requestCode = d.requestCode || '';
-    inv.customer = d.customer; inv.custCity = d.customerCity || ''; inv.custPhone = d.customerPhone || ''; inv.custAddr = d.customerAddress || ''; inv.issuer = d.issuer || inv.issuer; inv.unit = d.unit; inv.tax = d.tax; inv.discount = d.discount; inv.discMode = d.discMode;
+    inv.customer = d.customer; inv.custCode = d.customerCode || ''; inv.custCity = d.customerCity || ''; inv.custPhone = d.customerPhone || ''; inv.custAddr = d.customerAddress || ''; inv.issuer = d.issuer || inv.issuer; inv.unit = d.unit; inv.tax = d.tax; inv.discount = d.discount; inv.discMode = d.discMode;
     inv.pay = d.pay ? JSON.parse(JSON.stringify(d.pay)) : { mode: 'cash', cashVal: 50, cashUnit: 'pct', count: 1, cheques: [], custom: false };
     invDate = keepNo ? d.date : today();
     invSave(); trayRender(); invButtons(); invoiceView();
@@ -948,12 +1012,13 @@
     else if (f === 'custPhone') {
       var cl = cleanPhone(e.target.value), shown = fa0(cl);
       if (e.target.value !== shown) e.target.value = shown;
-      inv.custPhone = cl;
+      inv.custPhone = cl; simSoon();
       var hint = dialog.querySelector('[data-phone-hint]');
       if (hint) { var ok = !cl || /^0\d{10}$/.test(cl); hint.hidden = ok; }
     }
     else if (f === 'custCity' || f === 'custAddr') inv[f] = e.target.value;
-    else if (f === 'docNo' || f === 'issuer' || f === 'customer' || f === 'discMode') inv[f] = e.target.value;
+    else if (f === 'customer') { inv.customer = e.target.value; inv.custCode = ''; simSoon(); }
+    else if (f === 'docNo' || f === 'issuer' || f === 'discMode') inv[f] = e.target.value;
     else if (f === 'date') invDate = e.target.value;
     else if (f === 'discount' || f === 'tax') inv[f] = parseNum(e.target.value);
     else if (f === 'cashVal') ensurePay().cashVal = parseNum(e.target.value);
@@ -996,7 +1061,7 @@
   });
 
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-share],[data-arc-fshare],[data-inv-share],[data-inv-send],[data-arc-send],[data-arc-backup],[data-pay-count],[data-pay-equal],[data-close],[data-src]');
+    var t = e.target.closest('[data-open],[data-cmp],[data-cmp-dlg],[data-inv],[data-inv-dlg],[data-inv-rm],[data-sim-pick],[data-inv-print],[data-inv-clear],[data-arc-open],[data-inv-open],[data-arc-edit],[data-arc-copy],[data-arc-pdf],[data-arc-del],[data-arc-fcopy],[data-arc-fpdf],[data-arc-share],[data-arc-fshare],[data-inv-share],[data-inv-send],[data-arc-send],[data-arc-backup],[data-pay-count],[data-pay-equal],[data-close],[data-src]');
     if (e.target === dialog) { dialog.close(); return; }
     if (!t) return;
     if (t.hasAttribute('data-open')) detail(t.getAttribute('data-open'));
@@ -1005,6 +1070,7 @@
     else if (t.hasAttribute('data-inv')) toggleInvoice(t.getAttribute('data-inv'));
     else if (t.hasAttribute('data-inv-dlg')) { toggleInvoice(t.getAttribute('data-inv-dlg')); detail(t.getAttribute('data-inv-dlg')); }
     else if (t.hasAttribute('data-inv-rm')) { inv.lines.splice(Number(t.getAttribute('data-inv-rm')), 1); invSave(); trayRender(); invButtons(); invoiceView(); }
+    else if (t.hasAttribute('data-sim-pick')) { simPick(t.getAttribute('data-sim-pick')); }
     else if (t.hasAttribute('data-pay-count')) { var pq = ensurePay(); pq.count = Math.max(1, Math.min(12, (pq.count || 1) + Number(t.getAttribute('data-pay-count')))); pq.custom = false; payNormalize(); invSave(); payRender(); }
     else if (t.hasAttribute('data-pay-equal')) { ensurePay().custom = false; payNormalize(); invSave(); payRender(); }
     else if (t.hasAttribute('data-inv-share')) { if (receiverOk()) shareDoc(commitDoc(), t); }
@@ -1158,7 +1224,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261519', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261522', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }

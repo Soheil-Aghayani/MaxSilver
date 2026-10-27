@@ -467,3 +467,8 @@
 .pn-remember input{width:20px;height:20px;accent-color:#071b36}
 .pn-remember-note{margin:-4px 0 4px;font-size:12px}
 .pn-login label.pn-remember{display:flex;flex-direction:row;align-items:center;gap:10px}.pn-login .pn-remember input{flex:none;width:20px;height:20px;min-height:0;padding:0;margin:0}.pn-login .pn-remember span{flex:1}
+/* bank icons in the pre-invoice bank choice */
+.bk-ico{position:relative;display:inline-grid;place-items:center;flex:none;width:var(--s,34px);height:var(--s,34px);border-radius:28%;background:hsl(var(--h,215) 55% 92%);color:hsl(var(--h,215) 60% 28%);overflow:hidden}
+.bk-ico b{font:800 calc(var(--s,34px)*.34)/1 Estedad,Tahoma,sans-serif}.bk-ico img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}
+.pn-bankopt:has(.bk-ico){grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:center}.pn-bankopt .bk-ico{grid-row:1/3}
+.pn-bankopt.none{border-style:dashed}

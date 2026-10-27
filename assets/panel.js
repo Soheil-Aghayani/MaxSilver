@@ -1396,11 +1396,12 @@
     if (!S.banks) return '<div class="pn-rv"><b>حساب بانکی پیش‌فاکتور</b><p>در حال بارگذاری…</p></div>';
     if (!S.banks.length) return '<div class="pn-rv"><b>حساب بانکی پیش‌فاکتور</b><p>اکانت منیجر هنوز حسابی ثبت نکرده است (بخش «حساب‌های بانکی»).</p></div>';
     return '<div class="pn-rv ok"><b>حساب بانکی پیش‌فاکتور: کدام حساب روی نسخهٔ مشتری بیاید؟</b><div class="pn-bankopts" role="radiogroup" aria-label="حساب بانکی">' + S.banks.map(function (x) {
-      return '<button type="button" role="radio" class="pn-bankopt" data-bank-pick="' + esc(x.id) + '" aria-checked="' + (d.bankId === x.id) + '"><b>' + esc(x.label) + '</b><small>' + esc(x.kind === 'brand' ? (x.brand || 'برند') : BANK_KIND[x.kind] || '') + ' · ' + esc(x.holder || '') + '</small></button>';
-    }).join('') + '</div></div>';
+      return '<button type="button" role="radio" class="pn-bankopt" data-bank-pick="' + esc(x.id) + '" aria-checked="' + (d.bankId === x.id) + '">' + (window.MSBanks ? window.MSBanks.icon(x.bank, 34) : '') + '<b>' + esc(x.label) + '</b><small>' + esc(x.kind === 'brand' ? (x.brand || 'برند') : BANK_KIND[x.kind] || '') + ' · ' + esc(x.holder || '') + '</small></button>';
+    }).join('') + '<button type="button" role="radio" class="pn-bankopt none" data-bank-pick="-" aria-checked="' + (!d.bankId) + '"><b>بدون حساب بانکی</b><small>حساب روی نسخهٔ مشتری نوشته نمی‌شود (اختیاری)</small></button></div></div>';
   }
   function pickBank(id) {
     var d = findInv(S.invOpen), x = (S.banks || []).filter(function (b) { return b.id === id; })[0];
+    if (id === '-' && d && S.user) { db.collection('invoices').doc(invKey(d)).update({ bankId: '', bank: null, updatedAt: Date.now() }).then(function () { return reloadInvoices(); }).then(function () { invDetail(S.invOpen); }, function (err) { rvFail(errText(err)); }); return; }
     if (!d || !x || !S.user) return;
     var snap = { label: x.label || '', kind: x.kind || '', brand: x.brand || '', holder: x.holder || '', bank: x.bank || '', account: x.account || '', sheba: x.sheba || '', card: x.card || '', payee: x.payee || '' };
     db.collection('invoices').doc(invKey(d)).update({ bankId: id, bank: snap, updatedAt: Date.now() }).then(function () { return reloadInvoices(); }).then(function () { invDetail(S.invOpen); }, function (err) { rvFail(errText(err)); });

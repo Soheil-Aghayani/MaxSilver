@@ -40,11 +40,22 @@
   function blank() { return { id: '', mode: 'account', kind: 'brand', brand: 'max-silver', label: '', holder: '', bank: '', account: '', sheba: '', card: '', payee: '', note: '', active: true }; }
   var group = function (a) { return a.kind === 'brand' ? (BR[a.brand] || 'برند') : KIND[a.kind] || ''; };
   function cardHtml(a) {
+    var B = window.MSBanks, bk = B ? B.find(a.bank) : null, hue = B ? B.hue(bk ? bk.id : 'other') : 215;
     var f = function (k, v, ltr) { return v ? '<div><dt>' + k + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + esc(v) + '</dd></div>' : ''; };
-    return '<article class="bk-card' + (a.active === false ? ' off' : '') + '"><div class="bk-top"><h3>' + esc(a.label) + '</h3><span class="bk-k ' + esc(a.kind) + '">' + esc(group(a)) + '</span></div><dl>' +
-      f('صاحب حساب', a.holder) + f('بانک', a.bank) + f('شمارهٔ حساب', faD(a.account), true) + f('شبا', a.sheba, true) + f('شمارهٔ کارت', fmtCard(a.card), true) + f('در وجه (چک)', a.payee) + f('توضیح', a.note) + '</dl>' +
+    var num = a.card ? fmtCard(a.card) : (a.sheba || faD(a.account) || '');
+    return '<article class="bk-card' + (a.active === false ? ' off' : '') + '" style="--h:' + hue + '">' +
+      '<div class="bk-face"><div class="bk-face-top">' + (B ? B.icon(a.bank, 46) : '') + '<span class="bk-bname">' + esc(a.bank || 'بانک') + '</span><span class="bk-k ' + esc(a.kind) + '">' + esc(group(a)) + '</span></div>' +
+      '<div class="bk-chip-ic" aria-hidden="true"></div><div class="bk-num" dir="ltr">' + esc(num) + '</div><div class="bk-face-bot"><span>' + esc(a.holder || '') + '</span><b>' + esc(a.label) + '</b></div></div>' +
+      '<dl>' + f('بانک', a.bank) + f('شمارهٔ حساب', faD(a.account), true) + f('شبا', a.sheba, true) + f('شمارهٔ کارت', fmtCard(a.card), true) + f('در وجه (چک)', a.payee) + f('توضیح', a.note) + '</dl>' +
       (a.active === false ? '<p class="bk-off">غیرفعال</p>' : '') +
       (can('bankEdit') ? '<div class="bk-acts"><button type="button" class="bk-btn alt" data-edit="' + esc(a.id) + '">ویرایش</button><button type="button" class="bk-btn alt" data-toggle="' + esc(a.id) + '">' + (a.active === false ? 'فعال کردن' : 'غیرفعال کردن') + '</button><button type="button" class="bk-btn danger" data-del="' + esc(a.id) + '">حذف</button></div>' : '') + '</article>';
+  }
+  // the bank is chosen from the list of Iranian banks (the card number can fill it in)
+  function bankSelect(f) {
+    var B = window.MSBanks, cur = String(f.bank || ''), found = B && B.find(cur), opts = '<option value="">انتخاب بانک…</option>';
+    (B ? B.list : []).forEach(function (b) { opts += '<option value="' + esc(b.name) + '"' + (found && found.id === b.id ? ' selected' : '') + '>' + esc(b.name) + '</option>'; });
+    if (cur && !found) opts += '<option value="' + esc(cur) + '" selected>' + esc(cur) + '</option>';
+    return '<label class="wide bk-sel"><span>بانک</span><span class="bk-selbox">' + (B && found ? B.icon(found.name, 28) : '') + '<select data-k="bank" aria-label="بانک">' + opts + '</select></span></label>';
   }
   function formHtml() {
     var f = S.form; if (!f) return '';
@@ -53,8 +64,8 @@
       '<div class="bk-seg" role="radiogroup" aria-label="صاحب حساب">' + Object.keys(KIND).map(function (k) { return '<button type="button" role="radio" data-kind="' + k + '" aria-checked="' + (f.kind === k) + '">' + KIND[k] + '</button>'; }).join('') + '</div>' +
       (f.kind === 'brand' ? '<div class="bk-seg" role="radiogroup" aria-label="برند">' + Object.keys(BR).map(function (k) { return '<button type="button" role="radio" data-brand="' + k + '" aria-checked="' + (f.brand === k) + '">' + BR[k] + '</button>'; }).join('') + '</div>' : '') +
       (f.mode === 'card'
-        ? '<div class="bk-grid">' + inp('card', 'شمارهٔ کارت (۱۶ رقم)', { ltr: true, num: true, max: 19, wide: true }) + inp('holder', 'نام صاحب کارت') + inp('bank', 'نام بانک') + inp('label', 'عنوان (اختیاری؛ برای انتخاب)', { wide: true }) + inp('note', 'توضیح (اختیاری)', { wide: true, max: 200 }) + '</div>'
-        : '<div class="bk-grid">' + inp('label', 'عنوان حساب (برای انتخاب)', { wide: true }) + inp('holder', 'نام صاحب حساب') + inp('bank', 'نام بانک') + inp('account', 'شمارهٔ حساب', { ltr: true, num: true, max: 30 }) +
+        ? '<div class="bk-grid">' + inp('card', 'شمارهٔ کارت (۱۶ رقم)', { ltr: true, num: true, max: 19, wide: true }) + inp('holder', 'نام صاحب کارت') + bankSelect(f) + inp('label', 'عنوان (اختیاری؛ برای انتخاب)', { wide: true }) + inp('note', 'توضیح (اختیاری)', { wide: true, max: 200 }) + '</div>'
+        : '<div class="bk-grid">' + inp('label', 'عنوان حساب (برای انتخاب)', { wide: true }) + inp('holder', 'نام صاحب حساب') + bankSelect(f) + inp('account', 'شمارهٔ حساب', { ltr: true, num: true, max: 30 }) +
           inp('sheba', 'شمارهٔ شبا (IR…)', { ltr: true, max: 30 }) + inp('card', 'شمارهٔ کارت (اختیاری)', { ltr: true, num: true, max: 19 }) + inp('payee', 'در وجه (برای چک)') + inp('note', 'توضیح (اختیاری)', { wide: true, max: 200 }) + '</div>') +
       '<div class="bk-acts"><button type="button" class="bk-btn" data-save' + (S.busy ? ' disabled' : '') + '>ذخیره</button><button type="button" class="bk-btn alt" data-cancel>انصراف</button></div></section>';
   }
@@ -113,7 +124,14 @@
     if ((t = e.target.closest('[data-toggle]'))) { var b = S.list.filter(function (x) { return x.id === t.getAttribute('data-toggle'); })[0]; if (b) db.collection('bank_accounts').doc(b.id).update({ active: b.active === false, updatedAt: Date.now(), updatedBy: S.user.uid }).then(null, function (er) { S.error = errText(er); render(); }); return; }
     if ((t = e.target.closest('[data-del]'))) { if (window.confirm('این حساب حذف شود؟')) db.collection('bank_accounts').doc(t.getAttribute('data-del')).delete().then(function () { S.msg = 'حذف شد.'; render(); }, function (er) { S.error = errText(er); render(); }); }
   });
-  root.addEventListener('input', function (e) { var k = e.target.getAttribute && e.target.getAttribute('data-k'); if (k && S.form) S.form[k] = e.target.value; });
+  root.addEventListener('input', function (e) {
+    var k = e.target.getAttribute && e.target.getAttribute('data-k'); if (!k || !S.form) return;
+    S.form[k] = e.target.value;
+    if (k === 'card' && !S.form.bank && window.MSBanks) { var g = window.MSBanks.byCard(e.target.value); if (g && g.id !== 'other') { S.form.bank = g.name; render(); } }
+  });
+  root.addEventListener('change', function (e) {
+    var k = e.target.getAttribute && e.target.getAttribute('data-k'); if (k === 'bank' && S.form) { S.form.bank = e.target.value; render(); }
+  });
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.list = [];
     if (unsub) { unsub(); unsub = null; }

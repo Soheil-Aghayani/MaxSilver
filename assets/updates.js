@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'banks-customers-dup-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'visitor'], title: 'پیش‌فاکتور: مشتری تکراری و حساب‌های بانکی با آیکون',
+      summary: 'هنگام نوشتن نام یا تلفن مشتری در پیش‌فاکتور، مشتری‌های هم‌نام یا نزدیک در پایگاه نشان داده می‌شوند تا همان را انتخاب کنید و پروندهٔ تکراری ساخته نشود. در «حساب‌های بانکی» بانک از فهرست بانک‌های ایران انتخاب می‌شود، با شمارهٔ کارت خودش حدس زده می‌شود و هر حساب شکل کارت بانکی با نشان بانک دارد. مالی می‌تواند «بدون حساب بانکی» را هم برای پیش‌فاکتور انتخاب کند.' },
     { id: 'maxi-mascot-site-tiles-1405-08', date: '1405/08/06', tag: 'بهبود', title: 'مکثی با چهرهٔ جدید، کاشی‌های سفارش سایت‌ها و فونت Word',
       summary: 'مکثی حالا با تصویر شخصیت اصلی خودش دیده می‌شود. روی صفحهٔ اصلی بخش «به‌زودی» سه کاشی تازه دارد (سفارش‌های سایت مکث‌سیلور، وینتورا و توربومکس). کارت‌های رفتار پرداخت تصویر هر روش را دارند. فایل Word فرم استخدامی فونت Estedad را دقیق‌تر درون خود دارد و اگر فونت بارگذاری نشود، فایل ناقص نمی‌دهد.' },
     { id: 'customers-pay-behaviour-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'], title: 'مشتریان: رفتار پرداخت',

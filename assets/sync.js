@@ -280,6 +280,20 @@
       return approved() || hasSession() ? 'ok' : 'signin';
     },
     canSend: function () { return this.sendState() === 'ok'; },
+    // customers this person may see, for the «is this customer already known?» hint on a pre-invoice (cached five minutes; never rejects)
+    customers: function () {
+      if (this._c && Date.now() - this._cAt < 300000) return Promise.resolve(this._c);
+      var self = this;
+      return boot().then(function () { return whenUser(); }).then(function () {
+        if (!live() || !approved()) return [];
+        var p = activeProfile(), all = window.MSRoles && window.MSRoles.can(p.role, 'customerAll');
+        var col = db.collection('customers'), q = all ? col : col.where('ownerUid', '==', S.user.uid);
+        return q.get().then(function (qs) {
+          var l = []; qs.forEach(function (s) { var d = s.data(); if (d.mergedInto) return; l.push({ code: d.code || s.id, name: d.name || '', city: d.city || '', phone: d.phone || '', address: d.address || '', group: d.group || '' }); });
+          self._c = l; self._cAt = Date.now(); return l;
+        });
+      }).then(null, function () { return []; });
+    },
     role: function () { var p = activeProfile(); return p && window.MSRoles ? window.MSRoles.norm(p.role) : ''; },
     roleCode: function () { var p = activeProfile(); return p && window.MSRoles ? window.MSRoles.codeOf(p.role) : 'XX'; },
     openAccount: function () { open(); if (!bootPromise) boot().then(null, function () { /* shown in the sheet */ }); },
