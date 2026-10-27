@@ -191,3 +191,4 @@
 .cu-av.face{padding:0;overflow:hidden;background:#fff;box-shadow:0 0 0 2px #fff,0 0 0 3px var(--c)}
 .cu-av.face svg{display:block;width:100%;height:100%}
 .cu-win{display:inline-block;margin-inline-start:6px;padding:1px 8px;border-radius:99px;background:#fbe6e8;color:#bf0e22;font:800 11px/1.7 Estedad,Tahoma,sans-serif;vertical-align:middle}
+.cu-pay{display:inline-block;margin-inline-start:6px;padding:1px 8px;border-radius:99px;background:#e9f6ee;color:#14804a;font:800 11px/1.7 Estedad,Tahoma,sans-serif;vertical-align:middle}.cu-pay.lg{margin:0 8px;font-size:12px}

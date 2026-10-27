@@ -109,7 +109,8 @@
   };
   (function () {
     var more = {
-      'تهران': ['شهر ری', 'ری', 'دماوند', 'پردیس', 'بومهن', 'رباط کریم', 'قدس', 'ملارد', 'نسیم شهر', 'بهارستان', 'فشم', 'پیشوا', 'قرچک', 'چهاردانگه'],
+      'تهران ': ['بنی هاشم', 'بازار تهران', 'ناصر خسرو'],
+      'تهران': ['شهر ری', 'دماوند', 'پردیس', 'بومهن', 'رباط کریم', 'ملارد', 'نسیم شهر', 'بهارستان', 'فشم', 'پیشوا', 'قرچک', 'چهاردانگه'],
       'البرز': ['کرج', 'فردیس', 'نظرآباد', 'ماهدشت', 'محمدشهر', 'هشتگرد', 'اشتهارد', 'طالقان'],
       'اصفهان': ['خمینی شهر', 'شاهین شهر', 'فولادشهر', 'زرین شهر', 'گلپایگان', 'خوانسار', 'میمه', 'فلاورجان', 'مبارکه', 'نایین', 'اردستان', 'سمیرم'],
       'خراسان رضوی': ['تربت حیدریه', 'قوچان', 'گناباد', 'کاشمر', 'تایباد', 'تربت جام', 'چناران', 'درگز', 'فریمان'],
@@ -125,13 +126,13 @@
       'سمنان': ['شاهرود', 'گرمسار', 'مهدی شهر', 'ایوانکی'],
       'قزوین': ['البرز قزوین', 'تاکستان', 'بوئین زهرا', 'آبیک'],
       'مرکزی': ['خمین', 'محلات', 'شازند', 'دلیجان', 'آشتیان'],
-      'همدان': ['اسدآباد', 'تویسرکان', 'کبودرآهنگ', 'رزن', 'بهار'],
+      'همدان': ['اسدآباد', 'تویسرکان', 'کبودرآهنگ', 'رزن'],
       'کرمانشاه': ['اسلام آباد غرب', 'سرپل ذهاب', 'کنگاور', 'سنقر', 'هرسین', 'صحنه', 'پاوه', 'جوانرود', 'قصر شیرین'],
       'کردستان': ['سقز', 'بانه', 'مریوان', 'قروه', 'بیجار', 'کامیاران'],
       'لرستان': ['دورود', 'الیگودرز', 'ازنا', 'کوهدشت', 'نورآباد', 'پلدختر'],
       'ایلام': ['دهلران', 'ایوان', 'آبدانان', 'مهران'],
       'هرمزگان': ['میناب', 'بندر لنگه', 'قشم', 'بندر خمیر', 'حاجی آباد', 'جاسک', 'پارسیان'],
-      'بوشهر': ['برازجان', 'دشتستان', 'کنگان', 'عسلویه', 'دیر', 'خارک', 'جم', 'دشتی'],
+      'بوشهر': ['برازجان', 'دشتستان', 'کنگان', 'عسلویه', 'خارک'],
       'سیستان و بلوچستان': ['ایرانشهر', 'زابل', 'خاش', 'سراوان', 'نیک شهر', 'کنارک'],
       'یزد': ['میبد', 'اردکان', 'ابرکوه', 'بافق', 'تفت', 'مهریز', 'اشکذر'],
       'قم': [],
@@ -153,16 +154,42 @@
   function regionOf(prov) { return prov && W && W.regionByProvince ? (W.regionByProvince[prov] || '') : ''; }
   function isCity(t) { return !!(CITY_PROVINCE[t] || (W && W.regionByProvince && W.regionByProvince[t])); }
   // "پرویزی (کازرون)" -> { name: 'پرویزی', city: 'کازرون' };  "(تهران)'مهرداد" is a known malformed form
+  // «گازسو» and similar: companies the owner knows by name, when the title carries no city
+  var KNOWN_PROVINCE = { 'گازسو': 'البرز' };
+  // a market district written like a city is the city it belongs to
+  var CITY_ALIAS = { 'بنی هاشم': 'تهران', 'بازار تهران': 'تهران', 'ناصر خسرو': 'تهران' };
+  // the first known city written in an address, e.g. «کرج، شاهین ویلا…»; looks only at the first words
+  function cityIn(text) {
+    var t = ' ' + fixLetters(text).slice(0, 70).replace(/[،,:؛\-_/\\.]/g, ' ') + ' ', best = '', at = 1e9;
+    Object.keys(CITY_PROVINCE).forEach(function (k) {
+      var key = k.trim(); if (key.length < 3) return;
+      var i = t.indexOf(' ' + key + ' '); if (i >= 0 && (i < at || (i === at && key.length > best.length))) { best = key; at = i; }
+    });
+    return CITY_ALIAS[best] || best;
+  }
+  var PAYWORDS = { 'نقدی': 'نقدی', 'نقد': 'نقدی', 'چکی': 'چکی', 'چک': 'چکی', 'اعتباری': 'اعتباری', 'مدت دار': 'مدت‌دار', 'مدتدار': 'مدت‌دار' };
+  // "پرویزی (کازرون)" -> { name: 'پرویزی', city: 'کازرون' };  "(تهران)'مهرداد" is a known malformed form;
+  // «(نقدی)» or «(چکی)» in a title says how the customer pays: it is returned as pay and taken out of the name;
+  // a dash or underscore before the city («احمد-تهران», «محمدپرست _زاهدان») is a separator, not part of the name
   function parseTitle(raw) {
-    var s = fixLetters(raw), city = '', win = false;
+    var s = fixLetters(raw), city = '', win = false, pay = '';
     s = s.replace(/\s*win\s*$/i, function () { win = true; return ''; });   // «win» at the end marks a Wintora customer; it is kept at the end of the name
+    s = s.replace(/\(\s*([^()]*?)\s*\)/g, function (all, inner) {
+      var k = fixLetters(inner); if (PAYWORDS[k]) { pay = PAYWORDS[k]; return ' '; } return all;
+    });
     var lead = /^\(\s*([^)]+?)\s*\)\s*['’`]?\s*(.+)$/.exec(s);
-    if (lead && isCity(lead[1])) { city = lead[1]; s = lead[2]; }
+    if (lead && isCity(lead[1].trim())) { city = lead[1].trim(); s = lead[2]; }
     if (!city) {
       var re = /\(\s*([^()]+?)\s*\)/g, m;
-      while ((m = re.exec(s))) { if (isCity(m[1])) { city = m[1]; s = (s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length)); break; } }
+      while ((m = re.exec(s))) { if (isCity(m[1].trim())) { city = m[1].trim(); s = (s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length)); break; } }
     }
     s = s.replace(/\s+/g, ' ').replace(/\(\s*\)/g, '').trim();
+    // a separator at the end or in front of a trailing city
+    s = s.replace(/\s*[-_–—]+\s*$/, '').trim();
+    if (!city) {
+      var sep = /^(.*?)\s*[-_–—]+\s*([^\s\-_–—][^\-_–—]*)$/.exec(s);
+      if (sep && isCity(sep[2].trim())) { city = sep[2].trim(); s = sep[1].trim(); }
+    }
     if (!city) {
       // «(یوسفی)گرگان»: a city written right after a closing bracket; also two-word cities («قائم شهر») at the end
       var spaced = s.replace(/\)(?=[^\s)])/g, ') ').replace(/(\S)\(/g, '$1 (');
@@ -170,7 +197,9 @@
       if (words.length > 2 && isCity(words[words.length - 2] + ' ' + words[words.length - 1])) { city = words[words.length - 2] + ' ' + words[words.length - 1]; s = words.slice(0, -2).join(' '); }
       else if (words.length > 1 && isCity(words[words.length - 1])) { city = words[words.length - 1]; s = words.slice(0, -1).join(' '); }
     }
-    return { name: ((s || fixLetters(raw)).replace(/\s+/g, ' ').trim() + (win ? ' win' : '')).trim(), city: city };
+    // tidy: no space inside brackets, one space before «(» and after «)»; a dash left at the end goes
+    s = s.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/(\S)\(/g, '$1 (').replace(/\)(?=[^\s)])/g, ') ').replace(/\s*[-_–—]+\s*$/, '').replace(/\s+/g, ' ').trim();
+    return { name: ((s || fixLetters(raw)).trim() + (win ? ' win' : '')).trim(), city: (CITY_ALIAS[city.trim()] || city.trim()), pay: pay };
   }
 
   // ---------- derived values
@@ -192,9 +221,11 @@
     S.list.forEach(function (c) {
       c._key = norm([c.name, c.code, c.city, c.group, isWin(c) ? 'وینتورا wintora' : ''].join(' '));
       // a saved customer without a city: read it from the title («صنایع امین (یوسفی)گرگان»), as the import does
-      c._title = c.name;
-      if (!c.city) { var tp = parseTitle(c.name || ''); if (tp.city) { c.city = tp.city; c._title = tp.name; if (!c.province) c.province = provinceOf(tp.city); } }
-      else if (!c.province) c.province = provinceOf(c.city);
+      var tp = parseTitle(c.name || ''); c._title = tp.name; c._pay = tp.pay;
+      if (!c.city && tp.city) c.city = tp.city;
+      if (!c.city && c.address) { var ac = cityIn(c.address); if (ac) c.city = ac; }
+      if (c.city && !c.province) c.province = provinceOf(c.city.trim());
+      if (!c.province) { var kn = Object.keys(KNOWN_PROVINCE).filter(function (k) { return String(c.name || '').indexOf(k) >= 0; })[0]; if (kn) c.province = KNOWN_PROVINCE[kn]; }
       c._nameKey = norm(c.name);
       c._status = statusOf(c, S.latest);
       // the accounting reports are in rial; every figure shown here is in toman
@@ -275,7 +306,7 @@
   function card(c) {
     var d = (c._latest && c._prev > 0) || c._prev > 0 ? (c._latest - c._prev) / c._prev * 100 : null, col = hue(c), rk = (S.rank[c.code] || {})[S.latest];
     return '<li><a class="cu-card" href="#/c/' + encodeURIComponent(c.code) + '" style="--c:' + col + ';--ink:' + inkOn(col) + '">' +
-      '<div class="cu-card-top"><span class="cu-av face">' + face(c) + '</span><div class="cu-nm"><b>' + esc(shownName(c)) + (isWin(c) ? ' <span class="cu-win">وینتورا</span>' : '') + '</b>' +
+      '<div class="cu-card-top"><span class="cu-av face">' + face(c) + '</span><div class="cu-nm"><b>' + esc(shownName(c)) + (isWin(c) ? ' <span class="cu-win">وینتورا</span>' : '') + (c._pay ? ' <span class="cu-pay">' + esc(c._pay) + '</span>' : '') + '</b>' +
       '<div class="cu-card-meta"><span dir="ltr">' + ic('tag') + esc(c.code) + '</span>' + (c.city ? '<span>' + ic('pin') + esc(c.city) + '</span>' : '') + (c.group ? '<span>' + ic('user') + esc(c.group) + '</span>' : '') + '</div></div>' +
       '<span class="cu-chip st-' + c._status + '"><i style="background:' + STC[c._status] + '"></i>' + STATUS[c._status] + '</span></div>' +
       '<div class="cu-card-sales">' + bars(c) + '<span class="cu-amt"><small>فروش ' + faDigits(S.latest) + ' · تومان</small><b>' + compact(c._latest) + '</b></span>' +
@@ -419,8 +450,8 @@
     var invs = invoicesOf(c), items = itemsOf(invs);
     var fact = function (l, v, k) { return '<div class="cu-fact">' + (k ? '<span class="cu-fi">' + ic(k) + '</span>' : '') + '<div><dt>' + l + '</dt><dd>' + (v ? esc(v) : '<i>ثبت نشده</i>') + '</dd></div></div>'; };
     var edit = can('customerEdit') || (S.user && c.ownerUid === S.user.uid);
-    return head(c.name, true) +
-      '<section class="cu-card-box cu-top" style="--c:' + hue(c) + ';--ink:' + inkOn(hue(c)) + '"><div class="cu-hero"><span class="cu-av big face">' + face(c) + '</span><div><span class="cu-hero-m">' + (c.city ? ic('pin') + esc(c.city) : '') + (c.group ? ic('user') + esc(c.group) : '') + '</span></div></div><div class="cu-top-row"><span class="cu-chip st-' + c._status + '">' + STATUS[c._status] + '</span><span class="cu-chip" dir="ltr">' + esc(c.code) + '</span>' +
+    return head(shownName(c), true) +
+      '<section class="cu-card-box cu-top" style="--c:' + hue(c) + ';--ink:' + inkOn(hue(c)) + '"><div class="cu-hero"><span class="cu-av big face">' + face(c) + '</span><div><span class="cu-hero-m">' + (c.city ? ic('pin') + esc(c.city) : '') + (c.group ? ic('user') + esc(c.group) : '') + (c._pay ? '<span class="cu-pay lg" title="رفتار خرید مشتری، از عنوان حسابداری">رفتار خرید: ' + esc(c._pay) + '</span>' : '') + '</span></div></div><div class="cu-top-row"><span class="cu-chip st-' + c._status + '">' + STATUS[c._status] + '</span><span class="cu-chip" dir="ltr">' + esc(c.code) + '</span>' +
       (c.ownerName ? '<span class="cu-chip ok">مسئول: ' + esc(c.ownerName) + '</span>' : '') + '</div>' +
       '<dl class="cu-facts">' + fact('گروه (همکار مسئول)', c.group, 'user') + fact('شهر', c.city, 'pin') + fact('استان', prov, 'map') + fact('منطقه فروش', reg, 'map') +
       fact('آخرین سال خرید', (function () { var ys = S.years.filter(function (y) { return (c.sales || {})[y] > 0; }); return ys.length ? faDigits(ys[ys.length - 1]) : ''; })(), 'clock') +
@@ -681,7 +712,7 @@
       });
       var have = {}; S.list.forEach(function (c) { have[c.code] = 1; });
       var rows = Object.keys(by).map(function (k) {
-        var o = by[k], raw = o.tpl.name || o._name || '', t = o.tpl.city ? { name: fixLetters(raw), city: o.tpl.city } : parseTitle(raw), city = t.city, prov = o.tpl.province || provinceOf(city);
+        var o = by[k], raw = o.tpl.name || o._name || '', t = o.tpl.city ? { name: fixLetters(raw), city: o.tpl.city } : parseTitle(raw), city = t.city || (o.tpl.address ? cityIn(o.tpl.address) : ''), prov = o.tpl.province || provinceOf(city);
         return { code: k, name: t.name, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales,
           phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: (o.tpl.address || '').slice(0, 300), postal: postalOk(o.tpl.postal || '') ? o.tpl.postal : '', nationalId: nidOk(o.tpl.nationalId || '') ? o.tpl.nationalId : '', birthday: bdayOk(o.tpl.birthday || '') ? bdayFix(o.tpl.birthday) : '', notes: o.tpl.notes || '',
           bad: (o.tpl.postal && !postalOk(o.tpl.postal) ? 1 : 0) + (o.tpl.nationalId && !nidOk(o.tpl.nationalId) ? 1 : 0) + (o.tpl.birthday && !bdayOk(o.tpl.birthday) ? 1 : 0) };
