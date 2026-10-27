@@ -42,10 +42,10 @@
   function cardHtml(a) {
     var B = window.MSBanks, bk = B ? B.find(a.bank) : null, hue = B ? B.hue(bk ? bk.id : 'other') : 215;
     var f = function (k, v, ltr) { return v ? '<div><dt>' + k + '</dt><dd' + (ltr ? ' dir="ltr"' : '') + '>' + esc(v) + '</dd></div>' : ''; };
-    var num = a.card ? fmtCard(a.card) : (a.sheba || faD(a.account) || '');
-    return '<article class="bk-card' + (a.active === false ? ' off' : '') + '" style="--h:' + hue + '">' +
+    var numLine = function (k, shown, raw) { return shown ? '<div class="bk-numrow"><small>' + k + '</small><span class="bk-num" dir="ltr">' + esc(shown) + '</span><button type="button" class="bk-copy" data-copy="' + esc(String(raw).replace(/\s+/g, '')) + '" aria-label="کپی ' + k + '" title="کپی">کپی</button></div>' : ''; };
+    return '<article class="bk-card' + (a.active === false ? ' off' : '') + '" style="--h:' + hue + (bk && bk.c ? ';--c1:' + bk.c[0] + ';--c2:' + bk.c[1] + (bk.tx ? ';--tx:' + bk.tx : '') : '') + '">' +
       '<div class="bk-face"><div class="bk-face-top">' + (B ? B.icon(a.bank, 46) : '') + '<span class="bk-bname">' + esc(a.bank || 'بانک') + '</span><span class="bk-k ' + esc(a.kind) + '">' + esc(group(a)) + '</span></div>' +
-      '<div class="bk-chip-ic" aria-hidden="true"></div><div class="bk-num" dir="ltr">' + esc(num) + '</div><div class="bk-face-bot"><span>' + esc(a.holder || '') + '</span><b>' + esc(a.label) + '</b></div></div>' +
+      '<div class="bk-chip-ic" aria-hidden="true"></div>' + numLine('شمارهٔ کارت', a.card ? fmtCard(a.card) : '', a.card) + numLine('شبا', a.sheba ? a.sheba : '', a.sheba) + (!a.card && !a.sheba && a.account ? numLine('شمارهٔ حساب', faD(a.account), a.account) : '') + '<div class="bk-face-bot"><span>' + esc(a.holder || '') + '</span><b>' + esc(a.label) + '</b></div></div>' +
       '<dl>' + f('بانک', a.bank) + f('شمارهٔ حساب', faD(a.account), true) + f('شبا', a.sheba, true) + f('شمارهٔ کارت', fmtCard(a.card), true) + f('در وجه (چک)', a.payee) + f('توضیح', a.note) + '</dl>' +
       (a.active === false ? '<p class="bk-off">غیرفعال</p>' : '') +
       (can('bankEdit') ? '<div class="bk-acts"><button type="button" class="bk-btn alt" data-edit="' + esc(a.id) + '">ویرایش</button><button type="button" class="bk-btn alt" data-toggle="' + esc(a.id) + '">' + (a.active === false ? 'فعال کردن' : 'غیرفعال کردن') + '</button><button type="button" class="bk-btn danger" data-del="' + esc(a.id) + '">حذف</button></div>' : '') + '</article>';
@@ -114,6 +114,8 @@
   }
   root.addEventListener('click', function (e) {
     var t;
+    var cp = e.target.closest('[data-copy]');
+    if (cp) { var v = cp.getAttribute('data-copy'); if (navigator.clipboard) navigator.clipboard.writeText(v).then(function () { var o = cp.textContent; cp.textContent = 'کپی شد'; setTimeout(function () { cp.textContent = o; }, 1200); }, function () { /* clipboard blocked */ }); return; }
     var nw = e.target.closest('[data-new]'); if (nw) { S.form = blank(); S.form.mode = nw.getAttribute('data-new') === 'card' ? 'card' : 'account'; S.error = ''; S.msg = ''; render(); return; }
     if ((t = e.target.closest('[data-edit]'))) { var a = S.list.filter(function (x) { return x.id === t.getAttribute('data-edit'); })[0]; if (a) { S.form = Object.assign(blank(), a); S.form.mode = !a.account && !a.sheba && a.card ? 'card' : 'account'; S.error = ''; S.msg = ''; render(); } return; }
     if (e.target.closest('[data-cancel]')) { S.form = null; S.error = ''; render(); return; }
@@ -127,7 +129,7 @@
   root.addEventListener('input', function (e) {
     var k = e.target.getAttribute && e.target.getAttribute('data-k'); if (!k || !S.form) return;
     S.form[k] = e.target.value;
-    if (k === 'card' && !S.form.bank && window.MSBanks) { var g = window.MSBanks.byCard(e.target.value); if (g && g.id !== 'other') { S.form.bank = g.name; render(); } }
+    if ((k === 'card' || k === 'sheba') && !S.form.bank && window.MSBanks) { var g = k === 'card' ? window.MSBanks.byCard(e.target.value) : window.MSBanks.bySheba(e.target.value); if (g && g.id !== 'other') { S.form.bank = g.name; render(); } }
   });
   root.addEventListener('change', function (e) {
     var k = e.target.getAttribute && e.target.getAttribute('data-k'); if (k === 'bank' && S.form) { S.form.bank = e.target.value; render(); }

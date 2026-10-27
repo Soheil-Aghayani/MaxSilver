@@ -27,10 +27,15 @@
 /* bank icons and the bank-card look */
 .bk-ico{position:relative;display:inline-grid;place-items:center;flex:none;width:var(--s,40px);height:var(--s,40px);border-radius:28%;background:hsl(var(--h,215) 55% 92%);color:hsl(var(--h,215) 60% 28%);overflow:hidden}
 .bk-ico b{font:800 calc(var(--s,40px)*.34)/1 Estedad,Tahoma,sans-serif}.bk-ico img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}
-.bk-face{position:relative;display:grid;gap:10px;padding:14px 16px;border-radius:18px;color:#fff;background:linear-gradient(135deg,hsl(var(--h,215) 55% 32%),hsl(calc(var(--h,215) + 24) 60% 20%));box-shadow:0 10px 24px rgba(7,27,54,.18)}
+.bk-face{position:relative;display:grid;gap:10px;padding:14px 16px;border-radius:18px;color:var(--tx,#fff);background:linear-gradient(135deg,var(--c1,hsl(var(--h,215) 55% 32%)),var(--c2,hsl(calc(var(--h,215) + 24) 60% 20%)));box-shadow:0 10px 24px rgba(7,27,54,.18)}
 .bk-face-top{display:flex;align-items:center;gap:10px}.bk-face .bk-ico{box-shadow:0 0 0 2px rgba(255,255,255,.55)}
 .bk-bname{flex:1;font-weight:800;font-size:15px}.bk-face .bk-k{background:rgba(255,255,255,.2);color:#fff}
 .bk-chip-ic{width:34px;height:26px;border-radius:6px;background:linear-gradient(135deg,#ffe28a,#e0a81f);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
 .bk-num{font:700 clamp(15px,2.6vw,19px)/1.4 ui-monospace,Consolas,monospace;letter-spacing:.06em;text-align:left;overflow-wrap:anywhere}
 .bk-face-bot{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;opacity:.95}.bk-face-bot b{font-weight:700}
 .bk-sel .bk-selbox{display:flex;align-items:center;gap:8px}.bk-sel select{flex:1;min-height:44px;padding:0 10px;border:1px solid var(--ms-line);border-radius:12px;background:#fff;color:var(--ms-navy);font:700 14px Estedad,Tahoma,sans-serif}
+/* card number and Sheba, each with a copy button */
+.bk-numrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}.bk-numrow small{font-size:11px;opacity:.8;white-space:nowrap}
+.bk-numrow .bk-num{font-size:clamp(13px,2.4vw,17px)}
+.bk-copy{flex:none;min-height:30px;padding:0 12px;border:1px solid rgba(255,255,255,.55);border-radius:999px;background:rgba(255,255,255,.14);color:inherit;font:800 11.5px Estedad,Tahoma,sans-serif;cursor:pointer}
+.bk-copy:hover{background:rgba(255,255,255,.3)}

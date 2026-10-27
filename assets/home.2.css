@@ -83,3 +83,5 @@ body{min-height:100vh}
 .soon .soon-code b{font-weight:800}
 .hm-sec .portal-card.soon.has-art .tile-art{inset:10px 12px 78px;height:calc(100% - 88px)}
 .hm-sec .portal-card.soon.has-art{padding-bottom:10px}
+/* soon tiles whose title takes two lines keep the art clear of it */
+.hm-sec .portal-card.soon.has-art.l2 .tile-art{inset:8px 12px 108px;height:calc(100% - 116px)}
