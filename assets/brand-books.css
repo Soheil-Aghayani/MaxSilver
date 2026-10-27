@@ -73,4 +73,4 @@
 @media(max-width:720px){.bb-tabs{grid-template-columns:1fr 1fr}.bb-tabs button:last-child{grid-column:1/-1}.ig-form{grid-template-columns:1fr 1fr}.ig-save{grid-column:1/-1}}
 @media print{.no-print{display:none!important}}
 
-.doc-table td.dl{display:flex;flex-wrap:wrap;gap:6px}.dl-btn{display:inline-block;padding:5px 12px;border-radius:999px;background:var(--ms-navy);color:#fff;font-weight:800;font-size:12px;text-decoration:none}.dl-btn:hover{background:var(--ms-gold);color:var(--ms-navy)}
+.dl-wrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.doc-table td .dl-btn{display:inline-flex;align-items:center;flex:none;width:auto;height:auto;min-width:0;margin:0;padding:6px 14px;border-radius:999px;background:var(--ms-navy);color:#fff;font-weight:800;font-size:12px;line-height:1.4;white-space:nowrap;text-decoration:none}.doc-table td .dl-btn:hover{background:var(--ms-gold);color:var(--ms-navy)}

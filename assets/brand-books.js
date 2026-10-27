@@ -88,7 +88,7 @@
     var l = LOGO_FILES[b.key] || [];
     if (!l.length) return '<p class="doc-line">فایل لایه‌باز این برند هنوز بارگذاری نشده است.</p>';
     return '<table class="doc-table"><thead><tr><th>فایل</th><th class="no-print">دانلود</th></tr></thead><tbody>' + l.map(function (f) {
-      return '<tr><td>' + esc(f[0]) + '<br><small dir="ltr">' + esc(f[1].split('/').pop()) + '</small></td><td class="no-print dl">' + f[2].map(function (x) { return '<a class="dl-btn" href="./assets/branding/files/' + esc(f[1]) + '.' + x + '" download>' + esc(FMT[x] || x) + '</a>'; }).join('') + '</td></tr>';
+      return '<tr><td>' + esc(f[0]) + '<br><small dir="ltr">' + esc(f[1].split('/').pop()) + '</small></td><td class="no-print"><div class="dl-wrap">' + f[2].map(function (x) { return '<a class="dl-btn" href="./assets/branding/files/' + esc(f[1]) + '.' + x + '" download>' + esc(FMT[x] || x) + '</a>'; }).join('') + '</div></td></tr>';
     }).join('') + '</tbody></table>';
   }
   var RULES = [
