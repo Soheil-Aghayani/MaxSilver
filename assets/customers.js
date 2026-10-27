@@ -451,6 +451,17 @@
         (v > 0 && tot ? '<small>سهم ' + faInt.format(Math.round(v / tot * 1000) / 10) + '٪' + (r ? ' · رتبهٔ ' + faInt.format(r.n) + ' از ' + faInt.format(r.of) : '') + '</small>' : '') + '</div>';
     }).join('') + '</div>';
   }
+  // account and payments: the balance at the end of each year comes from the accounting program; what the customer paid in a year is
+  // worked out as  previous balance + sales of the year - balance at the end of the year  (it includes returns and discounts, so it is approximate)
+  function cashHtml(c) {
+    var b = c.balances || {}, ys = Object.keys(b).map(Number).sort(); if (!ys.length) return '';
+    var rows = ys.map(function (y) {
+      var bal = b[y] / 10, prev = b[y - 1], sale = (c.sales || {})[y], pay = (prev != null && sale != null) ? (prev + sale - b[y]) / 10 : null;
+      return '<tr><th>' + faDigits(y) + '</th><td>' + (sale != null ? compact(sale / 10) : '—') + '</td><td class="' + (bal > 0 ? 'owe' : bal < 0 ? 'cred' : '') + '">' + (bal === 0 ? '۰' : compact(Math.abs(bal)) + ' ' + (bal > 0 ? 'بدهکار' : 'بستانکار')) + '</td><td>' + (pay == null ? '—' : compact(Math.max(pay, 0)) ) + '</td></tr>';
+    }).join('');
+    return '<section class="cu-card-box"><h2>حساب و پرداخت</h2><div class="cu-cash"><table><thead><tr><th>سال</th><th>فروش</th><th>مانده پایان سال</th><th>دریافت‌شده (تقریبی)</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="cu-note">تومان. «بدهکار» یعنی مشتری به ما بدهکار است و «بستانکار» یعنی از ما طلب دارد (پیش‌پرداخت یا برگشتی). «دریافت‌شده» را از «مانده سال قبل + فروش − مانده این سال» حساب می‌کنیم؛ برگشتی و تخفیف را هم شامل می‌شود و فقط تقریبی است.</p></section>';
+  }
   function sibsHtml(c) {
     var l = c._sibs || []; if (!l.length) return '';
     var all = [c].concat(l), sum = all.reduce(function (a, x) { return a + (x._latest || 0); }, 0);
@@ -473,6 +484,7 @@
       fact('آخرین سال خرید', (function () { var ys = S.years.filter(function (y) { return (c.sales || {})[y] > 0; }); return ys.length ? faDigits(ys[ys.length - 1]) : ''; })(), 'clock') +
       fact('مجموع فروش ثبت‌شده', c._total ? amount(c._total) + ' تومان' : '', 'coins') + '</dl>' +
       (can('customerAssign') ? '<button type="button" class="cu-btn small" data-owner-customer="' + esc(c.code) + '">تغییر مسئول این مشتری</button>' : '') + '</section>' +
+      cashHtml(c) +
       sibsHtml(c) +
       '<section class="cu-card-box"><h2>خرید در سال‌ها</h2>' + yearBars(c) +
       '<p class="cu-note">مبلغ‌ها به تومان است (گزارش حسابداری به ریال است و اینجا تبدیل شده). سال ' + faDigits(S.latest) + ' هنوز تمام نشده است.</p></section>' +
@@ -539,13 +551,15 @@
   var TPL_HEAD = [['code', 'کد مشتری'], ['name', 'نام مشتری'], ['group', 'گروه (همکار مسئول)'], ['city', 'شهر'], ['province', 'استان'], ['phone', 'تلفن'], ['contact', 'شخص تماس'], ['address', 'نشانی'], ['postal', 'کد پستی'], ['nationalId', 'کد ملی'], ['birthday', 'تاریخ تولد'], ['notes', 'یادداشت']];
   function parseTemplate(matrix) {
     for (var r = 0; r < Math.min(matrix.length, 10); r++) {
-      var row = matrix[r] || [], cols = {}, sales = {}, found = false, altCode;
+      var row = matrix[r] || [], cols = {}, sales = {}, bals = {}, found = false, altCode;
       row.forEach(function (h, i) {
         var k = norm(h); if (!k) return;
         if (k === norm('کد مشتری')) { cols.code = i; found = true; return; }
         if (k === norm('کد')) { altCode = i; return; }
         var m = /^فروش\s*(\d{4})\s*(?:\(.*\))?$/.exec(k);
         if (m) { sales[m[1]] = i; return; }
+        var mb = /^مانده\s*(\d{4})\s*(?:\(.*\))?$/.exec(k);
+        if (mb) { bals[mb[1]] = i; return; }
         Object.keys(TPL_ALIASES).forEach(function (f) { if (f !== 'code' && cols[f] === undefined && TPL_ALIASES[f].map(norm).indexOf(k) >= 0) cols[f] = i; });
       });
       // a plain «کد» column counts only together with a phone or address column: that is the accounting program's customer list, not a sales report
@@ -555,9 +569,11 @@
       for (var i = r + 1; i < matrix.length; i++) {
         var rw = matrix[i] || [], code = latinDigits(val(rw, cols.code)).replace(/\.0+$/, '');
         if (!code || /^نمونه/.test(code)) { if (rw.some(function (x) { return x != null && String(x).trim(); })) skipped++; continue; }
-        var rec = { code: code, sales: {} };
+        var rec = { code: code, sales: {}, bal: {} };
         Object.keys(cols).forEach(function (f) { if (f !== 'code') rec[f] = (f === 'phone' || f === 'postal' || f === 'nationalId') ? latinDigits(val(rw, cols[f])).replace(/\D/g, '') : fixLetters(val(rw, cols[f])); });
         Object.keys(sales).forEach(function (y) { var n = Number(latinDigits(val(rw, sales[y])).replace(/[٬,\s]/g, '')); if (isFinite(n) && val(rw, sales[y]) !== '') rec.sales[y] = Math.round(n * 10); });
+        // the balance at the end of a year (toman in the file, rial stored): positive = the customer owes us, negative = the customer is in credit
+        Object.keys(bals).forEach(function (y) { var n = Number(latinDigits(val(rw, bals[y])).replace(/[٬,\s]/g, '')); if (isFinite(n) && val(rw, bals[y]) !== '') rec.bal[y] = Math.round(n * 10); });
         out.push(rec);
       }
       return { rows: out, skipped: skipped };
@@ -577,11 +593,12 @@
   }
   function sheetRows(list) {
     var years = S.years.length ? S.years : [1403, 1404, 1405];
-    var head = TPL_HEAD.map(function (h) { return h[1]; }).concat(years.map(function (y) { return 'فروش ' + y + ' (تومان)'; }));
+    var byears = {}; list.forEach(function (c) { Object.keys(c.balances || {}).forEach(function (y) { byears[y] = 1; }); }); byears = Object.keys(byears).sort();
+    var head = TPL_HEAD.map(function (h) { return h[1]; }).concat(years.map(function (y) { return 'فروش ' + y + ' (تومان)'; }), byears.map(function (y) { return 'مانده ' + y + ' (تومان)'; }));
     var rows = [head];
     list.forEach(function (c) {
       rows.push([c.code, c.name || '', c.group || '', c.city || '', c.province || provinceOf(c.city), c.phone || '', c.contact || '', c.address || '', c.postal || '', c.nationalId || '', c.birthday || '', c.notes || '']
-        .concat(years.map(function (y) { var v = (c.sales || {})[y]; return v == null ? '' : Math.round(v / 10); })));
+        .concat(years.map(function (y) { var v = (c.sales || {})[y]; return v == null ? '' : Math.round(v / 10); }), byears.map(function (y) { var v = (c.balances || {})[y]; return v == null ? '' : Math.round(v / 10); })));
     });
     return rows;
   }
@@ -701,7 +718,7 @@
       return Promise.all(Array.prototype.map.call(files, function (f) { return readOne(f, XLSX); }));
     }).then(function (res) {
       var by = {}, info = [], names = {}, renamed = {}, skipped = 0;
-      var slot = function (code) { return by[code] = by[code] || { code: code, sales: {}, _y: 0, tpl: {} }; };
+      var slot = function (code) { return by[code] = by[code] || { code: code, sales: {}, bal: {}, _y: 0, tpl: {} }; };
       res.forEach(function (r) {
         if (r.tpl) {
           skipped += r.tpl.skipped;
@@ -709,6 +726,7 @@
           r.tpl.rows.forEach(function (rec) {
             var o = slot(rec.code);
             Object.keys(rec.sales).forEach(function (y) { o.sales[y] = rec.sales[y]; });
+            Object.keys(rec.bal || {}).forEach(function (y) { o.bal[y] = rec.bal[y]; });
             ['name', 'group', 'city', 'province', 'phone', 'contact', 'address', 'postal', 'nationalId', 'birthday', 'notes'].forEach(function (k) { if (rec[k]) o.tpl[k] = rec[k]; });
           });
           return;
@@ -730,7 +748,7 @@
       var have = {}; S.list.forEach(function (c) { have[c.code] = 1; });
       var rows = Object.keys(by).map(function (k) {
         var o = by[k], raw = o.tpl.name || o._name || '', t = o.tpl.city ? { name: fixLetters(raw), city: o.tpl.city } : parseTitle(raw), city = t.city || (o.tpl.address ? cityIn(o.tpl.address) : ''), prov = o.tpl.province || provinceOf(city);
-        return { code: k, name: t.name, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales,
+        return { code: k, name: t.name, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales, bal: o.bal,
           phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: (o.tpl.address || '').slice(0, 300), postal: postalOk(o.tpl.postal || '') ? o.tpl.postal : '', nationalId: nidOk(o.tpl.nationalId || '') ? o.tpl.nationalId : '', birthday: bdayOk(o.tpl.birthday || '') ? bdayFix(o.tpl.birthday) : '', notes: o.tpl.notes || '',
           bad: (o.tpl.postal && !postalOk(o.tpl.postal) ? 1 : 0) + (o.tpl.nationalId && !nidOk(o.tpl.nationalId) ? 1 : 0) + (o.tpl.birthday && !bdayOk(o.tpl.birthday) ? 1 : 0) };
       });
@@ -747,7 +765,9 @@
     Object.keys(S.groups).forEach(function (k) { if (S.groups[k].ownerUid) groupOwner[S.groups[k].name] = S.groups[k]; });
     var ops = [];
     im.rows.forEach(function (r) {
-      var doc = { code: r.code, name: r.name, city: r.city, province: r.province, region: r.region, group: r.group, sales: r.sales, importedAt: now, updatedAt: now };
+      var doc = { code: r.code, name: r.name, city: r.city, province: r.province, region: r.region, group: r.group, importedAt: now, updatedAt: now };
+      if (r.sales && Object.keys(r.sales).length) doc.sales = r.sales;
+      if (r.bal && Object.keys(r.bal).length) doc.balances = r.bal;
       ['phone', 'contact', 'address', 'postal', 'nationalId', 'birthday', 'notes'].forEach(function (k) { if (r[k]) doc[k] = r[k]; });
       ['name', 'city', 'province', 'region', 'group'].forEach(function (k) { if (!doc[k]) delete doc[k]; });   // an empty cell in the file never erases what is already stored
       var go = groupOwner[r.group];
