@@ -433,10 +433,12 @@
     b.set(ref.collection('messages').doc(), { uid: me, name: myName(), role: myRole(), text: o.text, at: now });
     return b.commit();
   }
+  // a conversation opened on this device is not «waiting» any more until a newer message arrives
+  function seenHere(x) { return !!(window.MSNotify && window.MSNotify.readOf && window.MSNotify.readOf(x.id) >= (x.updatedAt || 0)); }
   function tkWaiting() {
     var mine = ['uid:' + S.user.uid, 'role:' + myRole()];   // general management reads everything but is only asked about its own
     return S.tk.list.filter(function (x) {
-      return x.status === 'open' && x.lastBy !== S.user.uid && (x.audience || []).some(function (a) { return mine.indexOf(a) >= 0; });
+      return x.status === 'open' && x.lastBy !== S.user.uid && (x.audience || []).some(function (a) { return mine.indexOf(a) >= 0; }) && !seenHere(x);
     }).length;
   }
   // phone numbers: digits only, no country code
@@ -513,7 +515,7 @@
   function ticketsView() {
     var T = S.tk, wait = tkWaiting();
     var rows = T.list.map(function (x) {
-      var other = otherParty(x), mineLast = x.lastBy === S.user.uid, waiting = !mineLast && x.status === 'open';
+      var other = otherParty(x), mineLast = x.lastBy === S.user.uid, waiting = !mineLast && x.status === 'open' && !seenHere(x);
       return '<li' + (matchQ(x, other) ? '' : ' hidden') + '><button type="button" class="pn-chat' + (x.status === 'closed' ? ' off' : '') + (waiting ? ' wait' : '') + '" data-tk-open="' + esc(x.id) + '">' +
         avatar(other, 46, otherUidOf(x)) +
         '<span class="pn-chat-main"><span class="pn-chat-top"><b>' + esc(x.title) + '</b><time>' + esc(tkTime(x.updatedAt)) + '</time></span>' +
@@ -664,6 +666,7 @@
       needProfiles(S.tk.msgs.map(function (m) { return m.uid; }));
       paintFeed(first); first = false;
       markSeen(id);
+      if (window.MSNotify && window.MSNotify.read) window.MSNotify.read(id, Math.max((S.tk.cur && S.tk.cur.updatedAt) || 0, S.tk.msgs.length ? (S.tk.msgs[S.tk.msgs.length - 1].at || 0) : 0) || Date.now());
     }, function (e) { S.tk.error = errText(e); dlg.innerHTML = tkThread(id); });
     offDoc = ref.onSnapshot(function (s) {
       if (!s.exists) return;
@@ -672,6 +675,7 @@
       if (lastStatus && lastStatus !== d.status) dlg.innerHTML = tkThread(id); else paintFeed(false);
       lastStatus = d.status;
       markSeen(id);
+      if (window.MSNotify && window.MSNotify.read) window.MSNotify.read(id, d.updatedAt || Date.now());
     }, function () { /* the messages listener reports errors */ });
     var otherUid = otherUidOf(S.tk.cur || {}), pres = null, offPres = null, presTimer = 0;
     function paintPresence() {
@@ -749,6 +753,7 @@
       h += '<button type="button" class="pn-file" data-dl="' + esc(f.id) + '" data-name="' + esc(f.name) + '"><span class="pn-fi">' + esc(ext) + '</span><span class="pn-fn"><b>' + esc(f.name) + '</b><small>' + esc(fmtSize(f.size || 0)) + '</small></span>' + DL_SVG + '</button>';
     });
     if (m.text) h += '<p>' + esc(m.text) + '</p>';
+    if (!h) h = '<p class="pn-gone">پیامی بدون متن</p>';
     return h;
   }
   // the strip above the composer: what is being replied to or edited, and the files waiting to be sent

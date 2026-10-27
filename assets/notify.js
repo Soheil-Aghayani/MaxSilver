@@ -9,7 +9,11 @@
 // closed phone needs a server that sends it.
 (function (w) {
   'use strict';
-  var KEY = 'ms-notify-v1', SEEN = 'ms-notify-seen-v1', PREFS = 'ms-notify-prefs-v1';
+  var KEY = 'ms-notify-v1', SEEN = 'ms-notify-seen-v1', PREFS = 'ms-notify-prefs-v1', READ = 'ms-chat-read-v1';
+  // a conversation that was opened and seen no longer counts as waiting, even if it stays open (this device); a newer message counts again
+  var tkRecount = null;
+  function readMap() { return j(READ, {}); }
+  function markRead(id, at) { var m = readMap(); if ((m[id] || 0) < at) { m[id] = at; put(READ, m); if (tkRecount) tkRecount(); } }
   var fa = new Intl.NumberFormat('fa-IR');
   var MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
 
@@ -102,7 +106,7 @@
     return load('./assets/vendor/firebase-app-compat-' + v + '.js')
       .then(function () { return load('./assets/vendor/firebase-auth-compat-' + v + '.js'); })
       .then(function () { return load('./assets/vendor/firebase-firestore-compat-' + v + '.js'); })
-      .then(function () { return w.MS_FIREBASE ? null : load('./assets/firebase-config.js?v=20261523'); });
+      .then(function () { return w.MS_FIREBASE ? null : load('./assets/firebase-config.js?v=20261524'); });
   }
   var db = null, me = '', parts = {}, started = false, unsubs = [], baseline = {};
   var seenMap = j(SEEN, {});
@@ -129,11 +133,12 @@
     var minePool = ['uid:' + me, 'role:' + r];
     function onData() {
       var n = 0, fresher = [];
+      tkRecount = onData;
       Object.keys(cache).forEach(function (id) {
         var x = cache[id];
         var addressed = (x.audience || []).some(function (a) { return minePool.indexOf(a) >= 0; });
         if (x.status === 'open' && x.lastBy !== me && addressed) {
-          n++;
+          if ((readMap()[id] || 0) < (x.updatedAt || 0)) n++;
           if (fresh(id, x.updatedAt || 0)) fresher.push(x);
           // delivery receipt: this device now has the message
           if ((x['recv_' + me] || 0) < (x.updatedAt || 0)) { var u = {}; u['recv_' + me] = x.updatedAt || 0; tk.doc(id).update(u).then(null, function () { /* ignore */ }); }
@@ -288,6 +293,7 @@
     permission: function () { return 'Notification' in w ? Notification.permission : 'unsupported'; },
     announce: announce,
     // the person opened a request: its current stage no longer counts as new
+    read: markRead, readOf: function (id) { return readMap()[id] || 0; },
     ack: function (code, stage) { var a = j(ACK, {}); a[code] = stage; put(ACK, a); if (reqRecount) reqRecount(); }
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

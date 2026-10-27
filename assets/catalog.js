@@ -267,7 +267,12 @@
       b.setAttribute('aria-pressed', String(compare.indexOf(b.getAttribute('data-cmp')) >= 0));
     });
   }
+  // human resources (and any role the table leaves out) cannot start a pre-invoice; people not signed in still can, on their own device
+  function invAllowed() { var r = window.MSSync && window.MSSync.role ? window.MSSync.role() : ''; return !(r && window.MSRoles && !window.MSRoles.can(r, 'invoiceCreate')); }
+  function invGate() { document.documentElement.classList.toggle('no-inv', !invAllowed()); }
+  [300, 1500, 4000, 9000].forEach(function (ms) { setTimeout(invGate, ms); }); document.addEventListener('visibilitychange', invGate);
   function toggleInvoice(id) {
+    if (!invAllowed()) return;
     var l = invLine(id);
     if (l) inv.lines.splice(inv.lines.indexOf(l), 1); else inv.lines.push({ id: id, qty: 1, price: prices[id] || listPrice(id) });
     invSave(); trayRender(); invButtons();
@@ -1224,7 +1229,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); b.focus(); } });
   })();
 
-  fetch('./assets/catalog.json?v=20261523', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
+  fetch('./assets/catalog.json?v=20261524', { cache: 'default' }).then(function (r) { return r.json(); }).then(function (json) {
     data = json; items = json.items; build();
     if (window.MSStatus) window.MSStatus.onChange(function () { apply(); });
     if (window.MSPrices) { window.MSPrices.load().then(function () { render(); }); window.MSPrices.onChange(function () { render(); }); }

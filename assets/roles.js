@@ -43,7 +43,7 @@
     features: ['manager'],                                                              // switches parts of the site on and off (technology lead only)
     roadmapEdit: ['manager'],                                                           // loads or replaces the roadmap (the owner, or people he names on «دسترسی‌ها»)
     competitorsEdit: ['manager'],                                                       // loads or replaces the competitor file (same)
-    assistant: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations'],   // the catalog assistant (asks about products)
+    assistant: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'hr'],   // the catalog assistant (asks about products)
     roadmap: ['manager', 'ceo', 'sales_manager'],                                       // the milestone timeline (management, CEO, sales manager)
     siteUpdate: ['manager'],                                                            // uploads a zip that updates the portal pages on the host (technology lead only)
     backup: ['manager', 'ceo'],                                                         // downloads a backup of the database (management only)
@@ -64,6 +64,7 @@
     customerEdit: ['manager', 'ceo', 'sales_manager', 'account_manager'],                     // contact details and notes of any customer
     customerAssign: ['manager', 'ceo', 'sales_manager'],                                      // group and customer owners, and the import
     customerImport: ['manager', 'ceo', 'sales_manager'],
+    invoiceCreate: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing'],   // makes a pre-invoice (not human resources); the screen hides it, the database rules still let any approved account save one
     invoiceReview: ['account_manager'],                                                 // approves a proforma or refuses it with a written reason
     jobEdit: ['manager', 'ceo', 'hr', 'sales_manager'],                                   // job descriptions: edit those of others (hr, management; the sales manager only salespeople)
     invoiceDecide: ['manager', 'ceo', 'sales_manager']                                  // accepts or declines a refusal (accepting archives the proforma)
