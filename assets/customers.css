@@ -225,3 +225,5 @@
 .cu-paynote{display:grid;gap:4px;margin-top:6px}.cu-paynote input{min-height:40px;padding:0 12px;border:1px solid #cfd8e6;border-radius:12px;font:inherit}
 .cu-fl{display:inline-flex;align-items:center;padding:0 6px;font-size:12px;font-weight:800;color:#5b6b82}
 @media (prefers-reduced-motion:reduce){.cu-payopt{transition:none}}
+.cu-payopt{padding-left:64px}.cu-payimg{position:absolute;left:12px;top:50%;width:44px;height:auto;max-height:44px;object-fit:contain;transform:translateY(-50%);pointer-events:none}
+.cu-paymix .cu-pct input{width:84px;flex:none}.cu-paymix .cu-chk input{width:auto;flex:none;margin:0}

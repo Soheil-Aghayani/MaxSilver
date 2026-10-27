@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'maxi-mascot-site-tiles-1405-08', date: '1405/08/06', tag: 'بهبود', title: 'مکثی با چهرهٔ جدید، کاشی‌های سفارش سایت‌ها و فونت Word',
+      summary: 'مکثی حالا با تصویر شخصیت اصلی خودش دیده می‌شود. روی صفحهٔ اصلی بخش «به‌زودی» سه کاشی تازه دارد (سفارش‌های سایت مکث‌سیلور، وینتورا و توربومکس). کارت‌های رفتار پرداخت تصویر هر روش را دارند. فایل Word فرم استخدامی فونت Estedad را دقیق‌تر درون خود دارد و اگر فونت بارگذاری نشود، فایل ناقص نمی‌دهد.' },
     { id: 'customers-pay-behaviour-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'], title: 'مشتریان: رفتار پرداخت',
       summary: 'برای هر مشتری یکی از چهار رفتار پرداخت ثبت می‌شود: نقدی پیش از ارسال، واریز ۱۰ تا ۲۰ روز بعد، چک پیش از ارسال بار، چک پس از ارسال بار؛ برای چکی‌ها می‌شود «بخشی را نقدی می‌دهد» و سهم چک را هم نوشت. در فهرست می‌توان بر اساس رفتار پرداخت فیلتر کرد و ستونش در فایل Excel نمونه هم هست. ثبت با مدیر و مدیر فروش است.' },
     { id: 'brand-logo-files-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'], title: 'برندبوک: دانلود فایل‌های لوگو (AI لایه‌باز)',

@@ -17,6 +17,6 @@
       a.href = url; a.download = 'employment-form-' + brand.value + '.docx'; d.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
       say('فایل Word آماده شد.' + (pw ? ' رمز را نزد خودتان نگه دارید؛ ما آن را ذخیره نمی‌کنیم.' : ''));
-    }, function () { say('ساخت فایل انجام نشد.'); });
+    }, function (e) { say(e && e.message === 'font' ? 'فونت Estedad بارگذاری نشد (اینترنت یا حالت آفلاین). صفحه را تازه کنید و دوباره بزنید.' : 'ساخت فایل انجام نشد.'); });
   });
 })(window, document);

@@ -170,10 +170,10 @@
   }
   // payment behaviour (set by the sales leads): how a customer usually pays; a cheque customer may also pay part in cash
   var PAY = {
-    cash: { t: 'نقدی، پیش از ارسال', s: 'نقدی', d: 'مشتری فقط اول نقدی واریز می‌کند.' },
-    days: { t: 'واریز ۱۰ تا ۲۰ روز بعد', s: '۱۰–۲۰ روزه', d: 'مشتری بعد از ۱۰ تا ۲۰ روز واریز می‌کند.' },
-    chequeBefore: { t: 'چک پیش از ارسال بار', s: 'چک اول', d: 'مشتری اول چک می‌دهد (پیش از ارسال بار).' },
-    chequeAfter: { t: 'چک پس از ارسال بار', s: 'چک بعد از بار', d: 'مشتری بعد از ارسال بار چک می‌دهد.' }
+    cash: { i: 'cash-payment', t: 'نقدی، پیش از ارسال', s: 'نقدی', d: 'مشتری فقط اول نقدی واریز می‌کند.' },
+    days: { i: 'days-reminder', t: 'واریز ۱۰ تا ۲۰ روز بعد', s: '۱۰–۲۰ روزه', d: 'مشتری بعد از ۱۰ تا ۲۰ روز واریز می‌کند.' },
+    chequeBefore: { i: 'cheque-payment', t: 'چک پیش از ارسال بار', s: 'چک اول', d: 'مشتری اول چک می‌دهد (پیش از ارسال بار).' },
+    chequeAfter: { i: 'after-delivery-payment', t: 'چک پس از ارسال بار', s: 'چک بعد از بار', d: 'مشتری بعد از ارسال بار چک می‌دهد.' }
   };
   var PAY_ORDER = ['cash', 'days', 'chequeBefore', 'chequeAfter'];
   function payOf(c) { return c.payMode && PAY[c.payMode] ? c.payMode : ''; }
@@ -665,7 +665,7 @@
   function payBox(c) {
     var lead = can('customerAssign'), m = payOf(c), pct = Number(c.payChequePct) || '';
     var opts = PAY_ORDER.map(function (k) {
-      return '<label class="cu-payopt pm-' + k + (m === k ? ' on' : '') + '"><input type="radio" name="payMode" value="' + k + '"' + (m === k ? ' checked' : '') + (lead ? '' : ' disabled') + '><b>' + esc(PAY[k].t) + '</b><span>' + esc(PAY[k].d) + '</span></label>';
+      return '<label class="cu-payopt pm-' + k + (m === k ? ' on' : '') + '"><input type="radio" name="payMode" value="' + k + '"' + (m === k ? ' checked' : '') + (lead ? '' : ' disabled') + '><img class="cu-payimg" src="./assets/art/tiles/' + PAY[k].i + '.webp" alt="" width="44" height="40" loading="lazy" decoding="async" onerror="this.remove()"><b>' + esc(PAY[k].t) + '</b><span>' + esc(PAY[k].d) + '</span></label>';
     }).join('');
     return '<section class="cu-card-box"><div class="cu-boxhead"><h2>رفتار پرداخت</h2>' + (lead ? '<button type="submit" form="cuPay" class="cu-ico" title="ذخیره" aria-label="ذخیرهٔ رفتار پرداخت"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l4 4v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 3v5h7V3M8 21v-7h8v7"/></svg></button>' : '') + '</div>' +
       '<form id="cuPay" data-code="' + esc(c.code) + '"><div class="cu-payopts">' + opts + '</div>' +

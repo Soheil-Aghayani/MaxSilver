@@ -203,3 +203,8 @@ body.as-page :focus-visible{outline:3px solid #1746b5;outline-offset:2px;border-
 .as-adm-dlg .as-adm-list li{padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--ms-line,#dfe5ee);font-size:13px;line-height:1.7}
 .as-adm-dlg .as-adm-list small{display:block;margin-top:2px;color:#5b6b82}
 .as-adm-dlg .as-adm-x:hover{background:#e0e8f5;color:#071b36}
+/* Maxi is the mascot picture */
+.as-mx{display:block;width:100%;height:100%;object-fit:contain;border-radius:0}
+.as-av{background:#fff7d6;overflow:visible;border:2px solid var(--ms-gold)}
+.as-av.big{width:76px;height:76px}.as-av.big .as-mx{padding:4px}.as-av .as-mx{padding:2px}
+.as-logo{background:transparent;width:36px;height:36px}.as-logo .as-mx{animation:as-twinkle 3.2s ease-in-out infinite}
