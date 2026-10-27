@@ -57,7 +57,7 @@ def make(model, brand_name, cid):
     desc = ('فر برقی مدولار دک‌دار پیتزا با %s دکهٔ مستقل؛ هر دکه دمای جدا دارد و می‌توان در یک فر چند محصول پخت. عکس، نمونهٔ ۲ دکهٔ همین سری است. '
             'مشخصات از برگهٔ فنی سازنده؛ کد و قیمت را کارشناس فروش اعلام می‌کند.') % fa(n)
     return {'id': cid, 'src': 'max-silver', 'name': 'فر طرح پیتزا مستر مدل ' + pw, 'code': '', 'grp': 'تجهیزات پخت', 'cat': 'فر پیتزا', 'sec': ['فست‌فود', 'رستوران'],
-            'img': './assets/products/pl/ms-pm%sx.webp' % ser, 'url': '', 'desc': desc,
+            'img': './assets/products/pl/ms-pw%s.webp' % model if os.path.exists(os.path.join(HERE, '..', 'assets', 'products', 'pl', 'ms-pw%s.webp' % model)) else './assets/products/pl/ms-pm%sx.webp' % ser, 'url': '', 'desc': desc,
             'dims': {'l': cm(x['width']), 'w': cm(x['depth']), 'h': cm(x['height'])}, 'wt': x['net'], 'specs': specs}
 
 

@@ -57,7 +57,7 @@
   function letter(c) { var n = String(c.name || '').replace(/\[.*?\]/g, '').trim(); return esc(n.charAt(0) || '؟'); }
   // «win» at the end of an accounting title marks a Wintora customer: the card shows a Wintora badge instead of the word in the name
   function isWin(c) { return /(^|[^a-z])win\s*$/i.test(String(c.name || '').replace(/\[.*?\]/g, '').trim()); }
-  function shownName(c) { return String(c.name || '').replace(/\s*\[.*?\]\s*$/, '').replace(/\s*win\s*$/i, '').trim(); }
+  function shownName(c) { return String(c._title || c.name || '').replace(/\s*\[.*?\]\s*$/, '').replace(/\s*win\s*$/i, '').trim(); }
   // a small face drawn from the customer's code and name (the idea of «Boring Avatars», MIT licence; drawn here, nothing is loaded from the internet)
   var AVC = ['#ffcc2a', '#071b36', '#3858e9', '#ce1f39', '#0d9488', '#7f54b3', '#ff6a00', '#0891b2'], AVMEMO = {};
   function avHash(str) { var h = 0; for (var i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h = h & h; } return Math.abs(h); }
@@ -107,6 +107,43 @@
     'رشت': 'گیلان', 'آمل': 'مازندران', 'ساری': 'مازندران', 'بابل': 'مازندران', 'قائم شهر': 'مازندران', 'گرگان': 'گلستان', 'سمنان': 'سمنان', 'دامغان': 'سمنان',
     'بوشهر': 'بوشهر', 'گناوه': 'بوشهر'
   };
+  (function () {
+    var more = {
+      'تهران': ['شهر ری', 'ری', 'دماوند', 'پردیس', 'بومهن', 'رباط کریم', 'قدس', 'ملارد', 'نسیم شهر', 'بهارستان', 'فشم', 'پیشوا', 'قرچک', 'چهاردانگه'],
+      'البرز': ['کرج', 'فردیس', 'نظرآباد', 'ماهدشت', 'محمدشهر', 'هشتگرد', 'اشتهارد', 'طالقان'],
+      'اصفهان': ['خمینی شهر', 'شاهین شهر', 'فولادشهر', 'زرین شهر', 'گلپایگان', 'خوانسار', 'میمه', 'فلاورجان', 'مبارکه', 'نایین', 'اردستان', 'سمیرم'],
+      'خراسان رضوی': ['تربت حیدریه', 'قوچان', 'گناباد', 'کاشمر', 'تایباد', 'تربت جام', 'چناران', 'درگز', 'فریمان'],
+      'خوزستان': ['ایذه', 'اندیمشک', 'شوشتر', 'شوش', 'مسجد سلیمان', 'رامهرمز', 'سوسنگرد', 'هندیجان', 'بندر ماهشهر', 'امیدیه', 'باغملک'],
+      'فارس': ['فسا', 'داراب', 'آباده', 'نی ریز', 'اقلید', 'فیروزآباد', 'استهبان', 'سپیدان', 'ممسنی', 'زرقان', 'سروستان'],
+      'کرمان': ['سیرجان', 'جیرفت', 'بم', 'زرند', 'کهنوج', 'بردسیر', 'شهربابک', 'راور'],
+      'آذربایجان شرقی': ['مراغه', 'مرند', 'میانه', 'اهر', 'سراب', 'بناب', 'شبستر', 'ملکان', 'آذرشهر', 'اسکو', 'هشترود'],
+      'آذربایجان غربی': ['خوی', 'مهاباد', 'میاندوآب', 'سلماس', 'بوکان', 'پیرانشهر', 'نقده', 'سردشت', 'تکاب', 'اشنویه'],
+      'اردبیل': ['پارس آباد', 'مشگین شهر', 'خلخال', 'گرمی', 'بیله سوار'],
+      'گیلان': ['لاهیجان', 'لنگرود', 'رودسر', 'انزلی', 'بندر انزلی', 'آستارا', 'تالش', 'فومن', 'صومعه سرا', 'رودبار', 'ماسال', 'سیاهکل', 'آستانه اشرفیه'],
+      'مازندران': ['تنکابن', 'چالوس', 'نوشهر', 'بابلسر', 'محمودآباد', 'نکا', 'بهشهر', 'جویبار', 'قائمشهر', 'رامسر', 'فریدونکنار', 'کلاردشت'],
+      'گلستان': ['گنبد', 'گنبد کاووس', 'علی آباد', 'علی آباد کتول', 'آق قلا', 'بندر ترکمن', 'کردکوی', 'آزادشهر', 'مینودشت', 'گمیشان', 'رامیان'],
+      'سمنان': ['شاهرود', 'گرمسار', 'مهدی شهر', 'ایوانکی'],
+      'قزوین': ['البرز قزوین', 'تاکستان', 'بوئین زهرا', 'آبیک'],
+      'مرکزی': ['خمین', 'محلات', 'شازند', 'دلیجان', 'آشتیان'],
+      'همدان': ['اسدآباد', 'تویسرکان', 'کبودرآهنگ', 'رزن', 'بهار'],
+      'کرمانشاه': ['اسلام آباد غرب', 'سرپل ذهاب', 'کنگاور', 'سنقر', 'هرسین', 'صحنه', 'پاوه', 'جوانرود', 'قصر شیرین'],
+      'کردستان': ['سقز', 'بانه', 'مریوان', 'قروه', 'بیجار', 'کامیاران'],
+      'لرستان': ['دورود', 'الیگودرز', 'ازنا', 'کوهدشت', 'نورآباد', 'پلدختر'],
+      'ایلام': ['دهلران', 'ایوان', 'آبدانان', 'مهران'],
+      'هرمزگان': ['میناب', 'بندر لنگه', 'قشم', 'بندر خمیر', 'حاجی آباد', 'جاسک', 'پارسیان'],
+      'بوشهر': ['برازجان', 'دشتستان', 'کنگان', 'عسلویه', 'دیر', 'خارک', 'جم', 'دشتی'],
+      'سیستان و بلوچستان': ['ایرانشهر', 'زابل', 'خاش', 'سراوان', 'نیک شهر', 'کنارک'],
+      'یزد': ['میبد', 'اردکان', 'ابرکوه', 'بافق', 'تفت', 'مهریز', 'اشکذر'],
+      'قم': [],
+      'خراسان جنوبی': ['قائن', 'فردوس', 'طبس', 'نهبندان'],
+      'خراسان شمالی': ['شیروان', 'اسفراین', 'آشخانه'],
+      'چهارمحال و بختیاری': ['بروجن', 'فارسان', 'لردگان', 'سامان', 'فرخ شهر'],
+      'کهگیلویه و بویراحمد': ['دهدشت', 'گچساران', 'دوگنبدان'],
+      'زنجان': ['ابهر', 'خرمدره', 'خدابنده'],
+      'قزوین ': []
+    };
+    Object.keys(more).forEach(function (prov) { more[prov].forEach(function (c) { if (!CITY_PROVINCE[c]) CITY_PROVINCE[c] = prov.trim(); }); });
+  })();
   function provinceOf(city) {
     if (!city) return '';
     if (CITY_PROVINCE[city]) return CITY_PROVINCE[city];
@@ -117,7 +154,8 @@
   function isCity(t) { return !!(CITY_PROVINCE[t] || (W && W.regionByProvince && W.regionByProvince[t])); }
   // "پرویزی (کازرون)" -> { name: 'پرویزی', city: 'کازرون' };  "(تهران)'مهرداد" is a known malformed form
   function parseTitle(raw) {
-    var s = fixLetters(raw), city = '';
+    var s = fixLetters(raw), city = '', win = false;
+    s = s.replace(/\s*win\s*$/i, function () { win = true; return ''; });   // «win» at the end marks a Wintora customer; it is kept at the end of the name
     var lead = /^\(\s*([^)]+?)\s*\)\s*['’`]?\s*(.+)$/.exec(s);
     if (lead && isCity(lead[1])) { city = lead[1]; s = lead[2]; }
     if (!city) {
@@ -126,10 +164,13 @@
     }
     s = s.replace(/\s+/g, ' ').replace(/\(\s*\)/g, '').trim();
     if (!city) {
-      var words = s.split(' ');
-      if (words.length > 1 && isCity(words[words.length - 1])) city = words[words.length - 1];
+      // «(یوسفی)گرگان»: a city written right after a closing bracket; also two-word cities («قائم شهر») at the end
+      var spaced = s.replace(/\)(?=[^\s)])/g, ') ').replace(/(\S)\(/g, '$1 (');
+      var words = spaced.split(' ');
+      if (words.length > 2 && isCity(words[words.length - 2] + ' ' + words[words.length - 1])) { city = words[words.length - 2] + ' ' + words[words.length - 1]; s = words.slice(0, -2).join(' '); }
+      else if (words.length > 1 && isCity(words[words.length - 1])) { city = words[words.length - 1]; s = words.slice(0, -1).join(' '); }
     }
-    return { name: s || fixLetters(raw), city: city };
+    return { name: ((s || fixLetters(raw)).replace(/\s+/g, ' ').trim() + (win ? ' win' : '')).trim(), city: city };
   }
 
   // ---------- derived values
@@ -150,6 +191,10 @@
     var tot = {};
     S.list.forEach(function (c) {
       c._key = norm([c.name, c.code, c.city, c.group, isWin(c) ? 'وینتورا wintora' : ''].join(' '));
+      // a saved customer without a city: read it from the title («صنایع امین (یوسفی)گرگان»), as the import does
+      c._title = c.name;
+      if (!c.city) { var tp = parseTitle(c.name || ''); if (tp.city) { c.city = tp.city; c._title = tp.name; if (!c.province) c.province = provinceOf(tp.city); } }
+      else if (!c.province) c.province = provinceOf(c.city);
       c._nameKey = norm(c.name);
       c._status = statusOf(c, S.latest);
       // the accounting reports are in rial; every figure shown here is in toman
@@ -636,8 +681,8 @@
       });
       var have = {}; S.list.forEach(function (c) { have[c.code] = 1; });
       var rows = Object.keys(by).map(function (k) {
-        var o = by[k], t = parseTitle(o._name || o.tpl.name || ''), city = o.tpl.city || t.city, prov = o.tpl.province || provinceOf(city);
-        return { code: k, name: o.tpl.name || t.name, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales,
+        var o = by[k], raw = o.tpl.name || o._name || '', t = o.tpl.city ? { name: fixLetters(raw), city: o.tpl.city } : parseTitle(raw), city = t.city, prov = o.tpl.province || provinceOf(city);
+        return { code: k, name: t.name, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales,
           phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: (o.tpl.address || '').slice(0, 300), postal: postalOk(o.tpl.postal || '') ? o.tpl.postal : '', nationalId: nidOk(o.tpl.nationalId || '') ? o.tpl.nationalId : '', birthday: bdayOk(o.tpl.birthday || '') ? bdayFix(o.tpl.birthday) : '', notes: o.tpl.notes || '',
           bad: (o.tpl.postal && !postalOk(o.tpl.postal) ? 1 : 0) + (o.tpl.nationalId && !nidOk(o.tpl.nationalId) ? 1 : 0) + (o.tpl.birthday && !bdayOk(o.tpl.birthday) ? 1 : 0) };
       });
