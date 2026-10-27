@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'brand-logo-files-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'], title: 'برندبوک: دانلود فایل‌های لوگو (AI لایه‌باز)',
+      summary: 'در صفحهٔ برندبوک زیر هر برند بخش «فایل‌های لوگو» هست: فایل Illustrator لایه‌باز (AI)، SVG و PNG برای مکث‌سیلور، وینتورا، توربومکس، ویتامکس و American Range. هر کس به برندبوک دسترسی دارد می‌تواند دانلود کند.' },
     { id: 'customers-tidy-similar-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager'], title: 'مشتریان: مرتب کردن نشانی‌ها و فهرست حساب‌های مشابه',
       summary: 'در صفحهٔ مشتریان بخش «مرتب‌سازی و بررسی» اضافه شد: با یک دکمه نشانی‌ها مرتب می‌شوند (جداکننده‌ها، «خ» ← «خیابان»، فاصله‌ها و رقم‌ها؛ املا دست نمی‌خورد) و حساب‌هایی که نامشان نزدیک است یا تلفن/کد ملی یکسان دارند برای بررسی و ترکیب فهرست می‌شوند. نشانی‌های واردشده و ذخیره‌شده هم از این به بعد خودکار مرتب می‌شوند.' },
     { id: 'customers-merge-morph-1405-08', date: '1405/08/06', tag: 'بهبود', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'], title: 'مشتریان: ترکیب حساب‌ها، شمارش درست و حرکت نرم بین فیلترها',

@@ -81,6 +81,16 @@
     }
   ];
 
+  // layered logo files that signed-in people with access to this page can download (Illustrator .ai, vector .svg, preview .png)
+  var LOGO_FILES = {"maxsilver": [["لوگوی مکث‌سیلور (CMYK)", "maxsilver/MaxSilver_Logo-CMYK", ["ai"]], ["American Range؛ نشان با شعار", "american-range/american-renge-wordmark-tagline-smooth-v2", ["ai", "svg", "png"]]], "wintora": [["نشان گرد قرمز", "wintora/wintora-red-circle-badge-refined-v3", ["ai", "svg", "png"]], ["آرم سیاه‌وسفید", "wintora/wintora-wordmark-black-white-refined-v3", ["ai", "svg", "png"]], ["آرم با شعار", "wintora/wintora-wordmark-tagline-black-white-refined-v3", ["ai", "svg", "png"]]], "turbomax": [["توربومکس؛ آرم مشکی", "turbomax/turbomax-black-wordmark-smooth-v2", ["ai", "svg", "png"]], ["توربومکس؛ آرم سفید", "turbomax/turbomax-white-wordmark-smooth-v2", ["ai", "svg", "png"]], ["توربومکس؛ آرم سفید (نسخهٔ منبع)", "turbomax/turbomax-white-wordmark-source-dd-smooth-v2", ["ai", "svg", "png"]], ["ویتامکس؛ آرم مشکی", "vitamax/vitamax-black-wordmark-smooth-v2", ["ai", "svg", "png"]]]};
+  var FMT = { ai: 'AI (لایه‌باز)', svg: 'SVG', png: 'PNG' };
+  function filesHtml(b) {
+    var l = LOGO_FILES[b.key] || [];
+    if (!l.length) return '<p class="doc-line">فایل لایه‌باز این برند هنوز بارگذاری نشده است.</p>';
+    return '<table class="doc-table"><thead><tr><th>فایل</th><th class="no-print">دانلود</th></tr></thead><tbody>' + l.map(function (f) {
+      return '<tr><td>' + esc(f[0]) + '<br><small dir="ltr">' + esc(f[1].split('/').pop()) + '</small></td><td class="no-print dl">' + f[2].map(function (x) { return '<a class="dl-btn" href="./assets/branding/files/' + esc(f[1]) + '.' + x + '" download>' + esc(FMT[x] || x) + '</a>'; }).join('') + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  }
   var RULES = [
     ['فضای امن', 'اطراف لوگو دست‌کم نصف ارتفاع لوگو فضای خالی بگذارید.'],
     ['حداقل اندازه', 'عرض لوگو در چاپ کمتر از ۲۵ میلی‌متر و در صفحه کمتر از ۹۶ پیکسل نشود.'],
@@ -203,6 +213,7 @@
         '<figure class="logo-box on-dark' + (b.logoWhite ? ' native' : '') + '"><img src="' + esc(b.logoWhite || b.logo) + '" alt=""><span class="logo-fallback" hidden>' + esc(b.latin) + '</span></figure></div>' +
       '<table class="doc-table"><thead><tr><th>قاعده</th><th>شرح</th></tr></thead><tbody>' +
         RULES.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'; }).join('') + '</tbody></table>' +
+      '<h3 class="no-print">فایل‌های لوگو (دانلود)</h3><div class="no-print">' + filesHtml(b) + '</div>' +
       '<h3>۲. رنگ‌ها</h3>' +
       '<table class="doc-table"><thead><tr><th>نمونه</th><th>نام</th><th>HEX / RGB</th><th>کاربرد</th></tr></thead><tbody>' +
         b.colors.map(function (c) {

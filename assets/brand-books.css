@@ -72,3 +72,5 @@
 .ig-del{width:34px;height:34px;border:1px solid #f1c7c2;border-radius:10px;background:#fff1f0;color:var(--ms-red);font-size:18px;line-height:1;cursor:pointer}
 @media(max-width:720px){.bb-tabs{grid-template-columns:1fr 1fr}.bb-tabs button:last-child{grid-column:1/-1}.ig-form{grid-template-columns:1fr 1fr}.ig-save{grid-column:1/-1}}
 @media print{.no-print{display:none!important}}
+
+.doc-table td.dl{display:flex;flex-wrap:wrap;gap:6px}.dl-btn{display:inline-block;padding:5px 12px;border-radius:999px;background:var(--ms-navy);color:#fff;font-weight:800;font-size:12px;text-decoration:none}.dl-btn:hover{background:var(--ms-gold);color:var(--ms-navy)}

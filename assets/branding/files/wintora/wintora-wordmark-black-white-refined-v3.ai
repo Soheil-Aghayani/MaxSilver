@@ -1,0 +1,276 @@
+%!PS-Adobe-3.0
+%%Creator: VectorCraft 0.17.0
+%%Title: (wintora-wordmark-black-white \227 Refined v3)
+%%CreationDate: (10/26/2026) (12:32)
+%%BoundingBox: 569 72 2414 458
+%%HiResBoundingBox: 569.4548 72.9415 2413.8565 457.1424
+%%DocumentProcessColors: Cyan Magenta Yellow Black
+%AI5_FileFormat 3
+%AI3_ColorUsage: Color
+%AI3_TemplateBox: 1500 272.5 1500 272.5
+%AI3_TileBox: 0 0 3000 545
+%AI3_DocumentPreview: None
+%AI5_ArtSize: 3000 545
+%AI5_RulerUnits: 2
+%AI5_NumLayers: 2
+%%DocumentSuppliedResources: procset VectorCraft_Legacy 1 0
+%%EndComments
+%%BeginProlog
+%%BeginResource: procset VectorCraft_Legacy 1 0
+/VCLegacy 96 dict def
+VCLegacy begin
+/bd {bind def} bind def
+% State: the fill and stroke colours (procedures that set them), their overprints, the fill rule,
+% a clip to make at the next painting operator, a compound path being built, a guide being
+% drawn, whether the layer prints, and what the compound path is painted with.
+/_fc {0 setgray} def /_sc {0 setgray} def
+/_fo false def /_so false def /_eo false def /_w false def /_cp false def /_g false def
+/_on true def /_rf false def /_rs false def
+% Painting: a fill and a stroke that keep the path; the path painted as _rf and _rs say (after
+% the clip W asked for), then ended.
+/_fill {gsave _fc _fo setoverprint _eo {eofill} {fill} ifelse grestore} bd
+/_stroke {gsave _sc _so setoverprint stroke grestore} bd
+/_draw {_w {_eo {eoclip} {clip} ifelse /_w false def} if
+ _on _g not and {_rf {_fill} if _rs {_stroke} if} if newpath} bd
+% close? fill? stroke? _r: paints now, or at the end of the compound path being built.
+/_r {/_rs exch def /_rf exch def {closepath} if _cp not {_draw} if} bd
+% Path construction (section 5.3.2) and painting (5.3.3).
+/m {moveto} bd /l {lineto} bd /L {lineto} bd /c {curveto} bd /C {curveto} bd
+/N {false false false _r} bd /n {true false false _r} bd
+/F {false true false _r} bd /f {true true false _r} bd
+/S {false false true _r} bd /s {true false true _r} bd
+/B {false true true _r} bd /b {true true true _r} bd
+/XR {1 eq /_eo exch def} bd
+% Compound paths (5.3.5): one path, painted at its end.
+/*u {/_cp true def} bd /*U {/_cp false def _draw} bd
+% Groups, clipping groups and masks (5.6), locking (5.1), guides (6.1).
+/u {} bd /U {} bd /q {gsave} bd /Q {grestore} bd
+/H {} bd /h {closepath} bd /W {/_w true def} bd
+/A {pop} bd
+/* {pop _g {newpath /_g false def} {/_g true def} ifelse} bd
+% Colours (5.4): fill and stroke colours, overprints; a custom colour as its CMYK equivalent at
+% its tint (tint 0 is the full colour).
+/g {/setgray load 2 array astore cvx /_fc exch def} bd
+/G {/setgray load 2 array astore cvx /_sc exch def} bd
+/k {/setcmykcolor load 5 array astore cvx /_fc exch def} bd
+/K {/setcmykcolor load 5 array astore cvx /_sc exch def} bd
+/Xa {/setrgbcolor load 4 array astore cvx /_fc exch def} bd
+/XA {/setrgbcolor load 4 array astore cvx /_sc exch def} bd
+/_tint {1 exch sub /_t exch def pop 4 {_t mul 4 1 roll} repeat} bd
+/x {_tint k} bd /X {_tint K} bd
+/O {1 eq /_fo exch def} bd /R {1 eq /_so exch def} bd
+/w {setlinewidth} bd /J {setlinecap} bd /j {setlinejoin} bd /M {setmiterlimit} bd /d {setdash} bd
+% Gradients (3.5): definitions are skipped; an instance fills with the colour set before it
+% (the writer sets its first stop's), and BB strokes the path as its flag says.
+/Bn {pop} bd /Bd {pop pop pop} bd /BD {cleartomark} bd
+/Bb {gsave} bd /Bg {12 {pop} repeat} bd /Bh {pop pop pop pop} bd
+/BB {grestore _cp {0 gt {/_rs true def} if}
+ {dup 2 eq {closepath} if 0 gt _on and {_stroke} if newpath} ifelse} bd
+% Layers (9): a layer that is hidden or doesn't print marks nothing.
+/Lb {6 {pop} repeat exch pop exch pop 1 eq exch 1 eq and /_on exch def} bd
+/Ln {pop} bd /LB {/_on true def} bd
+% Images (8): the samples, in hex on the comment lines that follow XI, read a line at a time.
+/_l 256 string def /_s 128 string def
+/_row {{currentfile _l readline not {exit} if dup length 1 gt {exit} if pop} loop
+ dup length 1 gt {dup length 1 sub 1 exch getinterval /ASCIIHexDecode filter _s readstring pop} {pop ()} ifelse} bd
+/XI {pop pop pop pop /_ic exch def /_ib exch def /_ih exch def /_iw exch def pop pop pop pop
+ [1 0 0 -1 0 0] exch matrix concatmatrix
+ _on {gsave concat _iw _ih _ib [1 0 0 1 0 0] /_row load false _ic 1 eq {1} {_ic} ifelse colorimage grestore} {pop} ifelse} bd
+% Type (15) is set by the app that reads the file: its operators take their operands and mark
+% nothing; encodings (3.3) are skipped.
+/TE {cleartomark} bd /TZ {cleartomark} bd
+/To {pop} bd /Tp {7 {pop} repeat} bd /TP {} bd /TO {} bd
+/Tr {pop} bd /Tf {pop pop pop pop} bd /Ts {pop} bd /Tz {pop pop} bd /Tt {pop} bd /TA {pop} bd
+/Tl {pop pop} bd /Ta {pop} bd /Ti {pop pop pop} bd /Tx {pop} bd
+% The page trailer (3): annotatepage marks nothing.
+/annotatepage {} bd
+end
+%%EndResource
+%%EndProlog
+%%BeginSetup
+VCLegacy begin
+%%EndSetup
+%AI5_BeginLayer
+1 1 1 1 0 0 0 79 128 255 Lb
+(Wordmark and symbol \342\200\224 Black) Ln
+0 A
+0 0 0 Xa
+0 O
+0 XR
+1024.934 364.3313 m
+1024.934 349.9885 1011.6451 338.3614 995.2525 338.3614 c
+978.8598 338.3614 965.5709 349.9885 965.5709 364.3313 c
+965.5709 378.674 978.8598 390.3011 995.2525 390.3011 c
+1011.6451 390.3011 1024.934 378.674 1024.934 364.3313 c
+f
+0 0 0 Xa
+0 O
+0 XR
+2009.3662 385.2245 m
+2009.3635 372.4443 2008.9627 359.4138 2009.4755 346.6351 C
+2019.2882 351.4899 2027.2151 358.6194 2037.3798 363.3103 c
+2058.1354 372.8885 2119.4143 388.6315 2141.5175 381.3935 C
+2142.221 367.9683 2142.5476 353.7813 2140.9301 340.4156 C
+2132.4142 337.5818 2122.3085 337.828 2113.2424 336.788 c
+2093.5961 334.5344 2073.7489 330.8081 2056.1541 322.7853 c
+2036.9751 314.0402 2020.0822 300.1766 2012.8889 282.424 c
+2006.7522 267.279 2009.8581 242.7381 2009.7986 226.3187 c
+2009.6421 183.0762 2010.6981 139.6208 2009.2819 96.4424 C
+1995.8068 94.1288 1969.1541 96.2908 1954.3433 96.4735 C
+1951.7707 107.7946 1953.6275 120.7255 1953.6482 132.2982 c
+1953.6927 157.1812 1953.7612 182.0643 1953.8226 206.9472 c
+1953.9211 246.836 1954.017 286.7248 1954.1027 326.6136 c
+1954.1411 344.4934 1952.0287 368.0817 1954.6836 385.2508 C
+1966.7908 387.9037 1996.1096 386.1448 2009.3662 385.2245 C
+f
+0 0 0 Xa
+0 O
+0 XR
+2412.324 95.1475 m
+2399.032 94.3952 2385.3419 94.9665 2372.0283 95.0017 C
+2368.8922 104.2802 2370.8823 116.0861 2370.8458 125.8126 c
+2370.7774 144.0832 2370.7393 162.3539 2370.6563 180.6244 c
+2370.4819 219.0466 2370.3498 254.6018 2324.5661 274.3417 c
+2304.9856 282.784 2282.874 284.7974 2262.0623 278.6769 c
+2190.148 257.5273 2183.6932 167.6863 2252.3072 138.9765 c
+2267.733 132.5219 2284.5355 130.3699 2301.403 133.09 c
+2314.7842 135.2478 2328.0693 139.9192 2338.5388 147.5933 c
+2342.9927 150.8579 2347.3717 155.8371 2352.3924 157.717 C
+2352.3895 141.8559 2353.2151 125.6246 2352.1756 109.7823 C
+2341.7345 104.6667 2331.4329 99.7631 2319.7417 97.0281 c
+2237.285 77.7383 2161.5804 135.4346 2161.8707 207.5346 c
+2161.9568 228.9212 2167.9301 249.8299 2181.2774 267.8659 c
+2193.4908 284.3698 2209.5143 298.6735 2229.5364 308.0934 c
+2257.2031 321.1098 2289.6085 324.2838 2319.8061 316.881 c
+2367.6037 305.1636 2404.3492 269.2519 2411.7057 226.2084 c
+2415.5062 203.9715 2413.1184 180.3518 2413.0919 157.9196 c
+2413.0759 144.3857 2413.0756 130.8519 2413.0703 117.318 c
+2413.0674 110.0286 2413.8691 102.2712 2412.324 95.1475 C
+f
+0 0 0 Xa
+0 O
+0 XR
+1284.1896 95.5495 m
+1271.3593 92.8416 1255.5749 94.7419 1242.2728 94.9999 C
+1238.6302 103.9444 1241.2495 115.7567 1241.2614 125.1314 c
+1241.2922 149.5414 1241.3508 173.9513 1241.3746 198.3613 c
+1241.3831 207.0119 1243.5026 217.6104 1239.4493 225.8929 c
+1237.7605 229.3438 1234.1088 231.9924 1230.6002 234.5327 c
+1204.6878 253.2934 1140.6564 253.3062 1121.0862 228.9054 c
+1112.3731 218.0417 1115.5078 203.0933 1115.4578 191.0518 c
+1115.3686 169.535 1115.2572 148.0181 1115.1436 126.5013 c
+1115.0899 116.3339 1116.8077 105.1252 1114.3514 95.1515 C
+1101.2371 94.4275 1086.3766 94.1501 1073.3222 95.3099 C
+1069.7814 103.7037 1071.9261 114.0719 1071.9963 122.8235 c
+1072.1484 141.8087 1072.2602 160.7942 1072.3881 179.7795 c
+1072.4789 193.2559 1070.0632 215.5815 1073.5175 228.0214 c
+1075.9727 236.8631 1082.6489 245.0428 1090.2194 252.0655 c
+1098.1803 259.4504 1110.6066 264.9753 1122.1388 268.9444 c
+1134.2931 273.1276 1146.4037 276.5447 1159.8159 277.9253 c
+1204.7001 282.5453 1264.366 269.4959 1280.7665 235.792 c
+1287.1162 222.7432 1284.2158 203.3274 1284.2613 189.3924 c
+1284.3633 158.1224 1284.2219 126.7667 1284.1896 95.5495 C
+f
+0 0 0 Xa
+0 O
+0 XR
+608.1304 311.6389 m
+609.8321 299.1087 608.6396 285.8377 608.6855 273.1839 c
+608.7756 248.3305 608.8579 223.4769 608.9342 198.6234 c
+608.9812 183.2942 605.7891 164.3042 614.051 150.2249 c
+632.6164 118.5874 705.7015 119.3406 720.3861 154.1892 c
+725.3325 165.9277 723.565 180.1726 723.5644 192.4884 c
+723.5632 219.958 723.463 247.4279 723.4384 274.8976 c
+723.4278 286.7205 721.2648 300.5069 724.1961 311.9792 C
+736.7175 312.2843 749.5203 312.0328 762.0203 311.9996 C
+762.4351 280.4841 762.2409 248.7796 762.3434 217.1949 c
+762.4039 198.5392 758.6254 166.9366 767.8274 150.4969 c
+785.6397 118.6741 857.3264 120.0341 873.5869 152.3848 c
+879.1304 163.4137 877.0489 177.4698 877.0996 189.2638 c
+877.2225 217.8228 877.0416 246.3841 877.0147 274.9433 c
+877.0036 286.6993 874.7369 300.6309 877.8124 312.0003 C
+890.3355 312.2342 903.1352 312.064 915.6335 311.9862 C
+917.0685 302.1356 916.393 291.9175 916.3706 281.9391 c
+916.3343 265.8061 916.3071 249.6731 916.2448 233.5401 c
+916.1809 216.9712 916.1385 200.4021 916.0912 183.8331 c
+916.064 174.2998 916.6864 164.5606 915.4289 155.0768 c
+914.3494 146.9362 911.7446 138.67 907.5356 131.3399 c
+895.4456 110.2847 870.9697 98.3294 845.6959 93.5493 c
+817.18 88.1561 786.9932 91.468 762.1813 105.266 c
+755.2427 109.1246 749.4188 114.2651 742.7978 118.3796 C
+715.0872 97.3968 693.5146 90.9218 656.7251 91.5359 c
+639.6936 91.8202 622.7262 96.4068 608.2162 104.2303 c
+570.295 124.6769 570.4341 149.2468 570.2169 184.2381 c
+570.1141 200.8069 569.986 217.3755 569.9156 233.9445 c
+569.8433 250.9495 569.8179 267.9546 569.8018 284.9597 c
+569.7935 293.6603 568.6719 303.1252 570.5063 311.6373 C
+582.1807 313.0476 596.4585 313.0618 608.1304 311.6389 C
+f
+0 0 0 Xa
+0 O
+0 XR
+970.8635 309.3124 m
+975.4887 310.0172 1018.5002 309.2404 1019.2523 308.4318 c
+1021.8368 305.6532 1020.1057 147.8956 1020.1061 130.203 c
+1020.1062 125.9316 1021.1433 96.8192 1018.7718 95.5117 c
+1015.1087 93.4923 1002.8273 95.0059 998.2212 95 c
+989.6813 94.9891 979.187 93.7914 970.8449 95.0399 c
+969.3883 95.2579 968.3601 95.5796 967.9979 96.6821 c
+965.2635 105.006 967.768 127.7464 967.7726 137.5565 c
+967.7943 183.1833 967.771 228.8101 967.7703 274.4369 c
+967.7702 279.6081 965.8134 308.5428 970.8635 309.3124 c
+f
+LB
+%AI5_EndLayer--
+%AI5_BeginLayer
+1 1 1 1 0 0 1 255 79 79 Lb
+(Wordmark and symbol \342\200\224 White) Ln
+0 A
+1 1 1 Xa
+0 O
+0 XR
+1418.183 456.3248 m
+1420.2196 430.3128 1418.3599 403.5271 1418.3284 377.458 C
+1450.6002 375.3406 1485.4393 376.8895 1517.989 376.7098 C
+1520.5824 368.5974 1518.8797 340.9517 1517.2722 331.9553 C
+1507.3745 330.6593 1496.6229 331.5485 1486.5735 331.5531 c
+1463.8611 331.5634 1440.9706 332.0621 1418.3293 331.5246 C
+1418.7856 300.5819 1419.0777 269.51 1419.2185 238.5147 c
+1419.3057 219.3331 1417.1723 198.8729 1422.4173 180.0746 c
+1425.1896 170.1384 1430.7661 160.1652 1440.7014 154.1183 c
+1462.4672 140.8709 1492.9772 144.2949 1518.0618 143.8638 C
+1520.4905 136.423 1520.0002 105.5435 1518.403 97.38 C
+1509.2685 96.4145 1499.6144 96.9931 1490.3762 96.9979 c
+1468.4066 97.0093 1442.7798 95.1436 1422.0425 102.4462 c
+1412.0087 105.9796 1404.0225 112.3942 1396.3603 118.7955 c
+1352.5961 155.3578 1355.7042 198.5314 1355.7318 246.9588 c
+1355.7464 272.7019 1355.7531 298.4451 1355.7667 324.1882 c
+1355.7831 355.3807 1355.7731 386.5731 1355.7871 417.7655 c
+1355.792 428.7816 1353.6162 446.3309 1356.6306 456.4797 C
+1367.3001 457.6526 1378.6318 456.836 1389.4174 456.8404 c
+1398.7848 456.8442 1409.0139 457.7855 1418.183 456.3248 C
+f
+1 1 1 Xa
+0 O
+1 XR
+*u
+1912.763 232.4796 m
+1912.763 144.3691 1830.599 72.9415 1729.2446 72.9415 c
+1627.8901 72.9415 1545.7261 144.3691 1545.7261 232.4796 c
+1545.7261 320.59 1627.8901 392.0177 1729.2446 392.0177 c
+1830.599 392.0177 1912.763 320.59 1912.763 232.4796 c
+f
+1853.788 232.6507 m
+1853.788 172.8974 1797.9999 124.4577 1729.1817 124.4577 c
+1660.3636 124.4577 1604.5755 172.8974 1604.5755 232.6507 c
+1604.5755 292.4041 1660.3636 340.8437 1729.1817 340.8437 c
+1797.9999 340.8437 1853.788 292.4041 1853.788 232.6507 c
+f
+*U
+LB
+%AI5_EndLayer--
+%%PageTrailer
+gsave annotatepage grestore showpage
+%%Trailer
+end
+%%EOF
