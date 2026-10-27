@@ -215,8 +215,8 @@
 .cu-pay.pm-cash,.cu-fchip.pm-cash[aria-pressed=false]{--pm:#14804a}.cu-pay.pm-days{--pm:#1746b5}.cu-pay.pm-chequeBefore{--pm:#b54708}.cu-pay.pm-chequeAfter{--pm:#b3261e}
 .cu-pay[class*=pm-]{background:color-mix(in srgb,var(--pm) 12%,#fff);color:var(--pm)}
 .cu-payopts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:8px 0}
-.cu-payopt{position:relative;display:grid;gap:3px;padding:12px 14px;padding-inline-start:38px;border:2px solid #dfe5ee;border-radius:14px;cursor:pointer;background:#fff;transition:border-color .2s,background .2s}
-.cu-payopt input{position:absolute;inset-inline-start:12px;top:14px;accent-color:var(--pm,#1746b5)}
+.cu-payopt{position:relative;display:grid;gap:3px;padding:12px 38px 12px 14px;border:2px solid #dfe5ee;border-radius:14px;cursor:pointer;background:#fff;transition:border-color .2s,background .2s}
+.cu-payopt input{position:absolute;right:12px;left:auto;top:14px;margin:0;accent-color:var(--pm,#1746b5)}
 .cu-payopt b{font-size:14px}.cu-payopt span{font-size:12px;color:#5b6b82;line-height:1.7}
 .cu-payopt.pm-cash{--pm:#14804a}.cu-payopt.pm-days{--pm:#1746b5}.cu-payopt.pm-chequeBefore{--pm:#b54708}.cu-payopt.pm-chequeAfter{--pm:#b3261e}
 .cu-payopt.on{border-color:var(--pm);background:color-mix(in srgb,var(--pm) 8%,#fff)}
