@@ -235,6 +235,14 @@
       Object.keys(c.sales || {}).forEach(function (k) { tot[k] = (tot[k] || 0) + (c.sales[k] || 0); });
     });
     S.yearTotals = tot;
+    // one company can have several accounts in the accounting program (for example a separate «win» account for Wintora): they are shown together
+    var byBase = {};
+    S.list.forEach(function (c) {
+      var b = norm(parseTitle(c.name || '').name).replace(/\(.*?\)/g, ' ').replace(/\bwin\b/g, ' ').replace(/\s+/g, ' ').trim();
+      c._base = b.split(' ').length >= 2 && b.length >= 8 ? b : '';
+      if (c._base) (byBase[c._base] = byBase[c._base] || []).push(c);
+    });
+    S.list.forEach(function (c) { c._sibs = c._base ? byBase[c._base].filter(function (x) { return x !== c; }) : []; });
     // rank inside each year
     S.rank = {};
     S.years.forEach(function (y) {
@@ -306,7 +314,7 @@
   function card(c) {
     var d = (c._latest && c._prev > 0) || c._prev > 0 ? (c._latest - c._prev) / c._prev * 100 : null, col = hue(c), rk = (S.rank[c.code] || {})[S.latest];
     return '<li><a class="cu-card" href="#/c/' + encodeURIComponent(c.code) + '" style="--c:' + col + ';--ink:' + inkOn(col) + '">' +
-      '<div class="cu-card-top"><span class="cu-av face">' + face(c) + '</span><div class="cu-nm"><b>' + esc(shownName(c)) + (isWin(c) ? ' <span class="cu-win">وینتورا</span>' : '') + (c._pay ? ' <span class="cu-pay">' + esc(c._pay) + '</span>' : '') + '</b>' +
+      '<div class="cu-card-top"><span class="cu-av face">' + face(c) + '</span><div class="cu-nm"><b>' + esc(shownName(c)) + (isWin(c) ? ' <span class="cu-win">وینتورا</span>' : '') + (c._pay ? ' <span class="cu-pay">' + esc(c._pay) + '</span>' : '') + (c._sibs && c._sibs.length ? ' <span class="cu-sib" title="حساب‌های هم‌نام در حسابداری">+' + faInt.format(c._sibs.length) + ' حساب</span>' : '') + '</b>' +
       '<div class="cu-card-meta"><span dir="ltr">' + ic('tag') + esc(c.code) + '</span>' + (c.city ? '<span>' + ic('pin') + esc(c.city) + '</span>' : '') + (c.group ? '<span>' + ic('user') + esc(c.group) + '</span>' : '') + '</div></div>' +
       '<span class="cu-chip st-' + c._status + '"><i style="background:' + STC[c._status] + '"></i>' + STATUS[c._status] + '</span></div>' +
       '<div class="cu-card-sales">' + bars(c) + '<span class="cu-amt"><small>فروش ' + faDigits(S.latest) + ' · تومان</small><b>' + compact(c._latest) + '</b></span>' +
@@ -443,6 +451,14 @@
         (v > 0 && tot ? '<small>سهم ' + faInt.format(Math.round(v / tot * 1000) / 10) + '٪' + (r ? ' · رتبهٔ ' + faInt.format(r.n) + ' از ' + faInt.format(r.of) : '') + '</small>' : '') + '</div>';
     }).join('') + '</div>';
   }
+  function sibsHtml(c) {
+    var l = c._sibs || []; if (!l.length) return '';
+    var all = [c].concat(l), sum = all.reduce(function (a, x) { return a + (x._latest || 0); }, 0);
+    return '<section class="cu-card-box"><h2>حساب‌های هم‌نام</h2><p class="cu-note">به‌احتمال زیاد یک شرکت‌اند (عنوان یکسان در حسابداری؛ مثلاً یک حساب جدا برای وینتورا). فروش هر حساب جدا حساب می‌شود.</p><ul class="cu-sibs">' +
+      all.map(function (x) {
+        return '<li' + (x === c ? ' class="me"' : '') + '><a href="#/c/' + encodeURIComponent(x.code) + '"><b>' + esc(shownName(x)) + '</b><span dir="ltr">' + esc(x.code) + '</span><span>' + esc(x.group || 'بدون گروه') + '</span><em>' + compact(x._latest || 0) + ' <small>تومان · ' + faDigits(S.latest) + '</small></em></a></li>';
+      }).join('') + '</ul><p class="cu-note">جمع فروش ' + faDigits(S.latest) + ' همهٔ حساب‌ها: <b>' + compact(sum) + ' تومان</b></p></section>';
+  }
   function detailView(code) {
     var c = S.list.filter(function (x) { return x.code === code; })[0];
     if (!c) return head('مشتری پیدا نشد', true) + '<p class="cu-note">این مشتری وجود ندارد یا برای شما قابل مشاهده نیست.</p>';
@@ -457,6 +473,7 @@
       fact('آخرین سال خرید', (function () { var ys = S.years.filter(function (y) { return (c.sales || {})[y] > 0; }); return ys.length ? faDigits(ys[ys.length - 1]) : ''; })(), 'clock') +
       fact('مجموع فروش ثبت‌شده', c._total ? amount(c._total) + ' تومان' : '', 'coins') + '</dl>' +
       (can('customerAssign') ? '<button type="button" class="cu-btn small" data-owner-customer="' + esc(c.code) + '">تغییر مسئول این مشتری</button>' : '') + '</section>' +
+      sibsHtml(c) +
       '<section class="cu-card-box"><h2>خرید در سال‌ها</h2>' + yearBars(c) +
       '<p class="cu-note">مبلغ‌ها به تومان است (گزارش حسابداری به ریال است و اینجا تبدیل شده). سال ' + faDigits(S.latest) + ' هنوز تمام نشده است.</p></section>' +
       '<section class="cu-card-box"><div class="cu-boxhead"><h2>اطلاعات تماس</h2>' + (edit ? '<button type="submit" form="cuForm" class="cu-ico" title="ذخیره" aria-label="ذخیرهٔ اطلاعات تماس"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l4 4v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 3v5h7V3M8 21v-7h8v7"/></svg></button>' : '') + '</div><form id="cuForm" data-code="' + esc(c.code) + '"><div class="cu-grid">' +
