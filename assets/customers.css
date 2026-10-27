@@ -196,3 +196,13 @@
 .cu-sibs{list-style:none;margin:8px 0;padding:0;display:grid;gap:8px}.cu-sibs li a{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px;border:1px solid #dfe5ee;border-radius:12px;text-decoration:none;color:inherit}
 .cu-sibs li.me a{border-color:var(--c,#3858e9);background:#f7f9ff}.cu-sibs b{font-size:14px}.cu-sibs span{font-size:12px;color:#5b6b82}.cu-sibs em{grid-column:2;grid-row:1/3;align-self:center;font-style:normal;font-weight:800}
 .cu-cash{overflow-x:auto}.cu-cash table{width:100%;border-collapse:collapse;font-size:13px}.cu-cash th,.cu-cash td{padding:8px 10px;border-bottom:1px solid #e6ebf3;text-align:center;white-space:nowrap}.cu-cash thead th{color:#5b6b82;font-weight:700}.cu-cash tbody th{font-weight:800}.cu-cash td.owe{color:#b3261e;font-weight:800}.cu-cash td.cred{color:#14804a;font-weight:800}
+/* the selected chip is a dark pill that glides */
+.cu-fchips[data-pill]{position:relative}
+.cu-fchips[data-pill] .cu-fchip{position:relative;z-index:1;transition:color .25s,border-color .25s}
+.cu-pill{position:absolute;top:0;left:0;z-index:0;border-radius:999px;background:var(--ms-navy);pointer-events:none;transition:transform .42s cubic-bezier(.3,.9,.3,1.12),width .42s cubic-bezier(.3,.9,.3,1.12),height .3s,opacity .2s}
+.cu-fchips.has-pill .cu-fchip[aria-pressed=true]{background:transparent;border-color:transparent}
+.cu-sib.on{background:#e4f3ea;color:#14804a}
+.cu-sibs li{display:grid;gap:6px}.cu-sibs li .cu-btn{justify-self:start}
+.cu-mergebox{display:flex;gap:8px;margin:10px 0}.cu-mergebox input{flex:1;min-height:40px;padding:0 12px;border:1px solid #cfd8e6;border-radius:12px;font:inherit}
+.cu-sub{margin:14px 0 4px;font-size:13px;color:#5b6b82}
+@media (prefers-reduced-motion:reduce){.cu-pill{transition:none}}

@@ -157,6 +157,7 @@
   // «گازسو» and similar: companies the owner knows by name, when the title carries no city
   var KNOWN_PROVINCE = { 'گازسو': 'البرز' };
   // a market district written like a city is the city it belongs to
+  var PAREN_PLACE = { 'جمهوری': 'تهران', 'خیابان جمهوری': 'تهران', 'ناصرخسرو': 'تهران' };   // «(جمهوری)» is the street, i.e. Tehran
   var CITY_ALIAS = { 'بنی هاشم': 'تهران', 'بازار تهران': 'تهران', 'ناصر خسرو': 'تهران' };
   // the first known city written in an address, e.g. «کرج، شاهین ویلا…»; looks only at the first words
   function cityIn(text) {
@@ -181,7 +182,7 @@
     if (lead && isCity(lead[1].trim())) { city = lead[1].trim(); s = lead[2]; }
     if (!city) {
       var re = /\(\s*([^()]+?)\s*\)/g, m;
-      while ((m = re.exec(s))) { if (isCity(m[1].trim())) { city = m[1].trim(); s = (s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length)); break; } }
+      while ((m = re.exec(s))) { var inner = m[1].trim(); if (isCity(inner) || PAREN_PLACE[inner]) { city = isCity(inner) ? inner : PAREN_PLACE[inner]; s = (s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length)); break; } }
     }
     s = s.replace(/\s+/g, ' ').replace(/\(\s*\)/g, '').trim();
     // a separator at the end or in front of a trailing city
@@ -263,6 +264,21 @@
       if (can('customerAll')) jobs.push(db.collection('customer_groups').get());
       return Promise.all(jobs).then(function (res) {
         S.list = []; res[0].forEach(function (s) { var d = s.data(); d.code = d.code || s.id; S.list.push(d); });
+        // accounts joined to another one («mergedInto») are shown inside it: their sales and balances are added to the main account
+        S.byCode = {}; S.list.forEach(function (d) { S.byCode[d.code] = d; });
+        var into = function (d) { var t = d.mergedInto && d.mergedInto !== d.code && S.byCode[d.mergedInto]; return t && !t.mergedInto ? t : null; };
+        S.list.forEach(function (d) { var t = into(d); if (t) (t._merged = t._merged || []).push(d); });
+        S.list = S.list.filter(function (d) { return !into(d); });
+        S.list.forEach(function (t) {
+          if (!t._merged) return;
+          var sl = Object.assign({}, t.sales || {}), bl = Object.assign({}, t.balances || {});
+          t._ownSales = t.sales || {}; t._ownBal = t.balances || {};
+          t._merged.forEach(function (d) {
+            Object.keys(d.sales || {}).forEach(function (y) { sl[y] = (sl[y] || 0) + d.sales[y]; });
+            Object.keys(d.balances || {}).forEach(function (y) { bl[y] = (bl[y] || 0) + d.balances[y]; });
+          });
+          t.sales = sl; t.balances = bl;
+        });
         S.groups = {}; if (res[1]) res[1].forEach(function (s) { S.groups[s.id] = s.data(); });
         enrich();
       });
@@ -313,8 +329,8 @@
   }
   function card(c) {
     var d = (c._latest && c._prev > 0) || c._prev > 0 ? (c._latest - c._prev) / c._prev * 100 : null, col = hue(c), rk = (S.rank[c.code] || {})[S.latest];
-    return '<li><a class="cu-card" href="#/c/' + encodeURIComponent(c.code) + '" style="--c:' + col + ';--ink:' + inkOn(col) + '">' +
-      '<div class="cu-card-top"><span class="cu-av face">' + face(c) + '</span><div class="cu-nm"><b>' + esc(shownName(c)) + (isWin(c) ? ' <span class="cu-win">وینتورا</span>' : '') + (c._pay ? ' <span class="cu-pay">' + esc(c._pay) + '</span>' : '') + (c._sibs && c._sibs.length ? ' <span class="cu-sib" title="حساب‌های هم‌نام در حسابداری">+' + faInt.format(c._sibs.length) + ' حساب</span>' : '') + '</b>' +
+    return '<li data-code="' + esc(c.code) + '"><a class="cu-card" href="#/c/' + encodeURIComponent(c.code) + '" style="--c:' + col + ';--ink:' + inkOn(col) + '">' +
+      '<div class="cu-card-top"><span class="cu-av face">' + face(c) + '</span><div class="cu-nm"><b>' + esc(shownName(c)) + (isWin(c) ? ' <span class="cu-win">وینتورا</span>' : '') + (c._pay ? ' <span class="cu-pay">' + esc(c._pay) + '</span>' : '') + (c._merged && c._merged.length ? ' <span class="cu-sib on" title="حساب‌های ترکیب‌شده">' + faInt.format(c._merged.length + 1) + ' حساب</span>' : '') + (c._sibs && c._sibs.length ? ' <span class="cu-sib" title="حساب‌های هم‌نام در حسابداری؛ در پروفایل می‌توانید ترکیب کنید">هم‌نام ' + faInt.format(c._sibs.length) + '</span>' : '') + '</b>' +
       '<div class="cu-card-meta"><span dir="ltr">' + ic('tag') + esc(c.code) + '</span>' + (c.city ? '<span>' + ic('pin') + esc(c.city) + '</span>' : '') + (c.group ? '<span>' + ic('user') + esc(c.group) + '</span>' : '') + '</div></div>' +
       '<span class="cu-chip st-' + c._status + '"><i style="background:' + STC[c._status] + '"></i>' + STATUS[c._status] + '</span></div>' +
       '<div class="cu-card-sales">' + bars(c) + '<span class="cu-amt"><small>فروش ' + faDigits(S.latest) + ' · تومان</small><b>' + compact(c._latest) + '</b></span>' +
@@ -336,18 +352,17 @@
     S.list.forEach(function (c) { var g = c.group || ''; by[g] = (by[g] || 0) + 1; });
     return by;
   }
-  function listView() {
-    keepFilters();
-    var act = S.list.filter(function (c) { return c._status === 'active' || c._status === 'new'; });
-    var gn = groupNames(); if (S.fGroup && S.fGroup !== '__none' && !gn[S.fGroup]) S.fGroup = '';
-    var names = Object.keys(gn).filter(Boolean).sort(function (a, b) { return gn[b] - gn[a]; });
-    var statuses = ['all', 'active', 'new', 'atrisk', 'lost', 'idle'];
-    // every number follows the other filter: status counts and the figures above use the chosen group; group counts use the chosen status
-    var inGroup = S.list.filter(function (c) { return S.fGroup === '' || (S.fGroup === '__none' ? !c.group : c.group === S.fGroup); });
-    var inStatus = S.list.filter(function (c) { return S.fStatus === 'all' || c._status === S.fStatus; });
+  // the three filters (search, group, status) all shape every number: status counts and the tiles use search + group; group counts use search + status
+  function scopes() {
+    var q = norm(S.q), mq = function (c) { return !q || c._key.indexOf(q) >= 0; };
+    var gOk = function (c) { return S.fGroup === '' || (S.fGroup === '__none' ? !c.group : c.group === S.fGroup); };
+    var sOk = function (c) { return S.fStatus === 'all' || c._status === S.fStatus; };
+    var inGroup = S.list.filter(function (c) { return mq(c) && gOk(c); }), inStatus = S.list.filter(function (c) { return mq(c) && sOk(c); });
     var gcount = {}; inStatus.forEach(function (c) { var g = c.group || ''; gcount[g] = (gcount[g] || 0) + 1; });
-    act = inGroup.filter(function (c) { return c._status === 'active' || c._status === 'new'; });
-    var cnt = function (s) { return s === 'all' ? inGroup.length : inGroup.filter(function (c) { return c._status === s; }).length; };
+    return { inGroup: inGroup, inStatus: inStatus, gcount: gcount, cnt: function (st) { return st === 'all' ? inGroup.length : inGroup.filter(function (c) { return c._status === st; }).length; } };
+  }
+  function kpiHtml(sc) {
+    var inGroup = sc.inGroup, cnt = sc.cnt, act = inGroup.filter(function (c) { return c._status === 'active' || c._status === 'new'; });
     var revenue = inGroup.reduce(function (a, c) { return a + c._latest; }, 0);
     var KART = { users: 'active-customers', coins: 'sales-revenue', spark: 'new-customer', alert: 'at-risk-customers' };
     var tile = function (k, color, label, val) { return '<div style="--c:' + color + '"><img class="cu-kimg" src="./assets/art/tiles/' + KART[k] + '.webp" alt="" width="96" height="96" decoding="async" onerror="this.remove()"><div><span>' + label + '</span><b>' + val + '</b></div></div>'; };
@@ -359,6 +374,55 @@
       tile('alert', '#e08a00', 'در معرض ریزش', faInt.format(cnt('atrisk'))) + '</div>' +
       '<div class="cu-dist" role="img" aria-label="پراکندگی وضعیت مشتریان"><div class="cu-dist-bar">' + order.map(function (s) { var n = cnt(s); return n ? '<i style="flex:' + n + ';background:' + STC[s] + '" title="' + STATUS[s] + ': ' + faInt.format(n) + '"></i>' : ''; }).join('') + '</div>' +
       '<div class="cu-dist-lg">' + order.map(function (s) { var n = cnt(s); return n ? '<span><i style="background:' + STC[s] + '"></i>' + STATUS[s] + ' ' + faInt.format(n) + '</span>' : ''; }).join('') + '</div></div>';
+    return kpi;
+  }
+  var REDUCE = false; try { REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* ignore */ }
+  function snapCards() { var m = {}; [].forEach.call(document.querySelectorAll('#cuList li[data-code]'), function (li) { m[li.getAttribute('data-code')] = li.getBoundingClientRect(); }); return m; }
+  // cards that stay glide to their new place; new ones rise in (FLIP)
+  function flipCards(before) {
+    if (REDUCE || !Element.prototype.animate) return;
+    [].forEach.call(document.querySelectorAll('#cuList li[data-code]'), function (li, i) {
+      var r = li.getBoundingClientRect(), b = before[li.getAttribute('data-code')];
+      if (b) { var dx = b.left - r.left, dy = b.top - r.top; if (dx || dy) li.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.3,.9,.3,1)' }); }
+      else li.animate([{ opacity: 0, transform: 'translateY(12px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 340, delay: Math.min(i, 8) * 28, easing: 'ease-out', fill: 'backwards' });
+    });
+  }
+  // the dark «selected» pill glides from one chip to the next
+  function movePills(animate) {
+    [].forEach.call(root.querySelectorAll('.cu-fchips[data-pill]'), function (box) {
+      var on = box.querySelector('.cu-fchip[aria-pressed="true"]'), pill = box.querySelector('.cu-pill');
+      if (!on) { if (pill) pill.style.opacity = '0'; return; }
+      if (!pill) { pill = document.createElement('i'); pill.className = 'cu-pill'; box.insertBefore(pill, box.firstChild); animate = false; }
+      box.classList.add('has-pill');
+      pill.style.transition = animate && !REDUCE ? '' : 'none';
+      pill.style.width = on.offsetWidth + 'px'; pill.style.height = on.offsetHeight + 'px';
+      pill.style.transform = 'translate(' + on.offsetLeft + 'px,' + on.offsetTop + 'px)'; pill.style.opacity = '1';
+    });
+  }
+  function updateChips(sc) {
+    [].forEach.call(root.querySelectorAll('[data-status]'), function (b) { var v = b.getAttribute('data-status'); b.setAttribute('aria-pressed', S.fStatus === v); var n = b.querySelector('b'); if (n) n.textContent = faInt.format(sc.cnt(v)); });
+    [].forEach.call(root.querySelectorAll('[data-group]'), function (b) {
+      var v = b.getAttribute('data-group'), n = b.querySelector('b'); b.setAttribute('aria-pressed', S.fGroup === v);
+      if (n) { var k = v === '__none' ? '' : v; n.textContent = faInt.format(sc.gcount[k] || 0); }
+    });
+    [].forEach.call(root.querySelectorAll('[data-sort]'), function (b) { b.setAttribute('aria-pressed', S.sort === b.getAttribute('data-sort')); });
+  }
+  // a filter was changed: numbers, tiles, chips and the list change in place, with motion
+  function refreshAll(animate) {
+    var kp = document.getElementById('cuKpi'); if (!kp) { render(); return; }
+    keepFilters();
+    var before = animate ? snapCards() : null, sc = scopes();
+    kp.innerHTML = kpiHtml(sc); updateChips(sc); paintList();
+    if (before) flipCards(before);
+    movePills(animate);
+  }
+  function listView() {
+    keepFilters();
+    var gn = groupNames(); if (S.fGroup && S.fGroup !== '__none' && !gn[S.fGroup]) S.fGroup = '';
+    var names = Object.keys(gn).filter(Boolean).sort(function (a, b) { return gn[b] - gn[a]; });
+    var statuses = ['all', 'active', 'new', 'atrisk', 'lost', 'idle'];
+    var sc = scopes(), cnt = sc.cnt, gcount = sc.gcount;
+    var kpi = '<div id="cuKpi">' + kpiHtml(sc) + '</div>';
     var statusChips = statuses.map(function (s) {
       return '<button type="button" class="cu-fchip" data-status="' + s + '" aria-pressed="' + (S.fStatus === s) + '">' + (s === 'all' ? 'همه' : STATUS[s]) + ' <b>' + faInt.format(cnt(s)) + '</b></button>';
     }).join('');
@@ -372,8 +436,8 @@
       '<section class="cu-card-box">' +
       '<label class="cu-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>' +
       '<input type="search" id="cuQ" placeholder="جست‌وجو: نام، کد، شهر یا گروه" value="' + esc(S.q) + '" autocomplete="off"></label>' +
-      '<div class="cu-fchips" role="group" aria-label="وضعیت">' + statusChips + '</div>' +
-      (S.groupFilterVisible !== false && names.length ? '<div class="cu-fchips scroll" role="group" aria-label="گروه">' + groupChips + '</div>' : '') +
+      '<div class="cu-fchips" data-pill role="group" aria-label="وضعیت">' + statusChips + '</div>' +
+      (S.groupFilterVisible !== false && names.length ? '<div class="cu-fchips scroll" data-pill role="group" aria-label="گروه">' + groupChips + '</div>' : '') +
       '<div class="cu-sortrow"><span id="cuCount">' + faInt.format(filtered().length) + ' مشتری</span><span class="cu-sorts">' + sorts + '</span></div>' +
       '<ul class="cu-list" id="cuList">' + listHtml() + '</ul></section>' +
       (can('customerAssign') ? groupsView() : '') +
@@ -463,15 +527,35 @@
       '<p class="cu-note">تومان. «بدهکار» یعنی مشتری به ما بدهکار است و «بستانکار» یعنی از ما طلب دارد (پیش‌پرداخت یا برگشتی). «دریافت‌شده» را از «مانده سال قبل + فروش − مانده این سال» حساب می‌کنیم؛ برگشتی و تخفیف را هم شامل می‌شود و فقط تقریبی است.</p></section>';
   }
   function sibsHtml(c) {
-    var l = c._sibs || []; if (!l.length) return '';
-    var all = [c].concat(l), sum = all.reduce(function (a, x) { return a + (x._latest || 0); }, 0);
-    return '<section class="cu-card-box"><h2>حساب‌های هم‌نام</h2><p class="cu-note">به‌احتمال زیاد یک شرکت‌اند (عنوان یکسان در حسابداری؛ مثلاً یک حساب جدا برای وینتورا). فروش هر حساب جدا حساب می‌شود.</p><ul class="cu-sibs">' +
-      all.map(function (x) {
-        return '<li' + (x === c ? ' class="me"' : '') + '><a href="#/c/' + encodeURIComponent(x.code) + '"><b>' + esc(shownName(x)) + '</b><span dir="ltr">' + esc(x.code) + '</span><span>' + esc(x.group || 'بدون گروه') + '</span><em>' + compact(x._latest || 0) + ' <small>تومان · ' + faDigits(S.latest) + '</small></em></a></li>';
-      }).join('') + '</ul><p class="cu-note">جمع فروش ' + faDigits(S.latest) + ' همهٔ حساب‌ها: <b>' + compact(sum) + ' تومان</b></p></section>';
+    var l = c._sibs || [], mg = c._merged || [], lead = can('customerAssign'); if (!l.length && !mg.length && !lead) return '';
+    var own = function (x) { return x === c ? ((c._ownSales || c.sales || {})[S.latest] || 0) / 10 : ((x.sales || {})[S.latest] || 0) / 10; };
+    var all = [c].concat(mg), sum = all.reduce(function (a, x) { return a + own(x); }, 0);
+    var li = function (x, merged, sug) {
+      return '<li' + (x === c ? ' class="me"' : '') + '><a href="#/c/' + encodeURIComponent(x.code) + '"><b>' + esc(shownName(x)) + '</b><span dir="ltr">' + esc(x.code) + '</span><span>' + esc(x.group || 'بدون گروه') + '</span><em>' + compact(own(x)) + ' <small>تومان · ' + faDigits(S.latest) + '</small></em></a>' +
+        (lead && merged ? '<button type="button" class="cu-btn small ghost" data-unmerge="' + esc(x.code) + '">جدا کردن</button>' : '') +
+        (lead && sug ? '<button type="button" class="cu-btn small" data-merge="' + esc(c.code + '|' + x.code) + '">ترکیب با این مشتری</button>' : '') + '</li>';
+    };
+    return '<section class="cu-card-box"><h2>حساب‌های این مشتری</h2>' +
+      '<p class="cu-note">گاهی یک شرکت در حسابداری چند حساب دارد (مثلاً یک حساب جدا برای وینتورا با «win»). حساب‌های ترکیب‌شده در یک مشتری دیده می‌شوند و فروش و مانده‌شان با هم جمع می‌شود.</p>' +
+      '<ul class="cu-sibs">' + all.map(function (x) { return li(x, x !== c, false); }).join('') + '</ul>' +
+      (l.length ? '<h3 class="cu-sub">هم‌نام (هنوز ترکیب نشده)</h3><ul class="cu-sibs">' + l.map(function (x) { return li(x, false, true); }).join('') + '</ul>' : '') +
+      (lead ? '<div class="cu-mergebox"><input type="text" id="cuMergeCode" inputmode="numeric" dir="ltr" placeholder="کد حساب دیگر"><button type="button" class="cu-btn small" data-merge-code="' + esc(c.code) + '">ترکیب با کد</button></div>' : '') +
+      '<p class="cu-note">جمع فروش ' + faDigits(S.latest) + ' همهٔ حساب‌ها: <b>' + compact(sum) + ' تومان</b></p></section>';
+  }
+  function mergeAccounts(primary, secondary) {
+    if (!primary || !secondary || primary === secondary) return;
+    db.collection('customers').doc(secondary).update({ mergedInto: primary, updatedAt: Date.now() }).then(function () {
+      S.msg = 'حساب ' + faDigits(secondary) + ' با ' + faDigits(primary) + ' ترکیب شد.'; S.list = []; load();
+    }, function (err) { S.error = errText(err); render(); });
+  }
+  function unmergeAccount(code) {
+    db.collection('customers').doc(code).update({ mergedInto: '', updatedAt: Date.now() }).then(function () {
+      S.msg = 'حساب ' + faDigits(code) + ' جدا شد.'; S.list = []; load();
+    }, function (err) { S.error = errText(err); render(); });
   }
   function detailView(code) {
     var c = S.list.filter(function (x) { return x.code === code; })[0];
+    if (!c && S.byCode && S.byCode[code] && S.byCode[code].mergedInto && S.byCode[S.byCode[code].mergedInto]) { setTimeout(function () { location.replace('#/c/' + encodeURIComponent(S.byCode[code].mergedInto)); }, 0); return head('این حساب جزو حساب دیگری است…', true); }
     if (!c) return head('مشتری پیدا نشد', true) + '<p class="cu-note">این مشتری وجود ندارد یا برای شما قابل مشاهده نیست.</p>';
     var prov = c.province || provinceOf(c.city), reg = c.region || regionOf(prov);
     var invs = invoicesOf(c), items = itemsOf(invs);
@@ -801,17 +885,26 @@
     root.innerHTML = view();
     if (window.MSPurchases && S.user && S.profile) window.MSPurchases.paint(root, route());   // purchase history under a customer; the sales import under «ورود اطلاعات»
     if (window.MSGate) window.MSGate.apply();
+    movePills(false);
     if (keep !== null) { var q = document.getElementById('cuQ'); if (q) { q.focus(); try { q.setSelectionRange(keep, keep); } catch (e) { /* ignore */ } } }
   }
+  window.addEventListener('resize', function () { movePills(false); });
   window.addEventListener('hashchange', function () {
     S.msg = ''; S.error = ''; render(); window.scrollTo(0, 0);
     if (route() && S.user) loadInvoices().then(render);
   });
   document.addEventListener('click', function (e) {
     var t;
-    if ((t = e.target.closest('[data-status]'))) { S.fStatus = t.getAttribute('data-status'); S.shown = 60; render(); return; }
-    if ((t = e.target.closest('[data-group]'))) { S.fGroup = t.getAttribute('data-group'); S.shown = 60; render(); return; }
-    if ((t = e.target.closest('[data-sort]'))) { S.sort = t.getAttribute('data-sort'); render(); return; }
+    if ((t = e.target.closest('[data-status]'))) { S.fStatus = t.getAttribute('data-status'); S.shown = 60; refreshAll(true); return; }
+    if ((t = e.target.closest('[data-group]'))) { S.fGroup = t.getAttribute('data-group'); S.shown = 60; refreshAll(true); return; }
+    if ((t = e.target.closest('[data-sort]'))) { S.sort = t.getAttribute('data-sort'); refreshAll(true); return; }
+    if ((t = e.target.closest('[data-merge]'))) { var mp = t.getAttribute('data-merge').split('|'); mergeAccounts(mp[0], mp[1]); return; }
+    if ((t = e.target.closest('[data-unmerge]'))) { unmergeAccount(t.getAttribute('data-unmerge')); return; }
+    if ((t = e.target.closest('[data-merge-code]'))) {
+      var mc = latinDigits((document.getElementById('cuMergeCode') || {}).value || '').replace(/\D/g, '');
+      if (!mc || !S.byCode || !S.byCode[mc] || mc === t.getAttribute('data-merge-code')) { S.error = 'حسابی با این کد پیدا نشد.'; render(); return; }
+      mergeAccounts(t.getAttribute('data-merge-code'), mc); return;
+    }
     if (e.target.closest('[data-more]')) { S.shown += 60; paintList(); return; }
     if ((t = e.target.closest('[data-owner-group]'))) { var g = t.getAttribute('data-owner-group'); ownerDialog({ group: g, label: g }); return; }
     if ((t = e.target.closest('[data-owner-customer]'))) { var cc = S.list.filter(function (x) { return x.code === t.getAttribute('data-owner-customer'); })[0]; if (cc) ownerDialog({ code: cc.code, label: cc.name }); return; }
@@ -823,7 +916,7 @@
     if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
   });
   document.addEventListener('input', function (e) {
-    if (e.target.id === 'cuQ') { S.q = e.target.value; S.shown = 60; paintList(); }
+    if (e.target.id === 'cuQ') { S.q = e.target.value; S.shown = 60; refreshAll(false); }
     if ((e.target.name === 'postal' || e.target.name === 'nationalId') && e.target.form && e.target.form.id === 'cuForm') {
       var dd = latinDigits(e.target.value).replace(/\D/g, '').slice(0, 10), shown2 = faDigits(dd); if (e.target.value !== shown2) e.target.value = shown2;
     }

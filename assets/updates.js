@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'customers-merge-morph-1405-08', date: '1405/08/06', tag: 'بهبود', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'], title: 'مشتریان: ترکیب حساب‌ها، شمارش درست و حرکت نرم بین فیلترها',
+      summary: 'عددهای وضعیت، گروه و کارت‌های بالا حالا با جستجو و فیلترها هم‌زمان عوض می‌شوند. مدیر و فروش می‌توانند چند حساب یک شرکت را در پروفایل با یک کلیک ترکیب (یا جدا) کنند و فروش و مانده‌شان جمع می‌شود. «(جمهوری)» تهران حساب می‌شود و جابه‌جایی بین فیلترها با انیمیشن نرم است.' },
     { id: 'customers-cash-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'], title: 'پروفایل مشتری: حساب و پرداخت هر سال',
       summary: 'در پروفایل هر مشتری جدولی هست با فروش، مانده حساب در پایان هر سال (بدهکار یا بستانکار) و مبلغ دریافت‌شده در آن سال که از مانده سال قبل، فروش و مانده امسال حساب می‌شود (تقریبی؛ برگشتی و تخفیف را هم شامل می‌شود). مانده‌ها با فایل ورود مشتریان (ستون‌های «مانده ۱۴۰۵») وارد می‌شوند.' },
     { id: 'customers-same-company-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'], title: 'مشتریان: حساب‌های یک شرکت کنار هم دیده می‌شوند',
