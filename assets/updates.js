@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'customers-tidy-similar-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager'], title: 'مشتریان: مرتب کردن نشانی‌ها و فهرست حساب‌های مشابه',
+      summary: 'در صفحهٔ مشتریان بخش «مرتب‌سازی و بررسی» اضافه شد: با یک دکمه نشانی‌ها مرتب می‌شوند (جداکننده‌ها، «خ» ← «خیابان»، فاصله‌ها و رقم‌ها؛ املا دست نمی‌خورد) و حساب‌هایی که نامشان نزدیک است یا تلفن/کد ملی یکسان دارند برای بررسی و ترکیب فهرست می‌شوند. نشانی‌های واردشده و ذخیره‌شده هم از این به بعد خودکار مرتب می‌شوند.' },
     { id: 'customers-merge-morph-1405-08', date: '1405/08/06', tag: 'بهبود', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'], title: 'مشتریان: ترکیب حساب‌ها، شمارش درست و حرکت نرم بین فیلترها',
       summary: 'عددهای وضعیت، گروه و کارت‌های بالا حالا با جستجو و فیلترها هم‌زمان عوض می‌شوند. مدیر و فروش می‌توانند چند حساب یک شرکت را در پروفایل با یک کلیک ترکیب (یا جدا) کنند و فروش و مانده‌شان جمع می‌شود. «(جمهوری)» تهران حساب می‌شود و جابه‌جایی بین فیلترها با انیمیشن نرم است.' },
     { id: 'customers-cash-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'], title: 'پروفایل مشتری: حساب و پرداخت هر سال',

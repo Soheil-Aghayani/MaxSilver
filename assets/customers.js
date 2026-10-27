@@ -440,7 +440,7 @@
       (S.groupFilterVisible !== false && names.length ? '<div class="cu-fchips scroll" data-pill role="group" aria-label="گروه">' + groupChips + '</div>' : '') +
       '<div class="cu-sortrow"><span id="cuCount">' + faInt.format(filtered().length) + ' مشتری</span><span class="cu-sorts">' + sorts + '</span></div>' +
       '<ul class="cu-list" id="cuList">' + listHtml() + '</ul></section>' +
-      (can('customerAssign') ? groupsView() : '') +
+      (can('customerAssign') ? reviewView() + groupsView() : '') +
       (can('customerImport') ? importView() : '');
   }
   function head(title, back) {
@@ -526,6 +526,101 @@
     return '<section class="cu-card-box"><h2>حساب و پرداخت</h2><div class="cu-cash"><table><thead><tr><th>سال</th><th>فروش</th><th>مانده پایان سال</th><th>دریافت‌شده (تقریبی)</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<p class="cu-note">تومان. «بدهکار» یعنی مشتری به ما بدهکار است و «بستانکار» یعنی از ما طلب دارد (پیش‌پرداخت یا برگشتی). «دریافت‌شده» را از «مانده سال قبل + فروش − مانده این سال» حساب می‌کنیم؛ برگشتی و تخفیف را هم شامل می‌شود و فقط تقریبی است.</p></section>';
   }
+  // ---------- tidy addresses and find look-alike accounts
+  // only safe clean-ups: separators, spaces, «خ» -> «خیابان», «وحد» -> «واحد», digits stuck to letters, Persian digits. Spelling is never guessed.
+  function tidyAddress(a) {
+    var t = fixLetters(String(a || '')).replace(/[\u200c\u200f\u00a0]/g, function (m) { return m === '\u200c' ? '\u200c' : ' '; });
+    t = t.replace(/\s+/g, ' ').trim();
+    t = t.replace(/\s*[-–—_ـ]+\s*/g, function (m, off, str) {
+      var pr = str.charAt(off - 1), nx = str.charAt(off + m.length);
+      return /\d/.test(pr) && /\d/.test(nx) ? '-' : '، ';
+    });
+    t = t.replace(/\s*[,،]+\s*/g, '، ');
+    t = t.replace(/([\u0600-\u06FF])(\d)/g, '$1 $2').replace(/(\d)([\u0600-\u06FF])/g, '$1 $2');
+    t = t.replace(/(^|[\s،])خ\.?(?=\s)/g, '$1خیابان').replace(/(^|[\s،])وحد(?=[\s\d]|$)/g, '$1واحد');
+    t = t.replace(/(،\s*){2,}/g, '، ').replace(/^[،\s]+|[،\s]+$/g, '').replace(/\s+/g, ' ');
+    return faDigits(t);
+  }
+  var SIM_STOP = { 'شرکت': 1, 'فروشگاه': 1, 'تجهیزات': 1, 'آشپزخانه': 1, 'صنعتی': 1, 'استیل': 1, 'گروه': 1, 'تولیدی': 1, 'بازرگانی': 1, 'صنایع': 1, 'تولید': 1, 'پخش': 1, 'سازان': 1, 'ماشین': 1, 'ماشین‌سازی': 1, 'و': 1, 'آقای': 1, 'خانم': 1, 'اقای': 1, 'مهندس': 1, 'دکتر': 1, 'رستوران': 1, 'کافه': 1, 'هتل': 1, 'نان': 1 };
+  function simTokens(c) {
+    var n = norm(parseTitle(c.name || '').name).replace(/\(.*?\)/g, ' ').replace(/\bwin\b/g, ' ').replace(/[^\u0600-\u06FFa-z0-9\s]/g, ' ');
+    var seen = {}, out = [];
+    n.split(/\s+/).forEach(function (w) { if (w.length > 1 && !SIM_STOP[w] && !seen[w]) { seen[w] = 1; out.push(w); } });
+    return out;
+  }
+  function totalOf(c) { return Object.keys(c.sales || {}).reduce(function (a, y) { return a + (c.sales[y] || 0); }, 0); }
+  function simDismissed() { try { return JSON.parse(localStorage.getItem('ms-cu-sim-no') || '[]'); } catch (e) { return []; } }
+  function simDismiss(key) { try { var l = simDismissed(); if (l.indexOf(key) < 0) l.push(key); localStorage.setItem('ms-cu-sim-no', JSON.stringify(l)); } catch (e) { /* ignore */ } }
+  function simGroups() {
+    var L = S.list, n = L.length, par = [], why = {}, i, j;
+    for (i = 0; i < n; i++) par[i] = i;
+    var find = function (x) { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; };
+    var join = function (a, b, r) { var ra = find(a), rb = find(b); if (ra !== rb) par[ra] = rb; (why[find(a)] = why[find(a)] || {})[r] = 1; if (ra !== rb) { Object.keys(why[ra] || {}).forEach(function (k) { why[rb] = why[rb] || {}; why[rb][k] = 1; }); } };
+    var toks = L.map(simTokens), by = {};
+    var idx = function (map, key, i2, r) { if (!key) return; (map[key] = map[key] || []).push(i2); };
+    var phones = {}, nids = {}, tk = {};
+    L.forEach(function (c, k) {
+      var ph = latinDigits(c.phone || '').replace(/\D/g, ''); if (ph.length >= 10) idx(phones, ph.slice(-10), k);
+      var ni = latinDigits(c.nationalId || '').replace(/\D/g, ''); if (ni.length === 10) idx(nids, ni, k);
+      toks[k].forEach(function (w) { idx(tk, w, k); });
+    });
+    Object.keys(phones).forEach(function (k) { var a = phones[k]; for (i = 1; i < a.length; i++) join(a[0], a[i], 'تلفن یکسان'); });
+    Object.keys(nids).forEach(function (k) { var a = nids[k]; for (i = 1; i < a.length; i++) join(a[0], a[i], 'کد ملی یکسان'); });
+    var done = {};
+    Object.keys(tk).forEach(function (w) {
+      var a = tk[w]; if (a.length < 2 || a.length > 40) return;
+      for (i = 0; i < a.length; i++) for (j = i + 1; j < a.length; j++) {
+        var x = a[i], y = a[j], key = x + ',' + y; if (done[key]) continue; done[key] = 1;
+        var tx = toks[x], ty = toks[y], sh = tx.filter(function (t) { return ty.indexOf(t) >= 0; }).length, mn = Math.min(tx.length, ty.length);
+        if ((mn >= 2 && sh >= 2 && sh / mn >= 0.75) || (mn === 1 && tx.length === ty.length && sh === 1 && w.length >= 5)) join(x, y, 'نام مشابه');
+      }
+    });
+    var cl = {};
+    for (i = 0; i < n; i++) { var r = find(i); (cl[r] = cl[r] || []).push(L[i]); }
+    var no = simDismissed(), out = [];
+    Object.keys(cl).forEach(function (r) {
+      var m = cl[r]; if (m.length < 2) return;
+      m.sort(function (a, b) { return totalOf(b) - totalOf(a); });
+      var key = m.map(function (c) { return c.code; }).sort().join(','); if (no.indexOf(key) >= 0) return;
+      out.push({ key: key, members: m, why: Object.keys(why[find(L.indexOf(m[0]))] || why[r] || { 'نام مشابه': 1 }) });
+    });
+    out.sort(function (a, b) { return b.members.length - a.members.length || totalOf(b.members[0]) - totalOf(a.members[0]); });
+    return out;
+  }
+  function reviewView() {
+    var fixN = 0; S.list.forEach(function (c) { if (c.address && tidyAddress(c.address) !== c.address) fixN++; });
+    var sims = S.simOpen ? simGroups() : null;
+    var h = '<section class="cu-card-box" id="cuReview"><h2>مرتب‌سازی و بررسی</h2>' +
+      '<div class="cu-rv"><div><b>نشانی‌ها</b><p class="cu-note">جداکننده‌ها، فاصله‌ها، «خ» ← «خیابان»، «وحد» ← «واحد» و رقم‌های چسبیده به حرف مرتب می‌شود؛ املا دست نمی‌خورد.</p></div>' +
+      '<button type="button" class="cu-btn small" data-tidy-addr' + (fixN && !S.busy ? '' : ' disabled') + '>' + (fixN ? 'مرتب کردن ' + faInt.format(fixN) + ' نشانی' : 'همهٔ نشانی‌ها مرتب است') + '</button></div>' +
+      '<div class="cu-rv"><div><b>حساب‌های مشابه</b><p class="cu-note">نام نزدیک، تلفن یا کد ملی یکسان. خودتان بررسی کنید و اگر یکی هستند ترکیب کنید.</p></div>' +
+      '<button type="button" class="cu-btn small ghost" data-sim-toggle>' + (S.simOpen ? 'بستن' : 'نشان بده') + '</button></div>';
+    if (sims) {
+      h += sims.length ? '<ul class="cu-simlist">' + sims.slice(0, 40).map(function (g) {
+        var m = g.members;
+        return '<li><div class="cu-simwhy">' + g.why.map(esc).join(' · ') + '</div><ul>' + m.map(function (c) {
+          return '<li><a href="#/c/' + encodeURIComponent(c.code) + '"><b>' + esc(shownName(c)) + '</b><span dir="ltr">' + esc(c.code) + '</span><span>' + esc(c.city || '') + ' ' + esc(c.group || '') + '</span><em>' + compact(totalOf(c) / 10) + '</em></a></li>';
+        }).join('') + '</ul>' + (can('customerAssign') ? '<div class="cu-simact"><button type="button" class="cu-btn small" data-merge-all="' + esc(m[0].code + '|' + m.slice(1).map(function (c) { return c.code; }).join(',')) + '">ترکیب همه در «' + esc(shownName(m[0])) + '»</button><button type="button" class="cu-btn small ghost" data-sim-no="' + esc(g.key) + '">مشابه نیست</button></div>' : '') + '</li>';
+      }).join('') + '</ul>' + (sims.length > 40 ? '<p class="cu-note">۴۰ مورد اول نشان داده شد؛ بعد از بررسی بقیه می‌آیند.</p>' : '') : '<p class="cu-note">مورد مشابهی پیدا نشد.</p>';
+    }
+    return h + '</section>';
+  }
+  function tidyAll() {
+    var ops = []; S.list.concat(Object.keys(S.byCode || {}).map(function (k) { return S.byCode[k]; }).filter(function (d) { return d.mergedInto; })).forEach(function (c) {
+      var t = c.address ? tidyAddress(c.address) : ''; if (t && t !== c.address) ops.push([c, t]);
+    });
+    if (!ops.length) return;
+    S.busy = true; render();
+    var chunks = [], i; for (i = 0; i < ops.length; i += 400) chunks.push(ops.slice(i, i + 400));
+    chunks.reduce(function (pr, ch) {
+      return pr.then(function () { var b = db.batch(); ch.forEach(function (o) { b.update(db.collection('customers').doc(o[0].code), { address: o[1].slice(0, 300), updatedAt: Date.now() }); }); return b.commit(); });
+    }, Promise.resolve()).then(function () { S.msg = faInt.format(ops.length) + ' نشانی مرتب شد.'; S.busy = false; S.list = []; load(); }, function (e) { S.error = errText(e); S.busy = false; render(); });
+  }
+  function mergeMany(primary, codes) {
+    var b = db.batch(); codes.forEach(function (c) { b.update(db.collection('customers').doc(c), { mergedInto: primary, updatedAt: Date.now() }); });
+    b.commit().then(function () { S.msg = faInt.format(codes.length) + ' حساب با ' + faDigits(primary) + ' ترکیب شد.'; S.list = []; load(); }, function (e) { S.error = errText(e); render(); });
+  }
+
   function sibsHtml(c) {
     var l = c._sibs || [], mg = c._merged || [], lead = can('customerAssign'); if (!l.length && !mg.length && !lead) return '';
     var own = function (x) { return x === c ? ((c._ownSales || c.sales || {})[S.latest] || 0) / 10 : ((x.sales || {})[S.latest] || 0) / 10; };
@@ -833,7 +928,7 @@
       var rows = Object.keys(by).map(function (k) {
         var o = by[k], raw = o.tpl.name || o._name || '', t = o.tpl.city ? { name: fixLetters(raw), city: o.tpl.city } : parseTitle(raw), city = t.city || (o.tpl.address ? cityIn(o.tpl.address) : ''), prov = o.tpl.province || provinceOf(city);
         return { code: k, name: t.name, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales, bal: o.bal,
-          phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: (o.tpl.address || '').slice(0, 300), postal: postalOk(o.tpl.postal || '') ? o.tpl.postal : '', nationalId: nidOk(o.tpl.nationalId || '') ? o.tpl.nationalId : '', birthday: bdayOk(o.tpl.birthday || '') ? bdayFix(o.tpl.birthday) : '', notes: o.tpl.notes || '',
+          phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: tidyAddress(o.tpl.address || '').slice(0, 300), postal: postalOk(o.tpl.postal || '') ? o.tpl.postal : '', nationalId: nidOk(o.tpl.nationalId || '') ? o.tpl.nationalId : '', birthday: bdayOk(o.tpl.birthday || '') ? bdayFix(o.tpl.birthday) : '', notes: o.tpl.notes || '',
           bad: (o.tpl.postal && !postalOk(o.tpl.postal) ? 1 : 0) + (o.tpl.nationalId && !nidOk(o.tpl.nationalId) ? 1 : 0) + (o.tpl.birthday && !bdayOk(o.tpl.birthday) ? 1 : 0) };
       });
       S.imp = { rows: rows, files: info, skipped: skipped, fresh: rows.filter(function (r) { return !have[r.code]; }).length, blank: rows.filter(function (r) { return !r.group; }).length,
@@ -898,6 +993,10 @@
     if ((t = e.target.closest('[data-status]'))) { S.fStatus = t.getAttribute('data-status'); S.shown = 60; refreshAll(true); return; }
     if ((t = e.target.closest('[data-group]'))) { S.fGroup = t.getAttribute('data-group'); S.shown = 60; refreshAll(true); return; }
     if ((t = e.target.closest('[data-sort]'))) { S.sort = t.getAttribute('data-sort'); refreshAll(true); return; }
+    if ((t = e.target.closest('[data-tidy-addr]'))) { tidyAll(); return; }
+    if ((t = e.target.closest('[data-sim-toggle]'))) { S.simOpen = !S.simOpen; render(); return; }
+    if ((t = e.target.closest('[data-sim-no]'))) { simDismiss(t.getAttribute('data-sim-no')); render(); return; }
+    if ((t = e.target.closest('[data-merge-all]'))) { var ma = t.getAttribute('data-merge-all').split('|'); mergeMany(ma[0], ma[1].split(',')); return; }
     if ((t = e.target.closest('[data-merge]'))) { var mp = t.getAttribute('data-merge').split('|'); mergeAccounts(mp[0], mp[1]); return; }
     if ((t = e.target.closest('[data-unmerge]'))) { unmergeAccount(t.getAttribute('data-unmerge')); return; }
     if ((t = e.target.closest('[data-merge-code]'))) {
@@ -932,7 +1031,7 @@
     if (e.target.id !== 'cuForm') return;
     e.preventDefault();
     var f = e.target, code = f.getAttribute('data-code'), now = Date.now();
-    var upd = { phone: latinDigits(f.elements.phone.value).replace(/\D/g, ''), contact: f.elements.contact.value.trim(), address: f.elements.address.value.trim(), postal: latinDigits(f.elements.postal.value).replace(/\D/g, ''), nationalId: latinDigits(f.elements.nationalId.value).replace(/\D/g, ''), birthday: bdayFix(f.elements.birthday.value), notes: f.elements.notes.value.trim(), updatedAt: now };
+    var upd = { phone: latinDigits(f.elements.phone.value).replace(/\D/g, ''), contact: f.elements.contact.value.trim(), address: tidyAddress(f.elements.address.value), postal: latinDigits(f.elements.postal.value).replace(/\D/g, ''), nationalId: latinDigits(f.elements.nationalId.value).replace(/\D/g, ''), birthday: bdayFix(f.elements.birthday.value), notes: f.elements.notes.value.trim(), updatedAt: now };
     S.msg = ''; S.error = '';
     if (upd.postal && !postalOk(upd.postal)) { S.error = 'کد پستی باید ده رقم باشد.'; render(); return; }
     if (upd.nationalId && !nidOk(upd.nationalId)) { S.error = 'کد ملی درست نیست (ده رقم و رقم کنترل).'; render(); return; }
