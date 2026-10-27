@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'catalog-details-1405-08', date: '1405/08/06', tag: 'بهبود', title: 'مشخصات گریل‌ها و فرهای پیتزا در کاتالوگ کامل‌تر شد',
+      summary: 'از برگهٔ اطلاعات کالا که تیم فروش و انبار پر کرده بودند، توضیح، کشور سازنده، نوع انرژی و ابعاد خالیِ ۲۳ گریل و فر پیتزا تکمیل شد. چیزی که قبلاً در کاتالوگ بود تغییر نکرد.', roles: ['manager', 'ceo', 'sales_manager'] },
     { id: 'pw-ovens-1405-08', date: '1405/08/05', tag: 'جدید', title: 'پانزده فر پیتزای مدولار PW در کاتالوگ مکث‌سیلور',
       summary: 'فرهای طرح پیتزا مستر مدل PW721 تا PW745 (سه سری، هر کدام از ۱ تا ۵ دکه) با ابعاد، سطح پخت، ظرفیت پیتزا، توان، وزن و امکانات از برگهٔ فنی سازنده و عکس کالا به کاتالوگ اضافه شد. کد و قیمت را کارشناس فروش اعلام می‌کند.' },
     { id: 'hiring-form-v2-1405-08', date: '1405/08/05', tag: 'بهبود', roles: ['manager', 'ceo', 'hr'], title: 'فرم استخدامی با فونت و رنگ هر برند، تقویم و بخش‌های بهتر',
