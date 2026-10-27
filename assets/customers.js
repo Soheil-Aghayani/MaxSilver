@@ -55,6 +55,29 @@
   function hue(c) { var s = norm(c.group || c.name || ''), h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return PAL[h % PAL.length]; }
   function inkOn(col) { var r = parseInt(col.substr(1, 2), 16), g = parseInt(col.substr(3, 2), 16), b = parseInt(col.substr(5, 2), 16); return (0.299 * r + 0.587 * g + 0.114 * b) > 165 ? '#071b36' : '#ffffff'; }
   function letter(c) { var n = String(c.name || '').replace(/\[.*?\]/g, '').trim(); return esc(n.charAt(0) || '؟'); }
+  // «win» at the end of an accounting title marks a Wintora customer: the card shows a Wintora badge instead of the word in the name
+  function isWin(c) { return /(^|[^a-z])win\s*$/i.test(String(c.name || '').replace(/\[.*?\]/g, '').trim()); }
+  function shownName(c) { return String(c.name || '').replace(/\s*\[.*?\]\s*$/, '').replace(/\s*win\s*$/i, '').trim(); }
+  // a small face drawn from the customer's code and name (the idea of «Boring Avatars», MIT licence; drawn here, nothing is loaded from the internet)
+  var AVC = ['#ffcc2a', '#071b36', '#3858e9', '#ce1f39', '#0d9488', '#7f54b3', '#ff6a00', '#0891b2'], AVMEMO = {};
+  function avHash(str) { var h = 0; for (var i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h = h & h; } return Math.abs(h); }
+  function avUnit(n, range, idx) { var v = n % range; return idx && (Math.floor(n / Math.pow(10, idx)) % 10) % 2 === 0 ? -v : v; }
+  function avInk(col) { var r = parseInt(col.substr(1, 2), 16), g = parseInt(col.substr(3, 2), 16), b = parseInt(col.substr(5, 2), 16); return (0.299 * r + 0.587 * g + 0.114 * b) >= 128 ? '#071b36' : '#ffffff'; }
+  function face(c) {
+    var key = String(c.code || '') + '|' + String(c.name || ''); if (AVMEMO[key]) return AVMEMO[key];
+    var n = avHash(key), L = AVC.length, SZ = 36;
+    var wrap = AVC[n % L], bg = AVC[(n + 13) % L]; if (bg === wrap) bg = AVC[(n + 14) % L];
+    var tx = avUnit(n, 10, 1), ty = avUnit(n, 10, 2); tx = tx < 5 ? tx + SZ / 9 : tx; ty = ty < 5 ? ty + SZ / 9 : ty;
+    var rot = avUnit(n, 360), sc = 1 + avUnit(n, SZ / 12) / 10, open = n % 2 === 0, round = (Math.floor(n / 10) % 2) === 0;
+    var eye = avUnit(n, 5), mouth = avUnit(n, 3), frot = avUnit(n, 10, 3), ink = avInk(wrap);
+    var ftx = tx > SZ / 6 ? tx / 2 : avUnit(n, 8, 1), fty = ty > SZ / 6 ? ty / 2 : avUnit(n, 7, 2);
+    var svg = '<svg viewBox="0 0 36 36" fill="none" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="36" fill="' + bg + '"/>' +
+      '<rect x="0" y="0" width="36" height="36" transform="translate(' + tx.toFixed(2) + ' ' + ty.toFixed(2) + ') rotate(' + rot + ' 18 18) scale(' + sc.toFixed(2) + ')" fill="' + wrap + '" rx="' + (round ? 36 : 6) + '"/>' +
+      '<g transform="translate(' + ftx.toFixed(2) + ' ' + fty.toFixed(2) + ') rotate(' + frot + ' 18 18)">' +
+      (open ? '<path d="M15 ' + (19 + mouth) + 'c2 1 4 1 6 0" stroke="' + ink + '" fill="none" stroke-linecap="round"/>' : '<path d="M13 ' + (21 + mouth) + 'a1 0.75 0 0 0 10 0Z" fill="' + ink + '"/>') +
+      '<rect x="' + (14 - eye) + '" y="14" width="1.5" height="2" rx="1" stroke="none" fill="' + ink + '"/><rect x="' + (20 + eye) + '" y="14" width="1.5" height="2" rx="1" stroke="none" fill="' + ink + '"/></g></svg>';
+    return (AVMEMO[key] = svg);
+  }
   var IC = {
     pin: '<path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/>',
     tag: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',
@@ -126,7 +149,7 @@
     S.latest = S.years.length ? S.years[S.years.length - 1] : 0;
     var tot = {};
     S.list.forEach(function (c) {
-      c._key = norm([c.name, c.code, c.city, c.group].join(' '));
+      c._key = norm([c.name, c.code, c.city, c.group, isWin(c) ? 'وینتورا wintora' : ''].join(' '));
       c._nameKey = norm(c.name);
       c._status = statusOf(c, S.latest);
       // the accounting reports are in rial; every figure shown here is in toman
@@ -207,7 +230,7 @@
   function card(c) {
     var d = (c._latest && c._prev > 0) || c._prev > 0 ? (c._latest - c._prev) / c._prev * 100 : null, col = hue(c), rk = (S.rank[c.code] || {})[S.latest];
     return '<li><a class="cu-card" href="#/c/' + encodeURIComponent(c.code) + '" style="--c:' + col + ';--ink:' + inkOn(col) + '">' +
-      '<div class="cu-card-top"><span class="cu-av">' + letter(c) + '</span><div class="cu-nm"><b>' + esc(String(c.name).replace(/\s*\[.*?\]\s*$/, '')) + '</b>' +
+      '<div class="cu-card-top"><span class="cu-av face">' + face(c) + '</span><div class="cu-nm"><b>' + esc(shownName(c)) + (isWin(c) ? ' <span class="cu-win">وینتورا</span>' : '') + '</b>' +
       '<div class="cu-card-meta"><span dir="ltr">' + ic('tag') + esc(c.code) + '</span>' + (c.city ? '<span>' + ic('pin') + esc(c.city) + '</span>' : '') + (c.group ? '<span>' + ic('user') + esc(c.group) + '</span>' : '') + '</div></div>' +
       '<span class="cu-chip st-' + c._status + '"><i style="background:' + STC[c._status] + '"></i>' + STATUS[c._status] + '</span></div>' +
       '<div class="cu-card-sales">' + bars(c) + '<span class="cu-amt"><small>فروش ' + faDigits(S.latest) + ' · تومان</small><b>' + compact(c._latest) + '</b></span>' +
@@ -235,13 +258,19 @@
     var gn = groupNames(); if (S.fGroup && S.fGroup !== '__none' && !gn[S.fGroup]) S.fGroup = '';
     var names = Object.keys(gn).filter(Boolean).sort(function (a, b) { return gn[b] - gn[a]; });
     var statuses = ['all', 'active', 'new', 'atrisk', 'lost', 'idle'];
-    var cnt = function (s) { return s === 'all' ? S.list.length : S.list.filter(function (c) { return c._status === s; }).length; };
+    // every number follows the other filter: status counts and the figures above use the chosen group; group counts use the chosen status
+    var inGroup = S.list.filter(function (c) { return S.fGroup === '' || (S.fGroup === '__none' ? !c.group : c.group === S.fGroup); });
+    var inStatus = S.list.filter(function (c) { return S.fStatus === 'all' || c._status === S.fStatus; });
+    var gcount = {}; inStatus.forEach(function (c) { var g = c.group || ''; gcount[g] = (gcount[g] || 0) + 1; });
+    act = inGroup.filter(function (c) { return c._status === 'active' || c._status === 'new'; });
+    var cnt = function (s) { return s === 'all' ? inGroup.length : inGroup.filter(function (c) { return c._status === s; }).length; };
+    var revenue = inGroup.reduce(function (a, c) { return a + c._latest; }, 0);
     var KART = { users: 'active-customers', coins: 'sales-revenue', spark: 'new-customer', alert: 'at-risk-customers' };
     var tile = function (k, color, label, val) { return '<div style="--c:' + color + '"><img class="cu-kimg" src="./assets/art/tiles/' + KART[k] + '.webp" alt="" width="96" height="96" decoding="async" onerror="this.remove()"><div><span>' + label + '</span><b>' + val + '</b></div></div>'; };
-    var tot = S.list.length || 1, order = ['active', 'new', 'atrisk', 'lost', 'idle'];
+    var tot = inGroup.length || 1, order = ['active', 'new', 'atrisk', 'lost', 'idle'];
     var kpi = '<div class="cu-kpis">' +
       tile('users', '#14804a', 'مشتری فعال ' + faDigits(S.latest || ''), faInt.format(act.length)) +
-      tile('coins', '#1746b5', 'فروش ' + faDigits(S.latest || '') + ' (تومان)', compact(((S.yearTotals || {})[S.latest] || 0) / 10)) +
+      tile('coins', '#1746b5', 'فروش ' + faDigits(S.latest || '') + ' (تومان)', compact(revenue)) +
       tile('spark', '#7f54b3', 'مشتری جدید', faInt.format(cnt('new'))) +
       tile('alert', '#e08a00', 'در معرض ریزش', faInt.format(cnt('atrisk'))) + '</div>' +
       '<div class="cu-dist" role="img" aria-label="پراکندگی وضعیت مشتریان"><div class="cu-dist-bar">' + order.map(function (s) { var n = cnt(s); return n ? '<i style="flex:' + n + ';background:' + STC[s] + '" title="' + STATUS[s] + ': ' + faInt.format(n) + '"></i>' : ''; }).join('') + '</div>' +
@@ -250,8 +279,8 @@
       return '<button type="button" class="cu-fchip" data-status="' + s + '" aria-pressed="' + (S.fStatus === s) + '">' + (s === 'all' ? 'همه' : STATUS[s]) + ' <b>' + faInt.format(cnt(s)) + '</b></button>';
     }).join('');
     var groupChips = '<button type="button" class="cu-fchip" data-group="" aria-pressed="' + (S.fGroup === '') + '">همهٔ گروه‌ها</button>' + names.map(function (g) {
-      return '<button type="button" class="cu-fchip" data-group="' + esc(g) + '" aria-pressed="' + (S.fGroup === g) + '">' + esc(g) + ' <b>' + faInt.format(gn[g]) + '</b></button>';
-    }).join('') + (gn[''] ? '<button type="button" class="cu-fchip" data-group="__none" aria-pressed="' + (S.fGroup === '__none') + '">بدون گروه <b>' + faInt.format(gn['']) + '</b></button>' : '');
+      return '<button type="button" class="cu-fchip" data-group="' + esc(g) + '" aria-pressed="' + (S.fGroup === g) + '">' + esc(g) + ' <b>' + faInt.format(gcount[g] || 0) + '</b></button>';
+    }).join('') + (gn[''] ? '<button type="button" class="cu-fchip" data-group="__none" aria-pressed="' + (S.fGroup === '__none') + '">بدون گروه <b>' + faInt.format(gcount[''] || 0) + '</b></button>' : '');
     var sorts = [['latest', 'فروش سال جاری'], ['total', 'مجموع فروش'], ['name', 'نام']].map(function (s) {
       return '<button type="button" class="cu-fchip sm" data-sort="' + s[0] + '" aria-pressed="' + (S.sort === s[0]) + '">' + s[1] + '</button>';
     }).join('');
@@ -346,7 +375,7 @@
     var fact = function (l, v, k) { return '<div class="cu-fact">' + (k ? '<span class="cu-fi">' + ic(k) + '</span>' : '') + '<div><dt>' + l + '</dt><dd>' + (v ? esc(v) : '<i>ثبت نشده</i>') + '</dd></div></div>'; };
     var edit = can('customerEdit') || (S.user && c.ownerUid === S.user.uid);
     return head(c.name, true) +
-      '<section class="cu-card-box cu-top" style="--c:' + hue(c) + ';--ink:' + inkOn(hue(c)) + '"><div class="cu-hero"><span class="cu-av big">' + letter(c) + '</span><div><span class="cu-hero-m">' + (c.city ? ic('pin') + esc(c.city) : '') + (c.group ? ic('user') + esc(c.group) : '') + '</span></div></div><div class="cu-top-row"><span class="cu-chip st-' + c._status + '">' + STATUS[c._status] + '</span><span class="cu-chip" dir="ltr">' + esc(c.code) + '</span>' +
+      '<section class="cu-card-box cu-top" style="--c:' + hue(c) + ';--ink:' + inkOn(hue(c)) + '"><div class="cu-hero"><span class="cu-av big face">' + face(c) + '</span><div><span class="cu-hero-m">' + (c.city ? ic('pin') + esc(c.city) : '') + (c.group ? ic('user') + esc(c.group) : '') + '</span></div></div><div class="cu-top-row"><span class="cu-chip st-' + c._status + '">' + STATUS[c._status] + '</span><span class="cu-chip" dir="ltr">' + esc(c.code) + '</span>' +
       (c.ownerName ? '<span class="cu-chip ok">مسئول: ' + esc(c.ownerName) + '</span>' : '') + '</div>' +
       '<dl class="cu-facts">' + fact('گروه (همکار مسئول)', c.group, 'user') + fact('شهر', c.city, 'pin') + fact('استان', prov, 'map') + fact('منطقه فروش', reg, 'map') +
       fact('آخرین سال خرید', (function () { var ys = S.years.filter(function (y) { return (c.sales || {})[y] > 0; }); return ys.length ? faDigits(ys[ys.length - 1]) : ''; })(), 'clock') +

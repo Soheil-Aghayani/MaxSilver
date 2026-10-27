@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'customers-counts-faces-1405-08', date: '1405/08/06', tag: 'بهبود', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'], title: 'مشتریان: عددها با فیلتر عوض می‌شوند، چهرهٔ هر مشتری و نشان وینتورا',
+      summary: 'وقتی گروه یا وضعیت را انتخاب می‌کنید، عددهای بالای صفحه و روی دکمه‌ها هم همان‌جا حساب می‌شوند (قبلاً همیشه کل مشتریان بود). هر مشتری یک چهرهٔ رنگی دارد که از کد و نامش ساخته می‌شود، و مشتری‌هایی که «win» آخر نامشان است با نشان «وینتورا» دیده می‌شوند و «win» از نام برداشته شده است. معنی شمارهٔ مدل فرهای PW هم به مشخصات آن‌ها اضافه شد.' },
     { id: 'catalog-details-1405-08', date: '1405/08/06', tag: 'بهبود', title: 'مشخصات گریل‌ها و فرهای پیتزا در کاتالوگ کامل‌تر شد',
       summary: 'از برگهٔ اطلاعات کالا که تیم فروش و انبار پر کرده بودند، توضیح، کشور سازنده، نوع انرژی و ابعاد خالیِ ۲۳ گریل و فر پیتزا تکمیل شد. چیزی که قبلاً در کاتالوگ بود تغییر نکرد.', roles: ['manager', 'ceo', 'sales_manager'] },
     { id: 'pw-ovens-1405-08', date: '1405/08/05', tag: 'جدید', title: 'پانزده فر پیتزای مدولار PW در کاتالوگ مکث‌سیلور',

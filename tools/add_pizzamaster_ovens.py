@@ -38,6 +38,7 @@ def make(model, brand_name, cid):
     caps = x['cap']
     specs = [
         ['مدل', pw],
+        ['معنی شمارهٔ مدل', 'رقم اول (۷) = عمق سنگ حدود ۷۰ سانتی‌متر؛ رقم دوم (%s) = تعداد سنگ‌های کنار هم؛ رقم سوم (%s) = تعداد دکه (ردیف)' % (fa(int(model[1]) if False else {'2': 2, '3': 3, '4': 4}[model[1]]), fa(n))],
         ['سری', 'PW%sX' % ser],
         ['تعداد دکه', fa(n)],
         ['ابعاد بیرونی با هود (عرض × عمق × ارتفاع)', '%s × %s × %s سانتی‌متر' % (fa(cm(x['width'])), fa(cm(x['depth'])), fa(cm(x['height'])))],
@@ -87,6 +88,6 @@ for model in sorted(D):
 io.open(path, 'w', encoding='utf-8', newline='\n').write(json.dumps(data, ensure_ascii=False, separators=(',', ':')))
 io.open(os.path.join(HERE, 'pizzamaster_sheet_rows.json'), 'w', encoding='utf-8').write(json.dumps(
     [{'id': r[0], 'code': r[1], 'name': r[2], 'dims': '%s × %s × %s' % (r[3]['dims']['l'], r[3]['dims']['w'], r[3]['dims']['h']),
-      'text': 'توان هر دکه: %s؛ دکه: %s؛ سطح پخت: %s×%s؛ وزن: %s کیلوگرم' % (r[3]['specs'][7][1], r[3]['specs'][2][1], r[3]['specs'][4][1].split(' ')[0], r[3]['specs'][4][1].split(' ')[2], r[3]['specs'][11][1].split(' ')[0]),
+      'text': 'توان هر دکه: %s؛ دکه: %s؛ سطح پخت: %s×%s؛ وزن: %s کیلوگرم' % (r[3]['specs'][8][1], r[3]['specs'][3][1], r[3]['specs'][5][1].split(' ')[0], r[3]['specs'][5][1].split(' ')[2], r[3]['specs'][12][1].split(' ')[0]),
       'ser': r[0][-3:-1], 'img': r[3]['img']} for r in rows], ensure_ascii=False, indent=1))
 print('added', added, 'completed', done, 'total', len(data['items']))
