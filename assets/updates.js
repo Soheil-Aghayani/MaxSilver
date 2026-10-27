@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'customers-pay-behaviour-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'], title: 'مشتریان: رفتار پرداخت',
+      summary: 'برای هر مشتری یکی از چهار رفتار پرداخت ثبت می‌شود: نقدی پیش از ارسال، واریز ۱۰ تا ۲۰ روز بعد، چک پیش از ارسال بار، چک پس از ارسال بار؛ برای چکی‌ها می‌شود «بخشی را نقدی می‌دهد» و سهم چک را هم نوشت. در فهرست می‌توان بر اساس رفتار پرداخت فیلتر کرد و ستونش در فایل Excel نمونه هم هست. ثبت با مدیر و مدیر فروش است.' },
     { id: 'brand-logo-files-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'], title: 'برندبوک: دانلود فایل‌های لوگو (AI لایه‌باز)',
       summary: 'در صفحهٔ برندبوک زیر هر برند بخش «فایل‌های لوگو» هست: فایل Illustrator لایه‌باز (AI)، SVG و PNG برای مکث‌سیلور، وینتورا، توربومکس، ویتامکس و American Range. هر کس به برندبوک دسترسی دارد می‌تواند دانلود کند.' },
     { id: 'customers-tidy-similar-1405-08', date: '1405/08/06', tag: 'جدید', roles: ['manager', 'ceo', 'sales_manager'], title: 'مشتریان: مرتب کردن نشانی‌ها و فهرست حساب‌های مشابه',

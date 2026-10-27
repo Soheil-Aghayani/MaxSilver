@@ -211,3 +211,17 @@
 .cu-simwhy{font:800 11px/1.8 Estedad,Tahoma,sans-serif;color:#2456d8;margin-bottom:6px}.cu-simlist ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .cu-simlist ul a{display:grid;grid-template-columns:1fr auto;gap:0 10px;text-decoration:none;color:inherit;padding:6px 8px;border-radius:10px;background:#f7f9fd}.cu-simlist ul a span{font-size:12px;color:#5b6b82}.cu-simlist ul a em{grid-column:2;grid-row:1/3;align-self:center;font-style:normal;font-weight:800;font-size:13px}
 .cu-simact{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+/* payment behaviour */
+.cu-pay.pm-cash,.cu-fchip.pm-cash[aria-pressed=false]{--pm:#14804a}.cu-pay.pm-days{--pm:#1746b5}.cu-pay.pm-chequeBefore{--pm:#b54708}.cu-pay.pm-chequeAfter{--pm:#b3261e}
+.cu-pay[class*=pm-]{background:color-mix(in srgb,var(--pm) 12%,#fff);color:var(--pm)}
+.cu-payopts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:8px 0}
+.cu-payopt{position:relative;display:grid;gap:3px;padding:12px 14px;padding-inline-start:38px;border:2px solid #dfe5ee;border-radius:14px;cursor:pointer;background:#fff;transition:border-color .2s,background .2s}
+.cu-payopt input{position:absolute;inset-inline-start:12px;top:14px;accent-color:var(--pm,#1746b5)}
+.cu-payopt b{font-size:14px}.cu-payopt span{font-size:12px;color:#5b6b82;line-height:1.7}
+.cu-payopt.pm-cash{--pm:#14804a}.cu-payopt.pm-days{--pm:#1746b5}.cu-payopt.pm-chequeBefore{--pm:#b54708}.cu-payopt.pm-chequeAfter{--pm:#b3261e}
+.cu-payopt.on{border-color:var(--pm);background:color-mix(in srgb,var(--pm) 8%,#fff)}
+.cu-paymix{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:8px 0}.cu-paymix label{display:flex;flex-direction:row;gap:8px;align-items:center}.cu-paymix[hidden]{display:none}
+.cu-chk{display:flex;gap:8px;align-items:center;font-weight:700}.cu-pct{display:flex;gap:8px;align-items:center}.cu-pct input{width:84px;min-height:38px;padding:0 10px;border:1px solid #cfd8e6;border-radius:10px;font:inherit;text-align:center}
+.cu-paynote{display:grid;gap:4px;margin-top:6px}.cu-paynote input{min-height:40px;padding:0 12px;border:1px solid #cfd8e6;border-radius:12px;font:inherit}
+.cu-fl{display:inline-flex;align-items:center;padding:0 6px;font-size:12px;font-weight:800;color:#5b6b82}
+@media (prefers-reduced-motion:reduce){.cu-payopt{transition:none}}

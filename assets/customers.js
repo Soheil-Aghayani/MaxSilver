@@ -11,10 +11,10 @@
   var W = window.MaxSilverWorkbook;
 
   var S = { user: null, profile: null, loading: true, error: '', msg: '', list: [], groups: {}, years: [], latest: 0,
-    q: '', fGroup: '', fStatus: 'all', sort: 'latest', shown: 60, invoices: null, users: null, busy: false, imp: null, impOpen: false, owner: null };
+    q: '', fGroup: '', fStatus: 'all', fPay: '', sort: 'latest', shown: 60, invoices: null, users: null, busy: false, imp: null, impOpen: false, owner: null };
 
-  (function () { var k = window.MSKeep ? window.MSKeep.get('customers') : {}; if (k.fStatus) S.fStatus = k.fStatus; if (k.fGroup != null) S.fGroup = k.fGroup; if (k.sort) S.sort = k.sort; })();
-  function keepFilters() { if (window.MSKeep) window.MSKeep.set('customers', { fStatus: S.fStatus, fGroup: S.fGroup, sort: S.sort }); }
+  (function () { var k = window.MSKeep ? window.MSKeep.get('customers') : {}; if (k.fStatus) S.fStatus = k.fStatus; if (k.fGroup != null) S.fGroup = k.fGroup; if (k.fPay != null) S.fPay = k.fPay; if (k.sort) S.sort = k.sort; })();
+  function keepFilters() { if (window.MSKeep) window.MSKeep.set('customers', { fStatus: S.fStatus, fGroup: S.fGroup, fPay: S.fPay, sort: S.sort }); }
 
   // ---------- text helpers
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -168,6 +168,35 @@
     });
     return CITY_ALIAS[best] || best;
   }
+  // payment behaviour (set by the sales leads): how a customer usually pays; a cheque customer may also pay part in cash
+  var PAY = {
+    cash: { t: 'نقدی، پیش از ارسال', s: 'نقدی', d: 'مشتری فقط اول نقدی واریز می‌کند.' },
+    days: { t: 'واریز ۱۰ تا ۲۰ روز بعد', s: '۱۰–۲۰ روزه', d: 'مشتری بعد از ۱۰ تا ۲۰ روز واریز می‌کند.' },
+    chequeBefore: { t: 'چک پیش از ارسال بار', s: 'چک اول', d: 'مشتری اول چک می‌دهد (پیش از ارسال بار).' },
+    chequeAfter: { t: 'چک پس از ارسال بار', s: 'چک بعد از بار', d: 'مشتری بعد از ارسال بار چک می‌دهد.' }
+  };
+  var PAY_ORDER = ['cash', 'days', 'chequeBefore', 'chequeAfter'];
+  function payOf(c) { return c.payMode && PAY[c.payMode] ? c.payMode : ''; }
+  function isCheque(m) { return m === 'chequeBefore' || m === 'chequeAfter'; }
+  function payShort(c) {
+    var m = payOf(c); if (!m) return c._pay || '';
+    var t = PAY[m].s, pct = Number(c.payChequePct);
+    if (isCheque(m) && c.payMixed) t += ' + نقدی' + (pct > 0 && pct < 100 ? ' (چک ' + faInt.format(pct) + '٪)' : '');
+    return t;
+  }
+  function payChip(c, lg) {
+    var t = payShort(c); if (!t) return '';
+    var m = payOf(c);
+    return ' <span class="cu-pay' + (lg ? ' lg' : '') + (m ? ' pm-' + m : '') + '" title="' + esc(m ? PAY[m].d : 'رفتار خرید، از عنوان حسابداری') + '">' + esc(t) + '</span>';
+  }
+  function payFromText(t) {
+    t = fixLetters(String(t || '')).replace(/\s+/g, ' ');
+    if (!t) return '';
+    if (/چک/.test(t)) return /(پس|بعد)/.test(t) ? 'chequeAfter' : /(پیش|اول|قبل)/.test(t) ? 'chequeBefore' : '';
+    if (/روز/.test(t)) return 'days';
+    if (/نقد/.test(t)) return 'cash';
+    return '';
+  }
   var PAYWORDS = { 'نقدی': 'نقدی', 'نقد': 'نقدی', 'چکی': 'چکی', 'چک': 'چکی', 'اعتباری': 'اعتباری', 'مدت دار': 'مدت‌دار', 'مدتدار': 'مدت‌دار' };
   // "پرویزی (کازرون)" -> { name: 'پرویزی', city: 'کازرون' };  "(تهران)'مهرداد" is a known malformed form;
   // «(نقدی)» or «(چکی)» in a title says how the customer pays: it is returned as pay and taken out of the name;
@@ -311,6 +340,7 @@
     var q = norm(S.q);
     var list = S.list.filter(function (c) {
       if (S.fStatus !== 'all' && c._status !== S.fStatus) return false;
+      if (S.fPay && (S.fPay === '__none' ? payOf(c) : payOf(c) !== S.fPay)) return false;
       if (S.fGroup === '__none') { if (c.group) return false; } else if (S.fGroup && c.group !== S.fGroup) return false;
       return !q || c._key.indexOf(q) >= 0;
     });
@@ -330,7 +360,7 @@
   function card(c) {
     var d = (c._latest && c._prev > 0) || c._prev > 0 ? (c._latest - c._prev) / c._prev * 100 : null, col = hue(c), rk = (S.rank[c.code] || {})[S.latest];
     return '<li data-code="' + esc(c.code) + '"><a class="cu-card" href="#/c/' + encodeURIComponent(c.code) + '" style="--c:' + col + ';--ink:' + inkOn(col) + '">' +
-      '<div class="cu-card-top"><span class="cu-av face">' + face(c) + '</span><div class="cu-nm"><b>' + esc(shownName(c)) + (isWin(c) ? ' <span class="cu-win">وینتورا</span>' : '') + (c._pay ? ' <span class="cu-pay">' + esc(c._pay) + '</span>' : '') + (c._merged && c._merged.length ? ' <span class="cu-sib on" title="حساب‌های ترکیب‌شده">' + faInt.format(c._merged.length + 1) + ' حساب</span>' : '') + (c._sibs && c._sibs.length ? ' <span class="cu-sib" title="حساب‌های هم‌نام در حسابداری؛ در پروفایل می‌توانید ترکیب کنید">هم‌نام ' + faInt.format(c._sibs.length) + '</span>' : '') + '</b>' +
+      '<div class="cu-card-top"><span class="cu-av face">' + face(c) + '</span><div class="cu-nm"><b>' + esc(shownName(c)) + (isWin(c) ? ' <span class="cu-win">وینتورا</span>' : '') + payChip(c) + (c._merged && c._merged.length ? ' <span class="cu-sib on" title="حساب‌های ترکیب‌شده">' + faInt.format(c._merged.length + 1) + ' حساب</span>' : '') + (c._sibs && c._sibs.length ? ' <span class="cu-sib" title="حساب‌های هم‌نام در حسابداری؛ در پروفایل می‌توانید ترکیب کنید">هم‌نام ' + faInt.format(c._sibs.length) + '</span>' : '') + '</b>' +
       '<div class="cu-card-meta"><span dir="ltr">' + ic('tag') + esc(c.code) + '</span>' + (c.city ? '<span>' + ic('pin') + esc(c.city) + '</span>' : '') + (c.group ? '<span>' + ic('user') + esc(c.group) + '</span>' : '') + '</div></div>' +
       '<span class="cu-chip st-' + c._status + '"><i style="background:' + STC[c._status] + '"></i>' + STATUS[c._status] + '</span></div>' +
       '<div class="cu-card-sales">' + bars(c) + '<span class="cu-amt"><small>فروش ' + faDigits(S.latest) + ' · تومان</small><b>' + compact(c._latest) + '</b></span>' +
@@ -357,9 +387,12 @@
     var q = norm(S.q), mq = function (c) { return !q || c._key.indexOf(q) >= 0; };
     var gOk = function (c) { return S.fGroup === '' || (S.fGroup === '__none' ? !c.group : c.group === S.fGroup); };
     var sOk = function (c) { return S.fStatus === 'all' || c._status === S.fStatus; };
-    var inGroup = S.list.filter(function (c) { return mq(c) && gOk(c); }), inStatus = S.list.filter(function (c) { return mq(c) && sOk(c); });
+    var pOk = function (c) { return !S.fPay || (S.fPay === '__none' ? !payOf(c) : payOf(c) === S.fPay); };
+    var inGroup = S.list.filter(function (c) { return mq(c) && gOk(c) && pOk(c); }), inStatus = S.list.filter(function (c) { return mq(c) && sOk(c) && pOk(c); });
     var gcount = {}; inStatus.forEach(function (c) { var g = c.group || ''; gcount[g] = (gcount[g] || 0) + 1; });
-    return { inGroup: inGroup, inStatus: inStatus, gcount: gcount, cnt: function (st) { return st === 'all' ? inGroup.length : inGroup.filter(function (c) { return c._status === st; }).length; } };
+    var pcount = { '': 0, __none: 0 }; PAY_ORDER.forEach(function (k) { pcount[k] = 0; });
+    S.list.forEach(function (c) { if (mq(c) && gOk(c) && sOk(c)) { var m = payOf(c); pcount[m || '__none']++; pcount['']++; } });
+    return { inGroup: inGroup, inStatus: inStatus, gcount: gcount, pcount: pcount, cnt: function (st) { return st === 'all' ? inGroup.length : inGroup.filter(function (c) { return c._status === st; }).length; } };
   }
   function kpiHtml(sc) {
     var inGroup = sc.inGroup, cnt = sc.cnt, act = inGroup.filter(function (c) { return c._status === 'active' || c._status === 'new'; });
@@ -405,6 +438,10 @@
       var v = b.getAttribute('data-group'), n = b.querySelector('b'); b.setAttribute('aria-pressed', S.fGroup === v);
       if (n) { var k = v === '__none' ? '' : v; n.textContent = faInt.format(sc.gcount[k] || 0); }
     });
+    [].forEach.call(root.querySelectorAll('[data-pay]'), function (b) {
+      var v = b.getAttribute('data-pay'), n = b.querySelector('b'); b.setAttribute('aria-pressed', S.fPay === v);
+      if (n) n.textContent = faInt.format(sc.pcount[v] || 0);
+    });
     [].forEach.call(root.querySelectorAll('[data-sort]'), function (b) { b.setAttribute('aria-pressed', S.sort === b.getAttribute('data-sort')); });
   }
   // a filter was changed: numbers, tiles, chips and the list change in place, with motion
@@ -429,6 +466,9 @@
     var groupChips = '<button type="button" class="cu-fchip" data-group="" aria-pressed="' + (S.fGroup === '') + '">همهٔ گروه‌ها</button>' + names.map(function (g) {
       return '<button type="button" class="cu-fchip" data-group="' + esc(g) + '" aria-pressed="' + (S.fGroup === g) + '">' + esc(g) + ' <b>' + faInt.format(gcount[g] || 0) + '</b></button>';
     }).join('') + (gn[''] ? '<button type="button" class="cu-fchip" data-group="__none" aria-pressed="' + (S.fGroup === '__none') + '">بدون گروه <b>' + faInt.format(gcount[''] || 0) + '</b></button>' : '');
+    var payChips = [['', 'همه']].concat(PAY_ORDER.map(function (k) { return [k, PAY[k].s]; }), [['__none', 'ثبت نشده']]).map(function (x) {
+      return '<button type="button" class="cu-fchip' + (x[0] && x[0] !== '__none' ? ' pm-' + x[0] : '') + '" data-pay="' + x[0] + '" aria-pressed="' + (S.fPay === x[0]) + '">' + x[1] + ' <b>' + faInt.format(sc.pcount[x[0]] || 0) + '</b></button>';
+    }).join('');
     var sorts = [['latest', 'فروش سال جاری'], ['total', 'مجموع فروش'], ['name', 'نام']].map(function (s) {
       return '<button type="button" class="cu-fchip sm" data-sort="' + s[0] + '" aria-pressed="' + (S.sort === s[0]) + '">' + s[1] + '</button>';
     }).join('');
@@ -438,6 +478,7 @@
       '<input type="search" id="cuQ" placeholder="جست‌وجو: نام، کد، شهر یا گروه" value="' + esc(S.q) + '" autocomplete="off"></label>' +
       '<div class="cu-fchips" data-pill role="group" aria-label="وضعیت">' + statusChips + '</div>' +
       (S.groupFilterVisible !== false && names.length ? '<div class="cu-fchips scroll" data-pill role="group" aria-label="گروه">' + groupChips + '</div>' : '') +
+      '<div class="cu-fchips scroll" data-pill role="group" aria-label="رفتار پرداخت"><span class="cu-fl">رفتار پرداخت</span>' + payChips + '</div>' +
       '<div class="cu-sortrow"><span id="cuCount">' + faInt.format(filtered().length) + ' مشتری</span><span class="cu-sorts">' + sorts + '</span></div>' +
       '<ul class="cu-list" id="cuList">' + listHtml() + '</ul></section>' +
       (can('customerAssign') ? reviewView() + groupsView() : '') +
@@ -621,6 +662,19 @@
     b.commit().then(function () { S.msg = faInt.format(codes.length) + ' حساب با ' + faDigits(primary) + ' ترکیب شد.'; S.list = []; load(); }, function (e) { S.error = errText(e); render(); });
   }
 
+  function payBox(c) {
+    var lead = can('customerAssign'), m = payOf(c), pct = Number(c.payChequePct) || '';
+    var opts = PAY_ORDER.map(function (k) {
+      return '<label class="cu-payopt pm-' + k + (m === k ? ' on' : '') + '"><input type="radio" name="payMode" value="' + k + '"' + (m === k ? ' checked' : '') + (lead ? '' : ' disabled') + '><b>' + esc(PAY[k].t) + '</b><span>' + esc(PAY[k].d) + '</span></label>';
+    }).join('');
+    return '<section class="cu-card-box"><div class="cu-boxhead"><h2>رفتار پرداخت</h2>' + (lead ? '<button type="submit" form="cuPay" class="cu-ico" title="ذخیره" aria-label="ذخیرهٔ رفتار پرداخت"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l4 4v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 3v5h7V3M8 21v-7h8v7"/></svg></button>' : '') + '</div>' +
+      '<form id="cuPay" data-code="' + esc(c.code) + '"><div class="cu-payopts">' + opts + '</div>' +
+      '<div class="cu-paymix"' + (isCheque(m) ? '' : ' hidden') + '><label class="cu-chk"><input type="checkbox" name="payMixed"' + (c.payMixed ? ' checked' : '') + (lead ? '' : ' disabled') + '> بخشی را نقدی می‌دهد</label>' +
+      '<label class="cu-pct">سهم چک (٪)<input type="text" name="payChequePct" inputmode="numeric" maxlength="2" placeholder="مثلاً ۷۰" value="' + esc(pct ? faDigits(pct) : '') + '"' + (lead ? '' : ' disabled') + '></label></div>' +
+      '<label class="full cu-paynote">توضیح<input type="text" name="payNote" maxlength="200" placeholder="مثلاً چک ۳۰ روزه، یا ۵۰٪ نقدی هنگام سفارش" value="' + esc(c.payNote || '') + '"' + (lead ? '' : ' disabled') + '></label>' +
+      (lead ? '' : '<p class="cu-note">رفتار پرداخت را مدیر یا مدیر فروش ثبت می‌کند.</p>') +
+      (S.payMsg === c.code ? '<p class="cu-ok" role="status">ذخیره شد.</p>' : '') + (S.payErr ? '<p class="cu-err" role="alert">' + esc(S.payErr) + '</p>' : '') + '</form></section>';
+  }
   function sibsHtml(c) {
     var l = c._sibs || [], mg = c._merged || [], lead = can('customerAssign'); if (!l.length && !mg.length && !lead) return '';
     var own = function (x) { return x === c ? ((c._ownSales || c.sales || {})[S.latest] || 0) / 10 : ((x.sales || {})[S.latest] || 0) / 10; };
@@ -657,13 +711,14 @@
     var fact = function (l, v, k) { return '<div class="cu-fact">' + (k ? '<span class="cu-fi">' + ic(k) + '</span>' : '') + '<div><dt>' + l + '</dt><dd>' + (v ? esc(v) : '<i>ثبت نشده</i>') + '</dd></div></div>'; };
     var edit = can('customerEdit') || (S.user && c.ownerUid === S.user.uid);
     return head(shownName(c), true) +
-      '<section class="cu-card-box cu-top" style="--c:' + hue(c) + ';--ink:' + inkOn(hue(c)) + '"><div class="cu-hero"><span class="cu-av big face">' + face(c) + '</span><div><span class="cu-hero-m">' + (c.city ? ic('pin') + esc(c.city) : '') + (c.group ? ic('user') + esc(c.group) : '') + (c._pay ? '<span class="cu-pay lg" title="رفتار خرید مشتری، از عنوان حسابداری">رفتار خرید: ' + esc(c._pay) + '</span>' : '') + '</span></div></div><div class="cu-top-row"><span class="cu-chip st-' + c._status + '">' + STATUS[c._status] + '</span><span class="cu-chip" dir="ltr">' + esc(c.code) + '</span>' +
+      '<section class="cu-card-box cu-top" style="--c:' + hue(c) + ';--ink:' + inkOn(hue(c)) + '"><div class="cu-hero"><span class="cu-av big face">' + face(c) + '</span><div><span class="cu-hero-m">' + (c.city ? ic('pin') + esc(c.city) : '') + (c.group ? ic('user') + esc(c.group) : '') + (payShort(c) ? '<span class="cu-pay lg' + (payOf(c) ? ' pm-' + payOf(c) : '') + '">رفتار پرداخت: ' + esc(payShort(c)) + '</span>' : '') + '</span></div></div><div class="cu-top-row"><span class="cu-chip st-' + c._status + '">' + STATUS[c._status] + '</span><span class="cu-chip" dir="ltr">' + esc(c.code) + '</span>' +
       (c.ownerName ? '<span class="cu-chip ok">مسئول: ' + esc(c.ownerName) + '</span>' : '') + '</div>' +
       '<dl class="cu-facts">' + fact('گروه (همکار مسئول)', c.group, 'user') + fact('شهر', c.city, 'pin') + fact('استان', prov, 'map') + fact('منطقه فروش', reg, 'map') +
       fact('آخرین سال خرید', (function () { var ys = S.years.filter(function (y) { return (c.sales || {})[y] > 0; }); return ys.length ? faDigits(ys[ys.length - 1]) : ''; })(), 'clock') +
       fact('مجموع فروش ثبت‌شده', c._total ? amount(c._total) + ' تومان' : '', 'coins') + '</dl>' +
       (can('customerAssign') ? '<button type="button" class="cu-btn small" data-owner-customer="' + esc(c.code) + '">تغییر مسئول این مشتری</button>' : '') + '</section>' +
       cashHtml(c) +
+      payBox(c) +
       sibsHtml(c) +
       '<section class="cu-card-box"><h2>خرید در سال‌ها</h2>' + yearBars(c) +
       '<p class="cu-note">مبلغ‌ها به تومان است (گزارش حسابداری به ریال است و اینجا تبدیل شده). سال ' + faDigits(S.latest) + ' هنوز تمام نشده است.</p></section>' +
@@ -725,9 +780,9 @@
   // The program's own Excel template: one row per customer, optional sales columns named «فروش 1403».
   var TPL_ALIASES = {
     code: ['کد مشتری'], name: ['نام مشتری', 'نام', 'عنوان'], group: ['گروه (همکار مسئول)', 'گروه', 'گروه مشتری', 'همکار مسئول'], city: ['شهر'], province: ['استان'],
-    phone: ['تلفن', 'موبایل', 'شماره تماس'], contact: ['شخص تماس', 'نام تماس'], address: ['نشانی', 'آدرس'], postal: ['کد پستی'], nationalId: ['کد ملی', 'شماره ملی'], birthday: ['تاریخ تولد', 'تولد'], notes: ['یادداشت', 'توضیحات']
+    phone: ['تلفن', 'موبایل', 'شماره تماس'], contact: ['شخص تماس', 'نام تماس'], address: ['نشانی', 'آدرس'], postal: ['کد پستی'], nationalId: ['کد ملی', 'شماره ملی'], birthday: ['تاریخ تولد', 'تولد'], notes: ['یادداشت', 'توضیحات'], payMode: ['رفتار پرداخت'], payChequePct: ['سهم چک (٪)', 'سهم چک']
   };
-  var TPL_HEAD = [['code', 'کد مشتری'], ['name', 'نام مشتری'], ['group', 'گروه (همکار مسئول)'], ['city', 'شهر'], ['province', 'استان'], ['phone', 'تلفن'], ['contact', 'شخص تماس'], ['address', 'نشانی'], ['postal', 'کد پستی'], ['nationalId', 'کد ملی'], ['birthday', 'تاریخ تولد'], ['notes', 'یادداشت']];
+  var TPL_HEAD = [['code', 'کد مشتری'], ['name', 'نام مشتری'], ['group', 'گروه (همکار مسئول)'], ['city', 'شهر'], ['province', 'استان'], ['phone', 'تلفن'], ['contact', 'شخص تماس'], ['address', 'نشانی'], ['postal', 'کد پستی'], ['nationalId', 'کد ملی'], ['birthday', 'تاریخ تولد'], ['notes', 'یادداشت'], ['payMode', 'رفتار پرداخت'], ['payChequePct', 'سهم چک (٪)']];
   function parseTemplate(matrix) {
     for (var r = 0; r < Math.min(matrix.length, 10); r++) {
       var row = matrix[r] || [], cols = {}, sales = {}, bals = {}, found = false, altCode;
@@ -776,7 +831,7 @@
     var head = TPL_HEAD.map(function (h) { return h[1]; }).concat(years.map(function (y) { return 'فروش ' + y + ' (تومان)'; }), byears.map(function (y) { return 'مانده ' + y + ' (تومان)'; }));
     var rows = [head];
     list.forEach(function (c) {
-      rows.push([c.code, c.name || '', c.group || '', c.city || '', c.province || provinceOf(c.city), c.phone || '', c.contact || '', c.address || '', c.postal || '', c.nationalId || '', c.birthday || '', c.notes || '']
+      rows.push([c.code, c.name || '', c.group || '', c.city || '', c.province || provinceOf(c.city), c.phone || '', c.contact || '', c.address || '', c.postal || '', c.nationalId || '', c.birthday || '', c.notes || '', payOf(c) ? PAY[payOf(c)].t : '', c.payMixed && c.payChequePct ? Number(c.payChequePct) : '']
         .concat(years.map(function (y) { var v = (c.sales || {})[y]; return v == null ? '' : Math.round(v / 10); }), byears.map(function (y) { var v = (c.balances || {})[y]; return v == null ? '' : Math.round(v / 10); })));
     });
     return rows;
@@ -906,7 +961,7 @@
             var o = slot(rec.code);
             Object.keys(rec.sales).forEach(function (y) { o.sales[y] = rec.sales[y]; });
             Object.keys(rec.bal || {}).forEach(function (y) { o.bal[y] = rec.bal[y]; });
-            ['name', 'group', 'city', 'province', 'phone', 'contact', 'address', 'postal', 'nationalId', 'birthday', 'notes'].forEach(function (k) { if (rec[k]) o.tpl[k] = rec[k]; });
+            ['name', 'group', 'city', 'province', 'phone', 'contact', 'address', 'postal', 'nationalId', 'birthday', 'notes', 'payMode', 'payChequePct'].forEach(function (k) { if (rec[k]) o.tpl[k] = rec[k]; });
           });
           return;
         }
@@ -927,7 +982,7 @@
       var have = {}; S.list.forEach(function (c) { have[c.code] = 1; });
       var rows = Object.keys(by).map(function (k) {
         var o = by[k], raw = o.tpl.name || o._name || '', t = o.tpl.city ? { name: fixLetters(raw), city: o.tpl.city } : parseTitle(raw), city = t.city || (o.tpl.address ? cityIn(o.tpl.address) : ''), prov = o.tpl.province || provinceOf(city);
-        return { code: k, name: t.name, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales, bal: o.bal,
+        return { code: k, name: t.name, payMode: payFromText(o.tpl.payMode || ''), payChequePct: Number(latinDigits(o.tpl.payChequePct || '').replace(/\D/g, '')) || 0, city: city, province: prov, region: regionOf(prov), group: o.tpl.group || o._group || '', sales: o.sales, bal: o.bal,
           phone: o.tpl.phone || '', contact: o.tpl.contact || '', address: tidyAddress(o.tpl.address || '').slice(0, 300), postal: postalOk(o.tpl.postal || '') ? o.tpl.postal : '', nationalId: nidOk(o.tpl.nationalId || '') ? o.tpl.nationalId : '', birthday: bdayOk(o.tpl.birthday || '') ? bdayFix(o.tpl.birthday) : '', notes: o.tpl.notes || '',
           bad: (o.tpl.postal && !postalOk(o.tpl.postal) ? 1 : 0) + (o.tpl.nationalId && !nidOk(o.tpl.nationalId) ? 1 : 0) + (o.tpl.birthday && !bdayOk(o.tpl.birthday) ? 1 : 0) };
       });
@@ -949,6 +1004,7 @@
       if (r.bal && Object.keys(r.bal).length) doc.balances = r.bal;
       ['phone', 'contact', 'address', 'postal', 'nationalId', 'birthday', 'notes'].forEach(function (k) { if (r[k]) doc[k] = r[k]; });
       ['name', 'city', 'province', 'region', 'group'].forEach(function (k) { if (!doc[k]) delete doc[k]; });   // an empty cell in the file never erases what is already stored
+      if (r.payMode) { doc.payMode = r.payMode; if (isCheque(r.payMode) && r.payChequePct > 0 && r.payChequePct < 100) { doc.payMixed = true; doc.payChequePct = r.payChequePct; } else { doc.payMixed = false; doc.payChequePct = 0; } }
       var go = groupOwner[r.group];
       if (go) { doc.ownerUid = go.ownerUid; doc.ownerName = go.ownerName; }
       ops.push([db.collection('customers').doc(r.code), doc]);
@@ -991,6 +1047,7 @@
   document.addEventListener('click', function (e) {
     var t;
     if ((t = e.target.closest('[data-status]'))) { S.fStatus = t.getAttribute('data-status'); S.shown = 60; refreshAll(true); return; }
+    if ((t = e.target.closest('[data-pay]'))) { S.fPay = t.getAttribute('data-pay'); S.shown = 60; refreshAll(true); return; }
     if ((t = e.target.closest('[data-group]'))) { S.fGroup = t.getAttribute('data-group'); S.shown = 60; refreshAll(true); return; }
     if ((t = e.target.closest('[data-sort]'))) { S.sort = t.getAttribute('data-sort'); refreshAll(true); return; }
     if ((t = e.target.closest('[data-tidy-addr]'))) { tidyAll(); return; }
@@ -1027,7 +1084,28 @@
   document.addEventListener('change', function (e) {
     if (e.target.id === 'cuFiles' && e.target.files && e.target.files.length) readFiles(e.target.files);
   });
+  document.addEventListener('change', function (e) {
+    var f = e.target.form;
+    if (e.target.name === 'payMode' && f && f.id === 'cuPay') {
+      var mx = f.querySelector('.cu-paymix'); if (mx) mx.hidden = !isCheque(e.target.value);
+      [].forEach.call(f.querySelectorAll('.cu-payopt'), function (l) { l.classList.toggle('on', l.contains(e.target)); });
+    }
+  });
   document.addEventListener('submit', function (e) {
+    if (e.target.id === 'cuPay') {
+      e.preventDefault();
+      var pf = e.target, pcode = pf.getAttribute('data-code'), sel = pf.querySelector('input[name="payMode"]:checked');
+      var pct = Number(latinDigits(pf.elements.payChequePct.value).replace(/\D/g, '')) || 0, mode = sel ? sel.value : '';
+      S.payErr = ''; S.payMsg = '';
+      if (pct && (pct < 1 || pct > 99)) { S.payErr = 'سهم چک باید بین ۱ تا ۹۹ باشد.'; render(); return; }
+      var mixed = isCheque(mode) && pf.elements.payMixed.checked;
+      var u2 = { payMode: mode, payMixed: !!mixed, payChequePct: mixed && pct ? pct : 0, payNote: pf.elements.payNote.value.trim(), updatedAt: Date.now() };
+      db.collection('customers').doc(pcode).update(u2).then(function () {
+        var c2 = S.list.filter(function (x) { return x.code === pcode; })[0]; if (c2) Object.assign(c2, u2);
+        S.payMsg = pcode;
+      }, function (err) { S.payErr = errText(err); }).then(render);
+      return;
+    }
     if (e.target.id !== 'cuForm') return;
     e.preventDefault();
     var f = e.target, code = f.getAttribute('data-code'), now = Date.now();
