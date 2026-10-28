@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'colleagues-pictures-1405-08', date: '1405/08/07', tag: 'بهبود', title: 'همکاران و متقاضیان با عکس؛ کاتالوگ با عکس و دکمه‌های تصویری',
+      summary: 'بخش «همکاران و متقاضیان» برای هر نفر عکس پروفایل دارد (اگر عکسی نباشد یک چهرهٔ خندان ساخته می‌شود)، نام کامل را نشان می‌دهد و در بخش متقاضیان میان‌بر سایت‌های کاریابی دارد. کاتالوگ‌ها عکس شاخص دارند و دکمه‌ها به‌جای نوشته آیکون شده‌اند. مدیر می‌تواند همکاران را از فهرست مشتریان جدا کند.', roles: ['manager', 'ceo', 'hr', 'visitor', 'sales_manager', 'account_manager', 'marketing'] },
     { id: 'staff-catalogue-upload-1405-08', date: '1405/08/07', tag: 'جدید', title: 'کارکنان و متقاضیان؛ بارگذاری کاتالوگ توسط مدیریت',
       summary: 'بخش «کارکنان و متقاضیان» فعال شد و فقط منابع انسانی و مدیریت می‌بینند؛ با قالب اکسل می‌شود دسته‌جمعی وارد و ویرایش کرد. مدیریت حالا می‌تواند کاتالوگ تازه بسازد، عنوان و توضیح بدهد و فایل (PDF، لایه‌باز و...) با قالب دلخواه بارگذاری کند تا بقیه دانلود کنند. مدیر حساب هم می‌تواند بانک پیش‌فاکتور تأییدشده را انتخاب کند.', roles: ['manager', 'ceo', 'hr', 'visitor', 'sales_manager', 'account_manager', 'finance'] },
     { id: 'catalogues-banks-chat-1405-08', date: '1405/08/07', tag: 'جدید', title: 'کاتالوگ‌ها، آیکون بانک‌ها، منوی پیام و راهنمای نصب',

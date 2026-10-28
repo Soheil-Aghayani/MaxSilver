@@ -27,32 +27,43 @@
   function mb(b) { return b >= 1048576 ? (b / 1048576).toFixed(1) + ' مگابایت' : Math.max(1, Math.round(b / 1024)) + ' کیلوبایت'; }
   function kindOf(k) { return KINDS.filter(function (x) { return x[0] === k; })[0] || KINDS[KINDS.length - 1]; }
 
+  // buttons are pictures with a tooltip instead of words
+  var IC = {
+    plus: '<path d="M12 5v14M5 12h14"/>', up: '<path d="M12 16V5M7 9l5-5 5 5M5 20h14"/>', edit: '<path d="m4 20 4-1 11-11-3-3L5 16zM14 6l3 3"/>', eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    eyeoff: '<path d="M3 3l18 18M10.6 5.6A9.7 9.7 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.2 4M6.5 7.2C3.9 8.9 2 12 2 12s3.6 6.5 10 6.5a9.6 9.6 0 0 0 4-.9"/>',
+    trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', ok: '<path d="m5 12 5 5 9-10"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>', down: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>'
+  };
+  var ic = function (k) { return '<svg class="ct-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[k] + '</svg>'; };
+  var ibtn = function (attr, k, label, cls) { return '<button type="button" class="ct-ico ' + (cls || '') + '" ' + attr + ' title="' + label + '" aria-label="' + label + '">' + ic(k) + '</button>'; };
+
   function fileHtml(c, f) {
     var k = kindOf(f.kind), ext = (String(f.name).split('.').pop() || '').slice(0, 5).toUpperCase() || k[2];
-    return '<span class="ct-fwrap"><button type="button" class="ct-file" data-dl="' + esc(f.id) + '" data-name="' + esc(f.name) + '"><b>' + esc(ext) + '</b><span>' + esc(f.label || k[2]) + '<small>' + esc(mb(f.size || 0)) + '</small></span><em>دانلود</em></button>' +
+    return '<span class="ct-fwrap"><button type="button" class="ct-file" data-dl="' + esc(f.id) + '" data-name="' + esc(f.name) + '"><b>' + esc(ext) + '</b><span>' + esc(f.label || k[2]) + '<small>' + esc(mb(f.size || 0)) + '</small></span>' + ic('down') + '</button>' +
       (can('cataloguesEdit') ? '<button type="button" class="ct-x" data-rmfile="' + esc(c.id) + '|' + esc(f.id) + '" aria-label="حذف فایل" title="حذف فایل">×</button>' : '') + '</span>';
   }
   function cardHtml(c) {
     var edit = can('cataloguesEdit'), files = c.files || [];
     var add = S.adding === c.id ? addForm(c) : '';
-    return '<article class="ct-card' + (c.active === false ? ' off' : '') + '"><img class="ct-art" src="./assets/art/tiles/catalogues.webp" alt="" width="96" height="96" decoding="async" onerror="this.remove()">' +
+    return '<article class="ct-card' + (c.active === false ? ' off' : '') + '">' + (c.cover ? '<img class="ct-art cover" src="' + esc(c.cover) + '" alt="" width="96" height="96" decoding="async">' : '<img class="ct-art" src="./assets/art/tiles/catalogues.webp" alt="" width="96" height="96" decoding="async" onerror="this.remove()">') +
       '<div class="ct-body"><h2>' + esc(c.title) + (c.active === false ? ' <small>(پنهان)</small>' : '') + '</h2>' + (c.about ? '<p>' + esc(c.about) + '</p>' : '') +
       '<div class="ct-files">' + (files.length ? files.map(function (f) { return fileHtml(c, f); }).join('') : '<span class="ct-soon">هنوز فایلی بارگذاری نشده است.</span>') + '</div>' + add +
-      (edit ? '<div class="ct-acts"><button type="button" class="ct-btn alt" data-addfile="' + esc(c.id) + '">افزودن فایل</button><button type="button" class="ct-btn alt" data-edit="' + esc(c.id) + '">ویرایش</button>' +
-        '<button type="button" class="ct-btn alt" data-toggle="' + esc(c.id) + '">' + (c.active === false ? 'نمایش' : 'پنهان کردن') + '</button><button type="button" class="ct-btn danger" data-del="' + esc(c.id) + '">حذف</button></div>' : '') + '</div></article>';
+      (edit ? '<div class="ct-acts">' + ibtn('data-addfile="' + esc(c.id) + '"', 'up', 'افزودن فایل', 'alt') + ibtn('data-edit="' + esc(c.id) + '"', 'edit', 'ویرایش', 'alt') +
+        ibtn('data-toggle="' + esc(c.id) + '"', c.active === false ? 'eye' : 'eyeoff', c.active === false ? 'نمایش' : 'پنهان کردن', 'alt') + ibtn('data-del="' + esc(c.id) + '"', 'trash', 'حذف', 'danger') + '</div>' : '') + '</div></article>';
   }
   function addForm(c) {
     if (!onServer()) return '<p class="ct-err">بارگذاری فایل فقط روی سرور مکث‌سیلور ممکن است (با حساب سرور وارد شوید).</p>';
     return '<form class="ct-add" data-addform="' + esc(c.id) + '"><label>قالب فایل<select name="kind">' + KINDS.map(function (k) { return '<option value="' + k[0] + '">' + esc(k[1]) + '</option>'; }).join('') + '</select></label>' +
       '<label>عنوان دکمه<input type="text" name="label" maxlength="60" placeholder="مثلاً PDF فارسی، فایل InDesign"></label>' +
       '<label class="ct-pick"><input type="file" name="file" required><span>انتخاب فایل (تا ۲۰۰ مگابایت)</span></label>' +
-      '<div class="ct-acts"><button type="submit" class="ct-btn"' + (S.busy ? ' disabled' : '') + '>' + (S.busy === 'up' ? 'در حال بارگذاری…' : 'بارگذاری') + '</button><button type="button" class="ct-btn alt" data-cancel>انصراف</button></div></form>';
+      '<div class="ct-acts"><button type="submit" class="ct-ico"' + (S.busy ? ' disabled' : '') + ' title="' + (S.busy === 'up' ? 'در حال بارگذاری…' : 'بارگذاری') + '" aria-label="بارگذاری">' + ic(S.busy === 'up' ? 'down' : 'up') + '</button>' + ibtn('data-cancel', 'x', 'انصراف', 'alt') + '</div></form>';
   }
   function formHtml() {
     var f = S.form;
-    return '<section class="ct-form"><h2>' + (f.id ? 'ویرایش کاتالوگ' : 'کاتالوگ تازه') + '</h2><label>عنوان<input type="text" data-k="title" maxlength="120" value="' + esc(f.title) + '" placeholder="مثلاً کاتالوگ فرهای طرح پیتزا مستر؛ سری ۷۰۰"></label>' +
+    var cover = '<div class="ct-coverpick"><span class="ct-cvr">' + (f.cover ? '<img src="' + esc(f.cover) + '" alt="">' : '<img src="./assets/art/tiles/catalogues.webp" alt="" onerror="this.remove()">') + '</span>' +
+      '<label class="ct-ico alt" title="عکس کاتالوگ" aria-label="عکس کاتالوگ"><input type="file" accept="image/*" id="ctCover">' + window.MSImg.camera.replace('<svg ', '<svg class="ct-i" ') + '</label>' + (f.cover ? ibtn('data-rmcover', 'x', 'برداشتن عکس', 'alt') : '') + '</div>';
+    return '<section class="ct-form"><h2>' + (f.id ? 'ویرایش کاتالوگ' : 'کاتالوگ تازه') + '</h2>' + cover + '<label>عنوان<input type="text" data-k="title" maxlength="120" value="' + esc(f.title) + '" placeholder="مثلاً کاتالوگ فرهای طرح پیتزا مستر؛ سری ۷۰۰"></label>' +
       '<label>توضیح<textarea data-k="about" rows="3" maxlength="600" placeholder="این کاتالوگ چیست، برای چه کسی و چه محصولاتی دارد">' + esc(f.about) + '</textarea></label>' +
-      '<div class="ct-acts"><button type="button" class="ct-btn" data-save>ذخیره</button><button type="button" class="ct-btn alt" data-cancel>انصراف</button></div></section>';
+      '<div class="ct-acts">' + ibtn('data-save', 'ok', 'ذخیره') + ibtn('data-cancel', 'x', 'انصراف', 'alt') + '</div></section>';
   }
   function view() {
     if (S.loading) return window.MSSkel ? window.MSSkel() : '<p class="ct-note">در حال بارگذاری…</p>';
@@ -61,7 +72,7 @@
     if (!can('catalogues')) return '<p class="ct-note">این بخش برای نقش شما فعال نیست.</p>';
     var list = S.list.filter(function (c) { return c.active !== false || can('cataloguesEdit'); });
     return '<header class="ct-head"><h1>کاتالوگ‌ها</h1><p>فایل‌های کاتالوگ برای فروش و معرفی محصولات؛ هر فایل را در قالب مناسب (PDF برای مشتری، لایه‌باز برای طراح) بگیرید.</p>' +
-      (can('cataloguesEdit') && !S.form ? '<button type="button" class="ct-btn" data-new>افزودن کاتالوگ</button>' : '') + '</header>' +
+      (can('cataloguesEdit') && !S.form ? ibtn('data-new', 'plus', 'کاتالوگ تازه') : '') + '</header>' +
       (S.msg ? '<p class="ct-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="ct-err" role="alert">' + esc(S.error) + '</p>' : '') +
       (S.form ? formHtml() : '') + '<div class="ct-list">' + (list.map(cardHtml).join('') || '<p class="ct-note">هنوز کاتالوگی ثبت نشده است.</p>') + '</div>';
   }
@@ -74,20 +85,23 @@
   }
   function put(c, patch) {
     var d = { title: c.title, about: c.about || '', files: c.files || [], active: c.active !== false, order: c.order || 0 };
+    if (c.cover) d.cover = c.cover;
     Object.keys(patch).forEach(function (k) { d[k] = patch[k]; });
+    if (!d.cover) delete d.cover;
     d.updatedAt = Date.now(); d.updatedBy = S.user.uid;
-    return db.collection('catalogues').doc(c.id).set(d).then(function () { Object.assign(c, d); });
+    return db.collection('catalogues').doc(c.id).set(d).then(function () { Object.assign(c, d); if (!d.cover) delete c.cover; });
   }
   root.addEventListener('click', function (e) {
     var t, c = function (id) { return S.list.filter(function (x) { return x.id === id; })[0]; };
-    if (e.target.closest('[data-new]')) { S.form = { id: '', title: '', about: '' }; S.msg = ''; S.error = ''; render(); return; }
-    if ((t = e.target.closest('[data-edit]'))) { var o = c(t.getAttribute('data-edit')); if (o) { S.form = { id: o.id, title: o.title, about: o.about || '' }; S.error = ''; render(); window.scrollTo(0, 0); } return; }
+    if (e.target.closest('[data-new]')) { S.form = { id: '', title: '', about: '', cover: '' }; S.msg = ''; S.error = ''; render(); return; }
+    if ((t = e.target.closest('[data-edit]'))) { var o = c(t.getAttribute('data-edit')); if (o) { S.form = { id: o.id, title: o.title, about: o.about || '', cover: o.cover || '' }; S.error = ''; render(); window.scrollTo(0, 0); } return; }
+    if (e.target.closest('[data-rmcover]')) { if (S.form) { S.form.cover = ''; render(); } return; }
     if (e.target.closest('[data-cancel]')) { S.form = null; S.adding = ''; S.error = ''; render(); return; }
     if (e.target.closest('[data-save]')) {
       var f = S.form, ttl = String(f.title || '').trim();
       if (ttl.length < 2) { S.error = 'عنوان را بنویسید.'; render(); return; }
       var rec = f.id ? c(f.id) : { id: db.collection('catalogues').doc().id, files: [], order: -Date.now() };
-      put(rec, { title: ttl.slice(0, 120), about: String(f.about || '').trim().slice(0, 600) }).then(function () { if (!f.id) S.list.unshift(rec); S.form = null; S.msg = 'ذخیره شد.'; S.error = ''; }, function (er) { S.error = errText(er); }).then(render);
+      put(rec, { title: ttl.slice(0, 120), about: String(f.about || '').trim().slice(0, 600), cover: f.cover || '' }).then(function () { if (!f.id) S.list.unshift(rec); S.form = null; S.msg = 'ذخیره شد.'; S.error = ''; }, function (er) { S.error = errText(er); }).then(render);
       return;
     }
     if ((t = e.target.closest('[data-addfile]'))) { S.adding = t.getAttribute('data-addfile'); S.error = ''; S.msg = ''; render(); return; }
@@ -107,6 +121,10 @@
       var b = t; b.disabled = true;
       window.MSApi.download('catalogues/files/' + encodeURIComponent(t.getAttribute('data-dl')), t.getAttribute('data-name')).then(null, function (er) { S.error = (er && er.message) || 'دانلود نشد.'; render(); }).then(function () { b.disabled = false; });
     }
+  });
+  root.addEventListener('change', function (e) {
+    if (e.target.id !== 'ctCover' || !e.target.files || !e.target.files[0] || !S.form) return;
+    window.MSImg.fromFile(e.target.files[0], 320).then(function (u) { S.form.cover = u; S.error = ''; }, function (er) { S.error = er.message || 'عکس خوانده نشد.'; }).then(render);
   });
   root.addEventListener('input', function (e) { var k = e.target.getAttribute && e.target.getAttribute('data-k'); if (k && S.form) S.form[k] = e.target.value; });
   root.addEventListener('submit', function (e) {

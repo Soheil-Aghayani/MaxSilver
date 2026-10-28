@@ -298,6 +298,9 @@
         var into = function (d) { var t = d.mergedInto && d.mergedInto !== d.code && S.byCode[d.mergedInto]; return t && !t.mergedInto ? t : null; };
         S.list.forEach(function (d) { var t = into(d); if (t) (t._merged = t._merged || []).push(d); });
         S.list = S.list.filter(function (d) { return !into(d); });
+        // colleagues who also have an accounting account are kept out of the customer list (marked by management with the button in «کارکنان در فهرست مشتریان»)
+        S.staffCust = S.list.filter(function (d) { return d.isStaff === true; });
+        S.list = S.list.filter(function (d) { return d.isStaff !== true; });
         S.list.forEach(function (t) {
           if (!t._merged) return;
           var sl = Object.assign({}, t.sales || {}), bl = Object.assign({}, t.balances || {});
@@ -481,7 +484,7 @@
       '<div class="cu-fchips scroll" data-pill role="group" aria-label="رفتار پرداخت"><span class="cu-fl">رفتار پرداخت</span>' + payChips + '</div>' +
       '<div class="cu-sortrow"><span id="cuCount">' + faInt.format(filtered().length) + ' مشتری</span><span class="cu-sorts">' + sorts + '</span></div>' +
       '<ul class="cu-list" id="cuList">' + listHtml() + '</ul></section>' +
-      (can('customerAssign') ? reviewView() + groupsView() : '') +
+      (can('customerAssign') ? reviewView() + groupsView() + staffSplitView() : '') +
       (can('customerImport') ? importView() : '');
   }
   function head(title, back) {
@@ -628,6 +631,52 @@
     out.sort(function (a, b) { return b.members.length - a.members.length || totalOf(b.members[0]) - totalOf(a.members[0]); });
     return out;
   }
+  // ---------- colleagues among the customers: matched with the staff list (phone, or the same full name), then marked isStaff so they leave the customer list
+  var SPI = { user: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/>', scan: '<circle cx="11" cy="11" r="6"/><path d="m20 20-4-4M9 11l1.5 1.5L13.5 9"/>', undo: '<path d="M9 14 4 9l5-5M4 9h9a7 7 0 0 1 0 14h-3"/>', ok: '<path d="m5 12 5 5 9-10"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>' };
+  var spi = function (k) { return '<svg class="cu-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + SPI[k] + '</svg>'; };
+  function tail10(v) { var d = latinDigits(String(v == null ? '' : v)).replace(/\D/g, ''); return d.length >= 10 ? d.slice(-10) : ''; }
+  function staffSplitView() {
+    if (!can('staff')) return '';
+    var sp = S.sp, own = S.staffCust || [];
+    var head = '<div class="cu-boxhead"><h2>کارکنان در فهرست مشتریان</h2><button type="button" class="cu-ico" data-sp-scan title="تشخیص با لیست پرسنلی" aria-label="تشخیص با لیست پرسنلی"' + (S.busy ? ' disabled' : '') + '>' + spi('scan') + '</button></div>';
+    var body = '';
+    if (sp) {
+      body = sp.hits.length ? '<p class="cu-note">' + faInt.format(sp.hits.length) + ' مورد از ' + faInt.format(sp.n) + ' نفر پرسنل در مشتریان پیدا شد. تیک را بردارید برای کسی که واقعاً مشتری است.</p><ul class="cu-splist">' +
+        sp.hits.map(function (h, i) { return '<li><label><input type="checkbox" data-sp-i="' + i + '"' + (h.on ? ' checked' : '') + '><span><b>' + esc(shownName(h.c)) + '</b><small>' + esc(h.why) + ' · ' + esc(h.p.name) + '</small></span></label></li>'; }).join('') + '</ul>' +
+        '<div class="cu-acts"><button type="button" class="cu-ico" data-sp-apply title="از مشتریان جدا کن" aria-label="از مشتریان جدا کن">' + spi('ok') + '</button><button type="button" class="cu-ico ghost" data-sp-cancel title="انصراف" aria-label="انصراف">' + spi('x') + '</button></div>'
+        : '<p class="cu-note">کسی از لیست پرسنلی در مشتریان پیدا نشد.</p>';
+    } else if (own.length) {
+      body = '<p class="cu-note">این حساب‌ها مشتری حساب نمی‌شوند و در آمار نیستند:</p><ul class="cu-splist">' + own.map(function (c) { return '<li><span><b>' + esc(shownName(c)) + '</b><small dir="ltr">' + esc(c.code) + '</small></span><button type="button" class="cu-ico ghost" data-sp-undo="' + esc(c.code) + '" title="برگرداندن به مشتریان" aria-label="برگرداندن به مشتریان">' + spi('undo') + '</button></li>'; }).join('') + '</ul>';
+    } else body = '<p class="cu-note">هنوز کسی جدا نشده است. دکمهٔ بالا لیست پرسنلی را با مشتریان مقایسه می‌کند.</p>';
+    return '<section class="cu-card-box">' + head + body + '</section>';
+  }
+  function scanStaff() {
+    S.busy = true; S.error = ''; render();
+    db.collection('staff').get().then(function (qs) {
+      var people = []; qs.forEach(function (d) { var v = d.data(); if (v && v.status !== 'applicant') people.push(v); });
+      var byPhone = {}, byName = {};
+      people.forEach(function (p) { var t = tail10(p.phone); if (t) byPhone[t] = p; var n = norm(p.name).replace(/\s+/g, ' ').trim(); if (n.split(' ').length >= 2) byName[n] = p; });
+      var hits = [];
+      S.list.forEach(function (c) {
+        var found = null, why = '';
+        [c.phone, c.contact].forEach(function (f) { String(f || '').split(/[\s,،;/]+/).forEach(function (x) { var t = tail10(x); if (t && byPhone[t] && !found) { found = byPhone[t]; why = 'همان شمارهٔ تماس'; } }); });
+        if (!found) { var nn = norm(shownName(c)).replace(/\s+/g, ' ').trim(); if (byName[nn]) { found = byName[nn]; why = 'همان نام کامل'; } }
+        if (found) hits.push({ c: c, p: found, why: why, on: true });
+      });
+      S.sp = { hits: hits, n: people.length };
+    }, function (e) { S.error = errText(e); }).then(function () { S.busy = false; render(); });
+  }
+  function applySplit() {
+    var on = S.sp.hits.filter(function (h) { return h.on; }); if (!on.length) { S.sp = null; render(); return; }
+    S.busy = true; render();
+    var chunks = [], i; for (i = 0; i < on.length; i += 400) chunks.push(on.slice(i, i + 400));
+    chunks.reduce(function (pr, ch) { return pr.then(function () { var b = db.batch(); ch.forEach(function (h) { b.update(db.collection('customers').doc(h.c.code), { isStaff: true, updatedAt: Date.now() }); }); return b.commit(); }); }, Promise.resolve())
+      .then(function () { S.msg = faInt.format(on.length) + ' حساب از مشتریان جدا شد.'; S.sp = null; S.busy = false; S.list = []; load(); }, function (e) { S.error = errText(e); S.busy = false; render(); });
+  }
+  function undoSplit(code) {
+    db.collection('customers').doc(code).update({ isStaff: false, updatedAt: Date.now() }).then(function () { S.msg = 'به مشتریان برگشت.'; S.list = []; load(); }, function (e) { S.error = errText(e); render(); });
+  }
+
   function reviewView() {
     var fixN = 0; S.list.forEach(function (c) { if (c.address && tidyAddress(c.address) !== c.address) fixN++; });
     var sims = S.simOpen ? simGroups() : null;
@@ -1046,6 +1095,11 @@
   });
   document.addEventListener('click', function (e) {
     var t;
+    if (e.target.closest('[data-sp-scan]')) { scanStaff(); return; }
+    if (e.target.closest('[data-sp-cancel]')) { S.sp = null; render(); return; }
+    if (e.target.closest('[data-sp-apply]')) { applySplit(); return; }
+    if ((t = e.target.closest('[data-sp-undo]'))) { undoSplit(t.getAttribute('data-sp-undo')); return; }
+    if ((t = e.target.closest('[data-sp-i]'))) { var h = S.sp && S.sp.hits[Number(t.getAttribute('data-sp-i'))]; if (h) h.on = t.checked; return; }
     if ((t = e.target.closest('[data-status]'))) { S.fStatus = t.getAttribute('data-status'); S.shown = 60; refreshAll(true); return; }
     if ((t = e.target.closest('[data-pay]'))) { S.fPay = t.getAttribute('data-pay'); S.shown = 60; refreshAll(true); return; }
     if ((t = e.target.closest('[data-group]'))) { S.fGroup = t.getAttribute('data-group'); S.shown = 60; refreshAll(true); return; }

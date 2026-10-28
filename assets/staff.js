@@ -40,14 +40,54 @@
 
   // fields of a person: key, label, kind (text | tel | date | money | status | stage | long | list), width
   var FIELDS = [
-    ['name', 'نام و نام خانوادگی', 'text', 'wide'], ['unit', 'واحد', 'text'], ['position', 'سمت', 'text'], ['phone', 'شمارهٔ تماس', 'tel'], ['code', 'کد پرسنلی', 'text'],
+    ['name', 'نام و نام خانوادگی (کامل)', 'text', 'wide'], ['unit', 'واحد', 'text'], ['position', 'سمت', 'text'], ['phone', 'شمارهٔ تماس', 'tel'], ['code', 'کد پرسنلی', 'text'],
     ['status', 'وضعیت', 'status'], ['startDate', 'تاریخ شروع (شمسی)', 'date'], ['endDate', 'تاریخ ترک کار', 'date'],
     ['salary', 'حقوق ماهانه (تومان)', 'money'], ['salaryNote', 'توضیح حقوق (مزایا، توافق)', 'text', 'wide'], ['stage', 'مرحلهٔ متقاضی', 'stage'],
     ['nationalId', 'کد ملی', 'text'], ['birthday', 'تاریخ تولد', 'date'], ['education', 'تحصیلات', 'text'], ['email', 'ایمیل', 'text'],
     ['address', 'نشانی', 'text', 'wide'], ['notes', 'یادداشت', 'long', 'wide']
   ];
   var KEYS = FIELDS.map(function (f) { return f[0]; });
+  var KEEP = KEYS.concat(['photo']);
   function blank() { var o = { id: '' }; KEYS.forEach(function (k) { o[k] = ''; }); o.status = 'active'; o.salary = 0; return o; }
+
+  // ---------- icons (the page uses pictures instead of words for its buttons)
+  var IC = {
+    plus: '<path d="M12 5v14M5 12h14"/>', back: '<path d="m9 6 6 6-6 6"/>', ok: '<path d="m5 12 5 5 9-10"/>', trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+    sheet: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/>', down: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', up: '<path d="M12 16V5M7 9l5-5 5 5M5 20h14"/>',
+    warn: '<path d="M12 4 3 20h18zM12 10v4M12 17v.5"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>', link: '<path d="M14 5h5v5M19 5l-8 8M18 14v5H5V6h5"/>'
+  };
+  var ic = function (k) { return '<svg class="st-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[k] + '</svg>'; };
+  var ibtn = function (attr, k, label, cls) { return '<button type="button" class="st-ico ' + (cls || '') + '" ' + attr + ' title="' + label + '" aria-label="' + label + '">' + ic(k) + '</button>'; };
+
+  // a cheerful face drawn from the name (always smiling; colours, eyes, cheeks and a little sparkle change from person to person)
+  var HBG = ['#ffd54a', '#ff9fb2', '#7fd6c2', '#9ec5ff', '#ffb27a', '#c9a8ff', '#a8e063', '#ffc2e0'], HMEMO = {};
+  function hHash(str) { var h = 7; for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
+  function happy(p) {
+    var key = fix(p.name) + '|' + String(p.phone || ''); if (HMEMO[key]) return HMEMO[key];
+    var h = hHash(key), bg = HBG[h % HBG.length], eyes = (h >> 3) % 4, mouth = (h >> 5) % 3, spark = (h >> 7) % 3, ink = '#071b36';
+    var eye = eyes === 0 ? '<circle cx="14.5" cy="17" r="1.9" fill="' + ink + '"/><circle cx="25.5" cy="17" r="1.9" fill="' + ink + '"/>' :
+      eyes === 1 ? '<path d="M12.5 18c.6-2.4 3.4-2.4 4 0M23.5 18c.6-2.4 3.4-2.4 4 0" stroke="' + ink + '" stroke-width="1.8" stroke-linecap="round" fill="none"/>' :
+      eyes === 2 ? '<circle cx="14.5" cy="17" r="1.9" fill="' + ink + '"/><path d="M23.5 17.4c.9-1.2 2.7-1.2 3.6 0" stroke="' + ink + '" stroke-width="1.8" stroke-linecap="round" fill="none"/>' :
+      '<ellipse cx="14.5" cy="17" rx="1.7" ry="2.3" fill="' + ink + '"/><ellipse cx="25.5" cy="17" rx="1.7" ry="2.3" fill="' + ink + '"/><circle cx="15" cy="16.2" r=".6" fill="#fff"/><circle cx="26" cy="16.2" r=".6" fill="#fff"/>';
+    var mo = mouth === 0 ? '<path d="M13 23.5c1.6 4.6 12.4 4.6 14 0z" fill="' + ink + '"/><path d="M16 26.6c2.4 1.4 5.6 1.4 8 0" stroke="#ff6b81" stroke-width="1.6" stroke-linecap="round" fill="none"/>' :
+      mouth === 1 ? '<path d="M13 23c2.2 4.4 11.8 4.4 14 0" stroke="' + ink + '" stroke-width="2" stroke-linecap="round" fill="none"/>' :
+      '<path d="M12.5 23.5h15c-.6 4.8-3.6 6.6-7.5 6.6s-6.9-1.8-7.5-6.6z" fill="' + ink + '"/><rect x="15" y="23.5" width="10" height="2.4" rx="1" fill="#fff"/>';
+    var sp = spark === 0 ? '<path d="M33 6l1 2.6 2.6 1-2.6 1L33 13.2l-1-2.6-2.6-1 2.6-1z" fill="#fff" opacity=".9"/>' : spark === 1 ? '<circle cx="7" cy="7" r="1.6" fill="#fff" opacity=".85"/><circle cx="33" cy="9" r="1" fill="#fff" opacity=".85"/>' : '<path d="M6 8l.8 2 2 .8-2 .8L6 13.6l-.8-2-2-.8 2-.8z" fill="#fff" opacity=".9"/>';
+    var svg = '<svg viewBox="0 0 40 40" role="img" aria-hidden="true"><rect width="40" height="40" fill="' + bg + '"/>' + sp +
+      '<circle cx="20" cy="21" r="14" fill="#fff" opacity=".28"/><circle cx="9.5" cy="23" r="2.6" fill="#ff7d8f" opacity=".55"/><circle cx="30.5" cy="23" r="2.6" fill="#ff7d8f" opacity=".55"/>' + eye + mo + '</svg>';
+    return HMEMO[key] = svg;
+  }
+  function avatar(p, cls) { return '<span class="' + (cls || 'st-av') + '">' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="" decoding="async">' : happy(p)) + '</span>'; }
+  // a title without a family name («خانم مروت», «آقای منادی»): shown with a small warning so human resources complete the full name
+  function shortName(n) { var t = fix(n).replace(/^(خانم|آقای|دکتر|مهندس|سرکار خانم|جناب آقای)\s+/, ''); return t.split(' ').length < 2; }
+  // job sites for the applicants section; put each site's picture at assets/jobsites/<id>.webp (square) and it appears on the tile
+  var JOBSITES = [['jobvision', 'جاب‌ویژن', 'https://jobvision.ir'], ['jobinja', 'جابینجا', 'https://jobinja.ir'], ['irantalent', 'ایران‌تلنت', 'https://www.irantalent.com'],
+    ['e-estekhdam', 'ای‌استخدام', 'https://e-estekhdam.com'], ['karboom', 'کاربوم', 'https://karboom.io'], ['linkedin', 'لینکدین', 'https://www.linkedin.com/jobs/'], ['divar', 'دیوار (استخدام)', 'https://divar.ir/s/tehran/jobs']];
+  function jobTiles() {
+    return '<div class="st-jobs" role="group" aria-label="سایت‌های کاریابی">' + JOBSITES.map(function (j) {
+      return '<a class="st-job" href="' + j[2] + '" target="_blank" rel="noopener noreferrer" title="' + esc(j[1]) + '"><span class="st-jlogo"><img src="./assets/jobsites/' + j[0] + '.webp" alt="" width="56" height="56" loading="lazy" decoding="async" onerror="this.remove()"><b>' + esc(j[1].charAt(0)) + '</b></span><span>' + esc(j[1]) + '</span></a>';
+    }).join('') + '</div>';
+  }
 
   // ---------- list
   function filtered() {
@@ -59,8 +99,7 @@
     }).sort(function (a, b) { return String(a.unit || '').localeCompare(String(b.unit || ''), 'fa') || String(a.name).localeCompare(String(b.name), 'fa'); });
   }
   function card(p) {
-    var ini = fix(p.name).replace(/^(خانم|آقای|دکتر|مهندس)\s+/, '').charAt(0) || '؟';
-    return '<li><button type="button" class="st-card ' + esc(p.status || 'active') + '" data-open="' + esc(p.id) + '"><span class="st-av">' + esc(ini) + '</span><span class="st-nm"><b>' + esc(p.name) + '</b><small>' + esc([p.position, p.unit].filter(Boolean).join(' · ')) + '</small></span>' +
+    return '<li><button type="button" class="st-card ' + esc(p.status || 'active') + '" data-open="' + esc(p.id) + '">' + avatar(p) + '<span class="st-nm"><b>' + esc(p.name) + (shortName(p.name) ? '<i class="st-warn" title="نام و نام خانوادگی کامل نیست" aria-label="نام کامل نیست">' + ic('warn') + '</i>' : '') + '</b><small>' + esc([p.position, p.unit].filter(Boolean).join(' · ')) + '</small></span>' +
       '<span class="st-st">' + esc(STATUS[p.status] || '') + (p.status === 'applicant' && p.stage ? ' · ' + esc(p.stage) : '') + '</span>' +
       '<span class="st-meta">' + (p.phone ? '<bdi dir="ltr">' + esc(faD(p.phone)) + '</bdi>' : '') + (p.startDate ? '<span>شروع ' + esc(faD(p.startDate)) + '</span>' : '') + (p.salary ? '<span>' + esc(money(p.salary)) + '</span>' : '') + '</span></button></li>';
   }
@@ -74,14 +113,14 @@
     var uchips = unitNames.length ? '<div class="st-chips scroll" role="group" aria-label="واحد"><button type="button" class="st-chip" data-unit="" aria-pressed="' + (S.fUnit === '') + '">همهٔ واحدها</button>' + unitNames.map(function (u) {
       return '<button type="button" class="st-chip" data-unit="' + esc(u) + '" aria-pressed="' + (S.fUnit === u) + '">' + esc(u) + ' <b>' + faInt.format(un[u]) + '</b></button>'; }).join('') + '</div>' : '';
     var sal = list.filter(function (p) { return p.status === 'active' && p.salary > 0; }), total = sal.reduce(function (a, p) { return a + p.salary; }, 0);
-    return '<header class="st-head"><div><h1>کارکنان و متقاضیان</h1><p>فهرست کارکنان، متقاضیان و ترک‌کارها با حقوق و اطلاعات کامل؛ فقط منابع انسانی و مدیریت می‌بینند.</p></div>' +
-      '<button type="button" class="st-btn" data-new>افزودن</button></header>' +
+    return '<header class="st-head"><div><h1>همکاران و متقاضیان</h1><p>فهرست کارکنان، متقاضیان و ترک‌کارها با حقوق و اطلاعات کامل؛ فقط منابع انسانی و مدیریت می‌بینند.</p></div>' +
+      ibtn('data-new', 'plus', 'افزودن همکار یا متقاضی') + '</header>' +
       (S.msg ? '<p class="st-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="st-err" role="alert">' + esc(S.error) + '</p>' : '') +
       '<div class="st-kpis"><div><span>کارمند فعال</span><b>' + faInt.format(cnt.active || 0) + '</b></div><div><span>متقاضی</span><b>' + faInt.format(cnt.applicant || 0) + '</b></div><div><span>ترک کار</span><b>' + faInt.format(cnt.left || 0) + '</b></div>' +
       '<div><span>جمع حقوق ثبت‌شده (فعال‌ها در فیلتر)</span><b>' + (total ? esc(faInt.format(Math.round(total / 1000000))) + ' میلیون' : '—') + '</b></div></div>' +
       '<section class="st-box"><label class="st-search"><input type="search" id="stQ" placeholder="جست‌وجو: نام، واحد، سمت یا تلفن" value="' + esc(S.q) + '" autocomplete="off"></label>' +
       '<div class="st-chips" role="group" aria-label="وضعیت">' + chips + '</div>' + uchips +
-      '<p class="st-count">' + faInt.format(list.length) + ' نفر</p><ul class="st-list">' + (list.slice(0, S.shown).map(card).join('') || '<li class="st-note">موردی پیدا نشد.</li>') + '</ul>' +
+      (S.fStatus === 'applicant' ? jobTiles() : '') + '<p class="st-count">' + faInt.format(list.length) + ' نفر</p><ul class="st-list">' + (list.slice(0, S.shown).map(card).join('') || '<li class="st-note">موردی پیدا نشد.</li>') + '</ul>' +
       (list.length > S.shown ? '<button type="button" class="st-btn alt" data-more>نمایش بیشتر (' + faInt.format(list.length - S.shown) + ')</button>' : '') + '</section>' + importView();
   }
 
@@ -96,9 +135,13 @@
       if (kind === 'money') return '<label class="' + cls + '">' + lab + '<input type="text" inputmode="numeric" data-k="' + k + '" value="' + (v ? esc(faInt.format(v)) : '') + '"></label>';
       return '<label class="' + cls + '">' + lab + '<input type="text" data-k="' + k + '" value="' + esc(kind === 'tel' || kind === 'date' ? faD(v) : v) + '"' + (kind === 'tel' ? ' dir="ltr" inputmode="numeric" maxlength="11"' : kind === 'date' ? ' dir="ltr" inputmode="numeric" placeholder="۱۴۰۵/۰۶/۲۹" maxlength="10"' : '') + '></label>';
     };
-    return '<header class="st-head"><div><h1>' + (f.id ? esc(f.name || 'ویرایش') : 'افزودن') + '</h1></div><button type="button" class="st-btn alt" data-cancel>بازگشت</button></header>' +
+    return '<header class="st-head"><div><h1>' + (f.id ? esc(f.name || 'ویرایش') : 'افزودن') + '</h1></div>' + ibtn('data-cancel', 'back', 'بازگشت', 'alt') + '</header>' + photoPick(f) +
       (S.error ? '<p class="st-err" role="alert">' + esc(S.error) + '</p>' : '') +
-      '<section class="st-box"><div class="st-grid">' + FIELDS.map(inp).join('') + '</div><div class="st-acts"><button type="button" class="st-btn" data-save' + (S.busy ? ' disabled' : '') + '>ذخیره</button>' + (f.id ? '<button type="button" class="st-btn danger" data-del="' + esc(f.id) + '">حذف</button>' : '') + '</div></section>';
+      '<section class="st-box"><div class="st-grid">' + FIELDS.map(inp).join('') + '</div><div class="st-acts">' + ibtn('data-save' + (S.busy ? ' disabled' : ''), 'ok', 'ذخیره') + (f.id ? ibtn('data-del="' + esc(f.id) + '"', 'trash', 'حذف', 'danger') : '') + '</div></section>';
+  }
+  function photoPick(f) {
+    return '<div class="st-photo">' + avatar(f, 'st-av big') + '<label class="st-ico alt" title="عکس پروفایل" aria-label="عکس پروفایل"><input type="file" accept="image/*" id="stPhoto">' + window.MSImg.camera.replace('<svg ', '<svg class="st-i" ') + '</label>' +
+      (f.photo ? ibtn('data-rmphoto', 'x', 'برداشتن عکس', 'alt') : '') + '</div>';
   }
   function save() {
     var f = S.form, e = '';
@@ -111,6 +154,7 @@
     if (e) { S.error = e; render(); return; }
     var doc = {};
     KEYS.forEach(function (k) { doc[k] = typeof f[k] === 'number' ? f[k] : String(f[k] == null ? '' : f[k]).trim().slice(0, k === 'notes' ? 800 : 300); });
+    doc.photo = typeof f.photo === 'string' && f.photo.indexOf('data:image/') === 0 && f.photo.length < 70000 ? f.photo : '';
     doc.salary = Number(f.salary) || 0; doc.nationalId = latin(doc.nationalId); doc.updatedAt = Date.now(); doc.updatedBy = S.user.uid;
     var id = f.id || idOf(f.name, f.phone) + (f.id ? '' : '_' + Date.now().toString(36).slice(-3));
     S.busy = true; S.error = '';
@@ -141,6 +185,18 @@
   function readSheets(wb, X) { var o = {}; wb.SheetNames.forEach(function (n) { o[n] = X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: null, blankrows: false }); }); return o; }
   function cell(r, i) { var v = r && r[i]; return v == null ? '' : String(v).trim(); }
   function mergeInto(by, key, patch) { var o = by[key] = by[key] || { name: '' }; Object.keys(patch).forEach(function (k) { if (patch[k] !== '' && patch[k] != null) o[k] = patch[k]; }); return o; }
+  // «خانم شهبازی» in the list and «عاطفه شهبازی» in the start-date sheet are the same person: the short one is merged into the full name when the family name is unique
+  function mergeShort(by) {
+    var keys = Object.keys(by), full = keys.filter(function (k) { return !shortName(by[k].name); });
+    keys.forEach(function (k) {
+      var r = by[k]; if (!r || !shortName(r.name)) return;
+      var fam = fix(r.name).replace(/^(خانم|آقای|دکتر|مهندس|سرکار خانم|جناب آقای)\s+/, '');
+      var cand = full.filter(function (f) { var w = fix(by[f].name).split(' '); return by[f] && w[w.length - 1] === fam; });
+      if (cand.length !== 1) return;
+      var t = by[cand[0]]; Object.keys(r).forEach(function (x) { if (x !== 'name' && r[x] !== '' && r[x] != null && (t[x] === undefined || t[x] === '')) t[x] = r[x]; });
+      delete by[k];
+    });
+  }
   // returns { records, kind }
   function parseWorkbook(sheets) {
     var names = Object.keys(sheets), by = {}, kind = '';
@@ -188,20 +244,21 @@
       var m = sheets[n], nn = fix(n);
       if (/ترک/.test(nn)) { for (var i = 2; i < m.length; i++) { var row = m[i], nm = fix(cell(row, 1)); if (!nm) continue; var had = by['n:' + nm]; mergeInto(by, 'n:' + nm, { name: nm, position: fix(cell(row, 2)), startDate: dateFix(cell(row, 3)), endDate: dateFix(cell(row, 4)), status: 'left' }); void had; } }
     });
+    mergeShort(by);
     return { records: Object.keys(by).map(function (k) { return by[k]; }), kind: kind || '' };
   }
   function importView() {
     var im = S.imp;
-    var tools = '<div class="st-acts"><button type="button" class="st-btn alt" data-tpl>قالب Excel</button><button type="button" class="st-btn alt" data-export' + (S.list.length ? '' : ' disabled') + '>خروجی Excel</button></div>';
+    var tools = '<div class="st-acts">' + ibtn('data-tpl', 'sheet', 'قالب Excel (خالی)', 'alt') + ibtn('data-export' + (S.list.length ? '' : ' disabled'), 'down', 'خروجی Excel', 'alt') + '<label class="st-ico alt" title="بارگذاری فایل Excel: قالب برنامه یا «لیست پرسنلی» شرکت" aria-label="بارگذاری فایل Excel"><input type="file" id="stFile" accept=".xlsx,.xls">' + ic('up') + '</label></div>';
     if (!can('staffEdit')) return '';
-    var body = tools + '<label class="st-file"><input type="file" id="stFile" accept=".xlsx,.xls"><span>بارگذاری فایل: قالب برنامه یا «لیست پرسنلی» شرکت</span></label>';
+    var body = tools + '<p class="st-note">قالب خالی را پر کنید یا فایل «لیست پرسنلی» شرکت را مستقیم بارگذاری کنید.</p>';
     if (S.busy && !im) body += '<p class="st-note">در حال خواندن…</p>';
     if (im && im.error) body += '<p class="st-err">' + esc(im.error) + '</p>';
     if (im && im.records) {
       var have = {}; S.list.forEach(function (p) { have[idOf(p.name, p.phone)] = 1; });
       body += '<p class="st-note">' + esc(im.kind || 'فایل') + ': ' + faInt.format(im.records.length) + ' نفر خوانده شد (' + faInt.format(im.records.filter(function (r) { return r.status === 'left'; }).length) + ' ترک کار). ' + faInt.format(im.records.filter(function (r) { return have[idOf(r.name, r.phone)]; }).length) + ' نفر از قبل در برنامه هست و به‌روز می‌شود.</p>' +
         '<ul class="st-imp">' + im.records.slice(0, 8).map(function (r) { return '<li><b>' + esc(r.name) + '</b><span>' + esc([r.position, r.unit, STATUS[r.status || 'active']].filter(Boolean).join(' · ')) + '</span></li>'; }).join('') + '</ul>' +
-        '<button type="button" class="st-btn" data-imp-save' + (S.busy ? ' disabled' : '') + '>ذخیره در پایگاه</button>';
+        ibtn('data-imp-save' + (S.busy ? ' disabled' : ''), 'ok', 'ذخیره در پایگاه');
     }
     if (im && im.done) body += '<p class="st-ok" role="status">' + esc(im.done) + '</p>';
     return '<section class="st-box"><h2>ورود و خروج دسته‌جمعی (Excel)</h2>' + body + '</section>';
@@ -252,6 +309,7 @@
     if ((t = e.target.closest('[data-open]'))) { var p = S.list.filter(function (x) { return x.id === t.getAttribute('data-open'); })[0]; if (p) { S.form = Object.assign(blank(), p); S.error = ''; S.msg = ''; render(); window.scrollTo(0, 0); } return; }
     if (e.target.closest('[data-new]')) { S.form = blank(); S.error = ''; S.msg = ''; render(); window.scrollTo(0, 0); return; }
     if (e.target.closest('[data-cancel]')) { S.form = null; S.error = ''; render(); return; }
+    if (e.target.closest('[data-rmphoto]')) { if (S.form) { S.form.photo = ''; render(); } return; }
     if (e.target.closest('[data-save]')) { save(); return; }
     if ((t = e.target.closest('[data-del]'))) {
       if (!window.confirm('این نفر برای همیشه از پایگاه حذف شود؟')) return;
@@ -274,6 +332,10 @@
   });
   root.addEventListener('change', function (e) {
     if (e.target.id === 'stFile' && e.target.files && e.target.files[0]) { readFile(e.target.files[0]); return; }
+    if (e.target.id === 'stPhoto' && e.target.files && e.target.files[0] && S.form) {
+      window.MSImg.fromFile(e.target.files[0], 256).then(function (u) { S.form.photo = u; S.error = ''; }, function (er) { S.error = er.message || 'عکس خوانده نشد.'; }).then(render);
+      return;
+    }
     var k = e.target.getAttribute && e.target.getAttribute('data-k');
     if (k && S.form && e.target.tagName === 'SELECT') { S.form[k] = e.target.value; if (k === 'status') render(); }
   });
