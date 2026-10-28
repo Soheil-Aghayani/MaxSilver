@@ -24,10 +24,13 @@
   var AREA = {
     dashboard: ['manager', 'ceo', 'sales_manager', 'finance'],                          // CEO dashboard
     analysis: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // customer and product sales analysis
+    staff: ['manager', 'ceo', 'hr'],                                                    // staff and applicants with salaries: human resources and management only
+    staffEdit: ['manager', 'ceo', 'hr'],                                                // changes and imports them
+    cataloguesEdit: ['manager', 'ceo'],                                                 // uploads, describes and removes catalogue files
     catalogues: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'marketing'],      // catalogue files (PDF and layered): the roles that present products
     brand: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'],
     pricesEdit: ['manager', 'ceo', 'sales_manager'],                                    // edits the list prices of the catalog (everyone signed in sees them)
-    bankPick: ['finance'],                                                              // chooses the bank account on an approved pre-invoice
+    bankPick: ['finance', 'account_manager'],                                                              // chooses the bank account on an approved pre-invoice
     pricesAudit: ['manager', 'ceo', 'sales_manager', 'finance'],                         // opens the prices page: finance downloads the audit template; the others also edit and upload it
     crm: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'],                                // purchase requests from the public planner: follow-up and decisions (a visitor sees the ones given to them)
     academy: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'],   // training: every signed-in role; the page shows each role only its own track

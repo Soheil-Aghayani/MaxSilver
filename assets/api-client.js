@@ -132,6 +132,8 @@
     putConfig: function (key, d) { return call('PUT', 'config/' + key, d); },
     appInfo: function () { return call('GET', 'app/android/info'); },
     appUpload: function (fd) { return call('POST', 'portal/app', fd); },
+    catalogueFileUpload: function (id, fd) { return call('POST', 'catalogues/' + encodeURIComponent(id) + '/files', fd); },
+    catalogueFileDelete: function (fid) { return call('DELETE', 'catalogues/files/' + encodeURIComponent(fid)); },
     fetchBlob: function (path) {
       var b = base(); if (!b || !token()) return Promise.reject({ status: 401, message: 'وارد حساب شوید.' });
       return fetch(b + '/api/v1/' + path, { headers: { 'Authorization': 'Bearer ' + token(), 'Accept': '*/*' }, credentials: 'omit' }).then(function (r) { if (!r.ok) throw { status: r.status, message: 'فایل باز نشد.' }; return r.blob(); });

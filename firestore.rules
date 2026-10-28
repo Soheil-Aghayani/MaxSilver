@@ -80,7 +80,7 @@ service cloud.firestore {
     // by the sales manager or management: declining keeps the proforma, accepting moves it to invoice_archive and deletes it here.
     match /invoices/{id} {
       allow read: if approved() && (id.matches(request.auth.uid + '_.*') || resource.data.ownerUid == request.auth.uid || seesAllInvoices());
-      allow create: if approved()
+      allow create: if approved() && !hasRole(['hr'])
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.docNo is string
         && id == request.auth.uid + '_' + request.resource.data.docNo
@@ -102,7 +102,7 @@ service cloud.firestore {
           && resource.data.get('review', {}).get('status', '') == 'refusal'
           && request.resource.data.review.status == 'kept')
         // finance chooses which bank account the customer's copy shows (only after the account manager approved the pre-invoice)
-        || (hasRole(['finance'])
+        || (hasRole(['finance', 'account_manager'])
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bankId', 'bank', 'updatedAt'])
           && resource.data.get('review', {}).get('status', '') == 'approved'));
       allow delete: if approved() && (resource.data.ownerUid == request.auth.uid || isManager()
@@ -115,13 +115,38 @@ service cloud.firestore {
     function ownsCustomer() { return approved() && resource.data.get('ownerUid', '') == request.auth.uid; }
     match /customers/{code} {
       allow read: if seesAllCustomers() || ownsCustomer();
-      allow create, delete: if hasRole(['manager', 'ceo', 'sales_manager']);
+      allow delete: if hasRole(['manager', 'ceo', 'sales_manager']);
+      // the account manager opens the profile of a customer who is new (from a pre-invoice); the leads create any
+      allow create: if hasRole(['manager', 'ceo', 'sales_manager'])
+        || (hasRole(['account_manager'])
+            && request.resource.data.keys().hasOnly(['code', 'name', 'city', 'province', 'region', 'group', 'phone', 'address', 'contact', 'notes', 'postal', 'nationalId', 'birthday', 'createdFrom', 'createdAt', 'updatedAt'])
+            && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 120
+            && request.resource.data.code is string && request.resource.data.code.size() >= 1 && request.resource.data.code.size() <= 40);
       allow update: if hasRole(['manager', 'ceo', 'sales_manager'])
         || ((hasRole(['account_manager']) || ownsCustomer())
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone', 'address', 'contact', 'notes', 'postal', 'nationalId', 'birthday', 'updatedAt'])
             && (!('postal' in request.resource.data) || request.resource.data.postal == '' || request.resource.data.postal.matches('^[0-9]{10}$'))
             && (!('nationalId' in request.resource.data) || request.resource.data.nationalId == '' || request.resource.data.nationalId.matches('^[0-9]{10}$'))
             && (!('birthday' in request.resource.data) || request.resource.data.birthday == '' || request.resource.data.birthday.matches('^[0-9]{4}/[0-9]{2}/[0-9]{2}$')));
+    }
+    // Catalogue files page: the roles that present products read; management writes. The files are uploaded to the server endpoint.
+    match /catalogues/{id} {
+      allow read: if hasRole(['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'marketing']);
+      allow delete: if hasRole(['manager', 'ceo']);
+      allow create, update: if hasRole(['manager', 'ceo'])
+        && request.resource.data.keys().hasOnly(['title', 'about', 'files', 'active', 'order', 'updatedAt', 'updatedBy'])
+        && request.resource.data.title is string && request.resource.data.title.size() >= 2 && request.resource.data.title.size() <= 120
+        && request.resource.data.files is list && request.resource.data.files.size() <= 30;
+    }
+    // Staff and applicants with salaries: human resources and management only (not even to read for anyone else).
+    match /staff/{id} {
+      allow read: if hasRole(['manager', 'ceo', 'hr']);
+      allow delete: if hasRole(['manager', 'hr']);
+      allow create, update: if hasRole(['manager', 'ceo', 'hr'])
+        && request.resource.data.keys().hasOnly(['name', 'unit', 'position', 'phone', 'code', 'status', 'startDate', 'endDate', 'salary', 'salaryNote', 'nationalId', 'birthday', 'education', 'address', 'email', 'stage', 'notes', 'importedAt', 'updatedAt', 'updatedBy'])
+        && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 120
+        && request.resource.data.get('status', 'active') in ['active', 'left', 'applicant']
+        && (!('salary' in request.resource.data) || (request.resource.data.salary is number && request.resource.data.salary >= 0));
     }
     // A customer group is a responsible partner or person; the owner is applied to the group's customers.
     match /customer_groups/{id} {
