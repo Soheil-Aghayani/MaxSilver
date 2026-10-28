@@ -46,7 +46,7 @@
   .doc-foot{margin-inline:-14px}
 }
 @media print{
-  @page{size:A4;margin:14mm 12mm 16mm}
+  @page{margin:14mm 12mm 16mm}
   body.ms-portal-body{padding:0!important;background:#fff}
   .ms-sitebar,.ms-site-footer,.bb-head,.bb-tabs{display:none!important}
   .bb{padding:0}

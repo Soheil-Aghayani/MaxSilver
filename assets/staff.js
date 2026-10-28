@@ -103,7 +103,7 @@
       '<div><span>جمع حقوق ثبت‌شده (فعال‌ها در فیلتر)</span><b>' + (total ? esc(faInt.format(Math.round(total / 1000000))) + ' میلیون' : '—') + '</b></div></div>' +
       '<section class="st-box"><label class="st-search"><input type="search" id="stQ" placeholder="جست‌وجو: نام، واحد، سمت یا تلفن" value="' + esc(S.q) + '" autocomplete="off"></label>' +
       '<div class="st-chips" role="group" aria-label="وضعیت">' + chips + '</div>' + uchips +
-      (S.fStatus === 'applicant' ? jobTiles() : '') + '<p class="st-count">' + faInt.format(list.length) + ' نفر</p><ul class="st-list">' + (list.slice(0, S.shown).map(card).join('') || '<li class="st-note">موردی پیدا نشد.</li>') + '</ul>' +
+      (S.fStatus === 'applicant' ? jobTiles() : '') + '<p class="st-count">' + faInt.format(list.length) + ' نفر</p><ul class="st-list">' + (list.slice(0, S.shown).map(card).join('') || '<li class="st-note ms-empty"><img class="ms-empty-img" src="./assets/art/tiles/no-results.webp" alt="" width="96" height="96" decoding="async"><span>موردی پیدا نشد.</span></li>') + '</ul>' +
       (list.length > S.shown ? '<button type="button" class="st-btn alt" data-more>نمایش بیشتر (' + faInt.format(list.length - S.shown) + ')</button>' : '') + '</section>' + importView();
   }
 

@@ -130,7 +130,9 @@
     deleteStatus: function (id) { return call('DELETE', 'item-status/' + encodeURIComponent(id)); },
     putSetting: function (key, d) { return call('PUT', 'settings/' + key, d); },
     putConfig: function (key, d) { return call('PUT', 'config/' + key, d); },
-    appInfo: function () { return call('GET', 'app/android/info'); },
+    // the address of a public file (the Android app): anyone may open it, no sign-in
+    publicUrl: function (path) { var b = base(); return b ? b + '/api/v1/' + path : ''; },
+    appInfo: function () { return call('GET', 'public/app/android/info'); },
     appUpload: function (fd) { return call('POST', 'portal/app', fd); },
     catalogueFileUpload: function (id, fd) { return call('POST', 'catalogues/' + encodeURIComponent(id) + '/files', fd); },
     catalogueFileDelete: function (fid) { return call('DELETE', 'catalogues/files/' + encodeURIComponent(fid)); },

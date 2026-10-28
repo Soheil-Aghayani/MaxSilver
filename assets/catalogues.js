@@ -81,7 +81,7 @@
     return '<header class="ct-head"><div><h1>کاتالوگ‌ها</h1><p>فایل‌های کاتالوگ برای فروش و معرفی محصولات؛ هر فایل را در قالب مناسب (PDF برای مشتری، لایه‌باز برای طراح) بگیرید.</p></div>' +
       (can('cataloguesEdit') && !S.form ? ibtn('data-new', 'plus', 'کاتالوگ تازه') : '') + '</header>' +
       (S.msg ? '<p class="ct-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="ct-err" role="alert">' + esc(S.error) + '</p>' : '') +
-      (S.form ? formHtml() : '') + '<div class="ct-list">' + (list.map(cardHtml).join('') || '<p class="ct-note">هنوز کاتالوگی ثبت نشده است.</p>') + '</div>';
+      (S.form ? formHtml() : '') + '<div class="ct-list">' + (list.map(cardHtml).join('') || '<p class="ct-note ms-empty"><img class="ms-empty-img" src="./assets/art/tiles/no-results.webp" alt="" width="96" height="96" decoding="async"><span>هنوز کاتالوگی ثبت نشده است.</span></p>') + '</div>';
   }
   function render() { root.innerHTML = view(); if (window.MSGate) window.MSGate.apply(); }
   function load() {

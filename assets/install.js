@@ -148,12 +148,12 @@
     dlg.querySelector('.ms-install-copy').addEventListener('click', function () { dlg.close(); installShortcut(); });
     dlg.querySelector('[data-apk]').addEventListener('click', function (e) {
       var b = e.currentTarget; b.disabled = true; b.textContent = 'در حال دانلود…';
-      window.MSApi.download('app/android/file', 'maxsilver.apk').then(function () { b.textContent = 'دانلود شد؛ از پوشهٔ دانلودها باز کنید'; }, function (er) { b.disabled = false; b.textContent = (er && er.message) || 'دانلود انجام نشد'; });
+      var u = window.MSApi.publicUrl('public/app/android/file'), a = document.createElement('a'); a.href = u; a.download = 'maxsilver.apk'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { b.disabled = false; b.textContent = 'دانلود شروع شد؛ از پوشهٔ دانلودها باز کنید'; }, 600);
     });
   }
   function install() {
-    // the app file is only for people who are signed in; everyone else gets the home-screen shortcut
-    if (OS === 'android' && window.MSApi && window.MSApi.signedIn && window.MSApi.signedIn()) {
+    // on Android the app file is offered to everyone (no sign-in); if it is not on the server yet, the home-screen shortcut is used
+    if (OS === 'android' && window.MSApi && window.MSApi.appInfo && window.MSApi.publicUrl && window.MSApi.publicUrl('x')) {
       window.MSApi.appInfo().then(showApk, installShortcut);
       return;
     }

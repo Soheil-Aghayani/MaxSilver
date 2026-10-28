@@ -71,8 +71,7 @@
   function card(c) {
     var me = c.id === ME, a = info && info.android;
     var action = '';
-    if (c.id === 'android') action = signed ? '<button type="button" class="ip-btn" data-apk>دانلود اپلیکیشن' + (a ? ' · ' + esc(fa(mb(a.bytes))) : '') + '</button>' + (apkMsg ? '<p class="ip-small" role="status">' + esc(apkMsg) + '</p>' : '')
-      : '<a class="ip-btn" href="./panel.html">برای دانلود، وارد حساب شوید</a><p class="ip-small">فایل اپلیکیشن فقط برای کارکنان و کاربرانی است که حساب دارند.</p>';
+    if (c.id === 'android') action = '<button type="button" class="ip-btn" data-apk>دانلود اپلیکیشن' + (a ? ' · ' + esc(fa(mb(a.bytes))) : '') + '</button>' + (apkMsg ? '<p class="ip-small" role="status">' + esc(apkMsg) + '</p>' : '');
     else if (c.id === 'windows' || c.id === 'macos' || c.id === 'linux') action = me && deferred ? '<button type="button" class="ip-btn" data-install>نصب</button>' : '';
     return '<article class="ip-card' + (me ? ' me' : '') + '" id="os-' + c.id + '">' + (me ? '<span class="ip-me">دستگاه شما</span>' : '') +
       '<div class="ip-head">' + icon(c.id, 64) + '<div><h2>' + esc(c.name) + '</h2><p>' + esc(c.lead) + '</p></div></div>' +
@@ -90,7 +89,9 @@
   root.addEventListener('click', function (e) {
     if (e.target.closest('[data-apk]')) {
       apkMsg = 'در حال دانلود…'; render();
-      api.download('app/android/file', 'maxsilver.apk').then(function () { apkMsg = 'دانلود شد؛ فایل را از پوشهٔ دانلودها باز کنید.'; render(); }, function (er) { apkMsg = (er && er.message) || 'دانلود انجام نشد.'; render(); });
+      var u = api && api.publicUrl ? api.publicUrl('public/app/android/file') : ''; if (!u) { apkMsg = 'دانلود فقط روی نشانی اصلی مکث‌سیلور ممکن است.'; render(); return; }
+      var a = document.createElement('a'); a.href = u; a.download = 'maxsilver.apk'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { apkMsg = 'دانلود شروع شد؛ فایل را از پوشهٔ دانلودها باز کنید.'; render(); }, 600);
       return;
     }
     if (e.target.closest('[data-copy]')) {
@@ -105,6 +106,6 @@
     render();
   });
 
-  function init() { render(); if (signed) api.appInfo().then(function (j) { info = { android: j }; render(); }, function () { /* the card still works without the details */ }); }
+  function init() { render(); if (api && api.appInfo) api.appInfo().then(function (j) { info = { android: j }; render(); }, function () { /* the card still works without the details */ }); }
   init();
 })();

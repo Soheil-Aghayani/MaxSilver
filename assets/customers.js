@@ -678,10 +678,10 @@
   }
 
   // ---------- export: the customer list as PDF (printed page with the Estedad font) or Excel; choose the groups, the columns and what to leave out
-  var EX_COLS = [['name', 'نام مشتری', 30], ['phone', 'شماره تلفن', 16], ['address', 'نشانی', 44], ['pay', 'رفتار پرداخت', 18], ['group', 'گروه مشتری', 18],
+  var EX_COLS = [['name', 'نام مشتری', 30], ['phone', 'شماره تلفن', 16], ['address', 'نشانی', 44], ['pay', 'رفتار پرداخت', 30], ['group', 'گروه مشتری', 18],
     ['code', 'کد حسابداری', 12], ['city', 'شهر', 14], ['province', 'استان', 14], ['status', 'وضعیت', 14], ['latest', 'فروش سال جاری (تومان)', 20], ['total', 'جمع فروش (تومان)', 20]];
   var EX_DEFAULT = { name: 1, phone: 1, address: 1, pay: 1, group: 1 };
-  function exState() { return S.ex || (S.ex = { mode: 'only', groups: {}, cols: Object.assign({}, EX_DEFAULT), skipEmpty: false, useFilters: false }); }
+  function exState() { return S.ex || (S.ex = { mode: 'only', groups: {}, cols: Object.assign({}, EX_DEFAULT), skipEmpty: false, useFilters: false, orient: 'landscape' }); }
   function exVal(c, k) {
     switch (k) {
       case 'name': return shownName(c);
@@ -722,7 +722,7 @@
       '<section><h3>ستون‌ها</h3><div class="cu-fchips wrap" role="group" aria-label="ستون‌ها">' + cols + '</div></section>' +
       '<section class="cu-exopt"><label><input type="checkbox" data-ex-opt="skipEmpty"' + (x.skipEmpty ? ' checked' : '') + '><span>مشتریانی که یکی از ستون‌های انتخابی‌شان خالی است نیایند</span></label>' +
       '<label><input type="checkbox" data-ex-opt="useFilters"' + (x.useFilters ? ' checked' : '') + '><span>فقط مشتریان فهرست فعلی صفحه (جست‌وجو و فیلترهای بالا)</span></label></section>' +
-      '<p class="cu-excount">' + faInt.format(r.list.length) + ' مشتری · ' + faInt.format(r.keys.length) + ' ستون</p>' +
+      '<section><h3>جهت صفحهٔ PDF</h3><div class="cu-seg" role="group" aria-label="جهت صفحه">' + chip('data-ex-orient="landscape"', 'افقی', x.orient !== 'portrait') + chip('data-ex-orient="portrait"', 'عمودی', x.orient === 'portrait') + '</div></section>' + '<p class="cu-excount">' + faInt.format(r.list.length) + ' مشتری · ' + faInt.format(r.keys.length) + ' ستون</p>' +
       '<div class="cu-exacts"><button type="button" class="cu-btn primary" data-ex-pdf' + (none ? ' disabled' : '') + '>PDF</button><button type="button" class="cu-btn" data-ex-xlsx' + (none ? ' disabled' : '') + '>Excel</button></div></div>';
     if (!dlg.open) dlg.showModal();
   }
@@ -742,7 +742,11 @@
     var r = exRows(), cols = EX_COLS.filter(function (d) { return r.keys.indexOf(d[0]) >= 0; }), total = cols.reduce(function (a, d) { return a + d[2]; }, 0) + 5;
     var font = new URL('./assets/fonts/Estedad-VF.woff2', location.href).href;
     var cell = function (c, k) {
-      var v = exVal(c, k); if (v === '' || v == null) return '<span class="e">—</span>';
+      if (k === 'pay') {
+        var cur = payOf(c) || payFromText(c._pay || ''), mixed = cur && isCheque(cur) && c.payMixed;
+        return '<div class="mc">' + PAY_ORDER.map(function (m) { return '<span><i class="bx' + (cur === m ? ' on' : '') + '"></i>' + esc(PAY[m].s) + '</span>'; }).join('') + '</div>';
+      }
+      var v = exVal(c, k); if (v === '' || v == null) return '';
       if (k === 'phone') return '<bdi dir="ltr">' + esc(faDigits(v)) + '</bdi>';
       if (k === 'code') return '<bdi dir="ltr">' + esc(faDigits(v)) + '</bdi>';
       if (k === 'latest' || k === 'total') return esc(faInt.format(v));
@@ -753,14 +757,16 @@
     var date = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
     var html = '<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فهرست مشتریان مکث‌سیلور</title><style>' +
       '@font-face{font-family:Estedad;src:url(' + font + ') format("woff2");font-weight:100 900}' +
-      '@page{size:A4 ' + (cols.length > 5 ? 'landscape' : 'portrait') + ';margin:12mm}*{box-sizing:border-box}body{margin:0;font-family:Estedad,Tahoma,sans-serif;color:#051934;font-size:11px;line-height:1.8}' +
+      '@page{size:A4 ' + (exState().orient === 'portrait' ? 'portrait' : 'landscape') + ';margin:12mm}*{box-sizing:border-box}body{margin:0;font-family:Estedad,Tahoma,sans-serif;color:#051934;font-size:11px;line-height:1.8}' +
       'h1{margin:0 0 2px;font-size:20px}.m{color:#5b6677;font-size:11px;margin:0 0 10px}table{width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}' +
       'th{background:#ffcc2a;color:#051934;font-weight:800;text-align:right;padding:6px 8px;border:1px solid #e0b300}td{padding:5px 8px;border:1px solid #dfe5ee;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}' +
       'tr{break-inside:avoid;page-break-inside:avoid}tbody tr:nth-child(even) td{background:#f6f8fb}.n{text-align:center}.e{color:#a3acb9}' +
-      '.bar{position:sticky;top:0;display:flex;gap:8px;justify-content:flex-start;padding:8px 0}.bar button{font:700 13px Estedad,Tahoma,sans-serif;padding:8px 16px;border:1px solid #051934;border-radius:10px;background:#051934;color:#fff;cursor:pointer}@media print{.bar{display:none}}</style></head><body>' +
-      '<div class="bar"><button onclick="window.print()">چاپ / ذخیره PDF</button></div>' +
-      '<h1>فهرست مشتریان مکث‌سیلور</h1><p class="m">' + esc(date) + ' · ' + faInt.format(r.list.length) + ' مشتری' + (exTitleLines(r) ? ' · ' + esc(exTitleLines(r)) : '') + '</p>' +
-      '<table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>' +
+      '.tt th{background:#fff;border:0;border-bottom:0;padding:0 0 6px;text-align:right;font-weight:400}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}'+
+      '.pb{display:inline-grid;place-items:center;width:44px;height:44px;border:1px solid #051934;border-radius:12px;background:#051934;color:#fff;cursor:pointer}@media print{.pb{display:none}}'+
+      '.mc{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px}.mc span{display:flex;align-items:center;gap:5px;white-space:nowrap}.bx{display:inline-block;flex:none;width:11px;height:11px;border:1.5px solid #051934;border-radius:3px}.bx.on{background:#051934;box-shadow:inset 0 0 0 2px #fff}</style></head><body>' +
+      '<table><thead><tr class="tt"><th colspan="' + (cols.length + 1) + '"><div class="top"><h1>فهرست مشتریان</h1><button class="pb" onclick="window.print()" title="چاپ / ذخیره PDF" aria-label="چاپ / ذخیره PDF">' +
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V4h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v6H7z"/></svg></button></div>' +
+      '<p class="m">' + esc(date) + ' · ' + faInt.format(r.list.length) + ' مشتری' + (exTitleLines(r) ? ' · ' + esc(exTitleLines(r)) : '') + '</p></th></tr><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>' +
       '<script>document.fonts.ready.then(function(){setTimeout(function(){window.print();},400);});<\/script></body></html>';
     var url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
     var w = window.open(url, '_blank');
@@ -1186,6 +1192,7 @@
   document.addEventListener('click', function (e) {
     var t;
     if (e.target.closest('[data-ex-open]')) { exDialog(); return; }
+    if ((t = e.target.closest('[data-ex-orient]'))) { exState().orient = t.getAttribute('data-ex-orient'); exDialog(); return; }
     if ((t = e.target.closest('[data-ex-mode]'))) { exState().mode = t.getAttribute('data-ex-mode'); exDialog(); return; }
     if ((t = e.target.closest('[data-ex-g]'))) { var gk = t.getAttribute('data-ex-g'), xs = exState(); xs.groups[gk] = !xs.groups[gk]; exDialog(); return; }
     if ((t = e.target.closest('[data-ex-c]'))) { var ck = t.getAttribute('data-ex-c'), xc = exState(); xc.cols[ck] = !xc.cols[ck]; exDialog(); return; }
