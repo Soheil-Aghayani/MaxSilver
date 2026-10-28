@@ -230,3 +230,10 @@
 /* colleagues among the customers */
 .cu-splist{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:340px;overflow:auto}.cu-splist li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--ms-line);border-radius:12px;background:#fafcff}.cu-splist label{display:flex;align-items:center;gap:10px;flex-direction:row;color:var(--ms-navy);font-size:13px}.cu-splist span{display:grid;gap:2px}.cu-splist small{color:var(--ms-muted);font-size:11.5px;font-weight:600}.cu-splist input{width:20px;height:20px}
 .cu-acts{display:flex;gap:8px}
+/* the tiles and the status bar do not touch each other; the header has two buttons; the export dialog */
+.cu-kpis{margin-bottom:14px}.cu-dist{margin-bottom:14px}
+.cu-hacts{display:flex;gap:8px;align-items:center}
+.cu-ex{display:grid;gap:14px;padding:4px 2px}.cu-ex h3{margin:0 0 6px;color:var(--ms-navy);font-size:14px}
+.cu-fchips.wrap{flex-wrap:wrap;overflow:visible}.cu-seg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.cu-exopt{display:grid;gap:8px}.cu-exopt label{display:flex;flex-direction:row;align-items:center;gap:10px;color:var(--ms-navy);font-size:13px;font-weight:700}.cu-exopt input{width:20px;height:20px;flex:none}
+.cu-excount{margin:0;color:var(--ms-navy);font-weight:800;font-size:14px}.cu-exacts{display:flex;gap:10px}.cu-exacts .cu-btn{flex:1;min-height:46px}.cu-exacts .cu-btn[disabled]{opacity:.5}

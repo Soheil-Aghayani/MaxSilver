@@ -30,3 +30,9 @@
 .ct-art.cover{width:96px;height:96px;border-radius:24px;object-fit:cover;filter:none;box-shadow:0 8px 20px rgba(7,27,54,.18)}
 .ct-coverpick{display:flex;align-items:center;gap:12px}.ct-cvr{display:block;width:96px;height:96px;border-radius:24px;overflow:hidden;background:#fff;border:2px dashed #cfd8e6}.ct-cvr img{width:100%;height:100%;object-fit:cover;display:block}
 .ct-file .ct-i{width:18px;height:18px;opacity:.9}
+/* + on the far side of the heading, three-dot menu on the far side of each card */
+.ct-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.ct-head>div{display:grid;gap:6px;min-width:0}
+.ct-card{position:relative}.ct-body{flex:1}.ct-more{position:absolute;top:10px;inset-inline-end:auto;left:10px}
+.ct-dots{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:var(--ms-navy);cursor:pointer}.ct-dots:hover,.ct-dots[aria-expanded=true]{background:#eef2f8}
+.ct-menu{position:absolute;top:44px;left:0;z-index:5;display:grid;min-width:176px;padding:6px;border-radius:14px;background:#fff;box-shadow:0 14px 40px rgba(7,27,54,.3);direction:rtl}
+.ct-menu button{display:flex;align-items:center;gap:10px;padding:11px 12px;border:0;border-radius:9px;background:none;color:var(--ms-navy);font:700 13.5px Estedad,Tahoma,sans-serif;text-align:start;cursor:pointer}.ct-menu button:hover{background:#f1f5fb}.ct-menu .danger{color:#b42318}

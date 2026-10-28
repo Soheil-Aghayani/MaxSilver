@@ -7,6 +7,10 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'customers-export-1405-08', date: '1405/08/07', tag: 'جدید', title: 'خروجی فهرست مشتریان (PDF و Excel)',
+      summary: 'در صفحهٔ مشتریان با دکمهٔ دانلود بالا می‌توانید فهرست را با فونت استعداد بگیرید: گروه‌های دلخواه را انتخاب کنید یا کنار بگذارید، ستون‌ها را خودتان برگزینید (نام، تلفن، نشانی، رفتار پرداخت، گروه و...) و بین PDF و Excel انتخاب کنید. فاصلهٔ کارت‌های آمار هم مرتب شد.', roles: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'visitor'] },
+    { id: 'avatars-jobsites-menu-1405-08', date: '1405/08/07', tag: 'بهبود', title: 'چهرهٔ گرد برای همکاران، لوگوی سایت‌های کاریابی و منوی کاتالوگ',
+      summary: 'عکس پیش‌فرض همکاران حالا چهره‌ای گوشه‌گرد با همان سبک مشتریان است. در بخش متقاضیان لوگوی سایت‌های کاریابی دیده می‌شود. در کاتالوگ‌ها دکمهٔ + کنار عنوان است، گزینه‌های هر کاتالوگ پشت منوی سه‌نقطه است و فقط مدیر می‌تواند کاتالوگ بسازد، ویرایش یا حذف کند.', roles: ['manager', 'ceo', 'hr', 'visitor', 'sales_manager', 'account_manager', 'marketing'] },
     { id: 'colleagues-pictures-1405-08', date: '1405/08/07', tag: 'بهبود', title: 'همکاران و متقاضیان با عکس؛ کاتالوگ با عکس و دکمه‌های تصویری',
       summary: 'بخش «همکاران و متقاضیان» برای هر نفر عکس پروفایل دارد (اگر عکسی نباشد یک چهرهٔ خندان ساخته می‌شود)، نام کامل را نشان می‌دهد و در بخش متقاضیان میان‌بر سایت‌های کاریابی دارد. کاتالوگ‌ها عکس شاخص دارند و دکمه‌ها به‌جای نوشته آیکون شده‌اند. مدیر می‌تواند همکاران را از فهرست مشتریان جدا کند.', roles: ['manager', 'ceo', 'hr', 'visitor', 'sales_manager', 'account_manager', 'marketing'] },
     { id: 'staff-catalogue-upload-1405-08', date: '1405/08/07', tag: 'جدید', title: 'کارکنان و متقاضیان؛ بارگذاری کاتالوگ توسط مدیریت',

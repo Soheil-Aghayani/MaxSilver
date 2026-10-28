@@ -490,7 +490,7 @@
   function head(title, back) {
     return '<header class="cu-head"><div>' + (back ? '<a class="cu-back" href="#/" aria-label="بازگشت به فهرست">‹ مشتریان</a>' : '') + '<h1>' + esc(title) + '</h1>' +
       (back ? '' : '<p>پایگاه مشتریان؛ هر مشتری صفحهٔ خودش را دارد.' + (can('customerAll') ? '' : ' فقط مشتریان خودتان نمایش داده می‌شود.') + '</p>') + '</div>' +
-      (back ? '' : '<a class="cu-ico ghost" href="./sales-analysis.html" data-manager-only="analysis" title="تحلیل مجموعهٔ فروش" aria-label="تحلیل مجموعهٔ فروش"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 3v18h18M7 14l4-4 4 3 6-7\"/></svg></a>') + '</header>';
+      (back ? '' : '<div class="cu-hacts"><button type="button" class="cu-ico ghost" data-ex-open title="خروجی فهرست مشتریان (PDF یا Excel)" aria-label="خروجی فهرست مشتریان"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></button><a class="cu-ico ghost" href="./sales-analysis.html" data-manager-only="analysis" title="تحلیل مجموعهٔ فروش" aria-label="تحلیل مجموعهٔ فروش"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 3v18h18M7 14l4-4 4 3 6-7\"/></svg></a></div>') + '</header>';
   }
 
   // ---------- groups and owners
@@ -675,6 +675,96 @@
   }
   function undoSplit(code) {
     db.collection('customers').doc(code).update({ isStaff: false, updatedAt: Date.now() }).then(function () { S.msg = 'به مشتریان برگشت.'; S.list = []; load(); }, function (e) { S.error = errText(e); render(); });
+  }
+
+  // ---------- export: the customer list as PDF (printed page with the Estedad font) or Excel; choose the groups, the columns and what to leave out
+  var EX_COLS = [['name', 'نام مشتری', 30], ['phone', 'شماره تلفن', 16], ['address', 'نشانی', 44], ['pay', 'رفتار پرداخت', 18], ['group', 'گروه مشتری', 18],
+    ['code', 'کد حسابداری', 12], ['city', 'شهر', 14], ['province', 'استان', 14], ['status', 'وضعیت', 14], ['latest', 'فروش سال جاری (تومان)', 20], ['total', 'جمع فروش (تومان)', 20]];
+  var EX_DEFAULT = { name: 1, phone: 1, address: 1, pay: 1, group: 1 };
+  function exState() { return S.ex || (S.ex = { mode: 'only', groups: {}, cols: Object.assign({}, EX_DEFAULT), skipEmpty: false, useFilters: false }); }
+  function exVal(c, k) {
+    switch (k) {
+      case 'name': return shownName(c);
+      case 'phone': return String(c.phone || '').trim();
+      case 'address': return String(c.address || '').trim();
+      case 'pay': return payShort(c);
+      case 'group': return c.group || '';
+      case 'code': return String(c.code || '');
+      case 'city': return c.city || '';
+      case 'province': return c.province || '';
+      case 'status': return STATUS[c._status] || '';
+      case 'latest': return c._latest ? Math.round(c._latest) : '';
+      case 'total': return c._total ? Math.round(c._total) : '';
+    }
+    return '';
+  }
+  function exRows() {
+    var x = exState(), base = x.useFilters ? filtered() : S.list.slice(), keys = EX_COLS.filter(function (d) { return x.cols[d[0]]; }).map(function (d) { return d[0]; });
+    var picked = Object.keys(x.groups).filter(function (g) { return x.groups[g]; });
+    var list = base.filter(function (c) {
+      var g = c.group || '__none', hit = picked.indexOf(g) >= 0;
+      if (!picked.length) return true;
+      return x.mode === 'only' ? hit : !hit;
+    });
+    if (x.skipEmpty) list = list.filter(function (c) { return keys.every(function (k) { return k === 'latest' || k === 'total' || exVal(c, k) !== ''; }); });
+    list.sort(function (a, b) { return String(shownName(a)).localeCompare(String(shownName(b)), 'fa', { numeric: true }); });
+    return { list: list, keys: keys, picked: picked };
+  }
+  function exDialog() {
+    var x = exState(), r = exRows(), gn = groupNames(), names = Object.keys(gn).sort(function (a, b) { return gn[b] - gn[a]; });
+    var chip = function (attr, label, on, n) { return '<button type="button" class="cu-fchip" ' + attr + ' aria-pressed="' + (!!on) + '">' + esc(label) + (n != null ? ' <b>' + faInt.format(n) + '</b>' : '') + '</button>'; };
+    var groups = names.length ? names.map(function (g) { var k = g || '__none'; return chip('data-ex-g="' + esc(k) + '"', g || 'بدون گروه', x.groups[k], gn[g]); }).join('') : '<span class="cu-note">گروهی ثبت نشده است.</span>';
+    var cols = EX_COLS.map(function (d) { return chip('data-ex-c="' + d[0] + '"', d[1], x.cols[d[0]]); }).join('');
+    var none = !r.keys.length || !r.list.length;
+    dlg.innerHTML = '<div class="cu-dbar"><h2>خروجی فهرست مشتریان</h2><button type="button" class="cu-x" data-close aria-label="بستن">✕</button></div>' +
+      '<div class="cu-ex"><section><h3>گروه مشتری</h3><div class="cu-seg" role="group" aria-label="روش انتخاب گروه">' + chip('data-ex-mode="only"', 'فقط گروه‌های انتخاب‌شده', x.mode === 'only') + chip('data-ex-mode="except"', 'همه به‌جز گروه‌های انتخاب‌شده', x.mode === 'except') + '</div>' +
+      '<div class="cu-fchips wrap" role="group" aria-label="گروه‌ها">' + groups + '</div><p class="cu-note">' + (r.picked.length ? '' : 'هیچ گروهی انتخاب نشده؛ همهٔ مشتریان در خروجی می‌آیند.') + '</p></section>' +
+      '<section><h3>ستون‌ها</h3><div class="cu-fchips wrap" role="group" aria-label="ستون‌ها">' + cols + '</div></section>' +
+      '<section class="cu-exopt"><label><input type="checkbox" data-ex-opt="skipEmpty"' + (x.skipEmpty ? ' checked' : '') + '><span>مشتریانی که یکی از ستون‌های انتخابی‌شان خالی است نیایند</span></label>' +
+      '<label><input type="checkbox" data-ex-opt="useFilters"' + (x.useFilters ? ' checked' : '') + '><span>فقط مشتریان فهرست فعلی صفحه (جست‌وجو و فیلترهای بالا)</span></label></section>' +
+      '<p class="cu-excount">' + faInt.format(r.list.length) + ' مشتری · ' + faInt.format(r.keys.length) + ' ستون</p>' +
+      '<div class="cu-exacts"><button type="button" class="cu-btn primary" data-ex-pdf' + (none ? ' disabled' : '') + '>PDF</button><button type="button" class="cu-btn" data-ex-xlsx' + (none ? ' disabled' : '') + '>Excel</button></div></div>';
+    if (!dlg.open) dlg.showModal();
+  }
+  function exTitleLines(r) {
+    var x = exState(), t = [];
+    if (r.picked.length) t.push((x.mode === 'only' ? 'گروه‌ها: ' : 'همه به‌جز گروه‌های: ') + r.picked.map(function (g) { return g === '__none' ? 'بدون گروه' : g; }).join('، '));
+    return t.join(' · ');
+  }
+  function exXlsx() {
+    var r = exRows(), cols = EX_COLS.filter(function (d) { return r.keys.indexOf(d[0]) >= 0; });
+    var rows = [['ردیف'].concat(cols.map(function (d) { return d[1]; }))];
+    r.list.forEach(function (c, i) { rows.push([i + 1].concat(cols.map(function (d) { return exVal(c, d[0]); }))); });
+    window.MSXlsx.save(window.MSXlsx.blob([{ name: 'مشتریان', rows: rows, widths: [7].concat(cols.map(function (d) { return d[2]; })), freeze: true, filter: true }]), 'Max_Silver_Customers.xlsx');
+  }
+  // the PDF is a clean printable page in a new tab (Estedad font, header on every page, rows never split); «Save as PDF» in the print window gives the file
+  function exPdf() {
+    var r = exRows(), cols = EX_COLS.filter(function (d) { return r.keys.indexOf(d[0]) >= 0; }), total = cols.reduce(function (a, d) { return a + d[2]; }, 0) + 5;
+    var font = new URL('./assets/fonts/Estedad-VF.woff2', location.href).href;
+    var cell = function (c, k) {
+      var v = exVal(c, k); if (v === '' || v == null) return '<span class="e">—</span>';
+      if (k === 'phone') return '<bdi dir="ltr">' + esc(faDigits(v)) + '</bdi>';
+      if (k === 'code') return '<bdi dir="ltr">' + esc(faDigits(v)) + '</bdi>';
+      if (k === 'latest' || k === 'total') return esc(faInt.format(v));
+      return esc(k === 'address' ? faDigits(v) : v);
+    };
+    var head = '<th style="width:' + (5 * 100 / total).toFixed(2) + '%">ردیف</th>' + cols.map(function (d) { return '<th style="width:' + (d[2] * 100 / total).toFixed(2) + '%">' + esc(d[1]) + '</th>'; }).join('');
+    var body = r.list.map(function (c, i) { return '<tr><td class="n">' + faInt.format(i + 1) + '</td>' + cols.map(function (d) { return '<td' + (d[0] === 'latest' || d[0] === 'total' ? ' class="n"' : '') + '>' + cell(c, d[0]) + '</td>'; }).join('') + '</tr>'; }).join('');
+    var date = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
+    var html = '<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فهرست مشتریان مکث‌سیلور</title><style>' +
+      '@font-face{font-family:Estedad;src:url(' + font + ') format("woff2");font-weight:100 900}' +
+      '@page{size:A4 ' + (cols.length > 5 ? 'landscape' : 'portrait') + ';margin:12mm}*{box-sizing:border-box}body{margin:0;font-family:Estedad,Tahoma,sans-serif;color:#051934;font-size:11px;line-height:1.8}' +
+      'h1{margin:0 0 2px;font-size:20px}.m{color:#5b6677;font-size:11px;margin:0 0 10px}table{width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}' +
+      'th{background:#ffcc2a;color:#051934;font-weight:800;text-align:right;padding:6px 8px;border:1px solid #e0b300}td{padding:5px 8px;border:1px solid #dfe5ee;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}' +
+      'tr{break-inside:avoid;page-break-inside:avoid}tbody tr:nth-child(even) td{background:#f6f8fb}.n{text-align:center}.e{color:#a3acb9}' +
+      '.bar{position:sticky;top:0;display:flex;gap:8px;justify-content:flex-start;padding:8px 0}.bar button{font:700 13px Estedad,Tahoma,sans-serif;padding:8px 16px;border:1px solid #051934;border-radius:10px;background:#051934;color:#fff;cursor:pointer}@media print{.bar{display:none}}</style></head><body>' +
+      '<div class="bar"><button onclick="window.print()">چاپ / ذخیره PDF</button></div>' +
+      '<h1>فهرست مشتریان مکث‌سیلور</h1><p class="m">' + esc(date) + ' · ' + faInt.format(r.list.length) + ' مشتری' + (exTitleLines(r) ? ' · ' + esc(exTitleLines(r)) : '') + '</p>' +
+      '<table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>' +
+      '<script>document.fonts.ready.then(function(){setTimeout(function(){window.print();},400);});<\/script></body></html>';
+    var url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+    var w = window.open(url, '_blank');
+    if (!w) { S.error = 'مرورگر باز شدن صفحه را بست؛ اجازهٔ بازشدن پنجره را بدهید و دوباره بزنید.'; dlg.close(); render(); }
   }
 
   function reviewView() {
@@ -1095,6 +1185,13 @@
   });
   document.addEventListener('click', function (e) {
     var t;
+    if (e.target.closest('[data-ex-open]')) { exDialog(); return; }
+    if ((t = e.target.closest('[data-ex-mode]'))) { exState().mode = t.getAttribute('data-ex-mode'); exDialog(); return; }
+    if ((t = e.target.closest('[data-ex-g]'))) { var gk = t.getAttribute('data-ex-g'), xs = exState(); xs.groups[gk] = !xs.groups[gk]; exDialog(); return; }
+    if ((t = e.target.closest('[data-ex-c]'))) { var ck = t.getAttribute('data-ex-c'), xc = exState(); xc.cols[ck] = !xc.cols[ck]; exDialog(); return; }
+    if ((t = e.target.closest('[data-ex-opt]'))) { exState()[t.getAttribute('data-ex-opt')] = t.checked; exDialog(); return; }
+    if (e.target.closest('[data-ex-pdf]')) { exPdf(); return; }
+    if (e.target.closest('[data-ex-xlsx]')) { exXlsx(); return; }
     if (e.target.closest('[data-sp-scan]')) { scanStaff(); return; }
     if (e.target.closest('[data-sp-cancel]')) { S.sp = null; render(); return; }
     if (e.target.closest('[data-sp-apply]')) { applySplit(); return; }

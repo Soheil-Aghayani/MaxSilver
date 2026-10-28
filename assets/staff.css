@@ -25,3 +25,7 @@
 .st-jobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}.st-job{display:grid;justify-items:center;gap:6px;padding:12px 8px;border:1px solid var(--ms-line);border-radius:18px;background:linear-gradient(180deg,#fffdf3,#fff);color:var(--ms-navy);text-decoration:none;font:800 12.5px Estedad,Tahoma,sans-serif;text-align:center;transition:transform .15s,box-shadow .15s}.st-job:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(7,27,54,.12)}
 .st-jlogo{position:relative;display:grid;place-items:center;width:56px;height:56px;border-radius:16px;background:#ffe9a8;overflow:hidden}.st-jlogo b{font-size:22px}.st-jlogo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}
 @media(prefers-reduced-motion:reduce){.st-job{transition:none}}
+/* beam avatars with rounded corners; job logos */
+.st-av{border-radius:30%!important;background:transparent!important;box-shadow:0 4px 12px rgba(7,27,54,.16)!important}.st-av.big{width:96px;height:96px}
+.st-jlogo{width:72px;height:72px;border-radius:22px;object-fit:contain;background:none}.st-job{gap:8px}
+.st-i{width:22px;height:22px}.st-warn .st-i{width:16px;height:16px}

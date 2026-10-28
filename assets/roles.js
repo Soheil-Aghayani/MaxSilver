@@ -26,7 +26,7 @@
     analysis: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // customer and product sales analysis
     staff: ['manager', 'ceo', 'hr'],                                                    // staff and applicants with salaries: human resources and management only
     staffEdit: ['manager', 'ceo', 'hr'],                                                // changes and imports them
-    cataloguesEdit: ['manager', 'ceo'],                                                 // uploads, describes and removes catalogue files
+    cataloguesEdit: ['manager'],                                                   // uploads, describes and removes catalogue files
     catalogues: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'marketing'],      // catalogue files (PDF and layered): the roles that present products
     brand: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'],
     pricesEdit: ['manager', 'ceo', 'sales_manager'],                                    // edits the list prices of the catalog (everyone signed in sees them)

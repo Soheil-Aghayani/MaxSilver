@@ -31,9 +31,10 @@
   var IC = {
     plus: '<path d="M12 5v14M5 12h14"/>', up: '<path d="M12 16V5M7 9l5-5 5 5M5 20h14"/>', edit: '<path d="m4 20 4-1 11-11-3-3L5 16zM14 6l3 3"/>', eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     eyeoff: '<path d="M3 3l18 18M10.6 5.6A9.7 9.7 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.2 4M6.5 7.2C3.9 8.9 2 12 2 12s3.6 6.5 10 6.5a9.6 9.6 0 0 0 4-.9"/>',
+    more: '<circle cx="12" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="19" r="1.7" fill="currentColor"/>',
     trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', ok: '<path d="m5 12 5 5 9-10"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>', down: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>'
   };
-  var ic = function (k) { return '<svg class="ct-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[k] + '</svg>'; };
+  var ic = function (k) { return '<svg class="ct-i" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[k] + '</svg>'; };
   var ibtn = function (attr, k, label, cls) { return '<button type="button" class="ct-ico ' + (cls || '') + '" ' + attr + ' title="' + label + '" aria-label="' + label + '">' + ic(k) + '</button>'; };
 
   function fileHtml(c, f) {
@@ -41,14 +42,20 @@
     return '<span class="ct-fwrap"><button type="button" class="ct-file" data-dl="' + esc(f.id) + '" data-name="' + esc(f.name) + '"><b>' + esc(ext) + '</b><span>' + esc(f.label || k[2]) + '<small>' + esc(mb(f.size || 0)) + '</small></span>' + ic('down') + '</button>' +
       (can('cataloguesEdit') ? '<button type="button" class="ct-x" data-rmfile="' + esc(c.id) + '|' + esc(f.id) + '" aria-label="حذف فایل" title="حذف فایل">×</button>' : '') + '</span>';
   }
+  // the options of a catalogue: one three-dot button on the far side of the card opens a small menu
+  function moreMenu(c) {
+    var open = S.menu === c.id, item = function (attr, k, label, cls) { return '<button type="button" role="menuitem" ' + attr + (cls ? ' class="' + cls + '"' : '') + '>' + ic(k) + '<span>' + label + '</span></button>'; };
+    return '<div class="ct-more"><button type="button" class="ct-dots" data-menu="' + esc(c.id) + '" aria-haspopup="menu" aria-expanded="' + open + '" title="گزینه‌ها" aria-label="گزینه‌ها">' + ic('more') + '</button>' +
+      (open ? '<div class="ct-menu" role="menu">' + item('data-addfile="' + esc(c.id) + '"', 'up', 'افزودن فایل') + item('data-edit="' + esc(c.id) + '"', 'edit', 'ویرایش') +
+        item('data-toggle="' + esc(c.id) + '"', c.active === false ? 'eye' : 'eyeoff', c.active === false ? 'نمایش' : 'پنهان کردن') + item('data-del="' + esc(c.id) + '"', 'trash', 'حذف', 'danger') + '</div>' : '') + '</div>';
+  }
   function cardHtml(c) {
     var edit = can('cataloguesEdit'), files = c.files || [];
     var add = S.adding === c.id ? addForm(c) : '';
     return '<article class="ct-card' + (c.active === false ? ' off' : '') + '">' + (c.cover ? '<img class="ct-art cover" src="' + esc(c.cover) + '" alt="" width="96" height="96" decoding="async">' : '<img class="ct-art" src="./assets/art/tiles/catalogues.webp" alt="" width="96" height="96" decoding="async" onerror="this.remove()">') +
       '<div class="ct-body"><h2>' + esc(c.title) + (c.active === false ? ' <small>(پنهان)</small>' : '') + '</h2>' + (c.about ? '<p>' + esc(c.about) + '</p>' : '') +
       '<div class="ct-files">' + (files.length ? files.map(function (f) { return fileHtml(c, f); }).join('') : '<span class="ct-soon">هنوز فایلی بارگذاری نشده است.</span>') + '</div>' + add +
-      (edit ? '<div class="ct-acts">' + ibtn('data-addfile="' + esc(c.id) + '"', 'up', 'افزودن فایل', 'alt') + ibtn('data-edit="' + esc(c.id) + '"', 'edit', 'ویرایش', 'alt') +
-        ibtn('data-toggle="' + esc(c.id) + '"', c.active === false ? 'eye' : 'eyeoff', c.active === false ? 'نمایش' : 'پنهان کردن', 'alt') + ibtn('data-del="' + esc(c.id) + '"', 'trash', 'حذف', 'danger') + '</div>' : '') + '</div></article>';
+      '</div>' + (edit ? moreMenu(c) : '') + '</article>';
   }
   function addForm(c) {
     if (!onServer()) return '<p class="ct-err">بارگذاری فایل فقط روی سرور مکث‌سیلور ممکن است (با حساب سرور وارد شوید).</p>';
@@ -71,7 +78,7 @@
     if (!S.profile || S.profile.active === false) return '<p class="ct-note">حساب شما هنوز فعال نشده است.</p>';
     if (!can('catalogues')) return '<p class="ct-note">این بخش برای نقش شما فعال نیست.</p>';
     var list = S.list.filter(function (c) { return c.active !== false || can('cataloguesEdit'); });
-    return '<header class="ct-head"><h1>کاتالوگ‌ها</h1><p>فایل‌های کاتالوگ برای فروش و معرفی محصولات؛ هر فایل را در قالب مناسب (PDF برای مشتری، لایه‌باز برای طراح) بگیرید.</p>' +
+    return '<header class="ct-head"><div><h1>کاتالوگ‌ها</h1><p>فایل‌های کاتالوگ برای فروش و معرفی محصولات؛ هر فایل را در قالب مناسب (PDF برای مشتری، لایه‌باز برای طراح) بگیرید.</p></div>' +
       (can('cataloguesEdit') && !S.form ? ibtn('data-new', 'plus', 'کاتالوگ تازه') : '') + '</header>' +
       (S.msg ? '<p class="ct-ok" role="status">' + esc(S.msg) + '</p>' : '') + (S.error ? '<p class="ct-err" role="alert">' + esc(S.error) + '</p>' : '') +
       (S.form ? formHtml() : '') + '<div class="ct-list">' + (list.map(cardHtml).join('') || '<p class="ct-note">هنوز کاتالوگی ثبت نشده است.</p>') + '</div>';
@@ -93,8 +100,10 @@
   }
   root.addEventListener('click', function (e) {
     var t, c = function (id) { return S.list.filter(function (x) { return x.id === id; })[0]; };
+    if (S.menu && !e.target.closest('[data-menu]')) S.menu = '';
     if (e.target.closest('[data-new]')) { S.form = { id: '', title: '', about: '', cover: '' }; S.msg = ''; S.error = ''; render(); return; }
     if ((t = e.target.closest('[data-edit]'))) { var o = c(t.getAttribute('data-edit')); if (o) { S.form = { id: o.id, title: o.title, about: o.about || '', cover: o.cover || '' }; S.error = ''; render(); window.scrollTo(0, 0); } return; }
+    if ((t = e.target.closest('[data-menu]'))) { var mid = t.getAttribute('data-menu'); S.menu = S.menu === mid ? '' : mid; render(); return; }
     if (e.target.closest('[data-rmcover]')) { if (S.form) { S.form.cover = ''; render(); } return; }
     if (e.target.closest('[data-cancel]')) { S.form = null; S.adding = ''; S.error = ''; render(); return; }
     if (e.target.closest('[data-save]')) {
@@ -122,6 +131,8 @@
       window.MSApi.download('catalogues/files/' + encodeURIComponent(t.getAttribute('data-dl')), t.getAttribute('data-name')).then(null, function (er) { S.error = (er && er.message) || 'دانلود نشد.'; render(); }).then(function () { b.disabled = false; });
     }
   });
+  document.addEventListener('click', function (e) { if (S.menu && !e.target.closest('.ct-more')) { S.menu = ''; render(); } });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.menu) { S.menu = ''; render(); } });
   root.addEventListener('change', function (e) {
     if (e.target.id !== 'ctCover' || !e.target.files || !e.target.files[0] || !S.form) return;
     window.MSImg.fromFile(e.target.files[0], 320).then(function (u) { S.form.cover = u; S.error = ''; }, function (er) { S.error = er.message || 'عکس خوانده نشد.'; }).then(render);

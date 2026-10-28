@@ -132,8 +132,8 @@ service cloud.firestore {
     // Catalogue files page: the roles that present products read; management writes. The files are uploaded to the server endpoint.
     match /catalogues/{id} {
       allow read: if hasRole(['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'marketing']);
-      allow delete: if hasRole(['manager', 'ceo']);
-      allow create, update: if hasRole(['manager', 'ceo'])
+      allow delete: if hasRole(['manager']);
+      allow create, update: if hasRole(['manager'])
         && request.resource.data.keys().hasOnly(['title', 'about', 'files', 'active', 'order', 'cover', 'updatedAt', 'updatedBy'])
         && (!('cover' in request.resource.data) || (request.resource.data.cover is string && request.resource.data.cover.size() <= 80000))
         && request.resource.data.title is string && request.resource.data.title.size() >= 2 && request.resource.data.title.size() <= 120
