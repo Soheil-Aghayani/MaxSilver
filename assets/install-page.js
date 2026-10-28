@@ -25,6 +25,10 @@
     { id: 'macos', name: 'مک', lead: 'نصب از Chrome، Edge یا Safari', steps: ['Chrome یا Edge: روی آیکن نصب در نوار آدرس بزنید.', 'Safari: از منوی File گزینهٔ «Add to Dock» را بزنید.', 'برنامه در پوشهٔ Applications و Dock دیده می‌شود.'] },
     { id: 'linux', name: 'لینوکس', lead: 'نصب از Chrome یا Chromium', steps: ['در Chrome یا Chromium این سایت را باز کنید.', 'روی آیکن نصب در نوار آدرس بزنید یا دکمهٔ «نصب» همین کارت را بزنید.', 'Firefox نصب برنامه را روی رایانه پشتیبانی نمی‌کند.'] }
   ];
+  // a page shown inside a messenger or any app's own web view can never be installed: say so and hand the link to the real browser
+  var WEBVIEW = /Bale|Telegram|Eitaa|Rubika|Soroush|iGap|WhatsApp|Instagram|FBAN|FBAV|Line\/|Twitter|Snapchat|TikTok|MicroMessenger/i.test(ua) || /; wv\)/.test(ua) ||
+    (ME === 'ios' && !/Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua));
+  var copyMsg = '';
   var info = null, deferred = null, apkMsg = '';
   var api = window.MSApi, signed = !!(api && api.signedIn && api.signedIn());
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; render(); });
@@ -46,6 +50,24 @@
       '<p class="ip-small">برای اطمینان، SHA-256 فایل دانلودشده را (با ابزار بررسی هش گوشی یا رایانه) با مقدار بالا مقایسه کنید.</p></div></details>';
   }
 
+  // what each device needs besides its steps: a one-tap shortcut when the browser allows it, and a way out of a messenger
+  function extra(id, me) {
+    if (!me) return '';
+    var h = '';
+    if (WEBVIEW && (id === 'android' || id === 'ios')) {
+      h += '<div class="ip-warn" role="alert"><b>این صفحه داخل یک پیام‌رسان یا برنامهٔ دیگر باز شده است.</b><p>آن مرورگر درونی اجازهٔ نصب نمی‌دهد. لینک را کپی کنید و در ' + (id === 'ios' ? 'Safari' : 'Chrome') + ' باز کنید.</p>' +
+        '<div class="ip-row"><button type="button" class="ip-btn alt" data-copy>کپی لینک</button>' + (id === 'android' ? '<a class="ip-btn" href="intent://' + esc(location.host + location.pathname) + '#Intent;scheme=https;package=com.android.chrome;end">باز کردن در Chrome</a>' : '') + '</div>' +
+        (copyMsg ? '<p class="ip-small" role="status">' + esc(copyMsg) + '</p>' : '') + '</div>';
+    }
+    else if (id === 'android') {
+      h += deferred ? '<button type="button" class="ip-btn alt" data-install>میان‌بر روی صفحهٔ اصلی (بدون دانلود)</button>'
+        : '<p class="ip-small">اگر دکمهٔ میان‌بر دیده نمی‌شود: در Chrome منوی سه‌نقطه را باز کنید و «Install app» یا «Add to Home screen» را بزنید.</p>';
+    }
+    else if (id === 'ios') {
+      h += '<p class="ip-small">در Safari دکمهٔ اشتراک‌گذاری پایین صفحه است. اگر «Add to Home Screen» را نمی‌بینید، فهرست را پایین بکشید. در Chrome آیفون هم همین گزینه در منوی اشتراک‌گذاری هست.</p><div class="ip-row"><button type="button" class="ip-btn alt" data-copy>کپی لینک</button></div>' + (copyMsg ? '<p class="ip-small" role="status">' + esc(copyMsg) + '</p>' : '');
+    }
+    return h;
+  }
   function card(c) {
     var me = c.id === ME, a = info && info.android;
     var action = '';
@@ -54,7 +76,7 @@
     else if (c.id === 'windows' || c.id === 'macos' || c.id === 'linux') action = me && deferred ? '<button type="button" class="ip-btn" data-install>نصب</button>' : '';
     return '<article class="ip-card' + (me ? ' me' : '') + '" id="os-' + c.id + '">' + (me ? '<span class="ip-me">دستگاه شما</span>' : '') +
       '<div class="ip-head">' + icon(c.id, 64) + '<div><h2>' + esc(c.name) + '</h2><p>' + esc(c.lead) + '</p></div></div>' +
-      '<ol>' + c.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>' + (c.note ? '<p class="ip-small">' + esc(c.note) + '</p>' : '') + action + (c.id === 'android' ? trust() : '') + '</article>';
+      '<ol>' + c.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>' + (c.note ? '<p class="ip-small">' + esc(c.note) + '</p>' : '') + action + extra(c.id, me) + (c.id === 'android' ? trust() : '') + '</article>';
   }
 
   function render() {
@@ -69,6 +91,12 @@
     if (e.target.closest('[data-apk]')) {
       apkMsg = 'در حال دانلود…'; render();
       api.download('app/android/file', 'maxsilver.apk').then(function () { apkMsg = 'دانلود شد؛ فایل را از پوشهٔ دانلودها باز کنید.'; render(); }, function (er) { apkMsg = (er && er.message) || 'دانلود انجام نشد.'; render(); });
+      return;
+    }
+    if (e.target.closest('[data-copy]')) {
+      var url = location.href.split('#')[0];
+      var done = function (ok) { copyMsg = ok ? 'لینک کپی شد.' : 'کپی نشد؛ لینک را از نوار آدرس بردارید.'; render(); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(false); }); else done(false);
       return;
     }
     if (!e.target.closest('[data-install]') || !deferred) return;

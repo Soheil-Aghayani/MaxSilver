@@ -851,10 +851,21 @@
     });
   }
   // the little menu of a message
-  function closeMenu() { var m = document.getElementById('tkMenu'); if (m) m.remove(); }
-  function openMenu(btn) {
+  function closeMenu() {
+    var m = document.getElementById('tkMenu'); if (m) m.remove();
+    Array.prototype.forEach.call(document.querySelectorAll('.pn-bubble.sel'), function (b) { b.classList.remove('sel'); });
+  }
+  // the menu of a message: opened from the dots, a right click, or a long press (like a messenger). It floats above the conversation
+  // (never clipped by the bubble) and stays inside the screen.
+  var MENU_ICO = {
+    reply: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 20 4-1 11-11-3-3L5 16zM14 6l3 3"/></svg>',
+    del: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
+  };
+  function openMenuAt(id, x, y) {
     closeMenu();
-    var id = btn.getAttribute('data-more'), m = S.tk.msgs.filter(function (x) { return x.id === id; })[0];
+    var m = S.tk.msgs.filter(function (k) { return k.id === id; })[0];
     if (!m || m.deleted) return;
     var mine = m.uid === S.user.uid, young = Date.now() - (m.at || 0) < 48 * 3600000, open = (S.tk.cur || {}).status === 'open', items = [];
     if (open) items.push(['reply', 'پاسخ']);
@@ -862,10 +873,41 @@
     if (open && mine && young) items.push(['edit', 'ویرایش']);
     if (open && mine) items.push(['del', 'حذف برای همه']);
     if (!items.length) return;
+    var row = dlg.querySelector('.pn-row[data-mid="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"] .pn-bubble'); if (row) row.classList.add('sel');
     var menu = document.createElement('div'); menu.id = 'tkMenu'; menu.className = 'pn-menu'; menu.setAttribute('role', 'menu');
-    menu.innerHTML = items.map(function (it) { return '<button type="button" role="menuitem" data-act="' + it[0] + '" data-mid="' + esc(id) + '"' + (it[0] === 'del' ? ' class="danger"' : '') + '>' + it[1] + '</button>'; }).join('');
-    btn.closest('.pn-bubble').appendChild(menu);
+    menu.innerHTML = items.map(function (it) { return '<button type="button" role="menuitem" data-act="' + it[0] + '" data-mid="' + esc(id) + '"' + (it[0] === 'del' ? ' class="danger"' : '') + '>' + MENU_ICO[it[0]] + '<span>' + it[1] + '</span></button>'; }).join('');
+    menu.style.visibility = 'hidden';
+    dlg.appendChild(menu);
+    var w = menu.offsetWidth, h = menu.offsetHeight, vw = window.innerWidth, vh = window.innerHeight, pad = 8;
+    var left = Math.min(Math.max(x - w / 2, pad), vw - w - pad), top = y + 8;
+    if (top + h > vh - pad) top = Math.max(pad, y - h - 8);
+    // inside a transformed dialog «fixed» is measured from the dialog, not from the screen
+    var tf = window.getComputedStyle(dlg).transform, dr = (tf && tf !== 'none') ? dlg.getBoundingClientRect() : { left: 0, top: 0 };
+    menu.style.left = (left - dr.left) + 'px'; menu.style.top = (top - dr.top) + 'px'; menu.style.visibility = '';
+    var first = menu.querySelector('button'); if (first) first.focus({ preventScroll: true });
   }
+  function openMenu(btn) {
+    var r = btn.getBoundingClientRect();
+    openMenuAt(btn.getAttribute('data-more'), r.left + r.width / 2, r.bottom);
+  }
+  var pressT = 0, pressX = 0, pressY = 0, pressed = false;
+  function bubbleId(el) { var row = el && el.closest ? el.closest('.pn-row[data-mid]') : null; return row ? row.getAttribute('data-mid') : ''; }
+  document.addEventListener('contextmenu', function (e) {
+    if (!S.tk || !S.tk.open || !dlg || !dlg.open) return;
+    var id = e.target.closest && e.target.closest('.pn-bubble') ? bubbleId(e.target) : '';
+    if (!id || e.target.closest('a,[data-view],[data-dl]')) return;
+    e.preventDefault(); openMenuAt(id, e.clientX, e.clientY);
+  });
+  document.addEventListener('touchstart', function (e) {
+    if (!S.tk || !S.tk.open || !dlg || !dlg.open || !e.target.closest || !e.target.closest('.pn-bubble') || e.touches.length !== 1) return;
+    var id = bubbleId(e.target); if (!id) return;
+    pressX = e.touches[0].clientX; pressY = e.touches[0].clientY; pressed = false;
+    clearTimeout(pressT);
+    pressT = setTimeout(function () { pressed = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (x) { /* ignore */ } openMenuAt(id, pressX, pressY); }, 450);
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) { if (pressT && e.touches[0] && (Math.abs(e.touches[0].clientX - pressX) > 10 || Math.abs(e.touches[0].clientY - pressY) > 10)) { clearTimeout(pressT); pressT = 0; } }, { passive: true });
+  ['touchend', 'touchcancel'].forEach(function (n) { document.addEventListener(n, function (e) { clearTimeout(pressT); pressT = 0; if (pressed) { pressed = false; if (e.cancelable) e.preventDefault(); } }); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
   function doAction(act, id) {
     var m = S.tk.msgs.filter(function (x) { return x.id === id; })[0], tid = S.tk.open; closeMenu();
     if (!m || !tid) return;
@@ -923,7 +965,7 @@
       if (ta) { var p = ta.selectionStart || ta.value.length; ta.value = ta.value.slice(0, p) + b.getAttribute('data-emo') + ta.value.slice(ta.selectionEnd || p); ta.focus(); ta.dispatchEvent(new Event('input', { bubbles: true })); }
       return;
     }
-    b = t.closest('[data-more]'); if (b) { var had = document.getElementById('tkMenu'); if (had && had.parentNode === b.closest('.pn-bubble')) closeMenu(); else openMenu(b); return; }
+    b = t.closest('[data-more]'); if (b) { var had = document.getElementById('tkMenu'); if (had && b.closest('.pn-bubble').classList.contains('sel')) closeMenu(); else openMenu(b); return; }
     b = t.closest('#tkMenu [data-act]'); if (b) { doAction(b.getAttribute('data-act'), b.getAttribute('data-mid')); return; }
     b = t.closest('[data-bar-cancel]'); if (b) { S.tk.reply = null; if (S.tk.edit) { S.tk.edit = null; var ta2 = document.querySelector('#tkReplyForm textarea'); if (ta2) { ta2.value = ''; ta2.style.height = ''; } } paintBars(); return; }
     b = t.closest('[data-pend-x]'); if (b) { var pi = +b.getAttribute('data-pend-x'), pp = S.tk.pending[pi]; if (pp && pp.url) URL.revokeObjectURL(pp.url); S.tk.pending.splice(pi, 1); paintBars(); return; }

@@ -24,6 +24,7 @@
   var AREA = {
     dashboard: ['manager', 'ceo', 'sales_manager', 'finance'],                          // CEO dashboard
     analysis: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance'],        // customer and product sales analysis
+    catalogues: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'marketing'],      // catalogue files (PDF and layered): the roles that present products
     brand: ['manager', 'ceo', 'sales_manager', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'],
     pricesEdit: ['manager', 'ceo', 'sales_manager'],                                    // edits the list prices of the catalog (everyone signed in sees them)
     bankPick: ['finance'],                                                              // chooses the bank account on an approved pre-invoice
