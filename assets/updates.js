@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'table-line-700-1405-08', date: '1405/08/09', tag: 'جدید', title: 'میزکار خط پخت ۱۲۰ سانت، سری ۷۰۰',
+      summary: 'میزکار خط پخت ۱۲۰ سانت طرح امپرو MAX سری ۷۰۰ به کاتالوگ افزوده شد؛ قیمت ۱۱۵٬۵۰۰٬۰۰۰ تومان (۱۰۵٬۰۰۰٬۰۰۰ به‌علاوهٔ ۱۰ درصد). کد را کارشناس فروش بعداً اعلام می‌کند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance'] },
     { id: 'price-book-update-1405-08-09', date: '1405/08/09', tag: 'بهبود', title: 'قیمت‌ها و کدهای تازه از کتاب قیمت',
       summary: 'قیمت‌های به‌روز شدهٔ بن‌ماری‌ها و درب‌ها، یخچال و فریزرهای زیر گریل، کانتری‌ها، یخچال‌های ایستاده، میزهای کار و چند کالای دیگر مکث‌سیلور از کتاب قیمت گوگل به برنامه آمد (تاریخ فهرست ۱۴۰۵/۰۸/۰۹). کد و قیمت ده یخچال و فریزر زیر گریل تازه هم ثبت شد. چند مورد مشکوک (قیمت دو درب بن‌ماری ۱/۶ و چند کد تکراری) تا تأیید دست نخورده ماند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance'] },
     { id: 'under-grill-sizes-1405-08', date: '1405/08/09', tag: 'جدید', title: 'ده یخچال و فریزر زیر گریل تازه (۱۳۲، ۱۶۲، ۲۰۰، ۲۱۰، ۲۴۵)',
