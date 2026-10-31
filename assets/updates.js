@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'price-book-update-1405-08-09', date: '1405/08/09', tag: 'بهبود', title: 'قیمت‌ها و کدهای تازه از کتاب قیمت',
+      summary: 'قیمت‌های به‌روز شدهٔ بن‌ماری‌ها و درب‌ها، یخچال و فریزرهای زیر گریل، کانتری‌ها، یخچال‌های ایستاده، میزهای کار و چند کالای دیگر مکث‌سیلور از کتاب قیمت گوگل به برنامه آمد (تاریخ فهرست ۱۴۰۵/۰۸/۰۹). کد و قیمت ده یخچال و فریزر زیر گریل تازه هم ثبت شد. چند مورد مشکوک (قیمت دو درب بن‌ماری ۱/۶ و چند کد تکراری) تا تأیید دست نخورده ماند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance'] },
     { id: 'under-grill-sizes-1405-08', date: '1405/08/09', tag: 'جدید', title: 'ده یخچال و فریزر زیر گریل تازه (۱۳۲، ۱۶۲، ۲۰۲، ۲۱۲، ۲۴۲)',
       summary: 'یخچال زیر گریل و فریزر زیر گریل هر کدام در پنج اندازهٔ تازه به کاتالوگ افزوده شدند: ۱۳۲، ۱۶۲، ۲۰۲، ۲۱۲ و ۲۴۲ (طول به دسی‌متر؛ مثلاً ۲۱۲ یعنی ۲۱۲۰×۸۰۰×۶۱۵ میلی‌متر). کد و قیمت‌شان به‌زودی از کارشناس فروش می‌رسد و تا آن موقع «بدون قیمت» دیده می‌شوند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'marketing'] },
     { id: 'install-print-staff-1405-08', date: '1405/08/07', tag: 'بهبود', title: 'دانلود اپلیکیشن بدون ورود، چاپ افقی و فهرست مشتریان برای تکمیل دستی',
