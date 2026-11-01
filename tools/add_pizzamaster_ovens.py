@@ -34,12 +34,12 @@ def make(model, brand_name, cid):
     x = D[model]
     n = x['decks']
     ser = model[:2]
-    pw = 'PW%s-ED' % model
+    pw = 'PM%s-ED' % model
     caps = x['cap']
     specs = [
         ['مدل', pw],
         ['معنی شمارهٔ مدل', 'رقم اول (۷) = عمق سنگ حدود ۷۰ سانتی‌متر؛ رقم دوم (%s) = تعداد سنگ‌های کنار هم؛ رقم سوم (%s) = تعداد دکه (ردیف)' % (fa(int(model[1]) if False else {'2': 2, '3': 3, '4': 4}[model[1]]), fa(n))],
-        ['سری', 'PW%sX' % ser],
+        ['سری', 'PM%sX' % ser],
         ['تعداد دکه', fa(n)],
         ['ابعاد بیرونی با هود (عرض × عمق × ارتفاع)', '%s × %s × %s سانتی‌متر' % (fa(cm(x['width'])), fa(cm(x['depth'])), fa(cm(x['height'])))],
         ['سطح پخت هر دکه', '%s × %s سانتی‌متر (حدود %s مترمربع)' % (fa(cm(x['bake_w'])), fa(cm(x['bake_d'])), fa(x['bake_a']))],
@@ -56,7 +56,7 @@ def make(model, brand_name, cid):
     ]
     desc = ('فر برقی مدولار دک‌دار پیتزا با %s دکهٔ مستقل؛ هر دکه دمای جدا دارد و می‌توان در یک فر چند محصول پخت. عکس، نمونهٔ ۲ دکهٔ همین سری است. '
             'مشخصات از برگهٔ فنی سازنده؛ کد و قیمت را کارشناس فروش اعلام می‌کند.') % fa(n)
-    return {'id': cid, 'src': 'max-silver', 'name': 'فر طرح پیتزا مستر مدل ' + pw, 'code': '', 'grp': 'تجهیزات پخت', 'cat': 'فر پیتزا', 'sec': ['فست‌فود', 'رستوران'],
+    return {'id': cid, 'src': 'max-silver', 'name': 'فر پیتزا %s طبقه طرح پیتزا مستر ' % n + pw, 'code': '', 'grp': 'تجهیزات پخت', 'cat': 'فر پیتزا', 'sec': ['فست‌فود', 'رستوران'],
             'img': './assets/products/pl/ms-pw%s.webp' % model if os.path.exists(os.path.join(HERE, '..', 'assets', 'products', 'pl', 'ms-pw%s.webp' % model)) else './assets/products/pl/ms-pm%sx.webp' % ser, 'url': '', 'desc': desc,
             'dims': {'l': cm(x['width']), 'w': cm(x['depth']), 'h': cm(x['height'])}, 'wt': x['net'], 'specs': specs}
 

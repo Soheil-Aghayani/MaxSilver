@@ -366,7 +366,7 @@
 
   // ---------- price template: finance audits the prices in an Excel file; the sales manager (or management) uploads it and the prices update
   var TPL_HEAD = ['شناسه برنامه (تغییر ندهید)', 'کد کالا', 'نام کالا', 'برند', 'دسته', 'قیمت (تومان)', 'توضیح (اختیاری)'];   // one price column, edited in place
-  var STT = { p: 'نقدی', i: 'استعلام', r: 'شارژ', n: 'توافقی' };
+  var STT = { p: 'نقدی', i: 'استعلام', r: 'شارژ', n: 'توافقی', o: 'اتمام موجودی' };
   function parseStatus(v) {
     var k = norm(v).replace(/\s+/g, '');
     if (!k) return '';

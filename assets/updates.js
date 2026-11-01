@@ -7,6 +7,14 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'sheet-sync-1405-08-10', date: '1405/08/10', tag: 'بهبود', title: 'قیمت‌های اپ با فهرست قیمت هماهنگ شد',
+      summary: 'قیمت و وضعیت ۲۳۰ کالا (بیشتر توربومکس و چند کالای Max Silver) با آخرین فهرست قیمت یکی شد. وضعیت تازهٔ «اتمام موجودی» هم اضافه شد و ۱۴ فر پیتزا مستر کد گرفتند. چند قیمت مشکوک تا تأیید مسئول فهرست عوض نشد.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance'] },
+    { id: 'bainmarie-lid-dims-1405-08', date: '1405/08/10', tag: 'اصلاح', title: 'ابعاد درب‌های بن‌ماری',
+      summary: 'ابعاد ۲۱ درب بن‌ماری (فلزی و پلی‌کربنات) که فقط در مشخصات نوشته شده بود، در ستون ابعاد هم (طول × عرض) آمد.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'] },
+    { id: 'pizzamaster-names-1405-08', date: '1405/08/10', tag: 'اصلاح', title: 'نام فرهای پیتزا مستر یکدست شد',
+      summary: 'هر ۱۵ فر طرح پیتزا مستر حالا با یک قالب نام دارند: «فر پیتزا N طبقه طرح پیتزا مستر PM7XY-ED» (مثلاً فر پیتزا ۲ طبقه … PM732-ED). مشخصات و ابعاد مدل PM732 هم کامل شد.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'] },
+    { id: 'fix-mixer-200929-1405-08', date: '1405/08/10', tag: 'اصلاح', title: 'اصلاح کالای کد ۲۰۰۹۲۹ (میکسر اسپیرال سفید ۳۰ لیتر)',
+      summary: 'کد ۲۰۰۹۲۹ میکسر اسپیرال بدنه سفید تمام دیجیتال ۳۰ لیتر است و قیمتش ۳۳۰٬۰۰۰٬۰۰۰ تومان شد. پیش‌تر اشتباهاً با عکس و کد بویلر ۲۵ لیتری یکی شده بود؛ کد بویلر ۲۵ لیتری ۲۰۰۴۱۵ است.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager'] },
     { id: 'prices-plus-10-1405-08', date: '1405/08/10', tag: 'بهبود', title: 'قیمت‌های تازه (۱۰ درصد افزایش) برای طرح امپرو MAX',
       summary: 'قیمت ۷۷ کالای طرح امپرو MAX (دیگ‌ها، تابه، سرخ‌کن‌ها، گریل‌ها، گرمخانه‌ها، پاستاپز و ...) با ۱۰ درصد افزایش و رند به پایین تا یک میلیون تومان به‌روز شد. میزکار خط پخت ۱۲۰ سری ۹۰۰ ۱۳۷٬۰۰۰٬۰۰۰ و سری ۷۰۰ ۱۱۵٬۰۰۰٬۰۰۰ تومان شد.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance'] },
     { id: 'table-line-700-1405-08', date: '1405/08/09', tag: 'جدید', title: 'میزکار خط پخت ۱۲۰ سانت، سری ۷۰۰',

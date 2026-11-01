@@ -17,7 +17,7 @@
     loading = fetch('./assets/price-list.json' + (VER ? '?v=' + VER : '')).then(function (r) { return r.json(); }).then(function (j) { seed = j; return j; }, function () { seed = { items: {} }; return seed; });
     return loading;
   }
-  // { p: price in toman or 0, s: 'p' price | 'i' ask for a quote | 'r' being restocked, edited: bool, at, by } or null
+  // { p: price in toman or 0, s: 'p' price | 'i' ask for a quote | 'r' being restocked | 'o' out of stock (from the price book only), edited: bool, at, by } or null
   function get(id) {
     var e = edits[id];
     if (e) return { p: e.p || 0, s: e.s || 'p', c: e.c || 0, edited: true, at: e.at || 0, by: e.by || '' };
@@ -36,6 +36,7 @@
     if (v.s === 'i') return 'استعلام بگیرید';
     if (v.s === 'r') return 'درحال شارژ';
     if (v.s === 'n') return 'توافقی';
+    if (v.s === 'o') return 'اتمام موجودی';
     return v.p > 0 ? fa.format(v.p) + ' تومان' : '';
   }
   // the cheque price in toman: the product's own, else cash + the group's percentage (rounded to 1,000 toman); 0 when the product has no cash price
