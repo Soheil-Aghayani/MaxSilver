@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'prices-plus-10-1405-08', date: '1405/08/10', tag: 'بهبود', title: 'قیمت‌های تازه (۱۰ درصد افزایش) برای طرح امپرو MAX',
+      summary: 'قیمت ۷۵ کالای طرح امپرو MAX (دیگ‌ها، تابه، سرخ‌کن‌ها، گریل‌ها، گرمخانه‌ها، پاستاپز و ...) با ۱۰ درصد افزایش و رند به پایین تا یک میلیون تومان به‌روز شد. قیمت دو میزکار خط پخت ۱۲۰ تا تأیید صاحب کار دست‌نخورده است.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance'] },
     { id: 'table-line-700-1405-08', date: '1405/08/09', tag: 'جدید', title: 'میزکار خط پخت ۱۲۰ سانت، سری ۷۰۰',
       summary: 'میزکار خط پخت ۱۲۰ سانت طرح امپرو MAX سری ۷۰۰ به کاتالوگ افزوده شد؛ قیمت ۱۱۵٬۵۰۰٬۰۰۰ تومان (۱۰۵٬۰۰۰٬۰۰۰ به‌علاوهٔ ۱۰ درصد). کد را کارشناس فروش بعداً اعلام می‌کند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance'] },
     { id: 'price-book-update-1405-08-09', date: '1405/08/09', tag: 'بهبود', title: 'قیمت‌ها و کدهای تازه از کتاب قیمت',
