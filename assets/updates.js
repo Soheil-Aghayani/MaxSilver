@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'bale-notices-1405-08-13', date: '1405/08/13', tag: 'تازه', title: 'اطلاع‌رسانی در بله',
+      summary: 'از «تنظیمات من» می‌توانید بله را وصل کنید: شمارهٔ موبایل را بنویسید، در بله «شروع» و «اشتراک شمارهٔ من» را بزنید. بعد از آن خبر پیام تازه در گفت‌وگوها و درخواست‌ها در بله هم برایتان می‌آید؛ متن پیام‌ها و قیمت‌ها در بله فرستاده نمی‌شود. هر زمان بخواهید اتصال را قطع می‌کنید.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'] },
     { id: 'price-xlsx-1405-08-12', date: '1405/08/12', tag: 'بهبود', title: 'قیمت وینتورا و توربومکس با فهرست آبان به‌روز شد',
       summary: 'قیمت یا وضعیت ۱۱۷ ردیف کالا (وینتورا و توربومکس) با فایل‌های Excel فهرست قیمت آبان یکی شد. ردیف‌هایی که کد تکراری یا قیمت مشکوک دارند تا تأیید مسئول فهرست عوض نشدند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance'] },
     { id: 'sheet-sync-1405-08-10', date: '1405/08/10', tag: 'بهبود', title: 'قیمت‌های اپ با فهرست قیمت هماهنگ شد',

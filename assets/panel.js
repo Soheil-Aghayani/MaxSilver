@@ -71,7 +71,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); loadPersonal(); loadArchive(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
+    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); loadBale(); loadPersonal(); loadArchive(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -1181,6 +1181,46 @@
       (P.msg ? '<p class="pn-ok" role="status">' + esc(P.msg) + '</p>' : '') + '</section>';
   }
 
+  // ---- Bale: the person connects their own Bale chat (the server sends the notices; it only exists on the Iranian server, not on the GitHub copy)
+  S.bale = { ready: false, enabled: false, linked: false, phone: '', url: '', busy: false, err: '', msg: '' };
+  function loadBale() {
+    if (!window.MSApi || !MSApi.enabled() || !S.user) return;
+    MSApi.raw('GET', 'bale').then(function (r) {
+      S.bale.enabled = !!r.enabled; S.bale.linked = !!r.linked; S.bale.phone = r.phone || S.bale.phone || ''; S.bale.ready = true;
+      if (S.bale.linked) S.bale.url = '';
+      render();
+    }, function () { S.bale.ready = true; render(); });
+  }
+  function baleView() {
+    var B = S.bale;
+    if (!B.ready || !B.enabled) return '';
+    var body;
+    if (B.linked) {
+      body = '<p class="pn-ok">متصل است' + (B.phone ? ' · <bdi dir="ltr">' + esc(B.phone) + '</bdi>' : '') + '. خبر پیام‌ها و درخواست‌های تازه در بله برایتان می‌آید.</p>' +
+        '<button type="button" class="pn-secondary" data-bale-off' + (B.busy ? ' disabled' : '') + '>قطع اتصال</button>';
+    } else {
+      var tel = B.phone || (S.user && S.user.phone) || '';
+      body = '<p class="pn-note">شمارهٔ موبایلی که در بله دارید را بنویسید، «اتصال به بله» را بزنید، در بله «شروع» را بزنید و سپس دکمهٔ «اشتراک شمارهٔ من» را بفرستید. شماره باید همان باشد که اینجا نوشته‌اید.</p>' +
+        '<label>شمارهٔ موبایل<input type="tel" id="baleTel" dir="ltr" inputmode="numeric" placeholder="09123456789" value="' + esc(tel) + '" maxlength="20"' + (B.busy ? ' disabled' : '') + '></label>' +
+        '<button type="button" class="pn-primary" data-bale-on' + (B.busy ? ' disabled' : '') + '>اتصال به بله</button>' +
+        (B.url ? '<p class="pn-note">لینک تا ۱۰ دقیقه معتبر است.</p><a class="pn-secondary" href="' + esc(B.url) + '" target="_blank" rel="noopener noreferrer">باز کردن بله</a> ' +
+          '<button type="button" class="pn-secondary" data-bale-check>اتصال انجام شد؟ بررسی کن</button>' : '');
+    }
+    return '<section class="pn-card pn-bale"><h2>اطلاع‌رسانی در بله</h2>' + body +
+      (B.err ? '<p class="pn-err" role="alert">' + esc(B.err) + '</p>' : '') + (B.msg ? '<p class="pn-ok" role="status">' + esc(B.msg) + '</p>' : '') + '</section>';
+  }
+  function baleLink() {
+    var inp = document.getElementById('baleTel'), v = inp ? inp.value : '';
+    S.bale.phone = v; S.bale.err = ''; S.bale.msg = ''; S.bale.busy = true; render();
+    MSApi.raw('POST', 'bale/link', { phone: cleanPhone(v) }).then(function (r) { S.bale.url = r.url; S.bale.phone = r.phone || S.bale.phone; S.bale.msg = 'لینک ساخته شد؛ «باز کردن بله» را بزنید.'; },
+      function (err) { S.bale.err = errText(err); }).then(function () { S.bale.busy = false; render(); });
+  }
+  function baleUnlink() {
+    S.bale.err = ''; S.bale.msg = ''; S.bale.busy = true; render();
+    MSApi.raw('DELETE', 'bale/link').then(function () { S.bale.linked = false; S.bale.url = ''; S.bale.msg = 'اتصال قطع شد.'; }, function (err) { S.bale.err = errText(err); })
+      .then(function () { S.bale.busy = false; render(); });
+  }
+
   // ---- national id: ten digits with the official check digit; leading zeros are part of the number
   var FA10 = '۰۱۲۳۴۵۶۷۸۹';
   function faDigitsStr(s) { return String(s).replace(/\d/g, function (d) { return FA10.charAt(d); }); }
@@ -1663,7 +1703,7 @@
         '<button type="button" class="pn-primary" data-tab="inv">مشاهدهٔ پیش‌فاکتورها</button></section>' + home;
     }
     var secs = { home: home, inv: can('invoices') ? invoicesView() : '', chat: publicView() + ticketsView(), comm: commissionView(), team: can('team') ? teamView() : '',
-      jobs: jobsView(), me: lookView() + meView() + prefsView() };
+      jobs: jobsView(), me: lookView() + meView() + prefsView() + baleView() };
     var keys = ['home', 'inv', 'chat', 'comm', 'team', 'jobs', 'me'].filter(function (k) { return !!secs[k]; });
     if (keys.indexOf(S.tab) < 0) S.tab = 'home';
     if (NARROW.matches) {
@@ -1849,6 +1889,9 @@
     if (!e.target.closest('.pn-dd')) Array.prototype.forEach.call(document.querySelectorAll('.pn-dd-list'), function (l) { l.hidden = true; });
     var pf = e.target.closest('[data-pref]');
     if (pf) { savePrefs(pf.getAttribute('data-pref')); return; }
+    if (e.target.closest('[data-bale-on]')) { baleLink(); return; }
+    if (e.target.closest('[data-bale-off]')) { baleUnlink(); return; }
+    if (e.target.closest('[data-bale-check]')) { loadBale(); return; }
     if (e.target.closest('[data-allow-notify]')) { if (window.MSNotify) window.MSNotify.askPermission().then(function () { render(); }); return; }
     if (e.target.closest('[data-onb-later]')) { S.onb.hide = true; render(); return; }
     if (e.target.closest('[data-photo-pick]')) { var fi = document.getElementById('photoFile'); if (fi) fi.click(); return; }

@@ -59,6 +59,8 @@
     [/At least one active manager/i, 'دست‌کم یک مدیر فعال باید بماند.'],
     [/Nobody removes their own account/i, 'کسی حساب خودش را حذف نمی‌کند.'],
     [/Too Many Attempts|Too many/i, 'تلاش بیش از حد؛ کمی بعد دوباره امتحان کنید.'],
+    [/Bale is not set up/i, 'اتصال به بله هنوز روی سرور راه‌اندازی نشده است.'],
+    [/The mobile number must look like/i, 'شمارهٔ موبایل باید مثل ۰۹۱۲۳۴۵۶۷۸۹ باشد.'],
     [/This action is unauthorized|Forbidden/i, 'این کار برای نقش شما مجاز نیست.']
   ];
   function fa(m) { for (var i = 0; i < FA.length; i++) if (FA[i][0].test(m)) return FA[i][1]; return m; }
