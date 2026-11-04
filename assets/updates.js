@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'price-xlsx-1405-08-12', date: '1405/08/12', tag: 'بهبود', title: 'قیمت وینتورا و توربومکس با فهرست آبان به‌روز شد',
+      summary: 'قیمت یا وضعیت ۱۱۷ ردیف کالا (وینتورا و توربومکس) با فایل‌های Excel فهرست قیمت آبان یکی شد. ردیف‌هایی که کد تکراری یا قیمت مشکوک دارند تا تأیید مسئول فهرست عوض نشدند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance'] },
     { id: 'sheet-sync-1405-08-10', date: '1405/08/10', tag: 'بهبود', title: 'قیمت‌های اپ با فهرست قیمت هماهنگ شد',
       summary: 'قیمت و وضعیت ۲۳۰ کالا (بیشتر توربومکس و چند کالای Max Silver) با آخرین فهرست قیمت یکی شد. وضعیت تازهٔ «اتمام موجودی» هم اضافه شد و ۱۴ فر پیتزا مستر کد گرفتند. چند قیمت مشکوک تا تأیید مسئول فهرست عوض نشد.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance'] },
     { id: 'bainmarie-lid-dims-1405-08', date: '1405/08/10', tag: 'اصلاح', title: 'ابعاد درب‌های بن‌ماری',
