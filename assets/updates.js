@@ -7,6 +7,12 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'office-phone-1405-08-13', date: '1405/08/13', tag: 'تازه', title: 'تماس از داخل برنامه (در حال راه‌اندازی)',
+      summary: 'در صفحهٔ «داخلی‌ها» می‌توانید «داخلی من» را ذخیره کنید و با زدن روی یک شماره، اول گوشی خودتان زنگ بخورد و بعد شماره گرفته شود. تماس‌های ورودی روی داخلی شما هم همان‌جا و در بله اعلام می‌شود. این بخش وقتی کار می‌کند که برنامهٔ اتصال به سانترال در دفتر نصب شده باشد.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'] },
+    { id: 'dock-pins-1405-08-13', date: '1405/08/13', tag: 'بهبود', title: 'سنجاق کردن کاشی‌های تازه',
+      summary: 'کاشی‌های «داخلی‌ها»، «کاتالوگ‌ها»، «همکاران و متقاضیان» و «حساب‌ها و سایت» هم حالا ستارهٔ سنجاق دارند و می‌توانید آن‌ها را به نوار پایین اضافه کنید. چیدمان صفحهٔ داخلی‌ها هم یکدست شد: همهٔ کارت‌ها هم‌اندازه‌اند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'] },
+    { id: 'voip-extensions-1405-08-13', date: '1405/08/13', tag: 'تازه', title: 'داخلی‌ها در صفحهٔ اصلی',
+      summary: 'کاشی «داخلی‌ها» به صفحهٔ اصلی اضافه شد: شمارهٔ داخلی واحدها و همکاران را ببینید و با یک لمس کپی کنید. فهرست فقط برای همکارانِ واردشده دیده می‌شود؛ مدیریت می‌تواند آن را ویرایش کند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'] },
     { id: 'bale-notices-1405-08-13', date: '1405/08/13', tag: 'تازه', title: 'اطلاع‌رسانی در بله',
       summary: 'از «تنظیمات من» می‌توانید بله را وصل کنید: شمارهٔ موبایل را بنویسید، در بله «شروع» و «اشتراک شمارهٔ من» را بزنید. بعد از آن خبر پیام تازه در گفت‌وگوها و درخواست‌ها در بله هم برایتان می‌آید؛ متن پیام‌ها و قیمت‌ها در بله فرستاده نمی‌شود. هر زمان بخواهید اتصال را قطع می‌کنید.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'] },
     { id: 'price-xlsx-1405-08-12', date: '1405/08/12', tag: 'بهبود', title: 'قیمت وینتورا و توربومکس با فهرست آبان به‌روز شد',

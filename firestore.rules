@@ -281,6 +281,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Internal phone extensions (VoIP): every signed-in colleague reads them; management (manager, CEO) edits them.
+    match /phone_directory/{id} {
+      allow read: if approved();
+      allow create, update: if hasRole(['manager', 'ceo'])
+        && request.resource.data.keys().hasOnly(['exts', 'label', 'person', 'order', 'updatedAt', 'updatedBy'])
+        && request.resource.data.exts is list && request.resource.data.exts.size() >= 1 && request.resource.data.exts.size() <= 4
+        && request.resource.data.label is string && request.resource.data.label.size() >= 2 && request.resource.data.label.size() <= 80
+        && (!('person' in request.resource.data) || (request.resource.data.person is string && request.resource.data.person.size() <= 60))
+        && (!('order' in request.resource.data) || (request.resource.data.order is int && request.resource.data.order >= 0 && request.resource.data.order <= 999));
+      allow delete: if hasRole(['manager', 'ceo']);
+    }
+
     // A person's look: a colour from the palette and an optional small picture (a data URL cut to 192 px). People of the
     // company read it so conversations can show faces; only the owner writes it.
     match /profiles/{uid} {

@@ -1,0 +1,51 @@
+/* voip.html: the internal phone extensions. Light cards of one size; the number chips sit in one row at the start (the right in RTL). */
+.vp { width: min(980px, calc(100% - 32px)); margin: 24px auto 48px; }
+.vp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.vp-head h1 { margin: 0 0 4px; font-size: 24px; color: #071b36; }
+.vp-head p { margin: 0; color: #5b6a80; line-height: 1.9; }
+.vp-bar { margin: 8px 0 16px; }
+.vp-bar input { width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1px solid #d7dfeb; border-radius: 14px; font: inherit; color: #071b36; background: #fff; }
+.vp-bar input::placeholder { color: #7b8aa0; }
+/* every card has the same height: the rows share the height of the tallest card */
+.vp-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); grid-auto-rows: 1fr; gap: 12px; }
+.vp-card { display: grid; grid-template-rows: auto 1fr auto; gap: 10px; padding: 16px; border: 1px solid #d7dfeb; border-radius: 18px; background: #fff; box-shadow: 0 6px 18px rgba(7, 27, 54, .06); min-height: 132px; }
+.vp-info { min-height: 3.4em; }
+.vp-info h2 { margin: 0; font-size: 16px; color: #071b36; line-height: 1.7; }
+.vp-info p { margin: 2px 0 0; color: #5b6a80; font-size: 14px; }
+.vp-exts { display: flex; flex-wrap: wrap; align-content: flex-end; gap: 8px; }
+.vp-ext { min-width: 84px; height: 54px; padding: 0 14px; border: 0; border-radius: 14px; background: #ffca28; color: #071b36; font: inherit; font-size: 22px; line-height: 1; cursor: pointer; transition: transform .12s ease; }
+.vp-ext:hover { transform: translateY(-1px); }
+.vp-ext:focus-visible, .vp-mini:focus-visible, .vp-primary:focus-visible { outline: 3px solid #2456d8; outline-offset: 2px; }
+.vp-tools { display: flex; gap: 8px; }
+.vp-mini { padding: 8px 12px; border: 1px solid #d7dfeb; border-radius: 12px; background: #fff; color: #071b36; font: inherit; font-size: 13px; cursor: pointer; }
+.vp-mini.bad { color: #b42318; border-color: #f0c4c0; }
+.vp-primary { display: inline-block; padding: 11px 20px; border: 0; border-radius: 14px; background: #071b36; color: #fff; font: inherit; font-weight: 800; cursor: pointer; text-decoration: none; margin: 0 0 14px; }
+.vp-form { display: grid; gap: 10px; padding: 16px; margin: 0 0 16px; border: 1px solid #d7dfeb; border-radius: 18px; background: #f6f8fc; }
+.vp-form h3 { margin: 0; font-size: 16px; color: #071b36; }
+.vp-form label { display: grid; gap: 6px; font-size: 14px; color: #34445c; }
+.vp-form input { padding: 11px 12px; border: 1px solid #d7dfeb; border-radius: 12px; font: inherit; color: #071b36; background: #fff; }
+.vp-row { display: flex; gap: 10px; align-items: center; }
+.vp-note { color: #5b6a80; line-height: 2; }
+.vp-err { color: #b42318; }
+.vp-ok { color: #14804a; }
+.vp-foot { margin-top: 18px; color: #5b6a80; font-size: 13px; }
+/* the office phone connection: my extension, the connection state, the call sheet and incoming calls */
+.vp-cti { margin: 0 0 16px; padding: 14px 16px; border: 1px solid #d7dfeb; border-radius: 18px; background: #f6f8fc; display: grid; gap: 10px; }
+.vp-cti-row { display: flex; align-items: center; gap: 8px; color: #34445c; font-size: 14px; }
+.vp-dot { width: 10px; height: 10px; border-radius: 50%; background: #98a2b3; flex: none; }
+.vp-dot.on { background: #14804a; box-shadow: 0 0 0 4px rgba(20, 128, 74, .18); }
+.vp-dot.off { background: #b42318; }
+.vp-extform { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.vp-extform label { display: grid; gap: 6px; font-size: 14px; color: #34445c; }
+.vp-extform input { width: 120px; padding: 10px 12px; border: 1px solid #d7dfeb; border-radius: 12px; font: inherit; color: #071b36; background: #fff; }
+.vp-hint { margin: 0; color: #5b6a80; font-size: 13px; line-height: 1.9; }
+.vp-sub { margin: 4px 0 0; font-size: 14px; color: #071b36; }
+.vp-calls { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vp-calls li { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; padding: 8px 12px; border-radius: 12px; background: #fff; border: 1px solid #e3e9f2; font-size: 14px; }
+.vp-when { color: #5b6a80; font-size: 12px; }
+.vp-sheet { position: sticky; top: 8px; z-index: 5; margin: 0 0 16px; padding: 16px; border: 2px solid #ffca28; border-radius: 18px; background: #fff; box-shadow: 0 10px 28px rgba(7, 27, 54, .18); display: grid; gap: 10px; }
+.vp-sheet p { margin: 0; font-size: 16px; color: #071b36; }
+
+@media (max-width: 560px) { .vp-list { grid-template-columns: 1fr 1fr; } .vp-ext { min-width: 72px; font-size: 20px; } }
+@media (max-width: 380px) { .vp-list { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .vp-ext { transition: none; } }

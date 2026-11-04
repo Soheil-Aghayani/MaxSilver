@@ -36,6 +36,10 @@
     hiring: svg('<path d="M7 3h8l4 4v14H7zM15 3v4h4"/><path d="M10 12h6M10 16h6M10 8h2"/>'),
     install: svg('<path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>'),
     contact: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.7A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/>'),
+    voip: svg('<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.100 4.200 2 2 0 0 1 4.100 2h3a2 2 0 0 1 2 1.700c.1 1 .4 1.900.7 2.800a2 2 0 0 1-.5 2.100L8.100 9.900a16 16 0 0 0 6 6l1.300-1.300a2 2 0 0 1 2.100-.4c.9.3 1.800.6 2.800.7a2 2 0 0 1 1.700 2z"/>'),
+    staff: svg('<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6M17 5a3.5 3.5 0 0 1 0 7M22 20c0-2.6-1.8-4.7-4.5-5.6"/>'),
+    catalogues: svg('<path d="M4 4h12a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3zM4 17a3 3 0 0 1 3-3h12M9 8h6"/>'),
+    backend: svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.500 20c0-3.600 2.900-6.500 6.500-6.500s6.500 2.900 6.500 6.500M19 8v6M16 11h6"/>'),
     search: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>'),
     star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>'
   };
@@ -66,6 +70,10 @@
     { id: 'analysis', href: './sales-analysis.html', label: 'تحلیل جزئیات فروش', area: 'analysis', page: 'sales-analysis.html' },
     { id: 'advertising', href: './advertising.html', label: 'استراتژی تبلیغات', area: 'advertising', page: 'advertising.html' },
     { id: 'brand', href: './brand-books.html', label: 'برندبوک‌ها', area: 'brand', page: 'brand-books.html' },
+    { id: 'voip', href: './voip.html', label: 'داخلی‌ها', page: 'voip.html' },
+    { id: 'staff', href: './staff.html', label: 'همکاران و متقاضیان', area: 'staff', page: 'staff.html' },
+    { id: 'catalogues', href: './catalogues.html', label: 'کاتالوگ‌ها', area: 'catalogues', page: 'catalogues.html' },
+    { id: 'backend', href: './backend.html', label: 'حساب‌ها و سایت', area: 'roleAdmin', page: 'backend.html' },
     { id: 'tickets', href: './panel.html#tickets', label: 'گفت‌وگوها' },
     { id: 'panel', href: './panel.html', label: 'حساب من', page: 'panel.html' },
     { id: 'contact', href: './contact.html', label: 'تماس با ما', anon: true, page: 'contact.html' }
