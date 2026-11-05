@@ -53,6 +53,9 @@
       }, function () { /* ignore */ });
     }, 2000);
   }
+  // the picture of each first entry (assets/art/tiles/voip-<name>.webp); an entry without one simply shows no picture
+  var IC = { e01: 'management', e02: 'sales', e03: 'office-accountant', e04: 'factory-accountant', e05: 'factory-sales-coordination', e06: 'factory-management',
+    e07: 'product-warehouse', e08: 'raw-warehouse', e09: 'production-planner', e10: 'sales-assistant', e11: 'it' };
   var FA = '۰۱۲۳۴۵۶۷۸۹';
   var fa = function (s) { return String(s).replace(/\d/g, function (d) { return FA.charAt(d); }); };
   var latin = function (s) { return String(s).replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 1776); }).replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 1632); }); };
@@ -70,7 +73,8 @@
     var chips = (e.exts || []).map(function (x) {
       return '<button type="button" class="vp-ext" data-copy="' + esc(x) + '" title="کپی شماره" aria-label="داخلی ' + esc(fa(x)) + '، برای کپی بزنید"><b>' + esc(fa(x)) + '</b></button>';
     }).join('');
-    return '<li class="vp-card" data-id="' + esc(e.id) + '"><div class="vp-info"><h2>' + esc(e.label) + '</h2>' + (e.person ? '<p>' + esc(e.person) + '</p>' : '') + '</div>' +
+    var ic = IC[e.id] ? '<img class="vp-ic" src="./assets/art/tiles/voip-' + IC[e.id] + '.webp" alt="" width="52" height="52" loading="lazy" decoding="async" onerror="this.remove()">' : '';
+    return '<li class="vp-card" data-id="' + esc(e.id) + '"><div class="vp-info">' + ic + '<div class="vp-tx"><h2>' + esc(e.label) + '</h2>' + (e.person ? '<p>' + esc(e.person) + '</p>' : '') + '</div></div>' +
       '<div class="vp-exts">' + chips + '</div>' +
       (S.edit ? '<div class="vp-tools"><button type="button" class="vp-mini" data-edit="' + esc(e.id) + '">ویرایش</button><button type="button" class="vp-mini bad" data-del="' + esc(e.id) + '">حذف</button></div>' : '') + '</li>';
   }

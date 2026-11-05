@@ -715,6 +715,26 @@
     Object.keys(extra).forEach(function (k) { data[k] = extra[k]; });
     return db.collection('tickets').doc(id).update(data);
   }
+  // right click / long press (assets/ctxmenu.js): what is useful on a conversation row and on an outside message
+  (window.MSCtxQ = window.MSCtxQ || []).push(['.pn-chat[data-tk-open]', function (el) {
+    var id = el.getAttribute('data-tk-open'), x = S.tk.list.filter(function (t) { return t.id === id; })[0];
+    if (!x) return [];
+    var items = [{ ico: 'open', label: 'باز کردن گفت‌وگو', run: function () { openThread(id); } }];
+    if (x.status === 'open' && x.lastBy !== S.user.uid && !seenHere(x)) {
+      items.push({ ico: 'act', label: 'علامت‌گذاری به‌عنوان خوانده‌شده', run: function () { if (window.MSNotify && window.MSNotify.read) window.MSNotify.read(id, x.updatedAt || Date.now()); render(); } });
+    }
+    items.push(x.status === 'open'
+      ? { ico: 'close', danger: true, label: 'بستن گفت‌وگو', run: function () { tkTouch(id, { status: 'closed' }).then(loadTickets, function (err) { S.tk.error = errText(err); render(); }); } }
+      : { ico: 'undo', label: 'بازکردن دوباره', run: function () { tkTouch(id, { status: 'open' }).then(loadTickets, function (err) { S.tk.error = errText(err); render(); }); } });
+    return items;
+  }]);
+  (window.MSCtxQ = window.MSCtxQ || []).push(['.pn-pub', function (el) {
+    var items = [], meta = el.querySelector('.pn-tk-meta'), phone = meta ? String(meta.textContent || '').split(' · ')[0].trim() : '';
+    var cp = function (t) { try { navigator.clipboard.writeText(t); } catch (e) { /* ignore */ } };
+    if (phone) items.push({ ico: 'copy', label: 'کپی شمارهٔ تماس', run: function () { cp(phone); } });
+    items.push({ ico: 'copy', label: 'کپی متن پیام', run: function () { cp(String(el.innerText || '').trim().slice(0, 1500)); } });
+    return items;
+  }]);
 
   // ---- conversations: pictures, files, replies, edits and deletes (the picture and file parts need the Max Silver server)
   S.tk.pending = []; S.tk.reply = null; S.tk.edit = null; S.tk.q = '';

@@ -1,0 +1,11 @@
+/* Our own right-click / long-press menu (assets/ctxmenu.js). Light, like the rest of the site. */
+.cx-menu { position: fixed; z-index: 2147483000; min-width: 190px; max-width: min(320px, calc(100vw - 16px)); padding: 6px; border-radius: 16px; background: #ffffff; color: #071b36; border: 1px solid #d7dfeb; box-shadow: 0 14px 40px rgba(7, 27, 54, .22); font-family: inherit; direction: rtl; }
+.cx-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 12px; border: 0; border-radius: 11px; background: transparent; color: inherit; font: inherit; font-size: 14px; text-align: right; cursor: pointer; }
+.cx-menu button:hover, .cx-menu button:focus-visible { background: #fff3c4; outline: none; }
+.cx-menu button.danger { color: #b42318; }
+.cx-menu button.danger svg { color: #b42318; }
+.cx-menu svg { width: 18px; height: 18px; flex: none; color: #5b6a80; }
+.cx-menu span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (hover: none) { .cx-menu button { padding: 14px 12px; } }
+/* iPhone: no system callout over our menu */
+body { -webkit-touch-callout: none; }
