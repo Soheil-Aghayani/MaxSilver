@@ -75,7 +75,7 @@
     }).join('');
     var ic = IC[e.id] ? '<img class="vp-ic" src="./assets/art/tiles/voip-' + IC[e.id] + '.webp" alt="" width="52" height="52" loading="lazy" decoding="async" onerror="this.remove()">' : '';
     return '<li class="vp-card" data-id="' + esc(e.id) + '"><div class="vp-info">' + ic + '<div class="vp-tx"><h2>' + esc(e.label) + '</h2>' + (e.person ? '<p>' + esc(e.person) + '</p>' : '') + '</div></div>' +
-      '<div class="vp-exts">' + chips + '</div>' +
+      '<div class="vp-exts" data-no-ctx>' + chips + '</div>' +
       (S.edit ? '<div class="vp-tools"><button type="button" class="vp-mini" data-edit="' + esc(e.id) + '">ویرایش</button><button type="button" class="vp-mini bad" data-del="' + esc(e.id) + '">حذف</button></div>' : '') + '</li>';
   }
   function formView() {
@@ -134,6 +134,16 @@
     var done = function () { S.msg = 'داخلی ' + fa(n) + ' کپی شد.'; S.error = ''; S.sheet = ''; render(); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(n).then(done, done); else done();
   }
+  // right click / long press on an extension card (assets/ctxmenu.js): copy each number, or call it when the phone connection is on
+  (window.MSCtxQ = window.MSCtxQ || []).push(['.vp-card[data-id]', function (el) {
+    var items = [];
+    Array.prototype.forEach.call(el.querySelectorAll('.vp-ext[data-copy]'), function (b) {
+      var n = b.getAttribute('data-copy');
+      if (ctiOn()) items.push({ ico: 'act', label: 'تماس با داخلی ' + fa(n), run: function () { S.sheet = n; S.msg = ''; S.error = ''; render(); } });
+      items.push({ ico: 'copy', label: 'کپی داخلی ' + fa(n), run: function () { copyNum(n); } });
+    });
+    return items;
+  }]);
   root.addEventListener('click', function (e) {
     var t = e.target.closest('button'); if (!t) return;
     if (t.hasAttribute('data-copy')) {

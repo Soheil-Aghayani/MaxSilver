@@ -3,7 +3,7 @@
   // Staff sign-in and account administration against the Laravel backend (api-client.js). Firebase screens are untouched.
   var root = document.getElementById('bk'), api = window.MSApi, R = window.MSRoles;
   if (!root || !api) return;
-  var S = { view: '', user: null, users: [], portal: null, pwFor: 0, delFor: 0, twoStep: false, busy: false, error: '', note: '', otp: '', email: '', needCode: false };
+  var S = { view: '', user: null, users: [], signups: [], sgImg: {}, sgOpen: 0, sgReject: 0, portal: null, pwFor: 0, delFor: 0, twoStep: false, busy: false, error: '', note: '', otp: '', email: '', needCode: false };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function can(area) { return !!(S.user && S.user.areas && S.user.areas.indexOf(area) >= 0); }
@@ -42,7 +42,26 @@
       '<label>رمز عبور<span class="bk-pw"><input name="password" type="password" dir="ltr" autocomplete="current-password" required><button type="button" class="bk-eye" data-eye aria-label="نمایش رمز" title="نمایش رمز"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>' +
       (S.needCode ? '<label>کد شش‌رقمی برنامهٔ احراز هویت<input name="code" dir="ltr" inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="one-time-code" required autofocus></label>' : '') +
       '<label class="bk-check"><input type="checkbox" name="remember"' + (S.remember ? ' checked' : '') + '> مرا روی این دستگاه به خاطر بسپار (۳۰ روز؛ فقط دستگاه شخصی)</label>' +
-      '<button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>' + (S.busy ? 'در حال ورود…' : 'ورود') + '</button></form></section>';
+      '<button class="bk-btn" ' + (S.busy ? 'disabled' : '') + '>' + (S.busy ? 'در حال ورود…' : 'ورود') + '</button></form>' +
+      '<p class="bk-sub">حساب ندارید؟ <a href="./signup.html">درخواست ثبت‌نام</a></p></section>';
+  }
+  // requests for an account: the technology lead looks at the identity data and the card picture, then accepts (choosing the role) or refuses
+  function signupsCard() {
+    var pend = S.signups.filter(function (x) { return x.status === 'pending'; }).length;
+    var tag = { pending: 'در انتظار', approved: 'تأییدشده', rejected: 'ردشده' };
+    var fa = function (n) { return String(n).replace(/\d/g, function (c) { return '۰۱۲۳۴۵۶۷۸۹'.charAt(c); }); };
+    return '<section class="bk-card" id="signups"><h2>درخواست‌های عضویت' + (pend ? ' <span class="sg-tag pending">' + fa(pend) + ' جدید</span>' : '') + '</h2>' +
+      (S.signups.length ? '<div class="sg-list">' + S.signups.map(function (x) {
+        var open = S.sgOpen === x.id, h = '<div class="sg-item ' + x.status + '"><div class="sg-head"><b>' + esc(x.name) + '</b><span class="sg-tag ' + x.status + '">' + tag[x.status] + '</span></div>' +
+          '<div class="sg-grid"><span><small>کد ملی</small><bdi dir="ltr">' + esc(fa(x.national_id)) + '</bdi></span><span><small>تاریخ تولد</small><bdi dir="ltr">' + esc(fa(x.birth)) + '</bdi></span><span><small>موبایل</small><bdi dir="ltr">' + esc(fa(x.phone)) + '</bdi></span><span><small>ایمیل</small><bdi dir="ltr">' + esc(x.email) + '</bdi></span>' +
+          '<span><small>ارسال</small>' + esc(new Date(x.created_at.replace(' ', 'T') + 'Z').toLocaleString('fa-IR')) + '</span><span><small>بله</small>' + (x.bale ? 'متصل' : 'متصل نیست') + '</span></div>';
+        if (x.hasCard) h += open ? '<div class="sg-card">' + (S.sgImg[x.id] ? '<img src="' + esc(S.sgImg[x.id]) + '" alt="کارت ملی ' + esc(x.name) + '">' : '<p class="bk-sub">در حال بارگیری…</p>') + '</div>' : '<div><button type="button" class="bk-btn ghost sm" data-sg-card="' + x.id + '">دیدن عکس کارت ملی</button></div>';
+        if (x.status === 'pending') {
+          h += S.sgReject === x.id ? '<form class="sg-act" data-sg-reject-form="' + x.id + '"><label style="flex:1">دلیل (اختیاری؛ برای متقاضی فرستاده می‌شود)<input name="reason" maxlength="300" autofocus></label><button class="bk-btn sm" ' + (S.busy ? 'disabled' : '') + '>ردکردن</button><button type="button" class="bk-btn ghost sm" data-sg-cancel>انصراف</button></form>' :
+            '<div class="sg-act"><label>نقش<select data-sg-role="' + x.id + '">' + roleOptions('visitor') + '</select></label><button type="button" class="bk-btn sm" data-sg-approve="' + x.id + '" ' + (S.busy ? 'disabled' : '') + '>تأیید و ساخت حساب</button><button type="button" class="bk-btn ghost sm" data-sg-reject="' + x.id + '">رد</button></div>';
+        } else if (x.status === 'rejected' && x.reject_reason) h += '<p class="bk-sub">دلیل: ' + esc(x.reject_reason) + '</p>';
+        return h + '</div>';
+      }).join('') + '</div>' : '<p class="bk-sub">درخواستی نیست. پیوند ثبت‌نام: <bdi dir="ltr">' + esc(location.origin + '/signup.html') + '</bdi></p>') + '</section>';
   }
   function viewEnroll() {
     var svg = '';
@@ -75,6 +94,7 @@
   function viewHome() {
     var u = S.user, h = '<section class="bk-card"><div class="bk-head"><div><h1>' + esc(u.name) + '</h1><p class="bk-sub">' + esc(R.label(u.role)) + ' · <bdi dir="ltr">' + esc(u.email) + '</bdi>' + (u.has_2fa ? ' · ورود دومرحله‌ای فعال' : '') + '</p></div>' + ic('data-out', '', 'خروج از حساب', IC.out) + '</div>' + msg() + '</section>';
     h += twoCard(u);
+    if (can('roleAdmin')) h += signupsCard();
     if (can('roleAdmin')) {
       h += '<section class="bk-card"><h2>ساخت حساب</h2><form id="fNew" class="bk-grid"><label>نام<input name="name" required maxlength="120"></label><label>ایمیل<input name="email" type="email" dir="ltr" required></label>' +
         '<label>رمز (حداقل ۸ نویسه، با حرف بزرگ و کوچک انگلیسی)<input name="password" type="password" dir="ltr" minlength="8" required autocomplete="new-password"></label><label>نقش<select name="role">' + roleOptions('visitor') + '</select></label>' +
@@ -119,6 +139,8 @@
       S.user = u;
       return can('team') ? api.users().then(function (l) { S.users = l; }) : null;
     }).then(function () {
+      return can('roleAdmin') ? api.signups().then(function (l) { S.signups = l; }, function () { S.signups = []; }) : null;
+    }).then(function () {
       return can('siteUpdate') ? api.portal().then(function (p) { S.portal = p; }, function () { S.portal = null; }) : null;
     }).then(function () { S.busy = false; go('home'); }, function (e) { if (e.status === 401) { go('login'); } else fail(e); });
   }
@@ -128,7 +150,9 @@
     var f = ev.target, v = function (n) { return f.elements[n] ? f.elements[n].value.trim() : ''; };
     if (S.busy) return;
     S.busy = true; S.error = ''; S.note = '';
-    if (f.id === 'fBase') {
+    if (f.hasAttribute('data-sg-reject-form')) {
+      api.signupReject(f.getAttribute('data-sg-reject-form'), v('reason')).then(function (r) { S.sgReject = 0; return loadHome().then(function () { S.note = 'درخواست رد شد' + (r && r.notified ? ' و در بله به متقاضی خبر داده شد.' : '.'); render(); }); }, fail);
+    } else if (f.id === 'fBase') {
       try { api.setBase(v('u')); } catch (e) { return fail(e); }
       api.ping().then(function () { S.busy = false; go('login'); }, function () { api.setBase(''); fail({ message: 'سرور پاسخ نداد. آدرس و روشن‌بودن سرور را بررسی کنید.' }); });
     } else if (f.id === 'fLogin') {
@@ -187,6 +211,17 @@
       S.delFor = 0;
       api.deleteUser(did).then(function () { return loadHome().then(function () { S.note = 'حساب حذف شد.'; render(); }); }, fail);
     }
+    else if (t.hasAttribute('data-sg-card')) {
+      var cid = Number(t.getAttribute('data-sg-card')); S.sgOpen = cid; render();
+      if (!S.sgImg[cid]) api.fetchBlob('signups/' + cid + '/card').then(function (b) { S.sgImg[cid] = URL.createObjectURL(b); render(); }, function () { S.sgOpen = 0; S.error = 'عکس باز نشد.'; render(); });
+    }
+    else if (t.hasAttribute('data-sg-approve')) {
+      var aid = t.getAttribute('data-sg-approve'), sel = root.querySelector('[data-sg-role="' + aid + '"]');
+      S.busy = true; render();
+      api.signupApprove(aid, sel ? sel.value : 'visitor').then(function (r) { return loadHome().then(function () { S.note = 'حساب ساخته شد' + (r && r.notified ? ' و در بله به متقاضی خبر داده شد.' : '.'); render(); }); }, fail);
+    }
+    else if (t.hasAttribute('data-sg-reject')) { S.sgReject = Number(t.getAttribute('data-sg-reject')); render(); }
+    else if (t.hasAttribute('data-sg-cancel')) { S.sgReject = 0; render(); }
     else if (t.hasAttribute('data-active')) {
       api.updateUser(t.getAttribute('data-active'), { is_active: t.getAttribute('data-to') === '1' }).then(loadHome, fail);
     }

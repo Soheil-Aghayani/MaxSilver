@@ -20,6 +20,10 @@
     tickets: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/>'),
     panel: svg('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>'),
     crm: svg('<path d="M9 4h6a1 1 0 0 1 1 1v1h2a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h2V5a1 1 0 0 1 1-1zM9 11h6M9 15h4"/>'),
+    catprices: svg('<path d="M3 5h18v14H3zM3 10h18M9 5v14"/>'),
+    igmain: svg('<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.200" cy="6.800" r=".9" fill="currentColor" stroke="none"/>'),
+    igkish: svg('<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.200" cy="6.800" r=".9" fill="currentColor" stroke="none"/>'),
+    igarya: svg('<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.200" cy="6.800" r=".9" fill="currentColor" stroke="none"/>'),
     prices: svg('<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3"/>'),
     warehouse: svg('<path d="M3 9l9-6 9 6v11H3zM8 20v-6h8v6"/>'),
     banks: svg('<path d="M3 10l9-6 9 6M5 10v8m4-8v8m6-8v8m4-8v8M3 20h18"/>'),
@@ -53,6 +57,11 @@
     { id: 'planner', href: './planner.html', label: 'طراح کافه و رستوران', page: 'planner.html' },
     { id: 'crm', href: './crm.html', label: 'درخواست‌های خرید', area: 'crm', page: 'crm.html' },
     { id: 'prices', href: './prices.html', label: 'قیمت‌ها', area: 'pricesAudit', page: 'prices.html' },
+    { id: 'catprices', href: 'https://cat.agseyl.ir/', label: 'جدول قیمت', ext: true },
+    { id: 'igmain', href: 'https://www.instagram.com/maxsilver.ir/', label: 'اینستاگرام مکث‌سیلور', ext: true },
+    { id: 'igkish', href: 'https://www.instagram.com/maxsilver.kish/', label: 'اینستاگرام کیش', ext: true },
+    { id: 'igarya', href: 'https://www.instagram.com/maxsteelarya/', label: 'اینستاگرام آریا', ext: true },
+    { id: 'weborders', href: './web-orders.html', label: 'سفارش‌های سایت', area: 'crm', page: 'web-orders.html' },
     { id: 'events', href: './events.html', label: 'مناسبت‌ها', area: 'events', page: 'events.html' },
     { id: 'warehouse', href: './warehouse.html', label: 'انبار و موجودی', area: 'warehouse', page: 'warehouse.html' },
     { id: 'banks', href: './banks.html', label: 'حساب‌های بانکی', area: 'bankAccounts', page: 'banks.html' },
@@ -126,7 +135,7 @@
     return true;
   }
   function link(it, cur) {
-    return '<li><a href="' + it.href + '"' + (cur ? ' aria-current="page"' : '') + ' aria-label="' + (it.tip || it.label) + '" data-tip="' + (it.tip || it.label) + '" data-dock="' + it.id + '">' + ICON[it.id] + '<span>' + it.label + '</span></a></li>';
+    return '<li><a href="' + it.href + '"' + (it.ext ? ' target="_blank" rel="noopener"' : '') + (cur ? ' aria-current="page"' : '') +' aria-label="' + (it.tip || it.label) + '" data-tip="' + (it.tip || it.label) + '" data-dock="' + it.id + '">' + ICON[it.id] + '<span>' + it.label + '</span></a></li>';
   }
 
   // the open section is a pill behind its link; when the person came from another page it starts where the old page's pill was and slides over

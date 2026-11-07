@@ -1,4 +1,5 @@
-// install.html: one page to install the app on every kind of device. The device in your hand is highlighted.
+// install.html: the home-screen shortcut is the main, one-tap way on every device. The real app files (APK, Windows, Mac, Linux)
+// are an optional section below; desktop files appear only when they are listed in assets/downloads.json.
 // Android gets the real app (APK) with its verification details; iPhone and iPad get the home-screen steps (Apple allows nothing else);
 // Windows, Mac and Linux install the web app from Chrome or Edge (Safari on a Mac: Add to Dock).
 (function () {
@@ -68,22 +69,48 @@
     }
     return h;
   }
-  function card(c) {
-    var me = c.id === ME, a = info && info.android;
-    var action = '';
-    if (c.id === 'android') action = '<button type="button" class="ip-btn" data-apk>دانلود اپلیکیشن' + (a ? ' · ' + esc(fa(mb(a.bytes))) : '') + '</button>' + (apkMsg ? '<p class="ip-small" role="status">' + esc(apkMsg) + '</p>' : '');
-    else if (c.id === 'windows' || c.id === 'macos' || c.id === 'linux') action = me && deferred ? '<button type="button" class="ip-btn" data-install>نصب</button>' : '';
-    return '<article class="ip-card' + (me ? ' me' : '') + '" id="os-' + c.id + '">' + (me ? '<span class="ip-me">دستگاه شما</span>' : '') +
-      '<div class="ip-head">' + icon(c.id, 64) + '<div><h2>' + esc(c.name) + '</h2><p>' + esc(c.lead) + '</p></div></div>' +
-      '<ol>' + c.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>' + (c.note ? '<p class="ip-small">' + esc(c.note) + '</p>' : '') + action + extra(c.id, me) + (c.id === 'android' ? trust() : '') + '</article>';
+  // one big shortcut card for the device in hand; the file installers sit in an optional "advanced" part
+  var dl = null;
+  function shortcutCard() {
+    var c = null; CARDS.forEach(function (x) { if (x.id === ME) c = x; });
+    var h = '<section class="ip-main" id="shortcut"><div class="ip-head">' + (c ? icon(c.id, 64) : '') + '<div><h2>میان‌بر روی صفحهٔ اصلی</h2><p>' + (c ? esc(c.name) : 'هر دستگاه') + ' · یک لمس، بدون دانلود فایل، بدون هشدار</p></div></div>';
+    if (c) {
+      var steps = c.id === 'android' ? ['منوی مرورگر (سه نقطه بالای صفحه) را باز کنید.', '«Add to Home screen» یا «Install app» را بزنید و تأیید کنید.', 'آیکن مکث‌سیلور روی صفحهٔ اصلی گوشی می‌آید.'] : c.steps;
+      h += (deferred && !WEBVIEW ? '<button type="button" class="ip-btn big" data-install>افزودن میان‌بر</button>' : '') +
+        '<ol>' + steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>' + (c.note ? '<p class="ip-small">' + esc(c.note) + '</p>' : '') + extra(c.id, true);
+    } else {
+      h += '<p class="ip-small">دستگاه شما شناخته نشد. در Chrome یا Edge روی آیکن نصب در نوار آدرس بزنید، یا در گوشی «Add to Home screen» را انتخاب کنید.</p>';
+    }
+    return h + '</section>';
+  }
+  function fileRow(f) {
+    return '<a class="ip-file" href="' + esc(f.url) + '" download rel="noopener"><span><b>' + esc(f.label || 'دانلود') + '</b>' + (f.bytes ? ' · ' + esc(fa(mb(f.bytes))) : '') + '</span>' +
+      (f.sha256 ? '<small dir="ltr" class="ip-hash">SHA-256: ' + esc(f.sha256) + '</small>' : '') + '</a>';
+  }
+  function advanced() {
+    var a = info && info.android, names = { windows: 'ویندوز', macos: 'مک', linux: 'لینوکس' }, h = '';
+    h += '<details class="ip-adv" id="advanced"><summary>نصب پیشرفته · فایل برنامه (اندروید، ویندوز، مک، لینوکس)</summary><div class="ip-advbody">' +
+      '<p class="ip-small">این بخش برای کسانی است که حتماً فایل برنامه را می‌خواهند. چون این فایل‌ها از فروشگاه نمی‌آیند، گوشی یا رایانه ممکن است هشدار «ناشناس» بدهد؛ میان‌بر بالا چنین هشداری ندارد.</p>';
+    h += '<article class="ip-card' + (ME === 'android' ? ' me' : '') + '" id="os-android"><div class="ip-head">' + icon('android', 48) + '<div><h3>اندروید · فایل APK</h3><p>اپلیکیشن واقعی، تمام‌صفحه</p></div></div>' +
+      '<ol>' + CARDS[0].steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>' +
+      '<button type="button" class="ip-btn alt" data-apk>دانلود اپلیکیشن' + (a ? ' · ' + esc(fa(mb(a.bytes))) : '') + '</button>' + (apkMsg ? '<p class="ip-small" role="status">' + esc(apkMsg) + '</p>' : '') + trust() + '</article>';
+    ['windows', 'macos', 'linux'].forEach(function (id) {
+      var list = (dl && dl[id]) || [];
+      h += '<article class="ip-card' + (ME === id ? ' me' : '') + '" id="os-' + id + '"><div class="ip-head">' + icon(id, 48) + '<div><h3>' + names[id] + '</h3><p>' + (list.length ? 'فایل نصب' : 'فایل نصب هنوز آماده نیست') + '</p></div></div>' +
+        (list.length ? '<div class="ip-files">' + list.map(fileRow).join('') + '</div>'
+          : '<p class="ip-small">تا آماده شدن فایل، همان میان‌بر بالا را از Chrome یا Edge بسازید؛ برنامه با آیکن خودش در منوی شروع می‌آید.</p>') + '</article>';
+    });
+    h += '<article class="ip-card"><div class="ip-head">' + icon('ios', 48) + '<div><h3>آیفون و آیپد</h3><p>فقط میان‌بر</p></div></div><p class="ip-small">اپل نصب فایل از بیرون فروشگاه خودش را اجازه نمی‌دهد؛ میان‌بر Safari همان تجربهٔ برنامه است.</p></article>';
+    return h + '</div></details>';
   }
 
   function render() {
     if (INAPP) { root.innerHTML = '<p class="ip-note">شما همین الان داخل اپلیکیشن مکث‌سیلور هستید و نیازی به نصب نیست.</p>'; return; }
-    var order = CARDS.slice().sort(function (a, b) { return (b.id === ME) - (a.id === ME); });
-    root.innerHTML = '<section class="ip-hero"><div><h1>مکث‌سیلور روی همهٔ دستگاه‌های شما</h1><p>یک‌بار نصب کنید؛ از صفحهٔ اصلی گوشی یا رایانه باز می‌شود، تمام‌صفحه است و همیشه به‌روز می‌ماند.</p></div>' +
-      '<img class="ip-mascot" src="./assets/art/install/mascot.webp" alt="" width="132" height="132" onerror="this.remove()"></section>' +
-      '<div class="ip-grid">' + order.map(card).join('') + '</div>';
+    var open = false;
+    try { open = location.hash === '#advanced' || !!(document.getElementById('advanced') || {}).open; } catch (e) { /* ignore */ }
+    root.innerHTML = '<section class="ip-hero"><div><h1>مکث‌سیلور روی صفحهٔ اصلی شما</h1><p>یک میان‌بر بسازید؛ مثل یک برنامه باز می‌شود، تمام‌صفحه است و همیشه به‌روز می‌ماند.</p></div>' +
+      '<img class="ip-mascot" src="./assets/art/install/mascot.webp" alt="" width="132" height="132" onerror="this.remove()"></section>' + shortcutCard() + advanced();
+    if (open) { var d = document.getElementById('advanced'); if (d) d.open = true; }
   }
 
   root.addEventListener('click', function (e) {
@@ -106,6 +133,6 @@
     render();
   });
 
-  function init() { render(); if (api && api.appInfo) api.appInfo().then(function (j) { info = { android: j }; render(); }, function () { /* the card still works without the details */ }); }
+  function init() { render(); try { fetch('./assets/downloads.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) { dl = j; render(); } }, function () { /* optional */ }); } catch (e) { /* optional */ } if (api && api.appInfo) api.appInfo().then(function (j) { info = { android: j }; render(); }, function () { /* the card still works without the details */ }); }
   init();
 })();

@@ -81,6 +81,19 @@
       '<span class="cr-fa">' + (c.phone ? '<a class="cr-call" href="tel:' + esc(c.phone) + '" aria-label="تماس با ' + esc(c.name || '') + '" title="تماس">' + I.phone + '<span dir="ltr">' + esc(RQ.fa(c.phone)) + '</span></a>' : '') +
       (done ? '' : '<button type="button" class="cr-fin" data-fin title="پایان خرید؛ کارت از فهرست بیرون می‌رود">' + I.check + 'خرید انجام شد</button>') + '</span></div></article>';
   }
+  // right click / long press on a request card (assets/ctxmenu.js): open it, copy its code, call the customer
+  (window.MSCtxQ = window.MSCtxQ || []).push(['.cr-card[data-id]', function (el) {
+    var x = S.list.filter(function (r) { return r.id === el.getAttribute('data-id'); })[0];
+    if (!x) return [];
+    var c = x.customer || {}, cp = function (t) { try { navigator.clipboard.writeText(t); } catch (e) { /* ignore */ } };
+    var items = [{ ico: 'open', label: 'باز کردن درخواست', run: function () { var b = el.querySelector('.cr-open'); if (b) b.click(); } },
+      { ico: 'copy', label: 'کپی کد درخواست', run: function () { cp(String(x.code || '')); } }];
+    if (c.phone) {
+      items.push({ ico: 'act', label: 'تماس با مشتری', run: function () { location.href = 'tel:' + c.phone; } });
+      items.push({ ico: 'copy', label: 'کپی شمارهٔ مشتری', run: function () { cp(String(c.phone)); } });
+    }
+    return items;
+  }]);
   function listHtml() {
     var list = filtered(), n = counts();
     var tiles = isAM() ? [['pre', 'منتظر بررسی شما'], ['acc', 'تأییدشده'], ['ful', 'انبار و تولید'], ['out', 'ارسال و تحویل']] : [['new', 'جدید'], ['call', 'نیاز به تماس'], ['warehouse', 'ارسال به انبار'], ['production', 'ارسال به تولید']];

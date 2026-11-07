@@ -2,10 +2,10 @@
 
 // Every release changes VERSION and the ?v= stamp on the pages. Assets that carry ?v= are matched exactly,
 // so a page can never be combined with CSS/JS from another release.
-const VERSION = 'v3-20261552';
+const VERSION = 'v3-20261560';
 const CACHE_NAME = 'maxsilver-portal-' + VERSION;
 const SCOPE = self.registration.scope;
-const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'customers.html', 'planner.html', 'events.html', 'fairs.html', 'competitors.html', 'backup.html', 'features.html', 'roadmap.html', 'assistant.html', 'permissions.html', 'warehouse.html', 'banks.html', 'track.html', 'voip.html', 'prices.html', 'crm.html', 'legal.html', 'product-catalog.html', 'sales-process.html', 'brand-books.html', 'panel.html', 'contact.html', 'advertising.html', 'blog-halloween.html', 'backend.html', 'academy.html', 'hiring-form.html', 'install.html'];
+const PAGES = ['', 'index.html', 'ceo-dashboard.html', 'sales-analysis.html', 'customers.html', 'planner.html', 'events.html', 'fairs.html', 'competitors.html', 'backup.html', 'features.html', 'roadmap.html', 'assistant.html', 'permissions.html', 'warehouse.html', 'banks.html', 'track.html', 'voip.html', 'prices.html', 'crm.html', 'legal.html', 'product-catalog.html', 'sales-process.html', 'brand-books.html', 'panel.html', 'contact.html', 'advertising.html', 'blog-halloween.html', 'backend.html', 'academy.html', 'hiring-form.html', 'install.html', 'signup.html', 'web-orders.html'];
 const STATIC_ASSETS = [
   'manifest.webmanifest',
   'assets/vendor/qrcode-generator-1.4.4.js',
@@ -105,4 +105,28 @@ self.addEventListener('notificationclick', (event) => {
     for (const c of list) { if ('focus' in c) { c.navigate(target).catch(() => {}); return c.focus(); } }
     return self.clients.openWindow(target);
   }));
+});
+
+// web push: the server only taps the phone (no text travels); the details are read after opening the portal
+self.addEventListener('push', (event) => {
+  event.waitUntil(self.registration.showNotification('مکث‌سیلور', {
+    body: 'اعلان تازه در پرتال دارید',
+    icon: abs('assets/branding/maxsilver-pwa-192.png'),
+    badge: abs('assets/branding/maxsilver-pwa-192.png'),
+    tag: 'ms-notice',
+    renotify: true,
+    dir: 'rtl',
+    lang: 'fa',
+    data: { url: abs('panel.html') }
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || abs('');
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) { if (c.url.startsWith(SCOPE) && 'focus' in c) { await c.focus(); return; } }
+    await self.clients.openWindow(target);
+  })());
 });

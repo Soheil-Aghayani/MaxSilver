@@ -160,6 +160,10 @@
     twoFactorBegin: function () { return call('POST', 'auth/2fa/begin'); },
     twoFactorVerify: function (code) { return call('POST', 'auth/2fa/verify', { code: code }); },
     twoFactorDisable: function (d) { return call('POST', 'auth/2fa/disable', d); },
+    // asking for an account (no sign-in) and the technology lead's answers
+    signups: function () { return call('GET', 'signups'); },
+    signupApprove: function (id, role) { return call('POST', 'signups/' + id + '/approve', { role: role }); },
+    signupReject: function (id, reason) { return call('POST', 'signups/' + id + '/reject', { reason: reason }); },
     users: function () { return call('GET', 'users'); },
     setUserPassword: function (id, pw) { return call('PUT', 'users/' + id + '/password', { password: pw }); },
     deleteUser: function (id) { return call('DELETE', 'udocs/' + id); },

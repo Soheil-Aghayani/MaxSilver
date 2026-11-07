@@ -26,3 +26,14 @@
 .ip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.ip-btn.alt{background:#fff;color:var(--ms-navy,#071b36);border:2px solid var(--ms-navy,#071b36)}
 .ip-warn{margin:10px 0;padding:12px 14px;border:2px solid #f1c27a;border-radius:14px;background:#fff9ec;color:#7a3a00}.ip-warn p{margin:4px 0}
 a.ip-btn{text-decoration:none}
+.ip-main{display:grid;gap:12px;padding:20px;margin:0 0 16px;border:2px solid #ffcc2a;border-radius:24px;background:linear-gradient(180deg,#fffaf0,#fff);box-shadow:0 8px 22px rgba(7,27,54,.07)}
+.ip-main h2{margin:0;font-size:20px}
+.ip-main ol{margin:0;padding:0 20px 0 0;display:grid;gap:6px;font-size:14.5px;line-height:2;color:#27364f}
+.ip-btn.big{padding:14px 18px;font-size:16px}
+.ip-adv{border:1px solid var(--ms-line,#d7dfeb);border-radius:18px;background:#fff}
+.ip-adv>summary{padding:14px 16px;cursor:pointer;font:700 14px Estedad,Tahoma,sans-serif;color:#1746b5}
+.ip-advbody{display:grid;gap:12px;padding:0 14px 16px}
+.ip-card h3{margin:0;font-size:16px}
+.ip-files{display:grid;gap:8px}
+.ip-file{display:grid;gap:4px;padding:10px 12px;border:1px solid var(--ms-line,#d7dfeb);border-radius:12px;color:#1746b5;text-decoration:none}
+.ms-install-adv{display:block;margin-top:10px;text-align:center;font-size:12.5px;color:#51627a;text-decoration:underline}

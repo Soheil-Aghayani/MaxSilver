@@ -1,4 +1,4 @@
-// Installing the app.
+// Installing the app. The home-screen shortcut is the default; real app files are the optional extra (install.html#advanced).
 //  - First visit only: one dialog offers the install, once. Closing it never brings it back.
 //  - Afterwards the install lives in the profile panel (#installSlot, signed-in people only).
 // The icon and wording follow the operating system. Chrome and Edge give a real prompt; Safari has none, so the steps are shown.
@@ -50,7 +50,7 @@
     if (firefox && (OS === 'windows' || OS === 'linux' || OS === 'macos' || OS === 'steamos')) return ['Firefox روی رایانه نصب برنامه را پشتیبانی نمی‌کند.', 'همین نشانی را در Chrome یا Edge باز کنید و دوباره نصب را بزنید.'];
     if (OS === 'ios') return ['در Safari دکمهٔ اشتراک‌گذاری (مربع با پیکان رو به بالا) را بزنید.', 'گزینهٔ «Add to Home Screen» یا «افزودن به صفحهٔ اصلی» را انتخاب و تأیید کنید.'];
     if (OS === 'macos' && safari) return ['در Safari از منوی «File» گزینهٔ «Add to Dock» را بزنید.', 'نام برنامه را تأیید کنید.'];
-    if (OS === 'android') return ['منوی مرورگر (سه نقطه) را باز کنید.', 'گزینهٔ «Install app» یا «Add to Home screen» را بزنید و تأیید کنید.', 'اگر گزینه نیست، صفحه را یک بار تازه کنید و چند ثانیه صبر کنید.'];
+    if (OS === 'android') return ['منوی مرورگر (سه نقطه بالای صفحه) را باز کنید.', 'گزینهٔ «Add to Home screen» یا «Install app» را بزنید و تأیید کنید.', 'آیکن مکث‌سیلور روی صفحهٔ اصلی گوشی می‌آید. اگر گزینه نیست، صفحه را یک بار تازه کنید و چند ثانیه صبر کنید.'];
     return ['در نوار آدرس روی آیکن نصب بزنید، یا از منوی مرورگر «Install مکث‌سیلور» را انتخاب کنید.'];
   }
 
@@ -116,7 +116,7 @@
   }
   function showSteps() {
     open('<div class="ms-install-body"><div class="ms-install-hero">' + icon(OS, 44) + '<h2 id="msInstallTitle">نصب برای ' + NAME[OS] + '</h2></div><ol>' +
-      steps().map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol><button type="button" class="ms-install-close">بستن</button></div>');
+      steps().map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol><a class="ms-install-adv" href="./install.html#advanced">نصب پیشرفته (فایل برنامه)</a><button type="button" class="ms-install-close">بستن</button></div>');
   }
   // the page sits inside a messenger: say so, and hand it to the real browser
   function showInApp() {
@@ -137,28 +137,9 @@
     void url;
   }
 
-  // Android: the real app (APK) is offered first; the home-screen shortcut stays as the fallback when the file is not on the server yet
-  function showApk() {
-    open('<div class="ms-install-body"><div class="ms-install-hero">' + icon('android', 56) + '<h2 id="msInstallTitle">اپلیکیشن مکث‌سیلور برای اندروید</h2></div>' +
-      '<p>اپلیکیشن واقعی، تمام‌صفحه و بدون نوار مرورگر. فایل نصب را دانلود کنید و باز کنید.</p><ol>' +
-      '<li>دکمهٔ «دانلود اپلیکیشن» را بزنید.</li><li>فایل دانلودشده را باز کنید.</li>' +
-      '<li>اگر گوشی دربارهٔ «نصب از این منبع» پرسید، «اجازه» را بزنید و نصب را تأیید کنید. (این پیام فقط برای فایل‌هایی است که از فروشگاه نیامده‌اند.)</li></ol>' +
-      '<div class="ms-install-actions"><button type="button" class="ms-install-go" data-apk>دانلود اپلیکیشن</button><button type="button" class="ms-install-copy">میان‌بر روی صفحهٔ اصلی</button></div>' +
-      '<button type="button" class="ms-install-close">بستن</button></div>');
-    dlg.querySelector('.ms-install-copy').addEventListener('click', function () { dlg.close(); installShortcut(); });
-    dlg.querySelector('[data-apk]').addEventListener('click', function (e) {
-      var b = e.currentTarget; b.disabled = true; b.textContent = 'در حال دانلود…';
-      var u = window.MSApi.publicUrl('public/app/android/file'), a = document.createElement('a'); a.href = u; a.download = 'maxsilver.apk'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { b.disabled = false; b.textContent = 'دانلود شروع شد؛ از پوشهٔ دانلودها باز کنید'; }, 600);
-    });
-  }
-  function install() {
-    // on Android the app file is offered to everyone (no sign-in); if it is not on the server yet, the home-screen shortcut is used
-    if (OS === 'android' && window.MSApi && window.MSApi.appInfo && window.MSApi.publicUrl && window.MSApi.publicUrl('x')) {
-      window.MSApi.appInfo().then(showApk, installShortcut);
-      return;
-    }
-    installShortcut();
-  }
+  // The home-screen shortcut is the default on every device. The real app files (APK, Windows, Mac, Linux) live in the
+  // optional "advanced" part of install.html: a signed shortcut raises no store warning, loose files can.
+  function install() { installShortcut(); }
   function installShortcut() {
     if (inApp) { showInApp(); return; }
     if (!prompt) { showSteps(); return; }
@@ -184,7 +165,7 @@
     if (signed) {
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'ms-install';
-      b.innerHTML = icon(OS, 22) + '<span>نصب برنامه برای ' + NAME[OS] + '</span>';
+      b.innerHTML = icon(OS, 22) + '<span>میان‌بر مکث‌سیلور روی صفحهٔ اصلی</span>';
       b.addEventListener('click', install);
       slot.appendChild(b);
     }
@@ -197,9 +178,10 @@
   setTimeout(function () {
     try { localStorage.setItem(KEY, '1'); } catch (e) { /* ignore */ }
     if (inApp) { showInApp(); return; }
-    open('<div class="ms-install-body"><div class="ms-install-hero">' + icon(OS, 56) + '<h2 id="msInstallTitle">مکث‌سیلور را روی ' + NAME[OS] + ' نصب کنید</h2></div>' +
-      '<p>' + (OS === 'android' ? 'اپلیکیشن تمام‌صفحه و سریع، بدون نوار مرورگر.' : 'دسترسی سریع از صفحهٔ اصلی، بدون باز کردن مرورگر.') + ' بعداً هم از «حساب من» می‌توانید نصب کنید.</p>' +
-      '<div class="ms-install-actions"><button type="button" class="ms-install-go">نصب</button><button type="button" class="ms-install-later">بعداً</button></div></div>');
+    open('<div class="ms-install-body"><div class="ms-install-hero">' + icon(OS, 56) + '<h2 id="msInstallTitle">مکث‌سیلور را به صفحهٔ اصلی اضافه کنید</h2></div>' +
+      '<p>با یک لمس یک میان‌بر روی ' + NAME[OS] + ' ساخته می‌شود؛ بدون دانلود فایل و بدون هشدار. بعداً هم از «حساب من» می‌توانید.</p>' +
+      '<div class="ms-install-actions"><button type="button" class="ms-install-go">افزودن میان‌بر</button><button type="button" class="ms-install-later">بعداً</button></div>' +
+      '<a class="ms-install-adv" href="./install.html#advanced">نصب پیشرفته (فایل برنامه)</a></div>');
     dlg.querySelector('.ms-install-go').addEventListener('click', function () { dlg.close(); install(); });
   }, 1500);
 })();

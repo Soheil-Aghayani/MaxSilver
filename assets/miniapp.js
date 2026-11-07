@@ -9,7 +9,8 @@
   var BASE = (window.MS_API_BASE || 'https://api.agseyl.ir') + '/api/v1';
   var PORTAL = 'https://portal.agseyl.ir';
   var S = { token: '', name: '', role: '', tab: 'notices', cat: '', items: [], unread: 0, cats: [], dir: [], dirLoaded: false, msg: '', err: '',
-    work: 'orders', orders: null, msgs: null, chats: null, thread: null, armed: '', busy: false };
+    work: 'orders', orders: null, msgs: null, chats: null, thread: null, armed: '', busy: false, pending: [], up: false, big: '' };
+  var blobs = {};        // file id (+ ':t' for the small copy) -> promise of an object URL; pictures are fetched with the token, never put in an address
   var FA = '۰۱۲۳۴۵۶۷۸۹';
   var fa = function (s) { return String(s).replace(/\d/g, function (d) { return FA.charAt(d); }); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -57,6 +58,7 @@
     if (nt && keep) { nt.value = keep.v; if (keep.f) { nt.focus(); } }
     // a conversation opens at its newest message; while it refreshes, whoever scrolled up to read keeps their place
     var box = root.querySelector('.ma-thread'); if (box) { if (!pos || pos.atEnd) box.scrollTop = box.scrollHeight; else box.scrollTop = pos.top; }
+    paintImgs();
   }
   function tab(k, label, extra) { return '<button type="button" role="tab" class="ma-tab" data-tab="' + k + '" aria-selected="' + (S.tab === k) + '">' + label + (extra || '') + '</button>'; }
 
@@ -126,13 +128,78 @@
       return '<li class="ma-item" data-chat="' + esc(c.id) + '"><b>' + esc(c.title) + '</b>' + (c.last ? '<span class="tx">' + (c.by ? esc(c.by) + ': ' : '') + esc(c.last) + '</span>' : '') + '<time>' + esc(when(c.at)) + '</time></li>';
     }).join('') + '</ul>';
   }
+  function fsize(n) { return n >= 1048576 ? fa((n / 1048576).toFixed(1)) + ' مگابایت' : fa(Math.max(1, Math.round(n / 1024))) + ' کیلوبایت'; }
+  function isImg(f) { return /^image\//.test(f.mime || '') && f.mime !== 'image/svg+xml'; }
+  function filesHtml(m) {
+    return (m.fileList || []).map(function (f) {
+      return isImg(f) ? '<img class="ma-img" alt="" data-view="' + esc(f.id) + '" data-fid="' + esc(f.id) + '" data-th="' + (f.thumb ? '1' : '0') + '">'
+        : '<button type="button" class="ma-file" data-file="' + esc(f.id) + '" data-name="' + esc(f.name) + '"><span>' + esc(f.name) + '</span><small>' + esc(fsize(f.size || 0)) + '</small></button>';
+    }).join('');
+  }
   function threadView() {
     var t = S.thread;
     var rows = t.items.map(function (m) {
-      return '<div class="ma-msg' + (m.mine ? ' mine' : '') + '">' + (m.mine ? '' : '<small>' + esc(m.name) + '</small>') + (m.deleted ? '<i>این پیام حذف شد</i>' : esc(m.text).replace(/\n/g, '<br>')) + (m.files ? '<i>' + esc(fa(m.files)) + ' فایل (در برنامه باز کنید)</i>' : '') + '<time>' + esc(when(m.at)) + '</time></div>';
+      var n = (m.fileList || []).length;
+      return '<div class="ma-msg' + (m.mine ? ' mine' : '') + '">' + (m.mine ? '' : '<small>' + esc(m.name) + '</small>') + (m.deleted ? '<i>این پیام حذف شد</i>' : (m.text ? esc(m.text).replace(/\n/g, '<br>') : '')) + (m.deleted ? '' : filesHtml(m)) +
+        (!n && m.files ? '<i>' + esc(fa(m.files)) + ' فایل (در برنامه باز کنید)</i>' : '') + '<time>' + esc(when(m.at)) + '</time></div>';
     }).join('');
+    var chips = S.pending.length ? '<div class="ma-pend">' + S.pending.map(function (p, i) { return '<span class="ma-pc">' + esc(p.name) + '<button type="button" data-unpend="' + i + '" aria-label="برداشتن">×</button></span>'; }).join('') + '</div>' : '';
     return '<div class="ma-row"><button type="button" class="ma-btn" data-back>بازگشت</button><b>' + esc(t.title) + '</b></div><div class="ma-thread">' + (rows || '<p class="ma-note">هنوز پیامی نیست.</p>') + '</div>' +
-      (t.open ? '<form class="ma-send" data-send><textarea id="maReply" rows="2" maxlength="2000" placeholder="پیام…" aria-label="پیام"></textarea><button type="submit" class="ma-act"' + (S.busy ? ' disabled' : '') + '>ارسال</button></form>' : '<p class="ma-note">این گفت‌وگو بسته است.</p>');
+      (t.open ? '<form class="ma-send" data-send>' + chips + '<div class="ma-sendrow"><button type="button" class="ma-clip" data-attach aria-label="پیوست عکس یا فایل"' + (S.up || S.pending.length >= 5 ? ' disabled' : '') + '>' + (S.up ? '…' : '📎') + '</button>' +
+        '<textarea id="maReply" rows="2" maxlength="2000" placeholder="پیام…" aria-label="پیام"></textarea><button type="submit" class="ma-act"' + (S.busy || S.up ? ' disabled' : '') + '>ارسال</button></div>' +
+        '<input type="file" id="maFile" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.zip" multiple hidden></form>' : '<p class="ma-note">این گفت‌وگو بسته است.</p>') +
+      (S.big ? '<div class="ma-big" data-bigx role="dialog" aria-label="عکس"><img alt="" id="maBig"><button type="button" class="ma-btn" data-bigx>بستن</button></div>' : '');
+  }
+  // pictures and files are fetched with the token and shown from memory
+  function blobOf(id, thumb) {
+    var k = id + (thumb ? ':t' : '');
+    if (!blobs[k]) {
+      blobs[k] = fetch(BASE + '/mini/files/' + encodeURIComponent(id) + (thumb ? '?thumb=1' : ''), { headers: { 'Authorization': 'Bearer ' + S.token }, credentials: 'omit' }).then(function (r) {
+        if (!r.ok) throw new Error('x'); return r.blob();
+      }).then(function (b) { return URL.createObjectURL(b); }, function (e) { delete blobs[k]; throw e; });
+    }
+    return blobs[k];
+  }
+  function paintImgs() {
+    Array.prototype.forEach.call(root.querySelectorAll('img[data-fid]:not([src])'), function (im) {
+      blobOf(im.getAttribute('data-fid'), im.getAttribute('data-th') === '1').then(function (u) { im.src = u; }, function () { im.alt = 'عکس باز نشد'; });
+    });
+    var big = root.querySelector('#maBig'); if (big && S.big && !big.src) blobOf(S.big, false).then(function (u) { big.src = u; }, function () { /* ignore */ });
+  }
+  // a picture is made smaller before it leaves the phone (saves the person's data); a small copy is sent along for the list
+  function shrink(file, max, q) {
+    return new Promise(function (res) {
+      if (!/^image\/(jpeg|png|webp)/.test(file.type)) { res(null); return; }
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var s = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(im.width * s)); c.height = Math.max(1, Math.round(im.height * s));
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        c.toBlob(function (b) { res(b); }, 'image/jpeg', q);
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); res(null); };
+      im.src = url;
+    });
+  }
+  function uploadFiles(list) {
+    var t = S.thread; if (!t || S.up) return;
+    var room = 5 - S.pending.length; list = Array.prototype.slice.call(list, 0, room);
+    if (!list.length) return;
+    S.up = true; view();
+    var chain = Promise.resolve();
+    list.forEach(function (f) {
+      chain = chain.then(function () {
+        if (f.size > 10 * 1048576 && !/^image\//.test(f.type)) { toast('«' + f.name + '» بزرگ‌تر از ۱۰ مگابایت است.'); return; }
+        return Promise.all([shrink(f, 1600, 0.85), shrink(f, 360, 0.7)]).then(function (r) {
+          var fd = new FormData(), name = f.name || 'file';
+          if (r[0]) { fd.append('file', r[0], name.replace(/\.[^.]+$/, '') + '.jpg'); if (r[1]) fd.append('thumb', r[1], 't.jpg'); } else fd.append('file', f, name);
+          return fetch(BASE + '/mini/tickets/' + encodeURIComponent(t.id) + '/files', { method: 'POST', headers: { 'Authorization': 'Bearer ' + S.token, 'Accept': 'application/json' }, body: fd, credentials: 'omit' }).then(function (x) {
+            return x.json().catch(function () { return {}; }).then(function (j) { if (!x.ok) throw new Error(j.message || 'x'); S.pending.push({ id: j.id, name: j.name }); });
+          });
+        });
+      }).catch(function () { toast('«' + (f.name || 'فایل') + '» فرستاده نشد؛ نوع یا اندازه درست نیست.'); });
+    });
+    chain.then(function () { S.up = false; view(); });
   }
 
   function load() {
@@ -181,15 +248,20 @@
     var f = e.target.closest('[data-send]'); if (!f) return;
     e.preventDefault();
     var ta = f.querySelector('textarea'), text = ta.value.trim();
-    if (!text || S.busy || !S.thread) return;
+    if ((!text && !S.pending.length) || S.busy || S.up || !S.thread) return;
     S.busy = true; view();
-    api('POST', '/mini/tickets/' + encodeURIComponent(S.thread.id) + '/reply', { text: text }).then(function () {
-      S.busy = false; var n = root.querySelector('#maReply'); if (n) n.value = '';
+    api('POST', '/mini/tickets/' + encodeURIComponent(S.thread.id) + '/reply', { text: text, files: S.pending.map(function (p) { return p.id; }) }).then(function () {
+      S.busy = false; S.pending = []; var n = root.querySelector('#maReply'); if (n) n.value = '';
       return openThread(S.thread.id, false).then(function () { var el = root.querySelector('#maReply'); if (el) el.value = ''; });
     }, function (er) { S.busy = false; view(); fail(er); });
   });
 
+  root.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'maFile') { var l = e.target.files; if (l && l.length) uploadFiles(l); e.target.value = ''; }
+  });
   root.addEventListener('click', function (e) {
+    var im = e.target.closest && e.target.closest('img[data-view]');
+    if (im) { S.big = im.getAttribute('data-view'); view(); return; }
     var t = e.target.closest('button, .ma-item'); if (!t) return;
     if (t.hasAttribute('data-tab')) {
       S.tab = t.getAttribute('data-tab'); S.armed = ''; view();
@@ -199,7 +271,15 @@
     }
     if (t.hasAttribute('data-cat')) { S.cat = t.getAttribute('data-cat'); view(); return; }
     if (t.hasAttribute('data-work')) { S.work = t.getAttribute('data-work'); S.thread = null; S.armed = ''; view(); return; }
-    if (t.hasAttribute('data-back')) { S.thread = null; view(); loadWork().then(view); return; }
+    if (t.hasAttribute('data-back')) { S.thread = null; S.pending = []; view(); loadWork().then(view); return; }
+    if (t.hasAttribute('data-attach')) { var fi = root.querySelector('#maFile'); if (fi) fi.click(); return; }
+    if (t.hasAttribute('data-unpend')) { S.pending.splice(+t.getAttribute('data-unpend'), 1); view(); return; }
+    if (t.hasAttribute('data-bigx')) { S.big = ''; view(); return; }
+    if (t.hasAttribute('data-file')) {
+      var fid = t.getAttribute('data-file'), nm = t.getAttribute('data-name') || 'file';
+      blobOf(fid, false).then(function (u) { var a = document.createElement('a'); a.href = u; a.download = nm; document.body.appendChild(a); a.click(); a.remove(); }, function () { toast('فایل باز نشد.'); });
+      return;
+    }
     if (t.hasAttribute('data-readall')) { api('POST', '/notices/read', { all: true }).then(load).then(view); return; }
     if (t.hasAttribute('data-switch')) {
       var key = t.getAttribute('data-switch');

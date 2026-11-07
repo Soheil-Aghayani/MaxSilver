@@ -86,6 +86,19 @@
       '<span class="st-st">' + esc(STATUS[p.status] || '') + (p.status === 'applicant' && p.stage ? ' · ' + esc(p.stage) : '') + '</span>' +
       '<span class="st-meta">' + (p.phone ? '<bdi dir="ltr">' + esc(faD(p.phone)) + '</bdi>' : '') + (p.startDate ? '<span>شروع ' + esc(faD(p.startDate)) + '</span>' : '') + (p.salary ? '<span>' + esc(money(p.salary)) + '</span>' : '') + '</span></button></li>';
   }
+  // right click / long press on a person (assets/ctxmenu.js): open, call, copy
+  (window.MSCtxQ = window.MSCtxQ || []).push(['.st-card[data-open]', function (el) {
+    var p = S.list.filter(function (x) { return x.id === el.getAttribute('data-open'); })[0];
+    if (!p) return [];
+    var cp = function (t) { try { navigator.clipboard.writeText(t); } catch (e) { /* ignore */ } };
+    var items = [{ ico: 'open', label: 'باز کردن پرونده', run: function () { el.click(); } }];
+    if (p.phone) {
+      items.push({ ico: 'act', label: 'تماس', run: function () { location.href = 'tel:' + p.phone; } });
+      items.push({ ico: 'copy', label: 'کپی شمارهٔ تماس', run: function () { cp(String(p.phone)); } });
+    }
+    items.push({ ico: 'copy', label: 'کپی نام', run: function () { cp(String(p.name || '')); } });
+    return items;
+  }]);
   function units() { var u = {}; S.list.forEach(function (p) { if (p.unit) u[p.unit] = (u[p.unit] || 0) + 1; }); return u; }
   function listView() {
     var cnt = { all: S.list.length, active: 0, applicant: 0, left: 0 }; S.list.forEach(function (p) { cnt[p.status] = (cnt[p.status] || 0) + 1; });

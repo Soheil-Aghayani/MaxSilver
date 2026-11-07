@@ -71,7 +71,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); loadBale(); loadPersonal(); loadArchive(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
+    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); loadPush(); loadBale(); loadPersonal(); loadArchive(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -1180,8 +1180,15 @@
     var asked = choice === 'push' && window.MSNotify && !quiet ? window.MSNotify.askPermission() : Promise.resolve('');
     return asked.then(function () { return db.collection('notify_prefs').doc(S.user.uid).set(doc); }).then(function () {
       if (window.MSNotify) window.MSNotify.setPrefs(doc);
+      if (window.MSPush && window.MSPush.supported && !quiet) { var pp = choice === 'push' ? window.MSPush.enable() : window.MSPush.disable(); pp.then(function (st) { S.push = st; render(); }, function (e) { S.push = 'off'; S.prefs.err = (e && e.message) || 'اعلان پس‌زمینه فعال نشد.'; render(); }); }
       if (!quiet) S.prefs.msg = 'ذخیره شد.';
     }, function (err) { S.prefs.err = errText(err); }).then(function () { S.prefs.busy = false; if (!quiet) render(); });
+  }
+  S.push = '';
+  function loadPush() { if (window.MSPush) window.MSPush.state().then(function (st) { S.push = st; render(); }); }
+  function pushLine() {
+    var m = { on: 'اعلان پس‌زمینه روی این دستگاه فعال است؛ حتی وقتی برنامه بسته است خبر می‌گیرید.', off: 'اعلان پس‌زمینه روی این دستگاه فعال نیست.', blocked: 'اعلان این سایت در مرورگر مسدود است؛ از تنظیمات مرورگر باز کنید.' }[S.push];
+    return m ? '<p class="pn-note">' + m + '</p>' + (S.push === 'off' ? '<button type="button" class="pn-secondary" data-push-on>فعال‌سازی روی این دستگاه</button>' : S.push === 'on' ? '<button type="button" class="pn-secondary" data-push-off>خاموش کردن روی این دستگاه</button>' : '') : '';
   }
   function permLabel() {
     var p = window.MSNotify ? window.MSNotify.permission() : 'unsupported';
@@ -1197,6 +1204,7 @@
       }).join('') + '</div>' +
       (P.channels === 'push' ? '<p class="pn-note">' + esc(permLabel()) + ' اعلان زمانی نمایش داده می‌شود که برنامه باز یا در پس‌زمینهٔ دستگاه باشد.</p>' +
         (perm === 'default' ? '<button type="button" class="pn-secondary" data-allow-notify>اجازهٔ اعلان را بده</button>' : '') : '') +
+      (P.channels === 'push' ? pushLine() : '') +
       (P.err ? '<p class="pn-err" role="alert">' + esc(P.err) + '</p>' : '') +
       (P.msg ? '<p class="pn-ok" role="status">' + esc(P.msg) + '</p>' : '') + '</section>';
   }
@@ -1912,6 +1920,8 @@
     if (e.target.closest('[data-bale-on]')) { baleLink(); return; }
     if (e.target.closest('[data-bale-off]')) { baleUnlink(); return; }
     if (e.target.closest('[data-bale-check]')) { loadBale(); return; }
+    if (e.target.closest('[data-push-on]')) { if (window.MSPush) window.MSPush.enable().then(function (st) { S.push = st; S.prefs.err = ''; render(); }, function (er) { S.prefs.err = (er && er.message) || 'فعال نشد.'; render(); }); return; }
+    if (e.target.closest('[data-push-off]')) { if (window.MSPush) window.MSPush.disable().then(function (st) { S.push = st; render(); }); return; }
     if (e.target.closest('[data-allow-notify]')) { if (window.MSNotify) window.MSNotify.askPermission().then(function () { render(); }); return; }
     if (e.target.closest('[data-onb-later]')) { S.onb.hide = true; render(); return; }
     if (e.target.closest('[data-photo-pick]')) { var fi = document.getElementById('photoFile'); if (fi) fi.click(); return; }

@@ -57,6 +57,17 @@ html, body { margin: 0; background: var(--bg); color: var(--text); font-family: 
 .ma-msg.mine { justify-self: end; background: #fff3c4; border-color: #f0d56a; color: #071b36; }
 .ma-msg small, .ma-msg i { font-size: 11.5px; color: var(--sub); font-style: normal; }
 .ma-msg time { font-size: 11px; color: var(--sub); }
-.ma-send { position: sticky; bottom: calc(66px + env(safe-area-inset-bottom)); display: flex; gap: 8px; align-items: flex-end; padding: 8px 0; background: var(--bg); }
+.ma-send { position: sticky; bottom: calc(66px + env(safe-area-inset-bottom)); display: grid; gap: 6px; padding: 8px 0; background: var(--bg); }
+.ma-sendrow { display: flex; gap: 8px; align-items: flex-end; }
+.ma-clip { flex: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); font-size: 20px; cursor: pointer; }
+.ma-clip:disabled { opacity: .5; cursor: default; }
+.ma-pend { display: flex; flex-wrap: wrap; gap: 6px; }
+.ma-pc { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 4px 10px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-size: 12.5px; }
+.ma-pc button { border: 0; background: transparent; color: var(--bad); font-size: 16px; cursor: pointer; line-height: 1; }
+.ma-img { display: block; max-width: 100%; max-height: 220px; border-radius: 10px; background: var(--bg); cursor: zoom-in; }
+.ma-file { display: grid; gap: 2px; text-align: right; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+.ma-file small { color: var(--sub); font-size: 11.5px; }
+.ma-big { position: fixed; inset: 0; z-index: 20; display: grid; align-content: center; justify-items: center; gap: 12px; padding: 14px; background: rgba(7, 27, 54, .92); }
+.ma-big img { max-width: 100%; max-height: 80vh; border-radius: 8px; }
 .ma-send textarea { flex: 1; resize: none; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--text); font: inherit; font-size: 14px; }
 @media (prefers-reduced-motion: reduce) { .ma-switch button::after { transition: none; } }

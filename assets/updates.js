@@ -7,6 +7,10 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'mini-files-instagram-1405-08-15', date: '1405/08/15', tag: 'تازه', title: 'عکس و فایل در مینی‌اپ بله، سه کاشی اینستاگرام و منوی راست‌کلیک بیشتر',
+      summary: 'در گفت‌وگوهای مینی‌اپ بله حالا می‌توانید عکس و فایل بفرستید و ببینید (عکس‌ها پیش از ارسال کوچک می‌شوند تا اینترنت کمتری مصرف شود). سه کاشی اینستاگرام (مکث‌سیلور، مکث‌سیلور کیش و مکس استیل آریا) به صفحهٔ اصلی اضافه شد. منوی راست‌کلیک یا نگه‌داشتن انگشت حالا روی کارت درخواست‌های خرید (باز کردن، کپی کد، تماس با مشتری)، کارت همکاران و متقاضیان و کارت داخلی‌ها (تماس یا کپی هر شماره) هم کار می‌کند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'] },
+    { id: 'cat-prices-tile-1405-08-15', date: '1405/08/15', tag: 'تازه', title: 'کاشی «جدول قیمت» در صفحهٔ اصلی',
+      summary: 'کاشی تازهٔ «جدول قیمت» جدول قیمت محصولات را از سایت cat.agseyl.ir در یک زبانهٔ جدید باز می‌کند و برای همهٔ همکاران واردشده هست. ستارهٔ سنجاق هم دارد. کاشی «قیمت‌ها» همچنان برای ویرایش قیمت‌ها (مدیر فروش و مدیریت) می‌ماند.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'] },
     { id: 'chat-faster-1405-08-15', date: '1405/08/15', tag: 'بهبود', title: 'گفت‌وگو در بله سریع‌تر و راحت‌تر شد',
       summary: 'وقتی گفت‌وگویی در مینی‌اپ بله باز است، پیام‌های تازه ظرف چند ثانیه می‌رسند. همچنین می‌توانید در خود ربات بله، روی پیام اعلان یک گفت‌وگو «Reply» بزنید تا پاسخ شما مستقیم در همان گفت‌وگو ثبت شود. اگر چند پیام پشت‌سرهم برسد، ربات یک پیام می‌فرستد و تعداد بقیه را می‌نویسد.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'] },
     { id: 'mini-actions-1405-08-15', date: '1405/08/15', tag: 'تازه', title: 'کار کردن با مینی‌اپ بله و منوی راست‌کلیک',
