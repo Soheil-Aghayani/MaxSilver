@@ -71,7 +71,7 @@
       if (!S.profile) {
         try { var c = JSON.parse(localStorage.getItem('ms-profile-v1') || 'null'); if (c && c.uid === uid) S.profile = c.profile; } catch (x) { /* ignore */ }
       }
-    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); loadPush(); loadBale(); loadPersonal(); loadArchive(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
+    }).then(function () { S.loading = false; render(); loadComm(); loadTickets(); loadPublic(); loadPrefs(); loadPush(); loadSignups(); loadBale(); loadPersonal(); loadArchive(); needProfiles([S.user.uid]); if (window.MSNotify) window.MSNotify.refresh(true); });
   }
   auth.onAuthStateChanged(function (u) {
     S.user = u; S.profile = null; S.docs = []; S.team = []; S.msg = ''; S.busy = false;
@@ -1185,6 +1185,17 @@
     }, function (err) { S.prefs.err = errText(err); }).then(function () { S.prefs.busy = false; if (!quiet) render(); });
   }
   S.push = '';
+  // the manager's team view shows how many sign-up requests wait (the list itself is on the accounts page)
+  S.signups = null;
+  function loadSignups() {
+    if (!can('roleAdmin') || !window.MSApi || !MSApi.enabled() || !MSApi.signedIn() || typeof MSApi.signups !== 'function') return;
+    MSApi.signups().then(function (l) { S.signups = Array.isArray(l) ? l : []; render(); }, function () { S.signups = null; });
+  }
+  function signupsLine() {
+    if (!can('roleAdmin') || !window.MSApi || !MSApi.enabled() || S.signups === null) return '';
+    var pend = S.signups.filter(function (x) { return x.status === 'pending'; }).length;
+    return '<p class="pn-note"><a href="./backend.html#signups" style="font-weight:700">درخواست‌های ثبت‌نام' + (pend ? ' · ' + faInt.format(pend) + ' در انتظار تأیید' : ' · درخواست تازه‌ای نیست') + '</a></p>';
+  }
   function loadPush() { if (window.MSPush) window.MSPush.state().then(function (st) { S.push = st; render(); }); }
   function pushLine() {
     var m = { on: 'اعلان پس‌زمینه روی این دستگاه فعال است؛ حتی وقتی برنامه بسته است خبر می‌گیرید.', off: 'اعلان پس‌زمینه روی این دستگاه فعال نیست.', blocked: 'اعلان این سایت در مرورگر مسدود است؛ از تنظیمات مرورگر باز کنید.' }[S.push];
@@ -1763,7 +1774,7 @@
           (u.cities ? '<p class="pn-note">' + esc(u.cities) + '</p>' : '') : '') + '</div>' +
         '<button type="button" class="pn-ibtn" data-edit="' + esc(u.id) + '" title="ویرایش" aria-label="ویرایش ' + esc(u.name || '') + '"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z\"/></svg></button></li>';
     }).join('');
-    return '<section class="pn-card"><h2>تیم</h2><ul class="pn-users">' + rows + '</ul>' +
+    return '<section class="pn-card"><h2>تیم</h2>' + signupsLine() + '<ul class="pn-users">' + rows + '</ul>' +
       (can('roleAdmin') && window.MSApi && window.MSApi.enabled() ? '<p class="pn-note"><a href="./backend.html">ساخت حساب تازه برای کارکنان</a></p>' : can('roleAdmin') ? '<form id="addForm" class="pn-add"><h3>افزودن کاربر</h3>' +
         '<p class="pn-note">ابتدا در Firebase ← Authentication ← Users کاربر را بسازید و «User UID» را اینجا بچسبانید. نقش اولیه کارشناس فروش است؛ پس از افزودن از «ویرایش» تغییر دهید.</p>' +
         '<label>User UID<input type="text" name="uid" dir="ltr" required pattern="[A-Za-z0-9]{10,}" title="فقط حروف و عدد"></label>' +
