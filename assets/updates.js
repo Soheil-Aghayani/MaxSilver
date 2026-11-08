@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'signup-icon-1405-08-17', date: '1405/08/17', tag: 'بهبود', title: 'آیکون تازهٔ ثبت‌نام',
+      summary: 'کاشی «ثبت‌نام» برای بازدیدکننده و کاشی «درخواست‌های ثبت‌نام» برای مدیر حالا آیکون سه‌بعدی مخصوص ثبت‌نام دارند و با بقیهٔ کاشی‌ها هم‌سبک‌اند.', roles: ['manager', 'visitor'] },
     { id: 'signup-tile-1405-08-16', date: '1405/08/16', tag: 'تازه', title: 'کاشی «درخواست‌های ثبت‌نام» برای مدیر',
       summary: 'در بخش «مدیریت و تحلیل» صفحهٔ اصلی کاشی تازهٔ «درخواست‌های ثبت‌نام» هست که مستقیم به صف تأیید یا ردّ متقاضیان می‌رود. کاشی «ثبت‌نام» برای بازدیدکنندهٔ واردنشده در صفحهٔ اصلی دیده می‌شود، نه برای کسی که وارد شده است.', roles: ['manager'] },
     { id: 'push-reports-1405-08-16', date: '1405/08/16', tag: 'تازه', title: 'اعلان پس‌زمینه، گزارش هفتگی و هشدار امنیتی',
