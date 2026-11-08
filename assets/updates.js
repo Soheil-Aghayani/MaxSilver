@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'wintora-photos-1405-08-17', date: '1405/08/17', tag: 'اصلاح', title: 'عکس‌های اشتباه وینتورا و پایه فر پیتزا',
+      summary: 'در کاتالوگ و جدول قیمت، کابینت خط پخت وینتورا (سه اندازه) و سرخ‌کن مبله ۲ سبد عکس مکث‌سیلور داشتند و پایهٔ فر پیتزا (مکث‌سیلور و وینتورا) عکس خود فر را. این شش عکس برداشته شد و تا رسیدن عکس درست علامت جای‌خالی دارند؛ عکس وینتورا فقط از پوشهٔ عکس‌های خود سایت وینتورا می‌آید.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'marketing'] },
     { id: 'favicon-1405-08-17', date: '1405/08/17', tag: 'اصلاح', title: 'آیکون تب مرورگر برگشت',
       summary: 'آیکون کوچک بالای تب مرورگر (فاوآیکون) خالی یا تیره دیده می‌شد چون فایل تصویرش در مسیر درست نبود. حالا همهٔ صفحه‌ها آیکون زرد و M مکث‌سیلور را نشان می‌دهند و جدول قیمت هم همین آیکون را دارد. عکس «پایه فر پیتزا» هم در جدول قیمت دیگر عکس خود فر نیست و تا رسیدن عکس درست علامت جای‌خالی دارد.', roles: ['manager', 'ceo', 'sales_manager', 'visitor', 'account_manager', 'finance', 'operations', 'production', 'service', 'marketing', 'hr'] },
     { id: 'w1-test-path-1405-08-17', date: '1405/08/17', tag: 'بهبود', title: 'مسیر آزمایشی بی‌اعلان برای سفارش‌های سایت',
