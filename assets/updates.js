@@ -7,6 +7,8 @@
   // id: unique and never reused. date: Jalali. quiet: true = old news, does not light the dot. roles: who it concerns (omit for everyone).
   var ALL_SALES = ['visitor', 'sales_manager', 'account_manager', 'finance', 'ceo', 'manager'];
   var UPDATES = [
+    { id: 'w1-test-path-1405-08-17', date: '1405/08/17', tag: 'بهبود', title: 'مسیر آزمایشی بی‌اعلان برای سفارش‌های سایت',
+      summary: 'سایت می‌تواند درخواست قیمت، نظر و سفارش خرید را با مرجع «test-…» بفرستد تا بدون هیچ اعلان و بدون رسیدن به فروشنده بررسی و ذخیره شود و پاسخ نشان دهد در حالت واقعی به چه کسی می‌رسید. این آزمایش‌ها در صفحهٔ «سفارش‌های سایت» دیده نمی‌شوند مگر مدیر فروش بخواهد، و شمارندهٔ تکراری‌ها و سقف روزانهٔ درخواست‌های واقعی را تغییر نمی‌دهند.', roles: ['manager', 'sales_manager'] },
     { id: 'signup-icon-1405-08-17', date: '1405/08/17', tag: 'بهبود', title: 'آیکون تازهٔ ثبت‌نام',
       summary: 'کاشی «ثبت‌نام» برای بازدیدکننده و کاشی «درخواست‌های ثبت‌نام» برای مدیر حالا آیکون سه‌بعدی مخصوص ثبت‌نام دارند و با بقیهٔ کاشی‌ها هم‌سبک‌اند.', roles: ['manager', 'visitor'] },
     { id: 'signup-tile-1405-08-16', date: '1405/08/16', tag: 'تازه', title: 'کاشی «درخواست‌های ثبت‌نام» برای مدیر',
